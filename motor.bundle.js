@@ -58,6 +58,7 @@ var Motor = (() => {
     combinarConRecetas: () => combinarConRecetas,
     competicionesDelDia: () => competicionesDelDia,
     competicionesDesdeJson: () => competicionesDesdeJson,
+    componerComida: () => componerComida,
     conflictosComidaEntreno: () => conflictosComidaEntreno,
     construirEventos: () => construirEventos,
     contextoDiaPorDefecto: () => contextoDiaPorDefecto,
@@ -117,6 +118,8 @@ var Motor = (() => {
     planDiaCompeticion: () => planDiaCompeticion,
     plegarLineaIcs: () => plegarLineaIcs,
     raizAlimento: () => raizAlimento,
+    recetaDeId: () => recetaDeId,
+    recetasCompuestas: () => recetasCompuestas,
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
     rolIngrediente: () => rolIngrediente,
@@ -731,7 +734,10 @@ var Motor = (() => {
 
   // src/motor/validador-plato.ts
   var ALIAS_EXTRA = {
-    "ternera / cerdo": ["hamburguesa", "solomillo", "carne picada"]
+    "ternera / cerdo": ["hamburguesa", "solomillo", "carne picada"],
+    "pescado blanco": ["merluza", "bacalao", "lenguado", "rape", "dorada", "lubina"],
+    "pescado azul": ["salmon", "sardina", "caballa"],
+    "cereal crudo": ["pasta"]
   };
   var VERDURA_EXTRA = [
     "judia verde",
@@ -1135,6 +1141,7 @@ var Motor = (() => {
       hidrato: Number(hidrato),
       notas: notas ?? "",
       .../fibraAlta/.test(notas ?? "") ? { fibraAlta: true } : {},
+      .../\b(primero|segundo|postre)\b/.exec(notas ?? "") ? { tipoPlato: /\b(primero|segundo|postre)\b/.exec(notas ?? "")[1] } : {},
       ingredientes: ingredientesPorReceta.get(id) ?? []
     }));
   }
@@ -1281,11 +1288,55 @@ var Motor = (() => {
     const permitidos = new Set(dias);
     return items.filter((item) => permitidos.has(item.dia));
   }
+  var ROTULO_PLATO = { primero: "Primero", segundo: "Segundo", postre: "Postre" };
+  function componerComida(platos) {
+    const ingredientes = [];
+    for (const p of platos) {
+      for (const i of p.ingredientes) {
+        const ya = ingredientes.find((x) => x.nombre === i.nombre);
+        if (ya) ya.gramos += i.gramos;
+        else ingredientes.push({ ...i });
+      }
+    }
+    const franjas = platos[0].franjas.filter((f2) => platos.every((p) => p.franjas.includes(f2)));
+    return {
+      id: platos.map((p) => p.id).join("+"),
+      nombre: platos.map((p) => `${ROTULO_PLATO[p.tipoPlato ?? ""] ?? "Plato"}: ${p.nombre}`).join(" \xB7 "),
+      franjas,
+      kcal: platos.reduce((s, p) => s + p.kcal, 0),
+      proteina: platos.reduce((s, p) => s + p.proteina, 0),
+      grasa: platos.reduce((s, p) => s + p.grasa, 0),
+      hidrato: platos.reduce((s, p) => s + p.hidrato, 0),
+      notas: "",
+      ingredientes,
+      ...platos.some((p) => p.fibraAlta) ? { fibraAlta: true } : {},
+      tipoPlato: "compuesta",
+      platos: platos.map((p) => p.id)
+    };
+  }
+  function combinanBien(primero, segundo) {
+    const nombres = (r, rol) => r.ingredientes.filter((i) => rolIngrediente(i.nombre) === rol).map((i) => i.nombre);
+    const bases = [...nombres(primero, "base"), ...nombres(segundo, "base")];
+    if (new Set(bases.map((b) => b.toLowerCase())).size > 1) return false;
+    const pp = nombres(primero, "proteina");
+    const ps = nombres(segundo, "proteina");
+    return !pp.some((a2) => ps.some((b) => coincideAlimento(a2, b)));
+  }
+  function recetaDeId(porId, id) {
+    const directa = porId.get(id);
+    if (directa || !id.includes("+")) return directa;
+    const platos = id.split("+").map((x) => porId.get(x));
+    return platos.every(Boolean) ? componerComida(platos) : void 0;
+  }
+  function recetasCompuestas(ids, recetas) {
+    const porId = new Map(recetas.map((r) => [r.id, r]));
+    return [...new Set(ids.filter((i) => i.includes("+")))].map((i) => recetaDeId(porId, i)).filter((r) => !!r);
+  }
   function combinarConRecetas(asignaciones, recetas) {
     const porId = new Map(recetas.map((r) => [r.id, r]));
     const resultado = [];
     for (const a2 of asignaciones) {
-      const receta = porId.get(a2.receta);
+      const receta = recetaDeId(porId, a2.receta);
       if (receta) {
         resultado.push({
           dia: a2.dia,
@@ -1306,63 +1357,69 @@ var Motor = (() => {
     const asignaciones = [];
     const huecos = [];
     const avisos = [];
+    const idsDe = (r) => r.platos ?? [r.id];
+    const usosDe = (r) => Math.max(...idsDe(r).map((id) => usos.get(id) ?? 0));
     for (const slot of slots) {
-      const candidatas = recetas.filter((r) => r.franjas.includes(slot.franja) && !(slot.sinFibraAlta && r.fibraAlta));
-      if (!candidatas.length) {
-        huecos.push({ dia: slot.dia, franja: slot.franja, motivo: slot.sinFibraAlta ? "la v\xEDspera de competici\xF3n no se proponen recetas con fibra alta (legumbre, integral o verdura cruda) y no hay otra para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" });
-        continue;
-      }
-      let candidatasAptas = candidatas;
-      if (opciones.alergiasPreferencias) {
-        const ap = opciones.alergiasPreferencias;
-        candidatasAptas = candidatas.filter((r) => evaluarCompatibilidad(r, ap).compatible);
-        if (!candidatasAptas.length) {
-          const motivo = evaluarCompatibilidad(candidatas[0], ap).motivo;
-          huecos.push({
-            dia: slot.dia,
-            franja: slot.franja,
-            motivo: `ninguna receta de esta franja es compatible con las alergias/preferencias indicadas (${motivo?.detalle ?? "sin detalle"})`
-          });
-          continue;
-        }
-      }
       const limitada = esFranjaConLimiteVariedad(slot.franja);
-      const disponibles = limitada ? candidatasAptas.filter((r) => (usos.get(r.id) ?? 0) < maxRep) : candidatasAptas;
-      if (!disponibles.length) {
-        huecos.push({
-          dia: slot.dia,
-          franja: slot.franja,
-          motivo: `todas las recetas de esta franja ya llegaron al m\xE1ximo de ${maxRep} veces/semana entre comidas y cenas`
-        });
-        continue;
-      }
-      const validas = disponibles.filter((r) => validarPlatoGenerado(slot.franja, r.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos.length === 0);
-      if (!validas.length) {
-        const detalle = disponibles.slice(0, 3).map((r) => `"${r.nombre}": ${validarPlatoGenerado(slot.franja, r.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos.join("; ")}`).join(" | ");
-        huecos.push({ dia: slot.dia, franja: slot.franja, motivo: `no cabe en una raci\xF3n normal: ninguna receta disponible pasa el validador de platos para esta franja (${detalle})` });
-        continue;
-      }
-      let mejor;
-      const descartadasPorEscala = [];
-      for (const r of validas) {
-        const { factor, kcalResultante, desviacion, factorRedondeado: factorRedondeado2 } = racionParaObjetivo(r, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta });
-        const { incumplimientos: rotos } = incumplimientosRacion(slot.franja, r, factorRedondeado2, { cargaAlta: slot.cargaAlta });
-        if (rotos.length) {
-          descartadasPorEscala.push(`"${r.nombre}" al ${Math.round(factorRedondeado2 * 100)} %: ${rotos.join("; ")}`);
-          continue;
+      const ap = opciones.alergiasPreferencias;
+      const vale = (r) => r.franjas.includes(slot.franja) && !(slot.sinFibraAlta && r.fibraAlta) && (!ap || evaluarCompatibilidad(r, ap).compatible);
+      const esUnico = (r) => !r.tipoPlato || r.tipoPlato === "unico";
+      const intentar = (lista, filtrar) => {
+        const candidatas = filtrar ? lista.filter((r) => r.franjas.includes(slot.franja) && !(slot.sinFibraAlta && r.fibraAlta)) : lista;
+        if (!candidatas.length) {
+          return { motivo: slot.sinFibraAlta ? "la v\xEDspera de competici\xF3n no se proponen recetas con fibra alta (legumbre, integral o verdura cruda) y no hay otra para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
         }
-        if (!mejor || desviacion < mejor.desviacion) mejor = { receta: r, factor, kcalResultante, desviacion };
+        let aptas = candidatas;
+        if (ap && filtrar) {
+          aptas = candidatas.filter((r) => evaluarCompatibilidad(r, ap).compatible);
+          if (!aptas.length) {
+            return { motivo: `ninguna receta de esta franja es compatible con las alergias/preferencias indicadas (${evaluarCompatibilidad(candidatas[0], ap).motivo?.detalle ?? "sin detalle"})` };
+          }
+        }
+        const disponibles = limitada ? aptas.filter((r) => usosDe(r) < maxRep) : aptas;
+        if (!disponibles.length) return { motivo: `todas las recetas de esta franja ya llegaron al m\xE1ximo de ${maxRep} veces/semana entre comidas y cenas` };
+        const validas = disponibles.filter((r) => validarPlatoGenerado(slot.franja, r.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos.length === 0);
+        if (!validas.length) {
+          const detalle = disponibles.slice(0, 3).map((r) => `"${r.nombre}": ${validarPlatoGenerado(slot.franja, r.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos.join("; ")}`).join(" | ");
+          return { motivo: `no cabe en una raci\xF3n normal: ninguna receta disponible pasa el validador de platos para esta franja (${detalle})` };
+        }
+        let mejor;
+        const descartadas = [];
+        for (const r of validas) {
+          const { factor, kcalResultante, desviacion, factorRedondeado: factorRedondeado2 } = racionParaObjetivo(r, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta });
+          const { incumplimientos: rotos } = incumplimientosRacion(slot.franja, r, factorRedondeado2, { cargaAlta: slot.cargaAlta });
+          if (rotos.length) {
+            descartadas.push(`"${r.nombre}" al ${Math.round(factorRedondeado2 * 100)} %: ${rotos.join("; ")}`);
+            continue;
+          }
+          if (!mejor || desviacion < mejor.desviacion) mejor = { receta: r, factor, kcalResultante, desviacion };
+        }
+        if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
+        return { elegido: mejor };
+      };
+      const alcanza = (e) => !!e && e.desviacion <= slot.kcalObjetivo * 0.1;
+      let res = intentar(recetas.filter(esUnico), true);
+      if ((slot.franja === "comida" || slot.franja === "cena") && !alcanza(res.elegido)) {
+        const primeros = recetas.filter((r) => r.tipoPlato === "primero" && vale(r) && (!limitada || usosDe(r) < maxRep));
+        const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
+        const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));
+        const parejas = primeros.flatMap((p) => segundos.filter((s) => combinanBien(p, s)).map((s) => componerComida([p, s])));
+        const mejorDe = (a2, b) => b.elegido && (!a2.elegido || b.elegido.desviacion < a2.elegido.desviacion) ? b : a2;
+        if (parejas.length) {
+          const r2 = intentar(parejas, false);
+          res = mejorDe(res, r2);
+          if (!alcanza(res.elegido)) {
+            const conPostre = parejas.flatMap((c) => postres.filter((po) => !c.platos.includes(po.id)).map((po) => componerComida([...c.platos.map((id) => recetas.find((x) => x.id === id)), po])));
+            if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
+          }
+        }
       }
-      if (!mejor) {
-        huecos.push({
-          dia: slot.dia,
-          franja: slot.franja,
-          motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadasPorEscala.join(" | ")})`
-        });
+      if (!res.elegido) {
+        huecos.push({ dia: slot.dia, franja: slot.franja, motivo: res.motivo ?? "ninguna receta disponible" });
         continue;
       }
-      const elegido = mejor;
-      if (limitada) usos.set(elegido.receta.id, (usos.get(elegido.receta.id) ?? 0) + 1);
+      const elegido = res.elegido;
+      if (limitada) for (const id of idsDe(elegido.receta)) usos.set(id, (usos.get(id) ?? 0) + 1);
       const factorRedondeado = Math.round(elegido.factor * 100) / 100;
       const { protegidos, incumplimientos } = incumplimientosRacion(slot.franja, elegido.receta, factorRedondeado, { cargaAlta: slot.cargaAlta });
       if (incumplimientos.length) {
@@ -1394,7 +1451,7 @@ var Motor = (() => {
       if (vistos.some((v) => coincideAlimento(v, alimento))) continue;
       vistos.push(alimento);
       const ya = asignaciones.find((a2) => {
-        const r = porId.get(a2.receta);
+        const r = recetaDeId(porId, a2.receta);
         return r && llevaAlimento(r, alimento);
       });
       if (ya) {
@@ -1411,7 +1468,7 @@ var Motor = (() => {
           continue;
         }
       }
-      const conAlimento = recetas.filter((r) => llevaAlimento(r, alimento));
+      const conAlimento = recetas.filter((r) => (!r.tipoPlato || r.tipoPlato === "unico") && llevaAlimento(r, alimento));
       if (!conAlimento.length) {
         estados.push({ alimento, cubierto: false, causa: "no hay ninguna receta en el cat\xE1logo que lo lleve" });
         continue;
@@ -2544,6 +2601,79 @@ var Motor = (() => {
     r20: [
       "Corta la patata y el pimiento y col\xF3calos en una fuente de horno con el aceite de oliva.",
       "A\xF1ade la merluza y hornea hasta que est\xE9 hecha."
+    ],
+    r21: [
+      "Cuece el huevo hasta que cuaje y trocea el pollo ya cocinado a la plancha.",
+      "Monta los can\xF3nigos con el tomate en rodajas, el pollo y el huevo, y ali\xF1a con el aceite de oliva."
+    ],
+    r22: [
+      "Cuece el calabac\xEDn troceado en agua hasta que est\xE9 tierno y trit\xFAralo hasta obtener una crema fina.",
+      "Sirve la crema con el queso fresco desmenuzado por encima."
+    ],
+    r23: [
+      "Corta el tomate y la cebolla en trozos peque\xF1os y m\xE9zclalos con el at\xFAn escurrido.",
+      "Ali\xF1a con el aceite de oliva."
+    ],
+    r24: [
+      "Cuece el pollo con la zanahoria, el puerro y las jud\xEDas verdes en agua hasta que todo est\xE9 tierno.",
+      "Sirve caliente con parte del caldo."
+    ],
+    r25: [
+      "Saltea el br\xF3coli, la zanahoria y las jud\xEDas verdes con el aceite de oliva hasta que est\xE9n tiernos.",
+      "Sirve caliente."
+    ],
+    r26: [
+      "Escurre la legumbre cocida y m\xE9zclala con el pimiento y la cebolla en trozos peque\xF1os.",
+      "Ali\xF1a con el aceite de oliva y sirve templada."
+    ],
+    r27: [
+      "Cuece el arroz y reserva.",
+      "Saltea el calabac\xEDn y la zanahoria en tiras con el aceite de oliva y mezcla con el arroz."
+    ],
+    r28: [
+      "Tritura el tomate con el aceite de oliva hasta obtener una crema espesa.",
+      "Sirve fr\xEDa con el huevo cocido troceado por encima."
+    ],
+    r29: [
+      "Cocina el pollo a la plancha con el aceite de oliva.",
+      "Asa el pimiento en tiras y sirve junto al pollo."
+    ],
+    r30: [
+      "Corta el calabac\xEDn en rodajas y col\xF3calo en una fuente de horno con el aceite de oliva.",
+      "A\xF1ade la merluza y hornea hasta que est\xE9 hecha."
+    ],
+    r31: [
+      "Sofr\xEDe la cebolla y la zanahoria con el aceite de oliva.",
+      "A\xF1ade la ternera troceada, cubre con agua y cuece a fuego lento hasta que est\xE9 tierna."
+    ],
+    r32: [
+      "Cocina el salm\xF3n a la plancha con el aceite de oliva.",
+      "Saltea los esp\xE1rragos y sirve junto al salm\xF3n."
+    ],
+    r33: [
+      "Calienta la legumbre cocida con la zanahoria y la cebolla troceadas y el aceite de oliva.",
+      "Deja estofar unos minutos y sirve."
+    ],
+    r34: [
+      "Saltea los champi\xF1ones laminados con el aceite de oliva.",
+      "A\xF1ade los huevos batidos y remueve hasta que cuajen."
+    ],
+    r35: [
+      "Cuece el arroz y reserva.",
+      "Cocina el pavo troceado con el pimiento y el aceite de oliva y sirve sobre el arroz."
+    ],
+    r36: [
+      "Forma una hamburguesa con la ternera y coc\xEDnala a la plancha con el aceite de oliva.",
+      "Sirve con el tomate y la lechuga."
+    ],
+    r37: [
+      "Sirve el yogur griego con las fresas troceadas."
+    ],
+    r38: [
+      "Asa la manzana en el horno hasta que est\xE9 blanda y espolvorea la canela."
+    ],
+    r39: [
+      "Sirve el queso fresco con las nueces troceadas por encima."
     ]
   };
   function elaboracionEjemplo(recetaId) {
@@ -2591,7 +2721,7 @@ var Motor = (() => {
     const usos = {};
     for (const a2 of asignaciones) {
       if (!esFranjaConLimiteVariedad(a2.franja) || claveSlot(a2.dia, a2.franja) === excluirClave) continue;
-      usos[a2.receta] = (usos[a2.receta] ?? 0) + 1;
+      for (const id of a2.receta.split("+")) usos[id] = (usos[id] ?? 0) + 1;
     }
     return usos;
   }
@@ -2627,7 +2757,7 @@ var Motor = (() => {
     const alternativas = [];
     const descartadas = [];
     for (const r of recetas) {
-      if (r.id === opciones.actual) continue;
+      if (r.id === opciones.actual || r.tipoPlato && r.tipoPlato !== "unico") continue;
       const e = evaluar(slot, r, opciones);
       if ("motivo" in e) {
         if (e.motivo !== "no declara esta franja") descartadas.push(e);
@@ -2727,7 +2857,27 @@ r16,Ternera con arroz y jud\xEDas verdes,comida,855,50,31,88,
 r17,Tortilla de patata con ensalada,comida;cena,555,25,30,46,fibraAlta
 r18,Garbanzos con espinacas,comida;cena,515,25,19,60,fibraAlta
 r19,Pavo con quinoa y calabac\xEDn,comida;cena,730,72,20,64,
-r20,Merluza al horno con patata,comida;cena,555,54,15,48,`;
+r20,Merluza al horno con patata,comida;cena,555,54,15,48,
+
+r21,Ensalada de can\xF3nigos con pollo y huevo duro,comida;cena,270,29,14,6,primero
+r22,Crema de calabac\xEDn con queso fresco,comida;cena,110,8,5,8,primero
+r23,Ensalada de tomate y at\xFAn,comida;cena,230,16,12,8,primero
+r24,Sopa de pollo y verduras,comida;cena,190,20,6,12,primero
+r25,Menestra de verduras al ajillo,comida;cena,150,5,8,13,primero
+r26,Ensalada templada de garbanzos y pimiento,comida;cena,300,15,10,38,primero fibraAlta
+r27,Arroz salteado con verduras,comida;cena,300,7,9,48,primero
+r28,Salmorejo ligero con huevo,comida;cena,260,10,15,22,primero fibraAlta
+r29,Pollo a la plancha con pimientos,comida;cena,340,46,14,9,segundo
+r30,Merluza al horno con calabac\xEDn,comida;cena,300,40,12,8,segundo
+r31,Ternera guisada con zanahoria y cebolla,comida;cena,360,38,18,12,segundo
+r32,Salm\xF3n con esp\xE1rragos,comida;cena,420,36,28,6,segundo
+r33,Lentejas estofadas con verduras,comida;cena,340,20,9,45,segundo fibraAlta
+r34,Huevos revueltos con champi\xF1ones,comida;cena,300,20,23,4,segundo
+r35,Pavo con arroz y pimiento,comida;cena,450,37,7,60,segundo
+r36,Hamburguesa de ternera con tomate,comida;cena,360,32,22,8,segundo
+r37,Yogur griego con fresas,comida;cena,130,11,4,12,postre
+r38,Manzana asada con canela,comida;cena,100,1,0,24,postre
+r39,Queso fresco con nueces,comida;cena,170,12,12,4,postre`;
   var RECETAS_EJEMPLO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos
 r01,pollo,300
 r01,patata,200
@@ -2794,7 +2944,72 @@ r19,aceite de oliva,10
 r20,merluza,280
 r20,patata,250
 r20,pimiento,100
-r20,aceite de oliva,12`;
+r20,aceite de oliva,12
+
+r21,can\xF3nigos,80
+r21,pollo,100
+r21,huevo,50
+r21,tomate,80
+r21,aceite de oliva,8
+r22,calabac\xEDn,200
+r22,queso fresco,60
+r23,tomate,150
+r23,at\xFAn en lata,60
+r23,cebolla,30
+r23,aceite de oliva,8
+r24,pollo,80
+r24,zanahoria,100
+r24,puerro,50
+r24,jud\xEDas verdes,100
+r25,br\xF3coli,120
+r25,zanahoria,100
+r25,jud\xEDas verdes,100
+r25,aceite de oliva,8
+r26,legumbre cocida,120
+r26,pimiento,80
+r26,cebolla,30
+r26,aceite de oliva,8
+r27,arroz,60
+r27,calabac\xEDn,100
+r27,zanahoria,80
+r27,aceite de oliva,8
+r28,tomate,250
+r28,huevo,50
+r28,aceite de oliva,10
+r29,pollo,200
+r29,pimiento,150
+r29,aceite de oliva,8
+r30,merluza,220
+r30,calabac\xEDn,150
+r30,aceite de oliva,10
+r31,ternera,180
+r31,zanahoria,100
+r31,cebolla,50
+r31,aceite de oliva,10
+r32,salm\xF3n,180
+r32,esp\xE1rragos,150
+r32,aceite de oliva,5
+r33,legumbre cocida,250
+r33,zanahoria,60
+r33,cebolla,40
+r33,aceite de oliva,8
+r34,huevo,150
+r34,champi\xF1ones,150
+r34,aceite de oliva,8
+r35,pavo,160
+r35,arroz,70
+r35,pimiento,80
+r35,aceite de oliva,6
+r36,ternera,150
+r36,tomate,100
+r36,lechuga,60
+r36,aceite de oliva,8
+r37,yogur griego,125
+r37,fresas,100
+r38,manzana,180
+r38,canela,2
+r39,queso fresco,100
+r39,nueces,15`;
 
   // src/motor/nota-sesion.ts
   var LIMITE_NOTA = 120;
