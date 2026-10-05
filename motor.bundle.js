@@ -2800,6 +2800,7 @@ r20,aceite de oliva,12`;
     const avisos = [];
     const dias = [];
     const nuevosDias = [];
+    let avisoDescargaDado = false;
     const mlg = perfil.grasa !== void 0 ? perfil.peso * (1 - perfil.grasa / 100) : void 0;
     for (const d of base.dias) {
       const fecha = fechaDelDia(inicio, d.dia);
@@ -2838,7 +2839,7 @@ r20,aceite de oliva,12`;
         continue;
       }
       let kcal = d.kcal;
-      if (pausa && d.gasto > kcal) {
+      if (pausa && d.gasto - kcal >= 20) {
         kcal = d.gasto;
         motivos.push(`d\xE9ficit en pausa: comes lo que gastas (${d.gasto} kcal)`);
       }
@@ -2856,7 +2857,10 @@ r20,aceite de oliva,12`;
         }
       }
       if (sinFibra) motivos.push("v\xEDspera con poca fibra: sin legumbre, integrales ni verdura cruda");
-      if (fase === "descarga") motivos.push(AVISO_DESCARGA);
+      if (fase === "descarga" && !avisoDescargaDado) {
+        motivos.push(AVISO_DESCARGA);
+        avisoDescargaDado = true;
+      }
       if (fase === "competicion") motivos.push("d\xEDa de competici\xF3n");
       if (fase === "recuperacion") motivos.push("d\xEDa de recuperaci\xF3n; despu\xE9s vuelve el plan normal");
       const kcalFinal = Math.round(kcal);
