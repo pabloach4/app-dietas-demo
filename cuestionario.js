@@ -2336,6 +2336,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       : '<li>Ninguno.</li>';
     document.getElementById('r-notas').innerHTML = plan.notas.length
       ? plan.notas.map((n) => `<li>${n}</li>`).join('') : '<li>Ninguna.</li>';
+    // Issue #119: avisos y notas van plegados (con su recuento) para no saturar la pantalla; si algún aviso exige revisar con Pablo, se abre solo.
+    document.querySelector('#tarjeta-avisos summary').textContent = `Avisos del plan (${plan.avisos.length + avisosReparto.length})`;
+    document.querySelector('#tarjeta-avisos details').open = plan.avisos.some((a) => a.codigo === 'revisar_con_pablo');
+    document.querySelector('#tarjeta-notas summary').textContent = `Notas del plan (${plan.notas.length})`;
 
     // Texto legible en vez de volcar el JSON (issue #13): además de verse mal, desbordaba en móvil.
     const al = respuestas.alergias;

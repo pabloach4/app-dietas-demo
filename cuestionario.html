@@ -31,7 +31,7 @@
   .progreso .punto.hecho, .progreso .punto.actual { background: var(--verde); }
   .paso-nombre { color: var(--gris); font-size: 0.85rem; margin: 0.3rem 0 1rem; }
 
-  .ejemplos { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.2rem 0 0.8rem; -webkit-overflow-scrolling: touch; }
+  .ejemplos { display: flex; gap: 0.5rem; flex-wrap: wrap; padding: 0.2rem 0 0.8rem; }
   .ejemplos button {
     flex: 0 0 auto; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 999px;
     padding: 0.5rem 1rem; font-size: 0.85rem; color: var(--texto); white-space: nowrap;
@@ -226,6 +226,9 @@
   .dia-compra-chip, .check { min-height: 44px; }
   .btn-texto { min-height: 44px; }
   .sesion-mover select { min-height: 44px; }
+  /* Issue #119: todos los campos y botones tocables miden al menos 44 px de alto en móvil. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, .horario-toggle, .contexto-toggle, .sesion-fila button, button.quitar { min-height: 44px; }
+  details.plegable > summary { cursor: pointer; font-weight: 700; font-size: 1.05rem; min-height: 44px; display: flex; align-items: center; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
     button:active:not(:disabled) { transform: none; }
@@ -414,7 +417,7 @@
     <button type="button" data-perfil="hyrox">Ejemplo: Hyrox</button>
     <button type="button" data-perfil="diabetes">Ejemplo: con diabetes</button>
   </div>
-  <p class="subt" id="alcance-reset" style="font-size:0.8rem;margin-bottom:0.6rem">Al cargar un ejemplo o empezar de cero se restablecen el perfil, alergias, preferencias, horarios y contexto por día y «deshacer». No se borran tu lista de la compra hecha a mano, las competiciones anotadas ni tus recetas favoritas.</p>
+  <details class="plegable" style="margin-bottom:0.6rem"><summary style="font-size:0.85rem;font-weight:600">¿Qué se borra al cargar un ejemplo?</summary><p class="subt" id="alcance-reset" style="font-size:0.8rem;margin:0 0 0.4rem">Al cargar un ejemplo o empezar de cero se restablecen el perfil, alergias, preferencias, horarios y contexto por día y «deshacer». No se borran tu lista de la compra hecha a mano, las competiciones anotadas ni tus recetas favoritas.</p></details>
   <div class="progreso" id="progreso"></div>
   <p class="paso-nombre" id="paso-nombre"></p>
 </header>
@@ -511,10 +514,10 @@
 
       <div class="tarjeta">
         <h2>6. Preferencias</h2>
-        <small class="ayuda">Cualquier alimento puede entrar en una dieta en su justa medida. Este espacio es para que nos cuentes cuáles son los tuyos y poder hacer magia para que los disfrutes a lo largo de la semana. Sepáralos con comas.</small>
+        <details class="plegable"><summary style="font-size:0.9rem;font-weight:600">Cómo funciona esto</summary><small class="ayuda">Cualquier alimento puede entrar en una dieta en su justa medida. Este espacio es para que nos cuentes cuáles son los tuyos y poder hacer magia para que los disfrutes a lo largo de la semana. Sepáralos con comas.</small></details>
         <div class="campo"><label for="pref-gustan">Alimentos que tienen que estar sí o sí en mi semana</label><input id="pref-gustan" type="text" placeholder="Ej.: chocolate negro, pizza, aguacate"></div>
         <div class="campo"><label for="pref-evitas">Alimentos que seguro que no me voy a comer ni de broma</label><input id="pref-evitas" type="text" placeholder="Ej.: hígado, coliflor, atún en lata"></div>
-        <small class="ayuda">Los de la segunda casilla no aparecerán en tus recetas. No hace falta que te acuerdes de todos ahora: luego tienes tu «lista negra» en Perfil para ir añadiendo los que te vayas encontrando.</small>
+        <details class="plegable"><summary style="font-size:0.9rem;font-weight:600">Sobre la lista de «no me voy a comer»</summary><small class="ayuda">Los de la segunda casilla no aparecerán en tus recetas. No hace falta que te acuerdes de todos ahora: luego tienes tu «lista negra» en Perfil para ir añadiendo los que te vayas encontrando.</small></details>
       </div>
 
       <div class="tarjeta">
@@ -599,12 +602,14 @@
     </div>
 
     <div class="tarjeta" id="tarjeta-avisos">
-      <h2>Avisos</h2>
+      <details class="plegable"><summary>Avisos del plan</summary>
       <ul class="avisos" id="r-avisos"></ul>
+      </details>
     </div>
     <div class="tarjeta" id="tarjeta-notas">
-      <h2>Notas</h2>
+      <details class="plegable"><summary>Notas del plan</summary>
       <ul class="notas" id="r-notas"></ul>
+      </details>
     </div>
 
 
@@ -683,7 +688,7 @@
     <section class="panel-app" id="panel-recetas" role="tabpanel" aria-labelledby="tab-recetas" hidden>
       <div class="tarjeta" id="recetas-contenido">
         <h2>Recetas de ejemplo</h2>
-        <p class="subt" style="margin-bottom:0.8rem">Catálogo de EJEMPLO para explorar, separado de tu plan: buscar, filtrar o marcar favoritas <strong>no cambia tu semana ni tu compra</strong>. No son recetas de Pablo ni están validadas para clientes.</p>
+        <details class="plegable" style="margin-bottom:0.8rem"><summary style="font-size:0.9rem;font-weight:600">Sobre este catálogo</summary><p class="subt">Catálogo de EJEMPLO para explorar, separado de tu plan: buscar, filtrar o marcar favoritas <strong>no cambia tu semana ni tu compra</strong>. No son recetas de Pablo ni están validadas para clientes.</p></details>
         <p class="rec-restricciones" id="rec-restricciones"></p>
         <div class="campo"><label for="rec-buscar">Buscar por nombre o ingrediente</label>
           <div class="buscador">
