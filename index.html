@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta name="robots" content="noindex,nofollow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo del motor de dietas</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; }
+  fieldset { border: 1px solid #ccc; border-radius: 6px; margin-bottom: 1rem; }
+  label { display: inline-block; min-width: 8rem; }
+  .fila { margin: 0.4rem 0; }
+  .sesion { display: flex; gap: 0.5rem; align-items: center; margin: 0.3rem 0; flex-wrap: wrap; }
+  .sesion select, .sesion input { padding: 0.2rem; }
+  button { padding: 0.5rem 0.9rem; margin: 0.2rem 0.3rem 0.2rem 0; cursor: pointer; }
+  table { border-collapse: collapse; width: 100%; margin-top: 0.5rem; }
+  th, td { border: 1px solid #ddd; padding: 0.4rem 0.6rem; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  tr.con-entreno { background: #eaf6ec; font-weight: 600; } /* issue #12: que un día con sesión se note */
+  .avisos, .notas { list-style: none; padding: 0; }
+  .avisos li { background: #fff3cd; border: 1px solid #ffe69c; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.4rem; }
+  .notas li { background: #eef; border: 1px solid #ccd; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.4rem; }
+  #error { color: #a00; font-weight: bold; }
+  .resumen span { margin-right: 1.5rem; }
+  /* issue #13: móvil sin scroll horizontal — tarjetas por día en vez de tabla ancha, campos apilados */
+  .dias-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; margin-top: 0.5rem; }
+  .dia-card { border: 1px solid #ddd; border-radius: 10px; padding: 0.7rem; }
+  .dia-card.con-entreno { background: #eaf6ec; border-color: #bfe3cb; }
+  .dia-card .n { font-weight: 700; }
+  .dia-card .k { font-size: 1.3rem; font-weight: 700; }
+  .dia-card .m { font-size: 0.8rem; color: #555; }
+  @media (max-width: 480px) {
+    body { margin: 1rem auto; }
+    label { display: block; min-width: 0; margin-bottom: 0.2rem; }
+    input, select { width: 100%; padding: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<h1>Demo del motor de dietas (fase 1)</h1>
+<p>Página estática, sin servidor: solo para que Pablo vea el motor funcionando. No guarda nada.
+Formulario técnico (los campos del Perfil directos); el <a href="cuestionario.html">cuestionario completo</a> hace las mismas preguntas que hará la app.</p>
+
+<div>
+  <button type="button" data-perfil="general">Cargar perfil: general</button>
+  <button type="button" data-perfil="maraton">Cargar perfil: maratón</button>
+  <button type="button" data-perfil="hyrox">Cargar perfil: Hyrox</button>
+</div>
+
+<form id="form-perfil">
+  <fieldset>
+    <legend>Datos básicos</legend>
+    <div class="fila"><label for="peso">Peso (kg)</label><input id="peso" type="number" step="0.1" required></div>
+    <div class="fila"><label for="altura">Altura (cm)</label><input id="altura" type="number" step="0.1" required></div>
+    <div class="fila"><label for="edad">Edad</label><input id="edad" type="number" required></div>
+    <div class="fila"><label for="sexo">Sexo</label>
+      <select id="sexo"><option value="mujer">Mujer</option><option value="hombre">Hombre</option></select>
+    </div>
+    <div class="fila"><label for="grasa">% graso (si se conoce)</label><input id="grasa" type="number" step="0.1"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Objetivo y vida diaria</legend>
+    <div class="fila"><label for="objetivo">Objetivo</label>
+      <select id="objetivo">
+        <option value="perder_grasa">Perder grasa</option>
+        <option value="mantener">Mantener</option>
+        <option value="recomposicion">Recomposición</option>
+        <option value="ganar_musculo">Ganar músculo</option>
+      </select>
+    </div>
+    <div class="fila"><label for="vida">Vida diaria (sin el entreno)</label>
+      <select id="vida">
+        <option value="sedentaria">Sedentaria (&lt;5.000 pasos)</option>
+        <option value="ligera">Ligera (5.000-7.500)</option>
+        <option value="moderada">Moderada (7.500-10.000)</option>
+        <option value="alta">Alta (&gt;10.000, trabajo físico)</option>
+        <option value="muy_alta">Muy alta (trabajo físico muy duro)</option>
+      </select>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Sesiones de la semana</legend>
+    <div id="sesiones"></div>
+    <button type="button" id="add-sesion">+ Añadir sesión</button>
+  </fieldset>
+
+  <button type="submit">Calcular</button>
+</form>
+
+<p id="error"></p>
+
+<div id="resultado" hidden>
+  <h2>Resultado</h2>
+  <p class="resumen">
+    <span>Ecuación basal: <strong id="r-ecuacion"></strong> (<span id="r-basal"></span> kcal)</span>
+    <span>Gasto medio: <strong id="r-gasto"></strong> kcal</span>
+    <span>kcal media (tras tope y suelo): <strong id="r-kcalmedia"></strong> kcal</span>
+  </p>
+
+  <div class="dias-grid" id="r-dias"></div>
+
+  <h2>Avisos</h2>
+  <ul class="avisos" id="r-avisos"></ul>
+  <h2>Notas</h2>
+  <ul class="notas" id="r-notas"></ul>
+</div>
+
+<script src="motor.bundle.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

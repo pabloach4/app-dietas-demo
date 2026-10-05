@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta name="robots" content="noindex,nofollow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuestionario · Demo de la app de dietas</title>
+<style>
+  :root {
+    --verde: #2f9e59; --verde-suave: #eaf6ec; --texto: #1c1c1e; --gris: #6b6b70;
+    --borde: #e3e3e6; --fondo: #f7f7f8; --tarjeta: #ffffff; --aviso: #fff3cd; --aviso-borde: #ffe69c;
+    --nota: #eaf1ff; --nota-borde: #cddcf6; --derivar: #fdeceb; --derivar-borde: #f3b8b1;
+    --radio: 14px; --gutter: 16px;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; } /* si no, .btn-secundario/.paso con display propio ganan al atributo */
+  html { overflow-x: hidden; } /* cinturón y tirantes: ningún hijo debería forzar scroll horizontal */
+  body {
+    font-family: -apple-system, system-ui, "Segoe UI", sans-serif; margin: 0; color: var(--texto);
+    background: var(--fondo); padding-bottom: 5.5rem; /* sitio para la barra de navegación fija */
+    overflow-wrap: anywhere;
+  }
+  .env { max-width: 560px; margin: 0 auto; padding: 0 var(--gutter); }
+  header.top { max-width: 560px; margin: 0 auto; padding: 1rem var(--gutter) 0.5rem; }
+  h1 { font-size: 1.25rem; margin: 0 0 0.15rem; }
+  .subt { color: var(--gris); font-size: 0.9rem; margin: 0; }
+  .subt a { color: var(--verde); }
+
+  .progreso { display: flex; gap: 6px; margin: 0.9rem 0 0.2rem; }
+  .progreso .punto { flex: 1; height: 6px; border-radius: 3px; background: var(--borde); }
+  .progreso .punto.hecho, .progreso .punto.actual { background: var(--verde); }
+  .paso-nombre { color: var(--gris); font-size: 0.85rem; margin: 0.3rem 0 1rem; }
+
+  .ejemplos { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.2rem 0 0.8rem; -webkit-overflow-scrolling: touch; }
+  .ejemplos button {
+    flex: 0 0 auto; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 999px;
+    padding: 0.5rem 1rem; font-size: 0.85rem; color: var(--texto); white-space: nowrap;
+  }
+
+  /* Issue #33: qué días de la semana se seguirá el plan, para la lista de la compra. */
+  .dias-compra { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; }
+  .dia-compra-chip {
+    display: flex; align-items: center; gap: 0.3rem; border: 1px solid var(--borde); border-radius: 999px;
+    padding: 0.4rem 0.7rem; font-size: 0.85rem; background: #fff; cursor: pointer;
+  }
+  .dia-compra-chip:has(input:checked) { background: var(--verde-suave); border-color: var(--verde); font-weight: 600; }
+  .dia-compra-chip input { width: 1rem; height: 1rem; margin: 0; }
+
+  /* Issue #34: tachar lo que ya hay en casa y añadir artículos a mano en la lista de la compra. */
+  .item-compra { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.25rem 0; }
+  .item-compra label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; color: var(--gris); flex: 1; min-width: 0; }
+  .item-compra input[type="checkbox"] { width: 1.1rem; height: 1.1rem; flex: none; }
+  .item-compra .tachado { text-decoration: line-through; opacity: 0.6; }
+  .item-compra .quitar-manual {
+    background: none; border: none; color: #b3271e; font-size: 1rem; padding: 0.2rem 0.4rem; width: auto; flex: none;
+  }
+  .manual-form { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.8rem 0; }
+  .manual-form input {
+    flex: 1 1 100px; min-width: 0; padding: 0.6rem 0.7rem; border: 1px solid var(--borde); border-radius: 10px;
+    font-size: 0.9rem; background: #fff; color: var(--texto);
+  }
+  .manual-form button { flex: 0 0 auto; }
+
+  /* Issue #36: coste orientativo de la lista de compra, con precios de EJEMPLO. */
+  .coste-estimado { background: var(--fondo); border: 1px solid var(--borde); border-radius: 10px; padding: 0.8rem; margin: 1rem 0; }
+
+  .tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: var(--radio); padding: 1.1rem; margin-bottom: 1rem; }
+  .tarjeta h2 { font-size: 1.05rem; margin: 0 0 0.9rem; }
+  .tarjeta h3 { font-size: 0.95rem; margin: 1.1rem 0 0.5rem; color: var(--gris); text-transform: uppercase; letter-spacing: 0.02em; }
+
+  .campo { margin-bottom: 1rem; }
+  .campo label { display: block; font-size: 0.9rem; color: var(--gris); margin-bottom: 0.3rem; }
+  .campo input[type="text"], .campo input[type="number"], .campo input[type="time"], .campo input[type="date"], .campo select {
+    width: 100%; padding: 0.7rem 0.8rem; border: 1px solid var(--borde); border-radius: 10px;
+    font-size: 1rem; background: #fff; color: var(--texto); -webkit-appearance: none; appearance: none;
+  }
+  .fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+  .check { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; font-size: 0.95rem; }
+  .check input { width: 1.2rem; height: 1.2rem; flex: none; }
+  small.ayuda { display: block; color: var(--gris); font-size: 0.85rem; margin: -0.5rem 0 0.7rem; }
+
+  .sesion-card, .franja-card {
+    border: 1px solid var(--borde); border-radius: 12px; padding: 0.8rem; margin-bottom: 0.7rem; background: #fbfbfc;
+  }
+  .sesion-card .fila2, .franja-card .fila2 { margin-bottom: 0.6rem; }
+  .sesion-card .quitar {
+    background: none; border: none; color: #b3271e; font-size: 0.9rem; padding: 0.3rem 0; width: auto;
+  }
+  .franja-card .cabecera { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+  .franja-card .cabecera .check { padding: 0; font-weight: 600; }
+
+  button, .btn { font: inherit; cursor: pointer; }
+  .btn-principal {
+    display: block; width: 100%; padding: 0.95rem; border: none; border-radius: 12px;
+    background: var(--verde); color: #fff; font-size: 1.05rem; font-weight: 600;
+  }
+  .btn-secundario {
+    display: block; width: 100%; padding: 0.95rem; border: 1px solid var(--borde); border-radius: 12px;
+    background: #fff; color: var(--texto); font-size: 1rem;
+  }
+  .btn-texto { background: none; border: none; color: var(--verde); font-weight: 600; padding: 0.6rem 0; width: auto; }
+  #add-sesion { width: 100%; border: 1px dashed var(--borde); border-radius: 10px; background: none; padding: 0.7rem; color: var(--verde); font-weight: 600; }
+
+  nav.barra {
+    position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.96);
+    border-top: 1px solid var(--borde); padding: 0.7rem var(--gutter) calc(0.7rem + env(safe-area-inset-bottom));
+    display: flex; gap: 0.6rem; max-width: 560px; margin: 0 auto;
+  }
+  nav.barra .btn-secundario, nav.barra .btn-principal { margin: 0; }
+  nav.barra .btn-secundario { flex: 0 0 6.5rem; }
+  nav.barra .btn-principal { flex: 1; }
+
+  .paso { display: none; }
+  .paso.activo { display: block; }
+
+  #incompleto { background: var(--derivar); border: 1px solid var(--derivar-borde); border-radius: var(--radio); padding: 1rem; font-weight: 600; color: #7a1f18; margin-bottom: 1rem; }
+  #derivar { background: var(--derivar); border: 1px solid var(--derivar-borde); border-radius: var(--radio); padding: 1.2rem; font-weight: 600; color: #7a1f18; margin-bottom: 1rem; text-align: center; }
+  #elegir-deporte { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: var(--radio); padding: 1rem; margin-bottom: 1rem; }
+  #elegir-deporte select { margin: 0.6rem 0; }
+
+  /* Issue #15: una columna (no grid multicolumna) para que cada tarjeta pueda desplegar su reparto por
+     franjas sin descuadrar la altura de las tarjetas vecinas. */
+  .dias-grid { display: flex; flex-direction: column; gap: 0.6rem; }
+  .dia-card { border: 1px solid var(--borde); border-radius: 12px; padding: 0.8rem; background: #fbfbfc; }
+  .dia-card.con-entreno { background: var(--verde-suave); border-color: #bfe3cb; }
+  .dia-cabecera { display: flex; align-items: baseline; justify-content: space-between; }
+  .dia-card .dia-nombre { font-weight: 700; font-size: 1rem; }
+  .dia-card .dia-tipo { font-size: 0.78rem; color: var(--gris); }
+  .dia-card .dia-kcal { font-size: 1.3rem; font-weight: 700; }
+  .dia-card .dia-macros { font-size: 0.78rem; color: var(--gris); margin-top: 0.3rem; }
+  .dia-toggle {
+    display: block; width: 100%; margin-top: 0.6rem; padding: 0.5rem; border: none; border-radius: 8px;
+    background: #eef1ee; color: var(--verde); font-size: 0.85rem; font-weight: 600; text-align: center;
+  }
+  .dia-franjas { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  /* Issue #37: contexto de vida real por día (turno, táper...). Solo anotación, no cambia el cálculo. */
+  .contexto-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+  .contexto-badge {
+    font-size: 0.72rem; font-weight: 600; color: var(--verde); background: var(--verde-suave);
+    border: 1px solid #bfe3cb; border-radius: 999px; padding: 0.2rem 0.55rem;
+  }
+  .contexto-toggle, .horario-toggle {
+    display: block; width: 100%; margin-top: 0.5rem; padding: 0.5rem; border: 1px dashed var(--borde); border-radius: 8px;
+    background: none; color: var(--gris); font-size: 0.8rem; font-weight: 600; text-align: center;
+  }
+  .contexto-dia, .horario-dia { margin-top: 0.6rem; }
+  .contexto-dia .check { padding: 0.4rem 0; font-size: 0.88rem; }
+
+  /* Issue #38: deshacer el último movimiento de sesión. */
+  #btn-deshacer {
+    display: block; width: 100%; margin-bottom: 0.8rem; padding: 0.7rem; border: 1px solid var(--verde);
+    border-radius: 10px; background: var(--verde-suave); color: var(--verde); font-weight: 600; font-size: 0.9rem;
+  }
+  /* Issue #18: mover una sesión de día desde la propia tarjeta de resultados. */
+  .dia-sesiones { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  .sesion-mover {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    background: #fff; border: 1px solid var(--borde); border-radius: 8px; padding: 0.5rem 0.7rem; font-size: 0.85rem;
+  }
+  .sesion-mover label { display: flex; align-items: center; gap: 0.4rem; color: var(--gris); font-size: 0.8rem; white-space: nowrap; }
+  .sesion-mover select { padding: 0.4rem; border-radius: 8px; border: 1px solid var(--borde); font-size: 0.9rem; }
+
+  .resumen-top { display: flex; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.3rem; }
+  .stat { flex: 1 0 auto; min-width: 7.5rem; background: #fbfbfc; border: 1px solid var(--borde); border-radius: 12px; padding: 0.7rem 0.9rem; }
+  .stat .n { font-size: 1.15rem; font-weight: 700; }
+  .stat .l { font-size: 0.75rem; color: var(--gris); }
+
+  .avisos, .notas, .resumen-lista { list-style: none; padding: 0; margin: 0; overflow-wrap: anywhere; }
+  .avisos li { background: var(--aviso); border: 1px solid var(--aviso-borde); border-radius: 10px; padding: 0.7rem; margin-bottom: 0.5rem; font-size: 0.9rem; }
+  .notas li { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: 10px; padding: 0.7rem; margin-bottom: 0.5rem; font-size: 0.9rem; }
+  .resumen-lista li { font-size: 0.88rem; color: var(--gris); margin-bottom: 0.4rem; }
+
+  .franja-reparto-card { border: 1px solid var(--borde); border-radius: 10px; padding: 0.6rem 0.8rem; background: #fff; }
+  .franja-reparto-card.destacada { background: var(--verde-suave); border-color: #bfe3cb; }
+  .franja-reparto-cabecera { display: flex; align-items: center; justify-content: space-between; }
+  .franja-reparto-card .nombre { font-weight: 600; text-transform: capitalize; }
+  .franja-reparto-card .rol { font-size: 0.75rem; color: var(--verde); font-weight: 600; }
+  .franja-reparto-card .macros { text-align: right; font-size: 0.82rem; color: var(--gris); }
+  /* Issue #35: receta de ejemplo asignada a la franja (o aviso de hueco), debajo de sus kcal/macros objetivo. */
+  .receta-franja { margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed var(--borde); font-size: 0.8rem; color: var(--texto); }
+  .receta-franja.hueco { color: #7a1f18; }
+
+  @media (min-width: 560px) {
+    .env, header.top, nav.barra { max-width: 560px; }
+  }
+
+  /* Issue #28: comparador de escenarios, fuera de .env para poder ir más ancho en escritorio. */
+  #comparador { padding: 1rem var(--gutter) 6rem; background: var(--fondo); }
+  .comparador-env { max-width: 1100px; margin: 0 auto; }
+  .comparacion-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem; }
+  @media (min-width: 860px) { .comparacion-grid { grid-template-columns: 1fr 1fr; } }
+  .comparacion-col .stat { width: 100%; margin-bottom: 0.8rem; }
+  .comparacion-dia {
+    display: flex; justify-content: space-between; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--borde);
+    font-size: 0.88rem;
+  }
+  .comparacion-dia.distinta { background: var(--aviso); font-weight: 600; }
+  .comparacion-dia .d { color: var(--gris); font-weight: 400; }
+
+  /* Issue #24: vista imprimible de la semana, sin UI interactiva. */
+  .solo-impresion { display: none; }
+  @media print {
+    header.top, nav.barra, #aviso-almacenamiento, #btn-imprimir, #btn-copiar, #btn-descargar-csv, .acciones-compra, #btn-comparar, #empezar-de-nuevo, #incompleto,
+    #derivar, #elegir-deporte, #comparador, .dia-toggle, .sesion-mover,
+    .manual-form, #btn-borrar-lista-manual, .quitar-manual,
+    .contexto-toggle, .contexto-dia, .horario-toggle, .horario-dia, #zona-deshacer, .tabs-app, details.mas-acciones, #resumen-manual, #resumen-dia, .acciones-rapidas, #panel-calendario, #cal-exportar, #panel-hoy, #panel-recetas, .subvista, #rec-limpiar, #zona-sustituciones, .dc-acciones, #perfil-resumen button, details.porque, dialog#detalle-comida, .ver-comida, .hor-ir { display: none !important; }
+    .panel-app[hidden] { display: block !important; }
+    .solo-impresion { display: block; margin-bottom: 1rem; }
+    .solo-impresion h1 { font-size: 1.2rem; margin: 0 0 0.3rem; }
+    .solo-impresion p { margin: 0; color: #333; }
+    body { background: #fff; padding-bottom: 0; }
+    .env { max-width: none; }
+    .tarjeta, .dia-card { border: 1px solid #ccc; break-inside: avoid; }
+    .dia-franjas[hidden] { display: flex !important; } /* desplegado siempre al imprimir (#15 en papel) */
+  }
+
+  /* Issue #43: acabado de app — navegación por secciones, foco visible, respuesta al pulsar. */
+  :focus-visible { outline: 3px solid #1b6e3e; outline-offset: 2px; border-radius: 6px; }
+  button, .dia-compra-chip, .check { -webkit-tap-highlight-color: transparent; }
+  button { transition: background-color .15s ease, transform .08s ease, border-color .15s ease, box-shadow .15s ease; }
+  button:active:not(:disabled) { transform: scale(0.98); }
+  .btn-secundario:hover, .ejemplos button:hover { border-color: var(--verde); }
+  .btn-principal:hover { background: #288a4d; }
+  .tarjeta { box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .btn-principal, .btn-secundario, .ejemplos button, .dia-toggle, .contexto-toggle, #btn-deshacer { min-height: 44px; }
+  .dia-compra-chip, .check { min-height: 44px; }
+  .btn-texto { min-height: 44px; }
+  .sesion-mover select { min-height: 44px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+    button:active:not(:disabled) { transform: none; }
+  }
+  body.vista-resultado .ejemplos, body.vista-resultado #aviso-guardado { display: none !important; }
+  body.vista-resultado header.top .subt, body.vista-resultado #alcance-reset { display: none; }
+
+  .tabs-app {
+    position: sticky; top: 0; z-index: 5; display: flex; gap: 0.4rem; margin: 0 calc(var(--gutter) * -1) 1rem;
+    padding: 0.6rem var(--gutter); background: rgba(247,247,248,0.96); border-bottom: 1px solid var(--borde);
+    backdrop-filter: blur(6px);
+  }
+  .tabs-app button {
+    flex: 1 1 auto; padding: 0.6rem 0.3rem; border: 1px solid var(--borde); border-radius: 999px; background: #fff;
+    color: var(--texto); font-size: 0.88rem; font-weight: 600; min-width: 0; min-height: 44px;
+    white-space: nowrap; overflow-wrap: normal; word-break: keep-all; /* nunca partir una palabra (#49) */
+  }
+  @media (max-width: 359px) { .tabs-app { gap: 0.25rem; } .tabs-app button { font-size: 0.8rem; padding-inline: 0.2rem; } }
+  .tabs-app button[aria-selected="true"] { background: var(--verde); border-color: var(--verde); color: #fff; }
+  .tabs-app button.aparte { flex: 0 1 auto; color: var(--gris); font-weight: 500; padding-inline: 0.6rem; }
+  .panel-app[hidden] { display: none !important; }
+  /* Issue #74: catálogo de recetas de ejemplo */
+  .buscador { position: relative; }
+  .buscador input { width: 100%; padding: 0.7rem 2.6rem 0.7rem 0.8rem; border: 1px solid var(--borde); border-radius: 10px; font-size: 1rem; background: #fff; color: var(--texto); }
+  .buscador button { position: absolute; right: 0; top: 0; width: 44px; height: 100%; background: none; border: none; font-size: 1rem; color: var(--gris); }
+  .rec-restricciones { font-size: 0.85rem; background: var(--nota); border: 1px solid var(--nota-borde); border-radius: 10px; padding: 0.6rem 0.8rem; margin: 0 0 1rem; }
+  .rec-grid { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; grid-template-columns: 1fr; gap: 0.7rem; }
+  @media (min-width: 700px) { .rec-grid { grid-template-columns: 1fr 1fr; } }
+  .rec-card { border: 1px solid var(--borde); border-radius: 12px; background: #fff; overflow: hidden; display: flex; flex-direction: column; }
+  .rec-img { background: var(--verde-suave); color: #1b6e3e; text-align: center; padding: 0.9rem 0.5rem; font-size: 0.8rem; }
+  .rec-img span { display: block; font-size: 1.6rem; }
+  .rec-cuerpo { padding: 0.7rem 0.8rem; display: flex; flex-direction: column; gap: 0.3rem; flex: 1; }
+  .rec-nombre { font-weight: 700; overflow-wrap: normal; }
+  .rec-etiqueta { align-self: flex-start; font-size: 0.7rem; font-weight: 700; background: var(--aviso); border: 1px solid var(--aviso-borde); border-radius: 999px; padding: 0.1rem 0.5rem; }
+  .rec-dato { font-size: 0.82rem; color: var(--gris); }
+  .rec-incompat { font-size: 0.82rem; color: #7a1f18; font-weight: 600; }
+  .rec-acciones { display: flex; gap: 0.4rem; margin-top: 0.3rem; }
+  .rec-acciones button { flex: 1; min-height: 44px; border: 1px solid var(--borde); border-radius: 10px; background: #fff; font-weight: 600; color: var(--texto); }
+  .rec-acciones .rec-fav { flex: 0 0 auto; padding: 0 0.8rem; }
+  .rec-acciones .rec-fav[aria-pressed="true"] { background: #fdeceb; border-color: #f3b8b1; color: #b3271e; }
+  /* Issue #75: cambiar la receta de una comida */
+  .dc-acciones { margin-top: 1rem; }
+  .alt-lista { list-style: none; margin: 0.6rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+  .alt-card { border: 1px solid var(--borde); border-radius: 12px; padding: 0.7rem 0.8rem; background: #fff; }
+  .alt-card .titulo { font-weight: 700; overflow-wrap: normal; }
+  .alt-card .dato { font-size: 0.85rem; color: var(--gris); margin: 0.15rem 0; }
+  .alt-card .aviso { font-size: 0.82rem; color: #7a1f18; margin: 0.15rem 0; }
+  .alt-acciones { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+  .alt-acciones button { min-height: 44px; flex: 1 1 8rem; }
+  .cambio-zona { border: 1px solid var(--borde); border-radius: 10px; background: var(--verde-suave); padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; font-size: 0.88rem; }
+  .cambio-zona.aviso-inval { background: var(--aviso); border-color: var(--aviso-borde); }
+  /* Issue #76: marcas con cantidad y artículos manuales */
+  .manual-form input { min-height: 44px; }
+  .item-compra .quitar-manual { min-width: 44px; min-height: 44px; }
+  .item-compra label { min-height: 44px; }
+  .dieta-dato { color: var(--gris); font-weight: 400; }
+  .item-compra.a-revisar { flex-wrap: wrap; border-left: 3px solid #b45309; padding-left: 0.5rem; }
+  .aviso-cantidad { flex: 1 1 100%; font-size: 0.8rem; color: #7a1f18; margin: 0.1rem 0 0.3rem 1.6rem; }
+  .subvista { display: flex; gap: 0.4rem; margin: 0 0 1rem; }
+  .subvista button { flex: 1; min-height: 44px; border: 1px solid var(--borde); border-radius: 10px; background: #fff; font-weight: 600; color: var(--texto); }
+  .subvista button[aria-pressed="true"] { background: var(--verde-suave); border-color: var(--verde); color: #1b6e3e; }
+  /* Hoy: lo siguiente que toca */
+  .hoy-fecha { font-size: 0.85rem; color: var(--gris); margin: 0 0 0.6rem; }
+  .hoy-bloque { border: 1px solid var(--borde); border-radius: 12px; padding: 0.7rem 0.8rem; margin-top: 0.6rem; background: #fbfbfc; }
+  .hoy-bloque.destacado { background: var(--verde-suave); border-color: #bfe3cb; }
+  .hoy-bloque h3 { margin: 0 0 0.3rem; font-size: 0.78rem; }
+  .hoy-bloque .titulo { font-weight: 700; }
+  .hoy-nota { font-size: 0.8rem; color: var(--gris); margin: 0.6rem 0 0; }
+
+  .dias-chips { display: flex; gap: 0.35rem; margin: 0 0 0.8rem; }
+  .dias-chips button {
+    flex: 1 1 0; min-width: 0; min-height: 44px; border: 1px solid var(--borde); border-radius: 10px; background: #fff;
+    font-weight: 700; color: var(--texto);
+  }
+  .dias-chips button[aria-pressed="true"] { background: var(--verde-suave); border-color: var(--verde); color: #1b6e3e; }
+  .dias-chips button.hoy::after { content: "•"; display: block; line-height: 0.4; color: var(--verde); }
+  .dia-resumen-titulo { font-size: 1.05rem; font-weight: 700; margin: 0; }
+  .dia-resumen-kcal { font-size: 1.6rem; font-weight: 800; margin: 0.2rem 0; }
+  .dia-resumen-lista { list-style: none; padding: 0; margin: 0.6rem 0 0; display: flex; flex-direction: column; gap: 0.4rem; }
+  .dia-resumen-lista li { border: 1px solid var(--borde); border-radius: 10px; padding: 0.55rem 0.7rem; font-size: 0.88rem; background: #fff; }
+  .dia-resumen-lista li.entreno { background: var(--verde-suave); border-color: #bfe3cb; }
+  .dia-resumen-lista li.hueco { color: #7a1f18; }
+  .error-inline { color: #7a1f18; font-weight: 600; font-size: 0.88rem; margin: 0.4rem 0; }
+  .dias-chips button small { display: block; font-weight: 400; font-size: 0.68rem; color: var(--gris); }
+  .dias-chips button .marca-comp { color: #b45309; }
+  .comp-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; border: 1px solid var(--borde); border-radius: 10px; padding: 0.55rem 0.7rem; background: #fff; }
+  .comp-item .acciones { display: flex; gap: 0.3rem; }
+  .comp-item .acciones button { min-height: 44px; }
+  /* Issue #47: «¿Por qué?» desplegables junto a cada cifra. */
+  details.porque { margin-top: 0.4rem; font-size: 0.85rem; }
+  details.porque > summary { cursor: pointer; color: #1b6e3e; font-weight: 600; min-height: 44px; display: flex; align-items: center; list-style: none; }
+  details.porque > summary::-webkit-details-marker { display: none; }
+  details.porque > summary::before { content: "ⓘ"; margin-right: 0.4rem; }
+  details.porque .porque-resumen { margin: 0 0 0.4rem; color: var(--texto); }
+  details.porque .porque-detalle { margin: 0 0 0.6rem; padding-left: 1.1rem; color: var(--gris); }
+  details.porque .porque-detalle li { margin-bottom: 0.3rem; }
+  details.porque h4 { margin: 0.7rem 0 0.2rem; font-size: 0.85rem; }
+  .dia-resumen-lista li details.porque { margin-top: 0; }
+  /* Issue #51: detalle de una comida (ingredientes, elaboración de ejemplo, por qué toca ahora). */
+  .ver-comida, .hor-ir {
+    display: inline-flex; align-items: center; min-height: 44px; margin-top: 0.3rem; padding: 0 0.2rem;
+    background: none; border: none; color: #1b6e3e; font-weight: 600; font-size: 0.85rem; text-decoration: underline;
+  }
+  dialog#detalle-comida {
+    width: min(560px, calc(100% - 1.5rem)); max-height: 88vh; padding: 0; border: 1px solid var(--borde);
+    border-radius: var(--radio); background: var(--tarjeta); color: var(--texto); overflow: auto;
+  }
+  dialog#detalle-comida::backdrop { background: rgba(0,0,0,0.45); }
+  .dc-cab { position: sticky; top: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem;
+    padding: 0.9rem 1rem 0.6rem; background: var(--tarjeta); border-bottom: 1px solid var(--borde); }
+  .dc-cab h2 { font-size: 1.05rem; margin: 0; }
+  #dc-cuerpo { padding: 0.8rem 1rem; font-size: 0.9rem; }
+  #dc-cuerpo h3 { margin: 1rem 0 0.4rem; }
+  .dc-ings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  :root { --macro-p: #1d5fb8; --macro-g: #a86400; --macro-h: #2f7d4a; }
+  .chip { display: inline-block; min-width: 1.6rem; text-align: center; font-weight: 700; font-size: 0.78rem; padding: 0.1rem 0.4rem; border-radius: 999px; color: #fff; }
+  .chip-p { background: var(--macro-p); } .chip-g { background: var(--macro-g); } .chip-h { background: var(--macro-h); }
+  .etq-ejemplo { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--aviso); color: #7a5a00; vertical-align: middle; }
+  .receta-dato { font-size: 0.82rem; color: var(--gris); margin-top: 0.1rem; }
+  .franja-reparto-card .macros strong { font-size: 1.1rem; color: var(--texto); }
+  #dc-cuerpo h3 { font-size: 0.95rem; margin: 1.1rem 0 0.4rem; padding-bottom: 0.2rem; border-bottom: 2px solid var(--verde-suave); }
+  #dc-cuerpo h3.dc-plato { font-size: 1.05rem; border-bottom: 0; margin-top: 0.3rem; }
+  .dc-racion { font-size: 0.78rem; font-weight: 600; color: var(--verde); margin-left: 0.2rem; }
+  .dc-ings-cab { display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gris); padding: 0 0.7rem; }
+  .dc-ings-cab span:nth-child(2), .dc-ings-cab span:nth-child(3) { text-align: right; }
+  .dc-ings { list-style: none; margin: 0.25rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+  .dc-ing { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 0.1rem 0.6rem; padding: 0.45rem 0.7rem; border-radius: 8px; background: #f4f6f4; }
+  .dc-ing-nombre { font-weight: 600; overflow-wrap: normal; word-break: normal; }
+  .dc-ing-nota { font-weight: 400; color: var(--gris); }
+  .dc-ing-gramos { font-weight: 800; font-size: 1.02rem; text-align: right; white-space: nowrap; }
+  .dc-ing-gramos .dc-cocido { display: block; font-weight: 500; font-size: 0.72rem; color: var(--verde); }
+  .dc-ing-compra { font-size: 0.78rem; color: var(--gris); text-align: right; min-width: 4.5rem; }
+  @media (max-width: 359px) { .dc-ing { grid-template-columns: 1fr auto; } .dc-ing-compra { grid-column: 1 / -1; text-align: left; } .dc-ings-cab span:nth-child(3) { display: none; } }
+  .dc-chiste { font-size: 0.85rem; background: var(--nota); border: 1px solid var(--nota-borde); border-radius: 8px; padding: 0.4rem 0.6rem; margin: 0.4rem 0; }
+  .dc-pasos { padding-left: 1.2rem; } .dc-pasos li { margin-bottom: 0.3rem; }
+  .dc-cuadre { width: 100%; border-collapse: collapse; }
+  .dc-cuadre th, .dc-cuadre td { padding: 0.3rem 0.5rem; text-align: left; border-bottom: 1px solid var(--borde); }
+  .dc-cuadre thead th { font-size: 0.72rem; text-transform: uppercase; color: var(--gris); }
+  .dc-cuadre-kcal th, .dc-cuadre-kcal td { font-size: 1rem; }
+  .dc-nota { font-size: 0.8rem; color: var(--gris); margin: 0.4rem 0; }
+  details.dc-notas { margin-top: 0.9rem; border-top: 1px solid var(--borde); padding-top: 0.5rem; }
+  details.dc-notas summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; color: var(--verde); }
+  .ln-fila { display: flex; gap: 0.5rem; }
+  .ln-fila input { flex: 1; min-width: 0; }
+  .ln-chips { list-style: none; margin: 0.6rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .ln-chips li { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.3rem 0.2rem 0.7rem; border-radius: 999px; background: var(--derivar); border: 1px solid var(--derivar-borde); font-size: 0.88rem; }
+  .ln-chips button { border: 0; background: transparent; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0.15rem 0.4rem; color: #7a1f18; }
+  .dc-aviso { font-size: 0.82rem; color: #7a1f18; margin: 0.4rem 0; }
+  .dc-pie { padding: 0 1rem 1rem; }
+  fieldset.exp-campos { border: none; padding: 0; margin: 0 0 0.8rem; }
+  fieldset.exp-campos legend { font-size: 0.9rem; color: var(--gris); padding: 0; margin-bottom: 0.2rem; }
+  .exp-preview-lista { list-style: none; padding: 0; margin: 0.5rem 0 0; max-height: 18rem; overflow-y: auto; border: 1px solid var(--borde); border-radius: 10px; background: #fff; }
+  .exp-preview-lista li { padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--borde); font-size: 0.85rem; }
+  .exp-preview-lista li:last-child { border-bottom: none; }
+  details.como-importar { margin-top: 0.8rem; font-size: 0.88rem; }
+  details.como-importar summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  .acciones-rapidas { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
+  .acciones-rapidas button { flex: 1; }
+
+  details.mas-acciones { margin-bottom: 1rem; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--tarjeta); }
+  details.mas-acciones > summary { cursor: pointer; padding: 0.9rem 1.1rem; font-weight: 600; min-height: 44px; list-style: none; }
+  details.mas-acciones > summary::-webkit-details-marker { display: none; }
+  details.mas-acciones > summary::after { content: " ▾"; color: var(--gris); }
+  details.mas-acciones[open] > summary::after { content: " ▴"; }
+  details.mas-acciones .cuerpo { padding: 0 1.1rem 1.1rem; display: grid; gap: 0.6rem; }
+  @media (min-width: 900px) {
+    .env { max-width: 760px; }
+    header.top { max-width: 760px; }
+    .dias-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  }
+  .revision-precargado { border: 2px solid #b45309; background: #fffbeb; border-radius: 8px; padding: 0.7rem 0.8rem; margin-bottom: 1rem; }
+  .revision-precargado.error { border-color: #b91c1c; background: #fef2f2; }
+  .revision-precargado p { margin: 0 0 0.5rem; }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>🥗 Tu plan, paso a paso</h1>
+  <p class="subt">Cuestionario de la demo (las mismas preguntas que hará la app). Sin servidor: recuerda tu último perfil solo en este navegador. <a href="index.html">Formulario técnico →</a></p>
+  <p class="subt" id="aviso-guardado" hidden>📋 Se ha precargado tu último perfil calculado. <button type="button" id="empezar-de-cero" class="btn-texto" style="padding:0">Empezar de cero</button><br><strong>No se guardan</strong> tu salud, alergias, alimentos que evitas ni preferencias: antes de calcular tendrás que revisarlos en el paso 4.</p>
+  <p class="error-inline" id="aviso-almacenamiento" role="status" hidden>⚠️ Este navegador no deja guardar datos (modo privado, almacenamiento bloqueado o lleno). La app sigue funcionando, pero tu perfil, favoritas, cambios de receta y lista de la compra a mano <strong>no se conservarán al recargar</strong>.</p>
+  <div class="ejemplos">
+    <button type="button" data-perfil="general">Ejemplo: general</button>
+    <button type="button" data-perfil="maraton">Ejemplo: maratón</button>
+    <button type="button" data-perfil="hyrox">Ejemplo: Hyrox</button>
+    <button type="button" data-perfil="diabetes">Ejemplo: con diabetes</button>
+  </div>
+  <p class="subt" id="alcance-reset" style="font-size:0.8rem;margin-bottom:0.6rem">Al cargar un ejemplo o empezar de cero se restablecen el perfil, alergias, preferencias, horarios y contexto por día y «deshacer». No se borran tu lista de la compra hecha a mano, las competiciones anotadas ni tus recetas favoritas.</p>
+  <div class="progreso" id="progreso"></div>
+  <p class="paso-nombre" id="paso-nombre"></p>
+</header>
+
+<div class="env">
+  <form id="form-cuestionario" novalidate>
+
+    <div class="paso activo" data-paso="1">
+      <div class="tarjeta">
+        <h2>1. Tus datos</h2>
+        <div class="campo"><label for="peso">Peso (kg)</label><input id="peso" type="number" step="0.1" required></div>
+        <div class="fila2">
+          <div class="campo"><label for="altura">Altura (cm)</label><input id="altura" type="number" step="0.1" required></div>
+          <div class="campo"><label for="edad">Edad</label><input id="edad" type="number" required></div>
+        </div>
+        <div class="campo"><label for="sexo">Sexo</label>
+          <select id="sexo"><option value="mujer">Mujer</option><option value="hombre">Hombre</option></select>
+        </div>
+        <label class="check"><input type="checkbox" id="grasa-conocida"> ¿Conoces tu % graso?</label>
+        <div id="grasa-detalle" hidden>
+          <div class="fila2">
+            <div class="campo"><label for="grasa">% graso</label><input id="grasa" type="number" step="0.1"></div>
+            <div class="campo"><label for="grasa-metodo">Cómo se midió</label>
+              <select id="grasa-metodo"><option value="pliegues cutáneos">Pliegues cutáneos</option><option value="báscula de bioimpedancia">Báscula de bioimpedancia</option><option value="otro método">Otro método</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="paso" data-paso="2">
+      <div class="tarjeta">
+        <h2>2. Objetivo y vida diaria</h2>
+        <div class="campo"><label for="objetivo">¿Qué buscas?</label>
+          <select id="objetivo">
+            <option value="perder grasa">Perder grasa</option>
+            <option value="mantener">Mantener el peso</option>
+            <option value="rendimiento">Mejorar el rendimiento</option>
+            <option value="recomposición">Recomposición (ganar músculo y perder grasa)</option>
+            <option value="ganar músculo">Ganar músculo</option>
+          </select>
+        </div>
+        <div class="campo"><label for="vida-trabajo">Tu día a día (sin el entreno)</label>
+          <select id="vida-trabajo">
+            <option value="sentado">Trabajo sentado</option>
+            <option value="de_pie">De pie buena parte del día</option>
+            <option value="fisico">Trabajo físico</option>
+            <option value="fisico_intenso">Trabajo físico muy duro</option>
+          </select>
+        </div>
+        <div class="campo"><label for="vida-pasos">Pasos al día (si lo sabes)</label>
+          <select id="vida-pasos">
+            <option value="">No lo sé</option>
+            <option value="<5000">Menos de 5.000</option>
+            <option value="5000-7500">5.000-7.500</option>
+            <option value="7500-10000">7.500-10.000</option>
+            <option value=">10000">Más de 10.000</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="paso" data-paso="3">
+      <div class="tarjeta">
+        <h2>3. Sesiones de la semana</h2>
+        <div id="sesiones"></div>
+        <button type="button" id="add-sesion">+ Añadir sesión</button>
+      </div>
+    </div>
+
+    <div class="paso" data-paso="4">
+      <div class="tarjeta">
+        <div id="revision-precargado" class="revision-precargado" hidden>
+          <p><strong>Revisa este bloque antes de continuar.</strong> Tu perfil anterior se ha precargado, pero <strong>no se guardaron</strong> la salud, las alergias e intolerancias ni los alimentos a evitar. Lo que ves ahora en blanco no significa que no tengas restricciones.</p>
+          <label class="check"><input type="checkbox" id="revision-confirmada"> He revisado salud, alergias e intolerancias y alimentos a evitar, y están como corresponde</label>
+        </div>
+        <h2>4. Salud</h2>
+        <small class="ayuda">Si marcas algo aquí, no calculamos nada: te decimos que lo hables con Pablo en consulta.</small>
+        <label class="check"><input type="checkbox" class="salud" value="FODMAP / SII"> FODMAP / síndrome del intestino irritable</label>
+        <label class="check"><input type="checkbox" class="salud" value="diabetes"> Diabetes</label>
+        <label class="check"><input type="checkbox" class="salud" value="embarazo"> Embarazo</label>
+        <label class="check"><input type="checkbox" class="salud" value="TCA"> Trastorno de la conducta alimentaria</label>
+        <div class="campo" style="margin-top:0.6rem"><label for="salud-otra">Otra condición clínica (opcional)</label><input id="salud-otra" type="text"></div>
+      </div>
+
+      <div class="tarjeta">
+        <h2>5. Alergias e intolerancias</h2>
+        <label class="check"><input type="checkbox" id="al-celiaquia"> Celiaquía</label>
+        <label class="check"><input type="checkbox" id="al-lactosa"> Intolerancia a la lactosa</label>
+        <label class="check"><input type="checkbox" id="al-vegetariano"> Vegetariano/a</label>
+        <label class="check"><input type="checkbox" id="al-vegano"> Vegano/a</label>
+        <div class="campo" style="margin-top:0.6rem"><label for="al-otros">Otros alimentos a evitar</label><input id="al-otros" type="text"></div>
+      </div>
+
+      <div class="tarjeta">
+        <h2>6. Preferencias</h2>
+        <small class="ayuda">Cualquier alimento puede entrar en una dieta en su justa medida. Este espacio es para que nos cuentes cuáles son los tuyos y poder hacer magia para que los disfrutes a lo largo de la semana. Sepáralos con comas.</small>
+        <div class="campo"><label for="pref-gustan">Alimentos que tienen que estar sí o sí en mi semana</label><input id="pref-gustan" type="text" placeholder="Ej.: chocolate negro, pizza, aguacate"></div>
+        <div class="campo"><label for="pref-evitas">Alimentos que seguro que no me voy a comer ni de broma</label><input id="pref-evitas" type="text" placeholder="Ej.: hígado, coliflor, atún en lata"></div>
+        <small class="ayuda">Los de la segunda casilla no aparecerán en tus recetas.</small>
+      </div>
+
+      <div class="tarjeta">
+        <h2>7. Tus comidas</h2>
+        <small class="ayuda">Desmarca las que no hagas (versión de 3-4 comidas); la hora coloca la toma antes/después del entreno.</small>
+        <div id="franjas"></div>
+        <p class="error-inline" id="franjas-error" role="alert" hidden>Activa al menos una comida para poder repartir el día. La app no impone cuántas: eliges tú.</p>
+        <label class="check"><input type="checkbox" id="turnos"> Turnos o guardias</label>
+        <div class="campo" style="margin-top:0.6rem"><label for="tiempo-cocina">Tiempo para cocinar</label>
+          <select id="tiempo-cocina"><option value="poco">Poco, prefiero platos rápidos</option><option value="normal">Normal</option><option value="mucho">Me gusta cocinar</option></select>
+        </div>
+      </div>
+
+      <div class="tarjeta">
+        <h2>8. Comunidad autónoma</h2>
+        <div class="campo"><label for="comunidad">Para recetas regionales</label>
+          <select id="comunidad">
+            <option>Andalucía</option><option>Aragón</option><option>Asturias</option><option>Baleares</option>
+            <option>Canarias</option><option>Cantabria</option><option>Castilla-La Mancha</option>
+            <option>Castilla y León</option><option>Cataluña</option>
+            <option selected>Comunidad de Madrid</option><option>Comunidad Valenciana</option>
+            <option>Extremadura</option><option>Galicia</option><option>Murcia</option><option>Navarra</option>
+            <option>País Vasco</option><option>La Rioja</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div id="incompleto" hidden></div>
+  <div id="derivar" hidden tabindex="-1">
+    <p id="derivar-texto" style="margin:0 0 0.8rem"></p>
+    <button type="button" class="btn-secundario" id="derivar-volver">← Volver a mis respuestas</button>
+    <button type="button" class="btn-texto" id="derivar-reiniciar" style="margin-top:0.4rem">Empezar con otro perfil</button>
+  </div>
+  <div id="elegir-deporte" hidden></div>
+
+  <div id="resultado" hidden>
+    <!-- Issue #24: solo se ve al imprimir/guardar PDF (@media print); en pantalla queda oculta. -->
+    <div class="solo-impresion" id="cabecera-impresion"></div>
+
+    <nav class="tabs-app" id="tabs-app" role="tablist" aria-label="Secciones de la app">
+      <button type="button" role="tab" id="tab-hoy" data-panel="hoy" aria-selected="true" aria-controls="panel-hoy">Hoy</button>
+      <button type="button" role="tab" id="tab-semana" data-panel="semana" aria-selected="false" aria-controls="panel-semana" tabindex="-1">Semana</button>
+      <button type="button" role="tab" id="tab-recetas" data-panel="recetas" aria-selected="false" aria-controls="panel-recetas" tabindex="-1">Recetas</button>
+      <button type="button" role="tab" id="tab-compra" data-panel="compra" aria-selected="false" aria-controls="panel-compra" tabindex="-1">Compra</button>
+      <button type="button" role="tab" id="tab-perfil" data-panel="perfil" aria-selected="false" aria-controls="panel-perfil" tabindex="-1">Perfil</button>
+    </nav>
+
+    <section class="panel-app" id="panel-hoy" role="tabpanel" aria-labelledby="tab-hoy">
+      <div class="tarjeta" id="hoy-ahora" aria-live="polite"></div>
+    <div class="tarjeta" id="resumen-dia">
+      <h2>Resumen del día</h2>
+      <div class="dias-chips" id="dias-chips" role="group" aria-label="Elegir día"></div>
+      <div id="resumen-dia-contenido" aria-live="polite"></div>
+    </div>
+
+    </section>
+
+
+    <section class="panel-app" id="panel-semana" role="tabpanel" aria-labelledby="tab-semana" hidden>
+    <div class="subvista" role="group" aria-label="Vista de la semana">
+      <button type="button" class="sub-plan" aria-pressed="true">Plan</button>
+      <button type="button" class="sub-calendario" aria-pressed="false">Calendario</button>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Tu semana</h2>
+      <div class="resumen-top">
+        <div class="stat"><div class="n" id="r-ecuacion"></div><div class="l">ecuación (<span id="r-basal"></span> kcal basal)</div></div>
+        <div class="stat"><div class="n" id="r-kcalmedia"></div><div class="l">kcal media/día</div></div>
+      </div>
+      <div id="porque-semana"></div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Día a día</h2>
+      <div id="zona-deshacer"></div>
+      <div id="zona-sustituciones" role="status" aria-live="polite"></div>
+      <div class="dias-grid" id="r-dias"></div>
+    </div>
+
+    <div class="tarjeta" id="tarjeta-avisos">
+      <h2>Avisos</h2>
+      <ul class="avisos" id="r-avisos"></ul>
+    </div>
+    <div class="tarjeta" id="tarjeta-notas">
+      <h2>Notas</h2>
+      <ul class="notas" id="r-notas"></ul>
+    </div>
+
+
+    <details class="mas-acciones">
+      <summary>Más acciones</summary>
+      <div class="cuerpo">
+        <button type="button" class="btn-secundario" id="btn-comparar">🔍 Comparar con otro escenario</button>
+        <button type="button" class="btn-secundario" id="btn-copiar">📋 Copiar resumen</button>
+        <p class="subt" id="estado-copiar" role="status" aria-live="polite" style="margin:0"></p>
+        <textarea id="resumen-manual" readonly hidden rows="8" aria-label="Resumen para copiar a mano" style="width:100%;font-size:0.8rem"></textarea>
+        <button type="button" class="btn-secundario" id="btn-descargar-csv">⬇️ Descargar CSV</button>
+        <button type="button" class="btn-secundario" id="btn-imprimir">🖨️ Imprimir / guardar PDF</button>
+      </div>
+    </details>
+    </section>
+
+    <section class="panel-app" id="panel-calendario" role="tabpanel" aria-labelledby="tab-semana" hidden>
+    <div class="subvista" role="group" aria-label="Vista de la semana">
+      <button type="button" class="sub-plan" aria-pressed="false">Plan</button>
+      <button type="button" class="sub-calendario" aria-pressed="true">Calendario</button>
+    </div>
+    <div class="tarjeta">
+      <h2>📅 Calendario semanal</h2>
+      <p class="subt" style="margin-bottom:0.8rem">Elige el lunes en que empieza tu semana para ver las fechas reales. Sin fecha elegida solo se muestran los días L–D del plan: no se inventa ninguna fecha.</p>
+      <div class="campo"><label for="cal-inicio">Lunes de inicio</label><input id="cal-inicio" type="date" aria-describedby="cal-inicio-error"></div>
+      <button type="button" class="btn-texto" id="cal-lunes-actual" style="padding-top:0">Usar el lunes de esta semana</button>
+      <p class="error-inline" id="cal-inicio-error" role="alert" hidden></p>
+      <div class="dias-chips" id="cal-chips" role="group" aria-label="Elegir día del calendario"></div>
+      <div id="cal-detalle" aria-live="polite"></div>
+    </div>
+    <div class="tarjeta">
+      <h2>🏁 Competiciones</h2>
+      <p class="subt" style="margin-bottom:0.8rem">Son anotaciones tuyas: <strong>no cambian las kcal ni los macros</strong> ni activan ninguna carga o protocolo. Se guardan solo en este navegador (sin cuenta ni nube) y no se envían a ningún calendario.</p>
+      <form id="cal-form-comp" novalidate>
+        <div class="campo"><label for="cal-comp-nombre">Nombre</label><input id="cal-comp-nombre" type="text" maxlength="80" autocomplete="off"></div>
+        <div class="fila2">
+          <div class="campo"><label for="cal-comp-fecha">Fecha</label><input id="cal-comp-fecha" type="date"></div>
+          <div class="campo"><label for="cal-comp-hora">Hora (opcional)</label><input id="cal-comp-hora" type="time"></div>
+        </div>
+        <p class="error-inline" id="cal-comp-error" role="alert" hidden></p>
+        <button type="submit" class="btn-principal" id="cal-comp-guardar">Añadir competición</button>
+        <button type="button" class="btn-texto" id="cal-comp-cancelar" hidden>Cancelar edición</button>
+      </form>
+      <ul class="resumen-lista" id="cal-lista-comp" style="margin-top:1rem"></ul>
+      <button type="button" class="btn-texto" id="cal-borrar-todo" style="color:#b3271e">🗑️ Borrar todas las anotaciones y la fecha elegida</button>
+    </div>
+    <div class="tarjeta" id="cal-exportar">
+      <h2>📤 Añadir a mi calendario (.ics)</h2>
+      <p class="subt" style="margin-bottom:0.8rem"><strong>Exportación manual, no sincronización.</strong> Descargas un archivo .ics y lo importas tú en Google Calendar o en el Calendario del iPhone. La app no se conecta a ninguna cuenta ni escribe en tu calendario. Si importas el mismo archivo dos veces, pueden duplicarse los eventos.</p>
+      <p class="error-inline" id="cal-exp-aviso" hidden></p>
+      <fieldset class="exp-campos">
+        <legend>Qué incluir</legend>
+        <label class="check"><input type="checkbox" class="cal-exp-cat" value="comidas" checked> Comidas (las que tienen hora)</label>
+        <label class="check"><input type="checkbox" class="cal-exp-cat" value="entrenos" checked> Entrenos (con su duración)</label>
+        <label class="check"><input type="checkbox" class="cal-exp-cat" value="competiciones" checked> Competiciones anotadas</label>
+        <label class="check"><input type="checkbox" id="cal-exp-detalle"> Añadir detalle en la descripción (receta de EJEMPLO y kcal aproximadas; nombre de la actividad)</label>
+        <small class="ayuda" style="margin:0 0 0.5rem">Por defecto los títulos son neutros («Desayuno», «Entrenamiento»). Nunca se incluyen salud, alergias ni peso.</small>
+      </fieldset>
+      <div class="campo"><label for="cal-exp-zona">Zona horaria de las horas del plan</label>
+        <select id="cal-exp-zona"></select>
+        <small class="ayuda" style="margin:0.3rem 0 0">Revísala: las horas se interpretan en esta zona al importar.</small>
+      </div>
+      <h3>Vista previa de lo que se descargará</h3>
+      <div id="cal-exp-preview" aria-live="polite"></div>
+      <button type="button" class="btn-principal" id="cal-exp-descargar" style="margin-top:0.8rem">⬇️ Descargar .ics</button>
+      <p class="subt" id="cal-exp-estado" role="status" aria-live="polite" style="margin-top:0.5rem"></p>
+      <details class="como-importar">
+        <summary>Cómo importarlo a mano</summary>
+        <p><strong>Google Calendar (en ordenador):</strong> calendar.google.com → Ajustes (rueda) → «Importar y exportar» → «Importar» → elige el archivo .ics y el calendario de destino. Desde la app del móvil no se puede importar un archivo.</p>
+        <p><strong>Calendario del iPhone:</strong> abre el archivo .ics desde Archivos, Mail o Safari y toca «Añadir todos», eligiendo el calendario. En Mac, doble clic sobre el archivo.</p>
+        <p style="color:var(--gris)">Los nombres exactos de los menús pueden cambiar según la versión. Esto es solo una importación puntual: los cambios posteriores del plan no se actualizan solos.</p>
+      </details>
+    </div>
+    </section>
+
+    <section class="panel-app" id="panel-recetas" role="tabpanel" aria-labelledby="tab-recetas" hidden>
+      <div class="tarjeta" id="recetas-contenido">
+        <h2>Recetas de ejemplo</h2>
+        <p class="subt" style="margin-bottom:0.8rem">Catálogo de EJEMPLO para explorar, separado de tu plan: buscar, filtrar o marcar favoritas <strong>no cambia tu semana ni tu compra</strong>. No son recetas de Pablo ni están validadas para clientes.</p>
+        <p class="rec-restricciones" id="rec-restricciones"></p>
+        <div class="campo"><label for="rec-buscar">Buscar por nombre o ingrediente</label>
+          <div class="buscador">
+            <input id="rec-buscar" type="search" autocomplete="off" placeholder="p. ej. pollo, yogur, plátano">
+            <button type="button" id="rec-limpiar" hidden aria-label="Borrar la búsqueda">✕</button>
+          </div>
+        </div>
+        <div class="campo"><label for="rec-franja">Comida</label>
+          <select id="rec-franja">
+            <option value="">Todas</option><option value="desayuno">Desayuno</option><option value="media_manana">Media mañana</option>
+            <option value="comida">Comida</option><option value="merienda">Merienda</option><option value="cena">Cena</option>
+          </select>
+        </div>
+        <label class="check"><input type="checkbox" id="rec-compat" checked> Solo recetas que encajan con mis restricciones</label>
+        <label class="check"><input type="checkbox" id="rec-favoritas"> Solo mis favoritas</label>
+        <p class="subt" id="rec-estado" role="status" aria-live="polite" style="margin:0.6rem 0"></p>
+        <ul class="rec-grid" id="rec-lista"></ul>
+        <button type="button" class="btn-texto" id="rec-borrar-favoritas" style="color:#b3271e">Borrar todas mis favoritas</button>
+      </div>
+    </section>
+
+    <section class="panel-app" id="panel-compra" role="tabpanel" aria-labelledby="tab-compra" hidden>
+    <div class="tarjeta" id="lista-compra"></div>
+    </section>
+
+    <section class="panel-app" id="panel-perfil" role="tabpanel" aria-labelledby="tab-perfil" hidden>
+      <div class="tarjeta" id="perfil-resumen">
+        <h2>Tu perfil</h2>
+        <ul class="resumen-lista" id="perfil-datos"></ul>
+        <p class="subt" style="font-size:0.82rem;margin:0.6rem 0">Salud, alergias, alimentos que evitas y preferencias <strong>no se guardan</strong> en este navegador: cada vez que vuelvas a abrir la app tendrás que revisarlos.</p>
+        <button type="button" class="btn-principal" id="empezar-de-nuevo">✏️ Editar perfil (abrir el cuestionario)</button>
+        <button type="button" class="btn-texto" id="perfil-reiniciar" style="margin-top:0.4rem;color:#b3271e">Empezar de cero (borra el perfil guardado)</button>
+      </div>
+    <div class="tarjeta" id="lista-negra">
+      <h2>🚫 Mi lista negra</h2>
+      <p class="subt" style="margin:0 0 0.6rem">Alimentos que seguro que no te vas a comer. No aparecerán en tus recetas y se quedan guardados en este navegador. Para alergias e intolerancias usa el paso 5 del cuestionario: aquí solo van los gustos.</p>
+      <div class="ln-fila">
+        <input id="ln-nuevo" type="text" maxlength="40" aria-label="Alimento que no quieres comer" placeholder="Ej.: hígado, coliflor…">
+        <button type="button" class="btn-secundario" id="ln-anadir">Añadir</button>
+      </div>
+      <ul class="ln-chips" id="ln-lista" aria-live="polite"></ul>
+      <p class="subt" id="ln-vacio">Todavía no has añadido ninguno. ¡Aquí no se juzga a nadie!</p>
+    </div>
+    <div class="tarjeta">
+      <h2>Para más adelante</h2>
+      <p style="font-size:0.85rem;color:var(--gris);margin-top:0">Estos datos no cambian las kcal ni los macros. Sí se usan ya en las recetas de ejemplo: las alergias e intolerancias (y lo que evitas) excluyen las recetas que los contienen, sin garantía de seguridad alimentaria (con celiaquía, ninguna receta de ejemplo se da por segura). Lo demás todavía no cambia nada.</p>
+      <ul class="resumen-lista" id="r-resumen"></ul>
+    </div>
+
+    </section>
+  </div>
+</div>
+
+<!-- Issue #28: fuera de .env a propósito, para poder ir más ancha que 560px en escritorio. -->
+<dialog id="detalle-comida" aria-labelledby="dc-titulo">
+  <div class="dc-cab">
+    <h2 id="dc-titulo" tabindex="-1"></h2>
+    <button type="button" class="btn-texto" id="dc-cerrar" aria-label="Cerrar detalle de la comida">✕ Cerrar</button>
+  </div>
+  <div id="dc-cuerpo"></div>
+  <div class="dc-pie"><button type="button" class="btn-secundario" id="dc-volver">Volver al plan</button></div>
+</dialog>
+
+<div id="comparador" hidden>
+  <div class="comparador-env">
+    <div class="tarjeta">
+      <h2>Comparar con otro escenario</h2>
+      <p style="font-size:0.85rem;color:var(--gris);margin-top:0">El escenario A es tu plan actual. Cambia algo para ver el B al lado.</p>
+      <div class="campo"><label for="cmp-objetivo">Objetivo (B)</label>
+        <select id="cmp-objetivo">
+          <option value="perder grasa">Perder grasa</option>
+          <option value="mantener">Mantener el peso</option>
+          <option value="rendimiento">Mejorar el rendimiento</option>
+          <option value="recomposición">Recomposición</option>
+          <option value="ganar músculo">Ganar músculo</option>
+        </select>
+      </div>
+      <div class="fila2">
+        <div class="campo"><label for="cmp-vida-trabajo">Trabajo (B)</label>
+          <select id="cmp-vida-trabajo">
+            <option value="sentado">Sentado</option>
+            <option value="de_pie">De pie</option>
+            <option value="fisico">Trabajo físico</option>
+            <option value="fisico_intenso">Físico muy duro</option>
+          </select>
+        </div>
+        <div class="campo"><label for="cmp-vida-pasos">Pasos (B)</label>
+          <select id="cmp-vida-pasos">
+            <option value="">No lo sé</option>
+            <option value="<5000">Menos de 5.000</option>
+            <option value="5000-7500">5.000-7.500</option>
+            <option value="7500-10000">7.500-10.000</option>
+            <option value=">10000">Más de 10.000</option>
+          </select>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="cmp-extra-activa"> Añadir una sesión extra en B</label>
+      <div class="fila2" id="cmp-extra-detalle" hidden>
+        <select id="cmp-extra-dia"></select>
+        <select id="cmp-extra-deporte"></select>
+        <input type="number" id="cmp-extra-minutos" min="1" placeholder="minutos" value="45">
+      </div>
+      <button type="button" class="btn-principal" id="btn-ver-comparacion">Ver comparación</button>
+      <button type="button" class="btn-texto" id="btn-cerrar-comparador">Cerrar comparador</button>
+    </div>
+    <div id="comparacion-resultado"></div>
+  </div>
+</div>
+
+<nav class="barra" id="barra-pasos">
+  <button type="button" class="btn-secundario" id="btn-atras">Atrás</button>
+  <button type="button" class="btn-principal" id="btn-siguiente">Siguiente</button>
+</nav>
+
+<script src="motor.bundle.js"></script>
+<script src="cuestionario.js"></script>
+</body>
+</html>
