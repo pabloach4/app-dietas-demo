@@ -357,6 +357,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('al-otros').value = alerg.otros ?? '';
     document.getElementById('pref-gustan').value = (ej.preferencias ?? {}).gustan ?? '';
     document.getElementById('pref-evitas').value = (ej.preferencias ?? {}).evitan ?? '';
+    fusionarEnListaNegra(partirAlimentos((ej.preferencias ?? {}).evitan)); // la lista negra guardada no se pierde: se suma y deja el campo con toda la lista
     document.getElementById('turnos').checked = !!ej.turnos;
     document.getElementById('tiempo-cocina').value = ej.tiempoCocina ?? 'normal';
     document.getElementById('comunidad').value = ej.comunidad ?? 'Comunidad de Madrid';
@@ -725,7 +726,20 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (Array.isArray(guardada)) listaNegra = guardada.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim().slice(0, 40)).slice(0, 60);
   } catch { /* sin almacenamiento o dato corrupto: lista vacía */ }
   function guardarListaNegra() { try { localStorage.setItem(CLAVE_LISTA_NEGRA, JSON.stringify(listaNegra)); } catch { falloAlmacenamiento(); } }
+  // Una sola lista: lo que se escribe en «no me voy a comer» del cuestionario y la lista negra de Perfil son lo mismo (issue #117).
+  const partirAlimentos = (t) => String(t || '').split(/[,;]| y /i).map((x) => x.trim().slice(0, 40)).filter(Boolean);
+  const sinRepetidos = (items) => items.filter((x, i) => items.findIndex((y) => Motor.raizAlimento(y) === Motor.raizAlimento(x)) === i);
+  function fusionarEnListaNegra(items) {
+    listaNegra = sinRepetidos(listaNegra.concat(items)).slice(0, 60);
+    guardarListaNegra();
+    pintarListaNegra();
+  }
+  document.getElementById('pref-evitas').addEventListener('change', (ev) => {
+    listaNegra = sinRepetidos(partirAlimentos(ev.target.value)).slice(0, 60);
+    cambioListaNegra();
+  });
   function pintarListaNegra() {
+    document.getElementById('pref-evitas').value = listaNegra.join(', ');
     document.getElementById('ln-lista').innerHTML = listaNegra.map((x, i) => `<li>${escaparHtml(x)}<button type="button" data-i="${i}" aria-label="Quitar de la lista negra: ${escaparHtml(x)}">✕</button></li>`).join('');
     document.getElementById('ln-vacio').hidden = listaNegra.length > 0;
     document.querySelectorAll('#ln-lista button').forEach((b) => b.addEventListener('click', () => {
@@ -740,8 +754,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   }
   function anadirListaNegra() {
     const campo = document.getElementById('ln-nuevo');
-    const nuevos = campo.value.split(',').map((x) => x.trim().slice(0, 40)).filter(Boolean)
-      .filter((x) => !listaNegra.some((y) => y.toLowerCase() === x.toLowerCase()));
+    const nuevos = sinRepetidos(campo.value.split(',').map((x) => x.trim().slice(0, 40)).filter(Boolean))
+      .filter((x) => !listaNegra.some((y) => Motor.raizAlimento(y) === Motor.raizAlimento(x)));
     if (!nuevos.length) { campo.value = ''; return; }
     listaNegra = listaNegra.concat(nuevos).slice(0, 60);
     campo.value = '';
@@ -2112,7 +2126,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
     const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
-    const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { alergiasPreferencias });
+    const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan) });
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
     const asignacionSemana = aplicadas.resultado;
@@ -2126,6 +2140,15 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       Motor.combinarConRecetas(asignacionSemana.asignaciones, RECETAS_EJEMPLO).map((a) => [`${a.dia}|${a.franja}`, a]),
     );
     const huecoPorSlot = new Map(asignacionSemana.huecos.map((h) => [`${h.dia}|${h.franja}`, h]));
+    // Issue #117: qué ha pasado con cada alimento de «sí o sí»: entra en la semana (se marca en la comida) o se explica por qué no.
+    {
+      const pedidos = asignacionBase.imprescindibles ?? [];
+      const htmlPedidos = pedidos.length
+        ? `<strong>Tus «sí o sí»:</strong> ${pedidos.map((p) => p.cubierto ? `✅ ${escaparHtml(p.alimento)}` : `⚠️ ${escaparHtml(p.alimento)}: no ha podido entrar (${escaparHtml(p.causa)})`).join(" · ")}`
+        : "";
+      document.getElementById("r-pedidos").innerHTML = htmlPedidos;
+      document.getElementById("perfil-pedidos").innerHTML = htmlPedidos;
+    }
 
     document.getElementById('r-dias').innerHTML = repartosPorDia.map(({ dia: d, reparto }) => {
       const franjasHtml = reparto.franjas.map((f) => {
@@ -2135,7 +2158,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
           <div class="receta-franja hueco">⚠️ ${escaparHtml(textoConflicto(c))}
             <button type="button" class="hor-ir" data-dia="${d.dia}">Editar horario de este día</button></div>`).join('');
         const recetaHtml = asignada
-          ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong> <span class="etq-ejemplo">EJEMPLO</span><div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div></div>`
+          ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong> <span class="etq-ejemplo">EJEMPLO</span>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div></div>`
           : `<div class="receta-franja hueco">⚠️ Sin receta de ejemplo que encaje${hueco ? `: ${escaparHtml(hueco.motivo)}` : ''}</div>`;
         return `
           <div class="franja-reparto-card ${f.rol !== 'normal' ? 'destacada' : ''}">

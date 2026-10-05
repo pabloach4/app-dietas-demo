@@ -344,6 +344,7 @@
   .chip { display: inline-block; min-width: 1.6rem; text-align: center; font-weight: 700; font-size: 0.78rem; padding: 0.1rem 0.4rem; border-radius: 999px; color: #fff; }
   .chip-p { background: var(--macro-p); } .chip-g { background: var(--macro-g); } .chip-h { background: var(--macro-h); }
   .etq-ejemplo { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--aviso); color: #7a5a00; vertical-align: middle; }
+  .etq-pedido { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 0.05rem 0.4rem; border-radius: 999px; background: #e7f3ea; color: #1f5c33; vertical-align: middle; white-space: normal; }
   .receta-dato { font-size: 0.82rem; color: var(--gris); margin-top: 0.1rem; }
   .franja-reparto-card .macros strong { font-size: 1.1rem; color: var(--texto); }
   #dc-cuerpo h3 { font-size: 0.95rem; margin: 1.1rem 0 0.4rem; padding-bottom: 0.2rem; border-bottom: 2px solid var(--verde-suave); }
@@ -405,7 +406,7 @@
 <header class="top">
   <h1>🥗 Tu plan, paso a paso</h1>
   <p class="subt">Cuestionario de la demo (las mismas preguntas que hará la app). Sin servidor: recuerda tu último perfil solo en este navegador. <a href="index.html">Formulario técnico →</a></p>
-  <p class="subt" id="aviso-guardado" hidden>📋 Se ha precargado tu último perfil calculado. <button type="button" id="empezar-de-cero" class="btn-texto" style="padding:0">Empezar de cero</button><br><strong>No se guardan</strong> tu salud, alergias, alimentos que evitas ni preferencias: antes de calcular tendrás que revisarlos en el paso 4.</p>
+  <p class="subt" id="aviso-guardado" hidden>📋 Se ha precargado tu último perfil calculado. <button type="button" id="empezar-de-cero" class="btn-texto" style="padding:0">Empezar de cero</button><br><strong>No se guardan</strong> tu salud, alergias ni preferencias (tu lista negra sí): antes de calcular tendrás que revisarlos en el paso 4.</p>
   <p class="error-inline" id="aviso-almacenamiento" role="status" hidden>⚠️ Este navegador no deja guardar datos (modo privado, almacenamiento bloqueado o lleno). La app sigue funcionando, pero tu perfil, favoritas, cambios de receta y lista de la compra a mano <strong>no se conservarán al recargar</strong>.</p>
   <div class="ejemplos">
     <button type="button" data-perfil="general">Ejemplo: general</button>
@@ -513,7 +514,7 @@
         <small class="ayuda">Cualquier alimento puede entrar en una dieta en su justa medida. Este espacio es para que nos cuentes cuáles son los tuyos y poder hacer magia para que los disfrutes a lo largo de la semana. Sepáralos con comas.</small>
         <div class="campo"><label for="pref-gustan">Alimentos que tienen que estar sí o sí en mi semana</label><input id="pref-gustan" type="text" placeholder="Ej.: chocolate negro, pizza, aguacate"></div>
         <div class="campo"><label for="pref-evitas">Alimentos que seguro que no me voy a comer ni de broma</label><input id="pref-evitas" type="text" placeholder="Ej.: hígado, coliflor, atún en lata"></div>
-        <small class="ayuda">Los de la segunda casilla no aparecerán en tus recetas.</small>
+        <small class="ayuda">Los de la segunda casilla no aparecerán en tus recetas. No hace falta que te acuerdes de todos ahora: luego tienes tu «lista negra» en Perfil para ir añadiendo los que te vayas encontrando.</small>
       </div>
 
       <div class="tarjeta">
@@ -593,6 +594,7 @@
       <h2>Día a día</h2>
       <div id="zona-deshacer"></div>
       <div id="zona-sustituciones" role="status" aria-live="polite"></div>
+      <div id="r-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
       <div class="dias-grid" id="r-dias"></div>
     </div>
 
@@ -711,7 +713,7 @@
       <div class="tarjeta" id="perfil-resumen">
         <h2>Tu perfil</h2>
         <ul class="resumen-lista" id="perfil-datos"></ul>
-        <p class="subt" style="font-size:0.82rem;margin:0.6rem 0">Salud, alergias, alimentos que evitas y preferencias <strong>no se guardan</strong> en este navegador: cada vez que vuelvas a abrir la app tendrás que revisarlos.</p>
+        <p class="subt" style="font-size:0.82rem;margin:0.6rem 0">Salud, alergias y preferencias <strong>no se guardan</strong> en este navegador: cada vez que vuelvas a abrir la app tendrás que revisarlos. Tu lista negra (alimentos que no quieres) sí se guarda.</p>
         <button type="button" class="btn-principal" id="empezar-de-nuevo">✏️ Editar perfil (abrir el cuestionario)</button>
         <button type="button" class="btn-texto" id="perfil-reiniciar" style="margin-top:0.4rem;color:#b3271e">Empezar de cero (borra el perfil guardado)</button>
       </div>
@@ -724,6 +726,7 @@
       </div>
       <ul class="ln-chips" id="ln-lista" aria-live="polite"></ul>
       <p class="subt" id="ln-vacio">Todavía no has añadido ninguno. ¡Aquí no se juzga a nadie!</p>
+      <div id="perfil-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
     </div>
     <div class="tarjeta">
       <h2>Para más adelante</h2>

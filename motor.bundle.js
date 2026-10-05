@@ -41,6 +41,7 @@ var Motor = (() => {
     calcular: () => calcular,
     cambiarHoraSesion: () => cambiarHoraSesion,
     claveSlot: () => claveSlot,
+    coincideAlimento: () => coincideAlimento,
     combinarConRecetas: () => combinarConRecetas,
     competicionesDelDia: () => competicionesDelDia,
     competicionesDesdeJson: () => competicionesDesdeJson,
@@ -100,6 +101,7 @@ var Motor = (() => {
     perfilDesdeCuestionario: () => perfilDesdeCuestionario,
     pesoCocido: () => pesoCocido,
     plegarLineaIcs: () => plegarLineaIcs,
+    raizAlimento: () => raizAlimento,
     repartirComidas: () => repartirComidas,
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
@@ -1066,6 +1068,21 @@ var Motor = (() => {
   function normalizar2(s) {
     return Array.from(s.normalize("NFD")).filter((c) => c.codePointAt(0) < 768 || c.codePointAt(0) > 879).join("").toLowerCase();
   }
+  function raizPalabra(w) {
+    if (w.length > 5 && w.endsWith("ces")) return `${w.slice(0, -3)}z`;
+    if (w.length > 4 && w.endsWith("es")) w = w.slice(0, -2);
+    else if (w.length > 3 && w.endsWith("s")) w = w.slice(0, -1);
+    if (w.length > 3 && w.endsWith("e")) w = w.slice(0, -1);
+    return w;
+  }
+  function raizAlimento(s) {
+    return normalizar2(s).split(/[^a-z0-9ñ]+/).filter(Boolean).map(raizPalabra).join(" ");
+  }
+  function coincideAlimento(a2, b) {
+    const x = raizAlimento(a2);
+    const y = raizAlimento(b);
+    return !!x && !!y && (x.includes(y) || y.includes(x));
+  }
   var LACTEOS = ["leche", "yogur", "queso", "nata", "mantequilla", "kefir", "cuajada"];
   var CARNE_PESCADO = [
     "pollo",
@@ -1125,12 +1142,8 @@ var Motor = (() => {
       if (ingrediente) return { compatible: false, motivo: { tipo: "no_vegetariano", detalle: `lleva "${ingrediente}" (carne o pescado)` } };
     }
     for (const evitado of ap.evitados) {
-      const e = normalizar2(evitado);
-      if (!e) continue;
-      const ingrediente = receta.ingredientes.find((ing) => {
-        const n = normalizar2(ing.nombre);
-        return n.includes(e) || e.includes(n);
-      });
+      if (!raizAlimento(evitado)) continue;
+      const ingrediente = receta.ingredientes.find((ing) => coincideAlimento(ing.nombre, evitado));
       if (ingrediente) {
         return { compatible: false, motivo: { tipo: "evitado", detalle: `lleva "${ingrediente.nombre}" (en la lista de alimentos evitados: "${evitado}")` } };
       }
@@ -1196,7 +1209,8 @@ var Motor = (() => {
           receta,
           racionAjustada: a2.racionAjustada,
           kcalResultante: a2.kcalResultante,
-          ...a2.protegidosSinEscalar ? { protegidosSinEscalar: a2.protegidosSinEscalar } : {}
+          ...a2.protegidosSinEscalar ? { protegidosSinEscalar: a2.protegidosSinEscalar } : {},
+          ...a2.pedidoPorUsuario ? { pedidoPorUsuario: a2.pedidoPorUsuario } : {}
         });
       }
     }
@@ -1283,7 +1297,82 @@ var Motor = (() => {
         );
       }
     }
-    return { asignaciones, huecos, avisos };
+    const imprescindibles = opciones.imprescindibles?.length ? cubrirImprescindibles(opciones.imprescindibles, slots, recetas, asignaciones, avisos, maxRep, opciones.alergiasPreferencias) : void 0;
+    return { asignaciones, huecos, avisos, ...imprescindibles ? { imprescindibles } : {} };
+  }
+  var llevaAlimento = (r, alimento) => r.ingredientes.some((i) => coincideAlimento(i.nombre, alimento));
+  function cubrirImprescindibles(pedidos, slots, recetas, asignaciones, avisos, maxRep, ap) {
+    const porId = new Map(recetas.map((r) => [r.id, r]));
+    const estados = [];
+    const vistos = [];
+    for (const alimento of pedidos.map((p) => p.trim()).filter(Boolean)) {
+      if (vistos.some((v) => coincideAlimento(v, alimento))) continue;
+      vistos.push(alimento);
+      const ya = asignaciones.find((a2) => {
+        const r = porId.get(a2.receta);
+        return r && llevaAlimento(r, alimento);
+      });
+      if (ya) {
+        if (!ya.pedidoPorUsuario) ya.pedidoPorUsuario = alimento;
+        estados.push({ alimento, cubierto: true });
+        continue;
+      }
+      if (ap && recetas.length) {
+        const choque = evaluarCompatibilidad({ ...recetas[0], ingredientes: [{ nombre: alimento, gramos: 100 }] }, ap);
+        if (!choque.compatible) {
+          const t = choque.motivo?.tipo;
+          const causa = t === "evitado" ? "est\xE1 en tu lista negra o en tus alergias, y eso manda siempre" : t === "celiaquia_sin_confirmar" ? "con celiaqu\xEDa no se da por segura ninguna receta de ejemplo" : `choca con lo que has indicado (${t === "lactosa" ? "lactosa" : t === "no_vegano" ? "vegano" : "vegetariano"})`;
+          estados.push({ alimento, cubierto: false, causa });
+          continue;
+        }
+      }
+      const conAlimento = recetas.filter((r) => llevaAlimento(r, alimento));
+      if (!conAlimento.length) {
+        estados.push({ alimento, cubierto: false, causa: "no hay ninguna receta en el cat\xE1logo que lo lleve" });
+        continue;
+      }
+      const aptas = conAlimento.filter((r) => (!ap || evaluarCompatibilidad(r, ap).compatible) && r.franjas.some((f2) => validarPlato(f2, r.ingredientes).incumplimientos.length === 0));
+      if (!aptas.length) {
+        estados.push({ alimento, cubierto: false, causa: "las recetas que lo llevan chocan con tus alergias, tu lista negra o los topes del plato" });
+        continue;
+      }
+      let mejor;
+      for (const r of aptas) {
+        for (let i = 0; i < asignaciones.length; i++) {
+          const a2 = asignaciones[i];
+          if (a2.pedidoPorUsuario || !r.franjas.includes(a2.franja)) continue;
+          const slot = slots.find((s) => s.dia === a2.dia && s.franja === a2.franja);
+          if (!slot) continue;
+          if (validarPlato(a2.franja, r.ingredientes).incumplimientos.length) continue;
+          if (esFranjaConLimiteVariedad(a2.franja)) {
+            const usos = asignaciones.filter((b, j) => j !== i && b.receta === r.id && esFranjaConLimiteVariedad(b.franja)).length;
+            if (usos >= maxRep) continue;
+          }
+          const { factorRedondeado, kcalResultante, desviacion } = racionParaObjetivo(r, slot.kcalObjetivo, a2.franja);
+          if (incumplimientosRacion(a2.franja, r, factorRedondeado).incumplimientos.length) continue;
+          if (desviacion > slot.kcalObjetivo * 0.1) continue;
+          if (!mejor || desviacion < mejor.desv) mejor = { i, r, factor: factorRedondeado, kcal: kcalResultante, desv: desviacion };
+        }
+      }
+      if (!mejor) {
+        estados.push({ alimento, cubierto: false, causa: "no cabe en los topes de la semana (variedad, l\xEDmites del plato o kcal de la franja)" });
+        continue;
+      }
+      const viejo = asignaciones[mejor.i];
+      const { protegidos } = incumplimientosRacion(viejo.franja, mejor.r, mejor.factor);
+      asignaciones[mejor.i] = {
+        dia: viejo.dia,
+        franja: viejo.franja,
+        receta: mejor.r.id,
+        racionAjustada: mejor.factor,
+        kcalResultante: mejor.kcal,
+        ...protegidos.length ? { protegidosSinEscalar: protegidos } : {},
+        pedidoPorUsuario: alimento
+      };
+      for (let k = avisos.length - 1; k >= 0; k--) if (avisos[k].startsWith(`${viejo.dia} ${viejo.franja}:`)) avisos.splice(k, 1);
+      estados.push({ alimento, cubierto: true });
+    }
+    return estados;
   }
 
   // src/motor/lista-compra.ts
