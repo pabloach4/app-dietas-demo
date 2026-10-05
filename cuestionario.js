@@ -769,6 +769,82 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   document.getElementById('ln-nuevo').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); anadirListaNegra(); } });
   pintarListaNegra();
 
+  // --- Issue #128: «mis recetas sí o sí». Se guardan en este navegador y se mantienen semana tras semana hasta quitarlas. ---
+  const CLAVE_SI_O_SI = 'app-dietas-recetas-si-o-si';
+  const NOMBRE_FRANJA_SOS = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
+  let recetasSiOSi = []; // [{ id, veces, franja }]
+  let estadosSiOSi = []; // lo que dijo el último reparto: cuántas colocó y, si no pudo, por qué
+  try {
+    const guardadas = JSON.parse(localStorage.getItem(CLAVE_SI_O_SI) || 'null');
+    if (Array.isArray(guardadas)) {
+      recetasSiOSi = guardadas.filter((x) => x && typeof x.id === 'string' && RECETAS_EJEMPLO.some((r) => r.id === x.id) && !Motor.validarPeticionSiOSi(x.franja, Number(x.veces)))
+        .map((x) => ({ id: x.id, veces: Number(x.veces), franja: x.franja }));
+    }
+  } catch { /* sin almacenamiento o dato corrupto: ninguna */ }
+  function guardarSiOSi() { try { localStorage.setItem(CLAVE_SI_O_SI, JSON.stringify(recetasSiOSi)); } catch { falloAlmacenamiento(); } }
+  function opcionesVeces(franja, actual) {
+    const max = franja === 'comida' || franja === 'cena' ? 2 : 7;
+    return Array.from({ length: max }, (_, i) => i + 1).map((n) => `<option value="${n}" ${n === actual ? 'selected' : ''}>${n} ${n === 1 ? 'vez' : 'veces'} por semana</option>`).join('');
+  }
+  function cambioSiOSi() {
+    guardarSiOSi();
+    if (vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // el reparto se rehace con la nueva petición (y repinta la lista)
+    else pintarListaSiOSi();
+  }
+  function pintarListaSiOSi() {
+    const ul = document.getElementById('sos-lista');
+    if (!ul) return;
+    ul.innerHTML = recetasSiOSi.map((p, i) => {
+      const r = RECETAS_EJEMPLO.find((x) => x.id === p.id);
+      const e = estadosSiOSi.find((x) => x.id === p.id && x.franja === p.franja);
+      const estado = e ? (e.causa ? `<br><span class="error-inline" style="margin:0">⚠️ No se ha forzado: ${escaparHtml(e.causa)}. Puedes probar otro día o quitarla.</span>` : `<br><span style="color:var(--gris)">✅ Colocada ${e.colocadas} de ${e.pedidas}.</span>`) : '';
+      return `<li class="comp-item"><span><strong>${escaparHtml(r.nombre)}</strong> · ${NOMBRE_FRANJA_SOS[p.franja]}${estado}</span>
+        <span class="acciones"><select class="sos-editar" data-i="${i}" aria-label="Veces por semana de ${escaparHtml(r.nombre)}">${opcionesVeces(p.franja, p.veces)}</select>
+        <button type="button" class="btn-texto sos-quitar" data-i="${i}" style="color:#b3271e" aria-label="Quitar ${escaparHtml(r.nombre)} de mis recetas sí o sí">Quitar</button></span></li>`;
+    }).join('');
+    document.getElementById('sos-vacio').hidden = recetasSiOSi.length > 0;
+  }
+  document.getElementById('sos-lista').addEventListener('change', (ev) => {
+    const s = ev.target.closest('.sos-editar');
+    if (!s) return;
+    const p = recetasSiOSi[Number(s.dataset.i)];
+    if (p && !Motor.validarPeticionSiOSi(p.franja, Number(s.value))) { p.veces = Number(s.value); cambioSiOSi(); }
+  });
+  document.getElementById('sos-lista').addEventListener('click', (ev) => {
+    const b = ev.target.closest('.sos-quitar');
+    if (!b) return;
+    recetasSiOSi.splice(Number(b.dataset.i), 1);
+    cambioSiOSi();
+  });
+  pintarListaSiOSi();
+  /** Bloque «La quiero sí o sí» de la ficha de una receta (solo platos únicos: primero, segundo y postre van dentro de una comida). */
+  function bloqueSiOSiHtml(r) {
+    if (r.tipoPlato && r.tipoPlato !== 'unico') return '';
+    const ya = recetasSiOSi.find((p) => p.id === r.id);
+    const franja = ya ? ya.franja : r.franjas[0];
+    return `
+      <h3>⭐ Recetas «sí o sí»</h3>
+      <p class="subt" style="margin:0 0 0.5rem">Si la quieres sí o sí, saldrá en tu semana las veces que elijas (en comidas y cenas, 1 o 2 como máximo; en desayunos, medias mañanas y meriendas, hasta 7) y se mantendrá cada semana hasta que la quites. Si choca con una alergia, tu lista negra o los topes, no se fuerza y se te avisa.</p>
+      <div class="campo"><label for="sos-franja">Comida</label><select id="sos-franja">${r.franjas.map((f) => `<option value="${f}" ${f === franja ? 'selected' : ''}>${NOMBRE_FRANJA_SOS[f]}</option>`).join('')}</select></div>
+      <div class="campo"><label for="sos-veces">Veces por semana</label><select id="sos-veces">${opcionesVeces(franja, ya ? ya.veces : 1)}</select></div>
+      <button type="button" class="btn-principal" id="sos-guardar" data-id="${r.id}">${ya ? 'Guardar cambios' : 'La quiero sí o sí'}</button>
+      ${ya ? `<button type="button" class="btn-texto" id="sos-quitar-ficha" data-id="${r.id}" style="color:#b3271e">Quitar de mis «sí o sí»</button>` : ''}`;
+  }
+  document.getElementById('dc-cuerpo').addEventListener('change', (ev) => {
+    if (ev.target.id === 'sos-franja') document.getElementById('sos-veces').innerHTML = opcionesVeces(ev.target.value, 1);
+  });
+  document.getElementById('dc-cuerpo').addEventListener('click', (ev) => {
+    const g = ev.target.closest('#sos-guardar');
+    const q = ev.target.closest('#sos-quitar-ficha');
+    if (!g && !q) return;
+    const id = (g || q).dataset.id;
+    recetasSiOSi = recetasSiOSi.filter((p) => p.id !== id);
+    if (g) recetasSiOSi.push({ id, franja: document.getElementById('sos-franja').value, veces: Number(document.getElementById('sos-veces').value) });
+    cambioSiOSi();
+    const r = RECETAS_EJEMPLO.find((x) => x.id === id);
+    if (r) abrirDetalleReceta(id);
+  });
+
   const CLAVE_FAVORITAS = 'app-dietas-recetas-favoritas';
   let restriccionesActuales = null;
   let favoritasRecetas = [];
@@ -847,6 +923,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <p><span class="rec-etiqueta">EJEMPLO</span> Receta de ejemplo, no de Pablo ni validada para clientes.</p>
       ${c.compatible ? '' : `<p class="error-inline">No encaja con tus restricciones${c.motivo ? `: ${escaparHtml(c.motivo.detalle)}` : ''}. No se propondría en tu plan.</p>`}
       <p class="dc-aviso" style="color:var(--gris)">Esto es solo la ficha. Verla o marcarla como favorita no la añade a tu plan ni a tu compra, ni significa que la hayas tomado.</p>
+      ${bloqueSiOSiHtml(r)}
       <h3>Ingredientes (ración base, pesos de ejemplo pendientes de validar)</h3>
       <ul class="dc-ings">${ings}</ul>
       <h3>Elaboración <small style="font-weight:400">(EJEMPLO)</small></h3>
@@ -2314,7 +2391,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
     const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
-    const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan) });
+    const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi });
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
     const asignacionSemana = aplicadas.resultado;
@@ -2352,9 +2429,15 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // Issue #117: qué ha pasado con cada alimento de «sí o sí»: entra en la semana (se marca en la comida) o se explica por qué no.
     {
       const pedidos = asignacionBase.imprescindibles ?? [];
-      const htmlPedidos = pedidos.length
+      estadosSiOSi = asignacionBase.recetasSiOSi ?? [];
+      pintarListaSiOSi();
+      const htmlAlimentos = pedidos.length
         ? `<strong>Tus «sí o sí»:</strong> ${pedidos.map((p) => p.cubierto ? `✅ ${escaparHtml(p.alimento)}` : `⚠️ ${escaparHtml(p.alimento)}: no ha podido entrar (${escaparHtml(p.causa)})`).join(" · ")}`
         : "";
+      const htmlRecetas = estadosSiOSi.length
+        ? `<strong>Tus recetas «sí o sí»:</strong> ${estadosSiOSi.map((e) => e.causa ? `⚠️ ${escaparHtml(e.nombre)}: no se ha forzado (${escaparHtml(e.causa)})` : `✅ ${escaparHtml(e.nombre)} (${e.colocadas} de ${e.pedidas})`).join(" · ")}`
+        : "";
+      const htmlPedidos = [htmlAlimentos, htmlRecetas].filter(Boolean).join("<br>");
       document.getElementById("r-pedidos").innerHTML = htmlPedidos;
       document.getElementById("perfil-pedidos").innerHTML = htmlPedidos;
     }

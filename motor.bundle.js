@@ -128,6 +128,7 @@ var Motor = (() => {
     usosVariedadSemana: () => usosVariedadSemana,
     validarCompeticion: () => validarCompeticion,
     validarHorarioDia: () => validarHorarioDia,
+    validarPeticionSiOSi: () => validarPeticionSiOSi,
     validarPlato: () => validarPlato,
     validarPlatoGenerado: () => validarPlatoGenerado,
     validarReceta: () => validarReceta
@@ -1254,6 +1255,11 @@ var Motor = (() => {
   }
 
   // src/motor/asignador-recetas.ts
+  function validarPeticionSiOSi(franja, veces) {
+    if (!Number.isInteger(veces) || veces < 1) return "las veces por semana deben ser un n\xFAmero entero de 1 en adelante";
+    const max = franja === "comida" || franja === "cena" ? 2 : 7;
+    return veces > max ? `en ${franja === "comida" || franja === "cena" ? "comidas y cenas" : "esta franja"} se puede pedir como mucho ${max} ${max === 1 ? "vez" : "veces"} por semana` : void 0;
+  }
   var AJUSTE_MAX = 0.2;
   var FRANJAS_CON_LIMITE_VARIEDAD = ["comida", "cena"];
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
@@ -1356,6 +1362,69 @@ var Motor = (() => {
     const asignaciones = [];
     const huecos = [];
     const avisos = [];
+    const reservas = /* @__PURE__ */ new Map();
+    const estadosSiOSi = [];
+    const idsPedidos = /* @__PURE__ */ new Set();
+    const claveSlotSiOSi = (s) => `${s.dia}|${s.franja}`;
+    for (const p of opciones.recetasSiOSi ?? []) {
+      const receta = recetas.find((r) => r.id === p.id);
+      const base = { id: p.id, nombre: receta?.nombre ?? p.id, franja: p.franja, pedidas: p.veces };
+      const errorPeticion = validarPeticionSiOSi(p.franja, p.veces);
+      if (!receta) {
+        estadosSiOSi.push({ ...base, colocadas: 0, causa: "esa receta ya no est\xE1 en el cat\xE1logo" });
+        continue;
+      }
+      if (errorPeticion) {
+        estadosSiOSi.push({ ...base, colocadas: 0, causa: errorPeticion });
+        continue;
+      }
+      if (!receta.franjas.includes(p.franja)) {
+        estadosSiOSi.push({ ...base, colocadas: 0, causa: `esta receta no vale para ${p.franja}` });
+        continue;
+      }
+      idsPedidos.add(receta.id);
+      const motivos = /* @__PURE__ */ new Set();
+      const candidatos = [];
+      for (const slot of slots.filter((s) => s.franja === p.franja)) {
+        if (slot.sinFibraAlta && receta.fibraAlta) {
+          motivos.add("la v\xEDspera de una competici\xF3n evita la fibra alta (legumbre, integral o verdura cruda)");
+          continue;
+        }
+        const ap = opciones.alergiasPreferencias;
+        const compat = ap ? evaluarCompatibilidad(receta, ap) : { compatible: true };
+        if (!compat.compatible) {
+          motivos.add(`choca con tu perfil: ${compat.motivo?.detalle ?? "alergia o lista negra"}`);
+          continue;
+        }
+        const { factorRedondeado, kcalResultante, desviacion } = racionParaObjetivo(receta, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta });
+        const rotos = [
+          ...validarPlatoGenerado(slot.franja, receta.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos,
+          ...incumplimientosRacion(slot.franja, receta, factorRedondeado, { cargaAlta: slot.cargaAlta }).incumplimientos
+        ];
+        if (rotos.length) {
+          motivos.add(`no cabe en los topes del plato (${rotos[0]})`);
+          continue;
+        }
+        candidatos.push({ slot, e: { receta, factor: factorRedondeado, kcalResultante, desviacion } });
+      }
+      candidatos.sort((a2, b) => a2.e.desviacion - b.e.desviacion);
+      const elegidos = [];
+      const limitada = esFranjaConLimiteVariedad(p.franja);
+      for (const c of candidatos) {
+        if (elegidos.length >= p.veces) break;
+        if (reservas.has(claveSlotSiOSi(c.slot))) continue;
+        const i = DIAS.indexOf(c.slot.dia);
+        if (elegidos.some((x) => Math.abs(DIAS.indexOf(x.slot.dia) - i) === 1)) continue;
+        elegidos.push(c);
+      }
+      for (const c of candidatos) {
+        if (elegidos.length >= p.veces) break;
+        if (!reservas.has(claveSlotSiOSi(c.slot)) && !elegidos.includes(c)) elegidos.push(c);
+      }
+      for (const c of elegidos) reservas.set(claveSlotSiOSi(c.slot), c.e);
+      const causa = elegidos.length >= p.veces ? void 0 : motivos.size ? [...motivos][0] : candidatos.length ? "no hay d\xEDas libres suficientes para colocarla" : "no hay ninguna franja de este tipo en tu plan";
+      estadosSiOSi.push({ ...base, colocadas: elegidos.length, ...causa ? { causa } : {} });
+    }
     const idsDe = (r) => r.platos ?? [r.id];
     const usosDe = (r) => Math.max(...idsDe(r).map((id) => usos.get(id) ?? 0));
     for (const slot of slots) {
@@ -1397,8 +1466,9 @@ var Motor = (() => {
         return { elegido: mejor };
       };
       const alcanza = (e) => !!e && e.desviacion <= slot.kcalObjetivo * 0.1;
-      let res = intentar(recetas.filter(esUnico), true);
-      if ((slot.franja === "comida" || slot.franja === "cena") && !alcanza(res.elegido)) {
+      const reservada = reservas.get(claveSlotSiOSi(slot));
+      let res = reservada ? { elegido: reservada } : intentar(recetas.filter((r) => esUnico(r) && !idsPedidos.has(r.id)), true);
+      if (!reservada && (slot.franja === "comida" || slot.franja === "cena") && !alcanza(res.elegido)) {
         const primeros = recetas.filter((r) => r.tipoPlato === "primero" && vale(r) && (!limitada || usosDe(r) < maxRep));
         const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
         const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));
@@ -1430,7 +1500,8 @@ var Motor = (() => {
         receta: elegido.receta.id,
         racionAjustada: factorRedondeado,
         kcalResultante: elegido.kcalResultante,
-        ...protegidos.length ? { protegidosSinEscalar: protegidos } : {}
+        ...protegidos.length ? { protegidosSinEscalar: protegidos } : {},
+        ...reservada ? { pedidoPorUsuario: reservada.receta.nombre } : {}
       });
       if (elegido.desviacion > slot.kcalObjetivo * 0.1) {
         avisos.push(
@@ -1439,7 +1510,7 @@ var Motor = (() => {
       }
     }
     const imprescindibles = opciones.imprescindibles?.length ? cubrirImprescindibles(opciones.imprescindibles, slots, recetas, asignaciones, avisos, maxRep, opciones.alergiasPreferencias) : void 0;
-    return { asignaciones, huecos, avisos, ...imprescindibles ? { imprescindibles } : {} };
+    return { asignaciones, huecos, avisos, ...imprescindibles ? { imprescindibles } : {}, ...estadosSiOSi.length ? { recetasSiOSi: estadosSiOSi } : {} };
   }
   var llevaAlimento = (r, alimento) => r.ingredientes.some((i) => coincideAlimento(i.nombre, alimento));
   function cubrirImprescindibles(pedidos, slots, recetas, asignaciones, avisos, maxRep, ap) {
