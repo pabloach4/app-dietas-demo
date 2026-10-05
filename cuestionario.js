@@ -711,6 +711,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <p class="hoy-fecha">${escaparHtml(fechaTxt)} · ${horaTxt}</p>
       ${bloqueComida}
       ${bloqueEntreno}
+      ${cardCompeticionHtml(dia)}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`;
   }
   setInterval(() => { if (panelActual === 'hoy' && !document.getElementById('resultado').hidden) pintarHoy(); }, 60000);
@@ -980,11 +981,112 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <ul class="dia-resumen-lista">${entrenosHtml}</ul>
       <h3>Comidas</h3>
       <ul class="dia-resumen-lista">${comidasHtml}</ul>
+      ${cardCompeticionHtml(diaResumen)}
       <div class="acciones-rapidas">
         <button type="button" class="btn-secundario" id="ir-a-compra">🛒 Ver la compra</button>
       </div>
     `;
     document.getElementById('ir-a-compra').addEventListener('click', () => mostrarPanel('compra'));
+  }
+
+  // --- Issue #125: día de competición. Línea de tiempo, combustible de carrera y reorganización de las tomas alrededor de la
+  // hora de salida. Ofrece, no impone: el horario por día solo cambia al pulsar el botón (y se deshace con «Volver al horario general»). ---
+  const NOMBRE_TOMA = { desayuno: 'Desayuno', media_manana: 'Media mañana', comida: 'Comida', merienda: 'Merienda', cena: 'Cena' };
+  function competicionDelDia(dia) {
+    if (!calInicio || !planActual || !respuestasActuales) return null;
+    const fecha = Motor.fechaDelDia(calInicio, dia);
+    const f = new Date(new Date(`${fecha}T00:00:00Z`).getTime() + 86400000);
+    const manana = `${f.getUTCFullYear()}-${String(f.getUTCMonth() + 1).padStart(2, '0')}-${String(f.getUTCDate()).padStart(2, '0')}`;
+    for (const c of competiciones) {
+      const compiteAlDiaSiguiente = competiciones.some((o) => o !== c && (o.fecha === manana || (o.pruebas ?? []).some((p) => p.fecha === manana)));
+      const p = Motor.planDiaCompeticion(c, fecha, respuestasActuales.peso, { compiteAlDiaSiguiente });
+      if (p) return { c, p, fecha };
+    }
+    return null;
+  }
+  function tomasHabituales() {
+    return (franjasActuales ?? []).filter((f) => f.hora !== undefined)
+      .map((f) => ({ franja: f.franja, minuto: Math.round(f.hora * 60), principal: ['desayuno', 'comida', 'cena'].includes(f.franja) }));
+  }
+  const PRIORIDAD_TOMA = { previa: 5, recuperacion: 4, despues: 3, normal: 2, ligera: 1, opcional: 0 };
+  const ROL_TOMA_TXT = { previa: 'comida previa', ligera: 'toma ligera', recuperacion: 'recuperación', despues: 'después de la prueba', opcional: 'opcional', normal: '' };
+  function horarioCompeticion(x) {
+    const pr = x.p.pruebas;
+    const r = Motor.reorganizarDia(tomasHabituales(), pr[0].inicio, pr[pr.length - 1].fin);
+    // El horario por día guarda una sola hora por comida: manda la toma de más peso (previa > recuperación > …).
+    const porFranja = new Map();
+    for (const t of r.tomas) {
+      if (t.rol === 'opcional') continue;
+      const ya = porFranja.get(t.franja);
+      if (!ya || PRIORIDAD_TOMA[t.rol] > PRIORIDAD_TOMA[ya.rol]) porFranja.set(t.franja, t);
+    }
+    return { r, nuevas: (franjasActuales ?? []).map((f) => ({ ...f, hora: porFranja.has(f.franja) ? porFranja.get(f.franja).minuto / 60 : f.hora })) };
+  }
+  function lineaCompeticionHtml(x) {
+    const hm = Motor.aHoraTexto;
+    const rango = (r, u) => (r[0] === r[1] ? `${r[0]} ${u}` : `${r[0]}–${r[1]} ${u}`);
+    return x.p.linea.map((e) => `<li><strong>${e.minuto < 0 ? 'Víspera' : hm(e.minuto)}</strong> · ${escaparHtml(e.titulo)}${e.hidratoG ? ` · ${rango(e.hidratoG, 'g de hidratos')}` : ''}${e.proteinaG ? ` · ${rango(e.proteinaG, 'g de proteína')}` : ''}<br><span style="color:var(--gris)">${escaparHtml(e.detalle)}</span></li>`).join('');
+  }
+  function combustibleHtml(x) {
+    return x.p.combustible.map((c) => {
+      if (!c.hidratoG[1]) return `<li>Prueba ${c.prueba} (${c.duracionMin} min): ${escaparHtml(c.nota ?? 'nada obligatorio')}.</li>`;
+      const gel = c.geles ? ` · ${c.geles.n[0]}–${c.geles.n[1]} geles de ${c.geles.gramosPorGel} g (por ejemplo, a los minutos ${c.geles.minutos.join(', ')})` : '';
+      const alt = c.alternativas ? `<br><span style="color:var(--gris)">Alternativas: ${c.alternativas.map(escaparHtml).join('; ')}.</span>` : '';
+      return `<li>Prueba ${c.prueba} (${c.duracionMin} min): <strong>${c.hidratoG[0]}–${c.hidratoG[1]} g</strong> de hidratos (${c.hidratoGHora[0]}–${c.hidratoGHora[1]} g/h)${c.obligatorio ? '' : ' · opcional'}${gel}${alt}<br><span style="color:var(--gris)">Agua: ${c.aguaL[0]}–${c.aguaL[1]} L, sin beber de más${c.sodio ? '; bebida con sodio' : ''}${c.nota ? ` · ${escaparHtml(c.nota)}` : ''}.</span></li>`;
+    }).join('');
+  }
+  function cardCompeticionHtml(dia) {
+    const x = competicionDelDia(dia);
+    if (!x) return '';
+    const hm = Motor.aHoraTexto;
+    const { r, nuevas } = horarioCompeticion(x);
+    const normal = tomasHabituales().sort((a, b) => a.minuto - b.minuto).map((t) => `${hm(t.minuto)} ${NOMBRE_TOMA[t.franja] ?? t.franja}`).join(' · ');
+    const comp = r.tomas.map((t) => `${hm(t.minuto)} ${NOMBRE_TOMA[t.franja] ?? t.franja}${ROL_TOMA_TXT[t.rol] ? ` (${ROL_TOMA_TXT[t.rol]})` : ''}`).join(' · ');
+    const aplicado = excepcionesHorario.has(dia) && nuevas.every((n) => { const e = excepcionesHorario.get(dia).find((y) => y.franja === n.franja); return e && Math.abs(e.hora - n.hora) < 1e-6; });
+    const cambios = r.cambios.map((c) => `<li>${NOMBRE_TOMA[c.franja] ?? c.franja}: ${c.de !== undefined ? `${hm(c.de)} → ` : ''}<strong>${hm(c.a)}</strong> — ${escaparHtml(c.motivo)}</li>`).join('');
+    return `
+      <div class="tarjeta comp-dia" style="margin-top:1rem">
+        <h3 style="margin-top:0">🏁 Día de competición · ${escaparHtml(x.c.nombre)}</h3>
+        <p class="subt" style="font-size:0.8rem;margin:0 0 0.5rem">${escaparHtml(Motor.NOTA_PAUTA)} Las tomas de antes, entre pruebas y después cuentan dentro del total del día.</p>
+        <ul class="dia-resumen-lista">${lineaCompeticionHtml(x)}</ul>
+        <details class="plegable"><summary>Combustible de carrera (aparte del total del día)</summary><ul class="dia-resumen-lista">${combustibleHtml(x)}</ul></details>
+        <details class="plegable"><summary>Tu día normal / tu día de competición</summary>
+          <p style="font-size:0.85rem;margin:0.3rem 0"><strong>Tu día normal:</strong> ${escaparHtml(normal)}</p>
+          <p style="font-size:0.85rem;margin:0.3rem 0"><strong>Tu día de competición:</strong> ${escaparHtml(comp)}</p>
+          ${cambios ? `<ul class="dia-resumen-lista">${cambios}</ul>` : '<p class="subt">No hace falta mover ninguna comida.</p>'}
+          ${r.avisos.map((a) => `<p class="subt" style="font-size:0.82rem">⚠️ ${escaparHtml(a)}</p>`).join('')}
+          <p class="subt" style="font-size:0.8rem">Las kcal y los macros del día no cambian: lo que se mueve conserva lo suyo. Si una comida tiene dos horas (toma ligera y resto), el horario por comidas guarda la principal; la ligera queda en la línea de tiempo.</p>
+          <button type="button" class="btn-secundario comp-aplicar" data-dia="${dia}" ${aplicado ? 'disabled' : ''}>${aplicado ? 'Horario de competición aplicado' : 'Aplicar este horario a este día'}</button>
+          ${aplicado ? `<button type="button" class="btn-texto comp-quitar" data-dia="${dia}">Volver al horario general</button>` : ''}
+        </details>
+      </div>`;
+  }
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest && ev.target.closest('.comp-aplicar, .comp-quitar');
+    if (!b || !planActual) return;
+    const dia = b.dataset.dia;
+    if (b.classList.contains('comp-quitar')) excepcionesHorario.delete(dia);
+    else {
+      const x = competicionDelDia(dia);
+      if (!x) return;
+      excepcionesHorario.set(dia, horarioCompeticion(x).nuevas);
+    }
+    mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
+  });
+  /** Avisos con hora del día de competición para el .ics (el detalle solo se exporta si se pide). */
+  function extrasIcsCompeticion() {
+    if (!calInicio || !respuestasActuales) return [];
+    const extras = [];
+    for (const dia of DIAS) {
+      const x = competicionDelDia(dia);
+      if (!x) continue;
+      x.p.linea.filter((e) => e.minuto >= 0).forEach((e, i) => extras.push({
+        uid: `competicion-${x.c.id}-${x.fecha}-${i + 1}`, fecha: x.fecha, hora: Motor.aHoraTexto(e.minuto),
+        titulo: `Competición: ${e.tipo === 'durante' ? 'prueba' : e.tipo === 'previa' || e.tipo === 'ligera' ? 'toma previa' : e.tipo === 'entre' ? 'toma entre pruebas' : 'recuperación'}`,
+        detalle: `${e.titulo}. ${e.detalle}`,
+      }));
+    }
+    return extras;
   }
 
   // --- Issue #44: calendario semanal. Fechas reales solo a partir de un lunes elegido por la persona;
@@ -1080,6 +1182,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <h3 style="margin-top:1rem">Entrenos</h3><ul class="dia-resumen-lista">${entrenosHtml}</ul>
         <h3>Comidas</h3><ul class="dia-resumen-lista">${comidasHtml}</ul>
         <h3>Competiciones</h3><ul class="dia-resumen-lista">${compHtml}</ul>
+        ${cardCompeticionHtml(diaCal)}
       `;
     }
 
@@ -1154,7 +1257,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       inicio: calInicio,
       categorias: Array.from(document.querySelectorAll('.cal-exp-cat')).filter((c) => c.checked).map((c) => c.value),
       conDetalle: document.getElementById('cal-exp-detalle').checked,
-      sesiones, comidas, competiciones,
+      sesiones, comidas, competiciones, extrasCompeticion: extrasIcsCompeticion(),
     };
   }
 

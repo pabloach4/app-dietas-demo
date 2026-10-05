@@ -29,6 +29,7 @@ var Motor = (() => {
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
     MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
+    NOTA_PAUTA: () => NOTA_PAUTA,
     NOTA_PAUTA_ORIENTATIVA: () => NOTA_PAUTA_ORIENTATIVA,
     OPCIONES_GELES: () => OPCIONES_GELES,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
@@ -37,6 +38,8 @@ var Motor = (() => {
     RECETAS_EJEMPLO_INGREDIENTES_CSV: () => RECETAS_EJEMPLO_INGREDIENTES_CSV,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     ZONAS_ICS: () => ZONAS_ICS,
+    aHoraTexto: () => aHoraTexto,
+    aMinutos: () => aMinutos2,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
     alternarFavorita: () => alternarFavorita,
     alternativasParaSlot: () => alternativasParaSlot,
@@ -110,8 +113,10 @@ var Motor = (() => {
     parsearTablaLimites: () => parsearTablaLimites,
     perfilDesdeCuestionario: () => perfilDesdeCuestionario,
     pesoCocido: () => pesoCocido,
+    planDiaCompeticion: () => planDiaCompeticion,
     plegarLineaIcs: () => plegarLineaIcs,
     raizAlimento: () => raizAlimento,
+    reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
@@ -1971,6 +1976,9 @@ var Motor = (() => {
           ...detalleComp ? { detalle: detalleComp } : {}
         });
       }
+      for (const x of op.extrasCompeticion ?? []) {
+        eventos.push({ uid: `${x.uid}@${DOMINIO_UID}`, categoria: "competiciones", titulo: x.titulo, fecha: x.fecha, hora: x.hora, ...op.conDetalle && x.detalle ? { detalle: x.detalle } : {} });
+      }
     }
     eventos.sort((a2, b) => a2.fecha.localeCompare(b.fecha) || (a2.hora ?? "").localeCompare(b.hora ?? "") || a2.uid.localeCompare(b.uid));
     return { eventos, omitidos };
@@ -2905,6 +2913,193 @@ r20,aceite de oliva,12`;
     const kcalMedia = redondear(nuevosDias.reduce((s, x) => s + x.kcal, 0) / nuevosDias.length);
     const plan = { ...base, dias: nuevosDias, kcalMedia, notas: [...base.notas, `Semana con competici\xF3n: ${NOTA_PAUTA_ORIENTATIVA}`] };
     return { activa, plan, base, dias, avisos, notas: [NOTA_PAUTA_ORIENTATIVA] };
+  }
+
+  // src/motor/dia-competicion.ts
+  var NOTA_PAUTA = "Pauta orientativa, pendiente de validar por Pablo.";
+  var aMinutos2 = (hora) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
+  var aHoraTexto = (min) => {
+    const m = (Math.round(min) % 1440 + 1440) % 1440;
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  };
+  var GRAMOS_GEL = 25;
+  var redondear3 = (x) => Math.round(x);
+  var redondear1 = (x) => Math.round(x * 10) / 10;
+  var esTriatlon = (c) => !!c.tipo && c.tipo.startsWith("triatlon");
+  function tasaDuranteGH(duracionMin) {
+    if (duracionMin < 45) return { obligatorio: false };
+    if (duracionMin < 75) return { tasa: [15, 30], obligatorio: false, nota: "poca cantidad, opcional" };
+    if (duracionMin <= 150) return { tasa: [30, 60], obligatorio: true };
+    return { tasa: [60, 90], obligatorio: true, nota: "solo si lo has entrenado" };
+  }
+  function combustibleDe(c, n, p, peso, calor) {
+    const { tasa, obligatorio, nota } = tasaDuranteGH(p.duracionMin);
+    const horas = p.duracionMin / 60;
+    const aguaL = [redondear1(0.4 * horas), redondear1(0.8 * horas)];
+    const sodio = p.duracionMin > 120 || calor;
+    const base = {
+      prueba: n,
+      duracionMin: p.duracionMin,
+      hidratoGHora: tasa ?? [0, 0],
+      hidratoG: [0, 0],
+      obligatorio,
+      aguaL,
+      sodio,
+      ...nota ? { nota } : {}
+    };
+    if (!tasa) return { ...base, nota: "menos de 45 min: no hace falta tomar nada durante la prueba; agua si la necesitas" };
+    const total = [redondear3(tasa[0] * horas), redondear3(tasa[1] * horas)];
+    base.hidratoG = total;
+    if (c.usaGeles === "si") {
+      const medio = (tasa[0] + tasa[1]) / 2;
+      const cada = Math.max(10, Math.round(GRAMOS_GEL / medio * 60));
+      const minutos = [];
+      for (let m = 20; m < p.duracionMin - 10; m += cada) minutos.push(m);
+      base.geles = { n: [redondear3(total[0] / GRAMOS_GEL), redondear3(total[1] / GRAMOS_GEL)], gramosPorGel: GRAMOS_GEL, minutos };
+    } else if (c.usaGeles === "no") {
+      base.alternativas = [
+        `bebida isot\xF3nica (\u2248 6 g de hidratos por 100 ml): ${redondear3(total[0] / 0.06)}\u2013${redondear3(total[1] / 0.06)} ml en total`,
+        `fruta (un pl\xE1tano mediano \u2248 25 g de hidratos): ${redondear3(total[0] / 25)}\u2013${redondear3(total[1] / 25)} unidades`,
+        `gominolas (\u2248 75 g de hidratos por 100 g): ${redondear3(total[0] / 0.75)}\u2013${redondear3(total[1] / 0.75)} g`
+      ];
+    }
+    if (esTriatlon(c)) base.nota = `${base.nota ? `${base.nota}; ` : ""}en triatl\xF3n se come y se bebe sobre todo en la bici; nada en el agua`;
+    return base;
+  }
+  function planDiaCompeticion(c, fecha, peso, opciones = {}) {
+    const delDia = (c.pruebas ?? []).filter((p) => (p.fecha ?? c.fecha) === fecha);
+    if (!delDia.length || c.tipo === "categoria_peso") return void 0;
+    const pruebas = delDia.map((p) => ({ inicio: aMinutos2(p.hora), duracionMin: p.duracionMin, fin: aMinutos2(p.hora) + p.duracionMin })).sort((a2, b) => a2.inicio - b.inicio);
+    const salida = pruebas[0].inicio;
+    const fin = pruebas[pruebas.length - 1].fin;
+    const linea = [];
+    const avisos = [];
+    linea.push({
+      minuto: -1,
+      tipo: "vispera",
+      titulo: "V\xEDspera: hidrataci\xF3n",
+      detalle: `Bebe a sorbos a lo largo del d\xEDa anterior.${salida < 9 * 60 ? " Salida antes de las 9:00: cena pronto." : ""}`
+    });
+    const objetivo = salida - 180;
+    if (objetivo < 5 * 60) {
+      linea.push({
+        minuto: salida - 75,
+        tipo: "ligera",
+        titulo: "Toma ligera antes de salir",
+        detalle: "Poca grasa y fibra, nada nuevo. Es lo que cabe con una salida tan temprana.",
+        hidratoG: [redondear3(peso * 0.5), redondear3(peso * 1)]
+      });
+      avisos.push(`La salida es a las ${aHoraTexto(salida)}: no hay 2-3 h para una comida previa, as\xED que se propone una toma ligera 75 min antes.`);
+    } else {
+      linea.push({
+        minuto: objetivo,
+        tipo: "previa",
+        titulo: "Comida previa (2-3 h antes de salir)",
+        detalle: "Hidratos de siempre, poca grasa y fibra, nada nuevo.",
+        hidratoG: [redondear3(peso * 1), redondear3(peso * 4)]
+      });
+    }
+    const combustible = pruebas.map((p, i) => combustibleDe(c, i + 1, p, peso, !!opciones.calor));
+    pruebas.forEach((p, i) => {
+      const f2 = combustible[i];
+      const detalleDurante = f2.hidratoG[1] > 0 ? `${f2.hidratoG[0]}\u2013${f2.hidratoG[1]} g de hidratos en total (${f2.hidratoGHora[0]}\u2013${f2.hidratoGHora[1]} g/h)${f2.nota ? ` \xB7 ${f2.nota}` : ""}. Agua: ${f2.aguaL[0]}\u2013${f2.aguaL[1]} L, sin beber de m\xE1s${f2.sodio ? "; con sodio" : ""}.` : `${f2.nota ?? "Nada obligatorio"}.`;
+      linea.push({ minuto: p.inicio, tipo: "durante", titulo: pruebas.length > 1 ? `Prueba ${i + 1} (${p.duracionMin} min)` : `Prueba (${p.duracionMin} min)`, detalle: detalleDurante, ...f2.hidratoG[1] > 0 ? { hidratoG: f2.hidratoG } : {} });
+      const sig = pruebas[i + 1];
+      if (!sig) return;
+      const hueco = sig.inicio - p.fin;
+      if (hueco < 60) {
+        linea.push({ minuto: p.fin, tipo: "entre", titulo: `Entre pruebas (${hueco} min)`, detalle: "Hidratos r\xE1pidos y agua.", hidratoG: [20, 30] });
+      } else if (hueco <= 120) {
+        linea.push({ minuto: p.fin, tipo: "entre", titulo: `Entre pruebas (${hueco} min)`, detalle: "Hidratos f\xE1ciles de digerir y algo de prote\xEDna.", hidratoG: [redondear3(peso * 0.5), redondear3(peso * 1)], proteinaG: [10, 20] });
+      } else {
+        linea.push({ minuto: p.fin, tipo: "entre", titulo: `Entre pruebas (${Math.floor(hueco / 60)} h ${hueco % 60} min)`, detalle: "Comida peque\xF1a, baja en grasa y fibra.", hidratoG: [redondear3(peso * 1), redondear3(peso * 1)], proteinaG: [redondear3(peso * 0.25), redondear3(peso * 0.25)] });
+      }
+    });
+    linea.push({
+      minuto: fin + 30,
+      tipo: "recuperacion",
+      titulo: "Despu\xE9s: recuperaci\xF3n",
+      detalle: opciones.compiteAlDiaSiguiente ? "Compites ma\xF1ana: hidratos r\xE1pidos en la primera hora y la primera comida principal como recuperaci\xF3n." : "La primera comida principal es la de recuperaci\xF3n."
+    });
+    linea.sort((a2, b) => a2.minuto - b.minuto);
+    return { fecha, nombre: c.nombre, pruebas, linea, combustible, avisos, nota: NOTA_PAUTA };
+  }
+  var FRACCION_LIGERA_MADRUGADA = 0.3;
+  function reorganizarDia(habitual, salida, fin) {
+    const orden = [...habitual].sort((a2, b) => a2.minuto - b.minuto);
+    const salidas = [];
+    const cambios = [];
+    const avisos = [];
+    const movidasDespues = [];
+    const procesadas = /* @__PURE__ */ new Set();
+    const mover = (t, motivo) => {
+      salidas.push({ ...t, motivo });
+      if (t.habitual === void 0 || t.minuto !== t.habitual) cambios.push({ franja: t.franja, de: t.habitual, a: t.minuto, motivo });
+    };
+    const objetivo = salida - 180;
+    let minutoPrevia;
+    if (objetivo < 5 * 60) {
+      const fuente = orden[0];
+      if (fuente) {
+        mover({ franja: fuente.franja, habitual: fuente.minuto, minuto: salida - 75, rol: "ligera", fraccion: FRACCION_LIGERA_MADRUGADA }, "salida muy temprana: toma ligera 75 min antes, descontada de esa toma");
+        avisos.push(`Salida a las ${aHoraTexto(salida)}: toma ligera ${aHoraTexto(salida - 75)} en vez de comida previa.`);
+        minutoPrevia = salida - 75;
+        procesadas.add(fuente);
+        tratarResto(fuente, 1 - FRACCION_LIGERA_MADRUGADA);
+      }
+    } else if (orden.length) {
+      const previa = orden.reduce((mejor, t) => Math.abs(t.minuto - objetivo) < Math.abs(mejor.minuto - objetivo) ? t : mejor, orden[0]);
+      procesadas.add(previa);
+      const valida = previa.minuto >= salida - 240 && previa.minuto <= salida - 120;
+      const minuto = valida ? previa.minuto : objetivo;
+      mover({ franja: previa.franja, habitual: previa.minuto, minuto, rol: "previa", fraccion: 1 }, valida ? "ya cae 2-4 h antes de la salida: no se mueve" : "comida previa 3 h antes de la salida");
+      minutoPrevia = minuto;
+      if (!previa.principal) avisos.push(`La comida previa es \xAB${previa.franja}\xBB reforzada: t\xF3mala como comida previa (hidratos de siempre, poca grasa y fibra).`);
+    }
+    const intermedias = orden.filter((t) => !procesadas.has(t) && minutoPrevia !== void 0 && t.minuto > minutoPrevia && t.minuto < salida);
+    const ligeraRegla4 = intermedias.length ? intermedias[intermedias.length - 1] : void 0;
+    for (const t of orden) {
+      if (procesadas.has(t)) continue;
+      procesadas.add(t);
+      if (t === ligeraRegla4) {
+        mover({ franja: t.franja, habitual: t.minuto, minuto: salida - 75, rol: "ligera", fraccion: 1 }, "entre la comida previa y la salida: pasa a toma ligera 75 min antes");
+      } else if (intermedias.includes(t) || t.minuto >= salida && t.minuto < fin) {
+        movidasDespues.push(t);
+      } else {
+        tratarResto(t, 1);
+      }
+    }
+    function tratarResto(t, fraccion) {
+      if (t.minuto >= salida && t.minuto < fin) {
+        movidasDespues.push(t);
+        t._f = fraccion;
+        return;
+      }
+      if (t.minuto >= fin && t.minuto < fin + 30) {
+        mover({ franja: t.franja, habitual: t.minuto, minuto: fin + 30, rol: "recuperacion", fraccion }, "coincid\xEDa con el final de la prueba: se retrasa 30 min");
+        return;
+      }
+      salidas.push({ franja: t.franja, habitual: t.minuto, minuto: t.minuto, rol: "normal", fraccion });
+    }
+    const yaRecuperacion = salidas.some((s) => s.rol === "recuperacion");
+    if (!yaRecuperacion) {
+      const siguiente = orden.find((t) => t.principal && t.minuto >= fin && !movidasDespues.includes(t) && !salidas.some((s) => s.franja === t.franja && s.rol !== "normal"));
+      if (siguiente && siguiente.minuto - fin <= 120) {
+        const s = salidas.find((x) => x.franja === siguiente.franja);
+        if (s) s.rol = "recuperacion", s.motivo = "es la siguiente comida principal y queda a 120 min o menos del final: hace de recuperaci\xF3n";
+      } else if (movidasDespues.length) {
+        const t = movidasDespues.shift();
+        mover({ franja: t.franja, habitual: t.minuto, minuto: fin + 30, rol: "recuperacion", fraccion: t._f ?? 1 }, "toma de recuperaci\xF3n 30 min despu\xE9s de acabar, con la toma que se movi\xF3");
+      } else {
+        salidas.push({ franja: "recuperaci\xF3n", minuto: fin + 30, rol: "opcional", fraccion: 0, motivo: "la siguiente comida principal queda lejos: toma de recuperaci\xF3n opcional 30 min despu\xE9s de acabar" });
+        avisos.push("La siguiente comida principal queda a m\xE1s de 2 h del final: toma de recuperaci\xF3n opcional.");
+      }
+    }
+    for (const t of movidasDespues) {
+      mover({ franja: t.franja, habitual: t.minuto, minuto: fin + 60, rol: "despues", fraccion: t._f ?? 1 }, "ca\xEDa dentro de la prueba: pasa a despu\xE9s");
+    }
+    salidas.sort((a2, b) => a2.minuto - b.minuto);
+    return { tomas: salidas, cambios, avisos };
   }
   return __toCommonJS(motor_exports);
 })();
