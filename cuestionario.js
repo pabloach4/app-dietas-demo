@@ -1071,7 +1071,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const compHtml = !calInicio
         ? '<li style="color:var(--gris)">Elige el lunes de inicio para ver las competiciones de este día.</li>'
         : delDia.length
-          ? delDia.map((c) => `<li class="entreno">🏁 <strong>${escaparHtml(c.nombre)}</strong> · ${c.hora ? c.hora : 'todo el día'}</li>`).join('')
+          ? delDia.map((c) => `<li class="entreno">🏁 <strong>${escaparHtml(c.nombre)}</strong> · ${escaparHtml(resumenCompeticion(c))}</li>`).join('')
           : '<li>Ninguna competición anotada este día.</li>';
       detalle.innerHTML = `
         <p class="dia-resumen-titulo">${NOMBRE_DIA_LARGO[diaCal]}${fecha ? ` · ${fechaLegible(fecha)}` : ''} · ${d.tipo}</p>
@@ -1089,7 +1089,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const dia = calInicio ? Motor.diaDeLaFecha(calInicio, c.fecha) : undefined;
       return `
         <li class="comp-item">
-          <span><strong>${escaparHtml(c.nombre)}</strong><br><span style="color:var(--gris)">${fechaLegible(c.fecha)} · ${c.hora ? c.hora : 'todo el día'}${dia ? ` · esta semana (${NOMBRE_DIA_LARGO[dia]})` : ''}</span></span>
+          <span><strong>${escaparHtml(c.nombre)}</strong><br><span style="color:var(--gris)">${escaparHtml(resumenCompeticion(c))}${dia ? ` · esta semana (${NOMBRE_DIA_LARGO[dia]})` : ''}</span></span>
           <span class="acciones">
             <button type="button" class="btn-texto" data-accion="editar" data-id="${c.id}" aria-label="Editar ${escaparHtml(c.nombre)}">Editar</button>
             <button type="button" class="btn-texto" data-accion="borrar" data-id="${c.id}" aria-label="Borrar ${escaparHtml(c.nombre)}" style="color:#b3271e">Borrar</button>
@@ -1108,7 +1108,12 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         editandoCompId = c.id;
         document.getElementById('cal-comp-nombre').value = c.nombre;
         document.getElementById('cal-comp-fecha').value = c.fecha;
-        document.getElementById('cal-comp-hora').value = c.hora ?? '';
+        document.getElementById('cal-comp-fin').value = c.fechaFin ?? '';
+        selTipoComp.value = c.tipo ?? 'otra';
+        document.getElementById('cal-comp-geles').value = c.usaGeles ?? 'no_se';
+        cajaPruebas.innerHTML = '';
+        (c.pruebas?.length ? c.pruebas : [{ hora: c.hora ?? '' }]).forEach((p) => { anadirFilaPrueba(p); if (p.duracionMin) cajaPruebas.lastChild.querySelector('.p-dur').dataset.tocada = '1'; });
+        actualizarTipoComp();
         document.getElementById('cal-comp-guardar').textContent = 'Guardar cambios';
         document.getElementById('cal-comp-cancelar').hidden = false;
         document.getElementById('cal-comp-nombre').focus();
@@ -1210,9 +1215,78 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('cal-exp-estado').textContent = 'Archivo descargado. Impórtalo tú a mano en tu calendario; no se ha enviado a ningún sitio.';
   });
 
+  // Texto corto de una competición: tipo, días, pruebas con sus horas y geles (issue #123).
+  function resumenCompeticion(c) {
+    const pruebas = c.pruebas?.length ? c.pruebas.map((p) => `${p.hora} (${p.duracionMin} min)`).join(', ') : (c.hora ? c.hora : 'todo el día');
+    const geles = c.usaGeles === 'si' ? ' · con geles' : c.usaGeles === 'no' ? ' · sin geles' : '';
+    return `${Motor.NOMBRE_TIPO_COMPETICION[c.tipo ?? 'otra']} · ${fechaLegible(c.fecha)}${c.fechaFin ? ` → ${fechaLegible(c.fechaFin)}` : ''} · ${pruebas}${geles}`;
+  }
+  // --- Issue #123: tipo, pruebas (hora + duración), varios días y geles de la competición. ---
+  const selTipoComp = document.getElementById('cal-comp-tipo');
+  selTipoComp.innerHTML = Motor.TIPOS_COMPETICION.map((t) => `<option value="${t}"${t === 'otra' ? ' selected' : ''}>${Motor.NOMBRE_TIPO_COMPETICION[t]}</option>`).join('');
+  selTipoComp.value = 'otra';
+  const cajaPruebas = document.getElementById('cal-comp-pruebas');
+  function diasDeLaCompeticion() {
+    const ini = document.getElementById('cal-comp-fecha').value;
+    const fin = document.getElementById('cal-comp-fin').value;
+    if (!ini || !fin || fin <= ini) return [];
+    const dias = [];
+    const aTexto = (t) => { const d = new Date(t); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`; }; // fechas de calendario, sin zona horaria
+    for (let t = Date.parse(`${ini}T00:00:00Z`); t <= Date.parse(`${fin}T00:00:00Z`) && dias.length < 14; t += 86400000) dias.push(aTexto(t));
+    return dias;
+  }
+  function anadirFilaPrueba(p = {}) {
+    const fila = document.createElement('div');
+    fila.className = 'fila2 prueba-fila';
+    fila.style.alignItems = 'end';
+    fila.innerHTML = `
+      <div class="campo"><label>Hora de inicio</label><input class="p-hora" type="time" value="${p.hora ?? ''}"></div>
+      <div class="campo"><label>Minutos</label><input class="p-dur" type="number" min="1" max="4320" step="1" inputmode="numeric" value="${p.duracionMin ?? Motor.DURACION_PROPUESTA_MIN[selTipoComp.value]}"></div>
+      <div class="campo p-dia-caja" hidden><label>Día</label><select class="p-dia"></select></div>
+      <div class="campo"><button type="button" class="btn-texto p-quitar" style="color:#b3271e">Quitar prueba</button></div>`;
+    fila.querySelector('.p-quitar').addEventListener('click', () => fila.remove());
+    fila.dataset.fecha = p.fecha ?? '';
+    cajaPruebas.appendChild(fila);
+    refrescarDiasPruebas();
+  }
+  function refrescarDiasPruebas() {
+    const dias = diasDeLaCompeticion();
+    cajaPruebas.querySelectorAll('.prueba-fila').forEach((fila) => {
+      const sel = fila.querySelector('.p-dia');
+      const actual = sel.value || fila.dataset.fecha || document.getElementById('cal-comp-fecha').value;
+      sel.innerHTML = dias.map((d) => `<option value="${d}">${fechaLegible(d)}</option>`).join('');
+      if (dias.includes(actual)) sel.value = actual;
+      fila.querySelector('.p-dia-caja').hidden = dias.length === 0;
+    });
+  }
+  function reiniciarPruebas() { cajaPruebas.innerHTML = ''; anadirFilaPrueba(); }
+  function recogerPruebas() {
+    const ini = document.getElementById('cal-comp-fecha').value;
+    return [...cajaPruebas.querySelectorAll('.prueba-fila')].filter((f) => f.querySelector('.p-hora').value).map((f) => {
+      const dia = f.querySelector('.p-dia-caja').hidden ? '' : f.querySelector('.p-dia').value;
+      return { hora: f.querySelector('.p-hora').value, duracionMin: Number(f.querySelector('.p-dur').value), ...(dia && dia !== ini ? { fecha: dia } : {}) };
+    });
+  }
+  function actualizarTipoComp() {
+    const peso = selTipoComp.value === 'categoria_peso';
+    const aviso = document.getElementById('cal-comp-peso');
+    aviso.textContent = peso ? Motor.MENSAJE_CATEGORIA_PESO : '';
+    aviso.hidden = !peso;
+    // La duración propuesta solo se cambia en las pruebas que la persona aún no ha tocado.
+    cajaPruebas.querySelectorAll('.p-dur').forEach((i) => { if (!i.dataset.tocada) i.value = Motor.DURACION_PROPUESTA_MIN[selTipoComp.value]; });
+  }
+  selTipoComp.addEventListener('change', actualizarTipoComp);
+  cajaPruebas.addEventListener('input', (ev) => { if (ev.target.classList.contains('p-dur')) ev.target.dataset.tocada = '1'; });
+  document.getElementById('cal-comp-add-prueba').addEventListener('click', () => anadirFilaPrueba());
+  document.getElementById('cal-comp-fecha').addEventListener('change', refrescarDiasPruebas);
+  document.getElementById('cal-comp-fin').addEventListener('change', refrescarDiasPruebas);
+  reiniciarPruebas();
+
   function salirDeEdicionCompeticion() {
     editandoCompId = null;
     document.getElementById('cal-form-comp').reset();
+    reiniciarPruebas();
+    actualizarTipoComp();
     document.getElementById('cal-comp-guardar').textContent = 'Añadir competición';
     document.getElementById('cal-comp-cancelar').hidden = true;
     document.getElementById('cal-comp-error').hidden = true;
@@ -1246,7 +1320,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const datos = {
       nombre: document.getElementById('cal-comp-nombre').value,
       fecha: document.getElementById('cal-comp-fecha').value,
-      hora: document.getElementById('cal-comp-hora').value,
+      fechaFin: document.getElementById('cal-comp-fin').value,
+      tipo: selTipoComp.value,
+      usaGeles: document.getElementById('cal-comp-geles').value,
+      pruebas: recogerPruebas(),
     };
     const r = editandoCompId ? Motor.editarCompeticion(competiciones, editandoCompId, datos) : Motor.anadirCompeticion(competiciones, datos);
     const error = document.getElementById('cal-comp-error');

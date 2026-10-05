@@ -645,10 +645,20 @@
       <p class="subt" style="margin-bottom:0.8rem">Son anotaciones tuyas: <strong>no cambian las kcal ni los macros</strong> ni activan ninguna carga o protocolo. Se guardan solo en este navegador (sin cuenta ni nube) y no se envían a ningún calendario.</p>
       <form id="cal-form-comp" novalidate>
         <div class="campo"><label for="cal-comp-nombre">Nombre</label><input id="cal-comp-nombre" type="text" maxlength="80" autocomplete="off"></div>
+        <div class="campo"><label for="cal-comp-tipo">Tipo de competición</label>
+          <select id="cal-comp-tipo"></select></div>
+        <p class="error-inline" id="cal-comp-peso" hidden></p>
         <div class="fila2">
           <div class="campo"><label for="cal-comp-fecha">Fecha</label><input id="cal-comp-fecha" type="date"></div>
-          <div class="campo"><label for="cal-comp-hora">Hora (opcional)</label><input id="cal-comp-hora" type="time"></div>
+          <div class="campo"><label for="cal-comp-fin">Último día (si dura varios)</label><input id="cal-comp-fin" type="date"></div>
         </div>
+        <div id="cal-comp-pruebas-caja">
+          <p class="subt" style="margin:0 0 0.4rem"><strong>Pruebas</strong>: hora de inicio y minutos que durarán. Sin hora = todo el día. En CrossFit añade una por WOD.</p>
+          <div id="cal-comp-pruebas"></div>
+          <button type="button" class="btn-secundario" id="cal-comp-add-prueba">+ Añadir prueba</button>
+        </div>
+        <div class="campo" id="cal-comp-geles-caja" style="margin-top:0.8rem"><label for="cal-comp-geles">¿Tomas geles?</label>
+          <select id="cal-comp-geles"><option value="no_se">No lo sé</option><option value="si">Sí</option><option value="no">No</option></select></div>
         <p class="error-inline" id="cal-comp-error" role="alert" hidden></p>
         <button type="submit" class="btn-principal" id="cal-comp-guardar">Añadir competición</button>
         <button type="button" class="btn-texto" id="cal-comp-cancelar" hidden>Cancelar edición</button>

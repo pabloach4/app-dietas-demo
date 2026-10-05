@@ -22,12 +22,17 @@ var Motor = (() => {
   __export(motor_exports, {
     ACTIVIDADES: () => ACTIVIDADES,
     DIAS: () => DIAS,
+    DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
+    MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
+    NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
+    OPCIONES_GELES: () => OPCIONES_GELES,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
     RECETAS_EJEMPLO_CSV: () => RECETAS_EJEMPLO_CSV,
     RECETAS_EJEMPLO_INGREDIENTES_CSV: () => RECETAS_EJEMPLO_INGREDIENTES_CSV,
+    TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     ZONAS_ICS: () => ZONAS_ICS,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
     alternarFavorita: () => alternarFavorita,
@@ -1677,6 +1682,56 @@ var Motor = (() => {
   }
 
   // src/motor/calendario.ts
+  var TIPOS_COMPETICION = [
+    "carrera_10k",
+    "media_maraton",
+    "maraton",
+    "trail_ultra",
+    "triatlon_sprint",
+    "triatlon_olimpico",
+    "triatlon_medio",
+    "triatlon_largo",
+    "marcha_ciclista",
+    "hyrox",
+    "crossfit",
+    "equipo",
+    "categoria_peso",
+    "otra"
+  ];
+  var NOMBRE_TIPO_COMPETICION = {
+    carrera_10k: "Carrera hasta 10 km",
+    media_maraton: "Media marat\xF3n",
+    maraton: "Marat\xF3n",
+    trail_ultra: "Trail o ultra",
+    triatlon_sprint: "Triatl\xF3n sprint",
+    triatlon_olimpico: "Triatl\xF3n ol\xEDmpico",
+    triatlon_medio: "Triatl\xF3n medio",
+    triatlon_largo: "Triatl\xF3n largo",
+    marcha_ciclista: "Marcha ciclista",
+    hyrox: "Hyrox",
+    crossfit: "CrossFit (varios WOD)",
+    equipo: "Partido de deporte de equipo",
+    categoria_peso: "Deporte con categor\xEDa de peso",
+    otra: "Otra"
+  };
+  var DURACION_PROPUESTA_MIN = {
+    carrera_10k: 60,
+    media_maraton: 120,
+    maraton: 240,
+    trail_ultra: 480,
+    triatlon_sprint: 90,
+    triatlon_olimpico: 150,
+    triatlon_medio: 330,
+    triatlon_largo: 720,
+    marcha_ciclista: 300,
+    hyrox: 90,
+    crossfit: 20,
+    equipo: 90,
+    categoria_peso: 60,
+    otra: 60
+  };
+  var MENSAJE_CATEGORIA_PESO = "En deportes con categor\xEDa de peso la app no calcula nada: el peso de competici\xF3n se lleva directamente con Pablo.";
+  var OPCIONES_GELES = ["si", "no", "no_se"];
   var RE_FECHA = /^(\d{4})-(\d{2})-(\d{2})$/;
   var RE_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
   var MS_DIA = 864e5;
@@ -1721,14 +1776,56 @@ var Motor = (() => {
     const i = Math.round((t - aUTC(inicio)) / MS_DIA);
     return i >= 0 && i < DIAS.length ? DIAS[i] : void 0;
   }
+  var MAX_DIAS_COMPETICION = 14;
+  var MAX_DURACION_PRUEBA_MIN = 3 * 1440;
+  var aMin = (hora) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
   function validarCompeticion(datos) {
     const nombre = (datos.nombre ?? "").trim();
     if (!nombre) return { ok: false, error: "Escribe el nombre de la competici\xF3n." };
     if (nombre.length > 80) return { ok: false, error: "El nombre es demasiado largo (m\xE1ximo 80 caracteres)." };
     if (!esFechaValida(datos.fecha ?? "")) return { ok: false, error: "Elige una fecha v\xE1lida para la competici\xF3n." };
+    const tipo = (datos.tipo ?? "").trim() || "otra";
+    if (!TIPOS_COMPETICION.includes(tipo)) return { ok: false, error: "Elige un tipo de competici\xF3n de la lista." };
+    const usaGeles = (datos.usaGeles ?? "").trim() || "no_se";
+    if (!OPCIONES_GELES.includes(usaGeles)) return { ok: false, error: "Indica si tomas geles: s\xED, no o no lo s\xE9." };
+    let fechaFin = (datos.fechaFin ?? "").trim();
+    const t0 = aUTC(datos.fecha);
+    if (fechaFin) {
+      const t1 = aUTC(fechaFin);
+      if (t1 === void 0) return { ok: false, error: "La fecha de fin no es v\xE1lida." };
+      if (t1 < t0) return { ok: false, error: "La fecha de fin no puede ser anterior a la de inicio." };
+      if ((t1 - t0) / MS_DIA >= MAX_DIAS_COMPETICION) return { ok: false, error: `Una competici\xF3n no puede durar m\xE1s de ${MAX_DIAS_COMPETICION} d\xEDas.` };
+      if (t1 === t0) fechaFin = "";
+    }
+    const comunes = { fecha: datos.fecha, tipo, usaGeles, ...fechaFin ? { fechaFin } : {} };
+    const pruebasEntrada = datos.pruebas ?? [];
+    if (pruebasEntrada.length) {
+      const tFin = fechaFin ? aUTC(fechaFin) : t0;
+      const pruebas = [];
+      for (const [i, p] of pruebasEntrada.entries()) {
+        const n = i + 1;
+        if (!esHoraValida(p.hora ?? "")) return { ok: false, error: `La hora de la prueba ${n} debe tener el formato HH:MM.` };
+        if (!Number.isInteger(p.duracionMin) || p.duracionMin <= 0) return { ok: false, error: `La duraci\xF3n de la prueba ${n} debe ser un n\xFAmero de minutos mayor que 0.` };
+        if (p.duracionMin > MAX_DURACION_PRUEBA_MIN) return { ok: false, error: `La duraci\xF3n de la prueba ${n} es demasiado larga.` };
+        const f2 = (p.fecha ?? "").trim();
+        if (f2 && f2 !== datos.fecha) {
+          const tf = aUTC(f2);
+          if (tf === void 0 || tf < t0 || tf > tFin) return { ok: false, error: `El d\xEDa de la prueba ${n} debe estar dentro de la competici\xF3n.` };
+        }
+        pruebas.push({ hora: p.hora, duracionMin: p.duracionMin, ...f2 && f2 !== datos.fecha ? { fecha: f2 } : {} });
+      }
+      const absoluto = (p) => Math.round(((p.fecha ? aUTC(p.fecha) : t0) - t0) / MS_DIA) * 1440 + aMin(p.hora);
+      pruebas.sort((a2, b) => absoluto(a2) - absoluto(b));
+      for (let i = 1; i < pruebas.length; i++) {
+        if (absoluto(pruebas[i]) < absoluto(pruebas[i - 1]) + pruebas[i - 1].duracionMin) {
+          return { ok: false, error: `Las pruebas ${i} y ${i + 1} se solapan: la segunda empieza antes de que acabe la primera.` };
+        }
+      }
+      return { ok: true, datos: { nombre, ...comunes, ...pruebas[0].fecha ? {} : { hora: pruebas[0].hora }, pruebas } };
+    }
     const hora = (datos.hora ?? "").trim();
     if (hora && !esHoraValida(hora)) return { ok: false, error: "La hora debe tener el formato HH:MM (o d\xE9jala vac\xEDa)." };
-    return { ok: true, datos: { nombre, fecha: datos.fecha, ...hora ? { hora } : {} } };
+    return { ok: true, datos: { nombre, ...comunes, ...hora ? { hora } : {} } };
   }
   function siguienteId(lista) {
     const max = lista.reduce((m, c) => Math.max(m, Number(c.id.replace(/^c/, "")) || 0), 0);
@@ -1753,16 +1850,29 @@ var Motor = (() => {
   }
   function competicionesDelDia(lista, inicio, dia) {
     const fecha = fechaDelDia(inicio, dia);
-    return ordenarCompeticiones(lista.filter((c) => c.fecha === fecha));
+    return ordenarCompeticiones(lista.filter((c) => c.fecha === fecha || c.fechaFin !== void 0 && c.fecha < fecha && fecha <= c.fechaFin));
   }
   function competicionesDesdeJson(valor) {
     if (!Array.isArray(valor)) return [];
     const resultado = [];
     for (const x of valor) {
       if (!x || typeof x !== "object") continue;
-      const { id, nombre, fecha, hora } = x;
+      const { id, nombre, fecha, hora, fechaFin, tipo, pruebas, usaGeles } = x;
       if (typeof id !== "string" || typeof nombre !== "string" || typeof fecha !== "string") continue;
-      const v = validarCompeticion({ nombre, fecha, hora: typeof hora === "string" ? hora : void 0 });
+      const texto = (v2) => typeof v2 === "string" ? v2 : void 0;
+      const v = validarCompeticion({
+        nombre,
+        fecha,
+        hora: texto(hora),
+        fechaFin: texto(fechaFin),
+        tipo: texto(tipo),
+        usaGeles: texto(usaGeles),
+        pruebas: Array.isArray(pruebas) ? pruebas.filter((p) => !!p && typeof p === "object").map((p) => ({
+          hora: texto(p.hora) ?? "",
+          duracionMin: Number(p.duracionMin),
+          fecha: texto(p.fecha)
+        })) : void 0
+      });
       if (v.ok) resultado.push({ id, ...v.datos });
     }
     return ordenarCompeticiones(resultado);
@@ -1829,12 +1939,29 @@ var Motor = (() => {
     }
     if (quiere.has("competiciones")) {
       for (const comp of op.competiciones) {
+        const detalleComp = op.conDetalle && comp.tipo ? `${NOMBRE_TIPO_COMPETICION[comp.tipo ?? "otra"]}${comp.usaGeles === "si" ? " \xB7 con geles" : comp.usaGeles === "no" ? " \xB7 sin geles" : ""}` : void 0;
+        if (comp.pruebas?.length) {
+          comp.pruebas.forEach((p, i) => {
+            eventos.push({
+              uid: `competicion-${comp.id}${comp.pruebas.length > 1 ? `-p${i + 1}` : ""}@${DOMINIO_UID}`,
+              categoria: "competiciones",
+              titulo: `Competici\xF3n: ${comp.nombre}${comp.pruebas.length > 1 ? ` (prueba ${i + 1} de ${comp.pruebas.length})` : ""}`,
+              fecha: p.fecha ?? comp.fecha,
+              hora: p.hora,
+              duracionMin: p.duracionMin,
+              ...detalleComp ? { detalle: detalleComp } : {}
+            });
+          });
+          continue;
+        }
         eventos.push({
           uid: `competicion-${comp.id}@${DOMINIO_UID}`,
           categoria: "competiciones",
           titulo: `Competici\xF3n: ${comp.nombre}`,
           fecha: comp.fecha,
-          ...comp.hora ? { hora: comp.hora } : {}
+          ...comp.hora ? { hora: comp.hora } : {},
+          ...comp.fechaFin && !comp.hora ? { fechaFin: comp.fechaFin } : {},
+          ...detalleComp ? { detalle: detalleComp } : {}
         });
       }
     }
@@ -1926,7 +2053,7 @@ var Motor = (() => {
     for (const e of eventos) {
       lineas.push("BEGIN:VEVENT", `UID:${e.uid}`, `DTSTAMP:${sello}`);
       if (e.hora === void 0) {
-        lineas.push(`DTSTART;VALUE=DATE:${compactaFecha(e.fecha)}`, `DTEND;VALUE=DATE:${compactaFecha(siguienteDia(e.fecha))}`);
+        lineas.push(`DTSTART;VALUE=DATE:${compactaFecha(e.fecha)}`, `DTEND;VALUE=DATE:${compactaFecha(siguienteDia(e.fechaFin ?? e.fecha))}`);
       } else {
         const valor = `${compactaFecha(e.fecha)}T${compactaHora(e.hora)}`;
         lineas.push(zona === "flotante" ? `DTSTART:${valor}` : `DTSTART;TZID=${zona}:${valor}`);
