@@ -837,7 +837,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const c = ap ? Motor.evaluarCompatibilidad(r, ap) : { compatible: true };
     const NOMBRE = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
     const pasos = Motor.elaboracionEjemplo(r.id);
-    const ings = Motor.ingredientesDeLaRacion(r, 1, Motor.esIngredienteProtegido).map((i) => `
+    const ings = Motor.ingredientesDeLaRacion(r, 1, Motor.noSeReescala).map((i) => `
       <li class="dc-ing"><span class="dc-ing-nombre">${escaparHtml(i.nombre)}</span>
         <span class="dc-ing-dato"><span class="dc-ing-etq">Ración base</span> <strong>${String(i.gramosBase).replace('.', ',')} g</strong></span></li>`).join('');
     document.getElementById('dc-titulo').textContent = r.nombre;
@@ -1743,7 +1743,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     } else if (!asignaciones.length) {
       cuerpo = '<p style="color:var(--gris)">No se ha podido asignar ninguna receta de ejemplo a ninguna franja de los días elegidos.</p>';
     } else {
-      const listaBase = Motor.generarListaCompra(asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada })), RECETAS_EJEMPLO, { esProtegido: Motor.esIngredienteProtegido });
+      const listaBase = Motor.generarListaCompra(asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada })), RECETAS_EJEMPLO, { esProtegido: Motor.noSeReescala });
       // Issue #76: una marca solo cuenta como cubierta si la cantidad de la dieta no cambió desde que se marcó.
       const evaluacion = Motor.evaluarMarcas(listaBase, Object.fromEntries(marcadosEnCasa));
       const aRevisar = new Map(evaluacion.aRevisar.map((m) => [m.ingrediente, m]));
@@ -1973,7 +1973,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const dias = DIAS.filter((d) => diasIncluidosCompra.has(d));
     const asignaciones = Motor.filtrarPorDias(asignacionSemanaActual.asignaciones, dias);
     if (!asignaciones.length) return [];
-    return Motor.generarListaCompra(asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada })), RECETAS_EJEMPLO, { esProtegido: Motor.esIngredienteProtegido });
+    return Motor.generarListaCompra(asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada })), RECETAS_EJEMPLO, { esProtegido: Motor.noSeReescala });
   }
 
   function entrenosDelDia(dia) {
@@ -2001,7 +2001,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (asignada) {
       const comprados = new Map(listaCompraDeDiasElegidos().map((i) => [i.ingrediente, i.comprar]));
       const enCompra = diasIncluidosCompra.has(dia);
-      const filas = Motor.ingredientesDeLaRacion(asignada.receta, asignada.racionAjustada, Motor.esIngredienteProtegido).map((i) => {
+      const filas = Motor.ingredientesDeLaRacion(asignada.receta, asignada.racionAjustada, Motor.noSeReescala).map((i) => {
         const c = verCocido && Motor.pesoCocido(i.nombre, i.gramosRacion);
         return `
         <li class="dc-ing">
@@ -2174,7 +2174,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const diasElegidos = DIAS.filter((d) => diasIncluidosCompra.has(d));
     const lista = (asignaciones) => new Map(Motor.generarListaCompra(
       Motor.filtrarPorDias(asignaciones, diasElegidos).map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada })),
-      RECETAS_EJEMPLO, { esProtegido: Motor.esIngredienteProtegido },
+      RECETAS_EJEMPLO, { esProtegido: Motor.noSeReescala },
     ).map((i) => [i.ingrediente, i.gramosTotales]));
     const antes = asignacionSemanaActual.asignaciones;
     const despues = antes.filter((a) => `${a.dia}|${a.franja}` !== clave).concat([{ dia, franja, receta: alt.receta.id, racionAjustada: alt.racionAjustada, kcalResultante: alt.kcalResultante }]);
@@ -2182,7 +2182,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const ld = lista(despues);
     const cambios = [...new Set([...la.keys(), ...ld.keys()])].map((n) => [n, (ld.get(n) ?? 0) - (la.get(n) ?? 0)]).filter(([, d]) => Math.abs(d) > 0.05)
       .map(([n, d]) => `<li>${escaparHtml(n)}: ${d > 0 ? '+' : '−'}${String(Math.abs(Math.round(d * 10) / 10)).replace('.', ',')} g</li>`).join('');
-    const ings = Motor.ingredientesDeLaRacion(alt.receta, alt.racionAjustada, Motor.esIngredienteProtegido)
+    const ings = Motor.ingredientesDeLaRacion(alt.receta, alt.racionAjustada, Motor.noSeReescala)
       .map((i) => `<li>${escaparHtml(i.nombre)}: <strong>${String(i.gramosRacion).replace('.', ',')} g</strong>${i.protegido ? ' (no se escala)' : ''}</li>`).join('');
     document.getElementById('alt-previa').innerHTML = `
       <div class="cambio-zona" style="margin-top:0.8rem" tabindex="-1" id="alt-previa-caja">
@@ -2297,7 +2297,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       });
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}) });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, cargaAlta: d.tipo === 'carga_alta', ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}) });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,

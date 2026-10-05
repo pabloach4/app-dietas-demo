@@ -105,6 +105,7 @@ var Motor = (() => {
     lunesDeLaSemana: () => lunesDeLaSemana,
     marcarYaEnCasa: () => marcarYaEnCasa,
     moverSesion: () => moverSesion,
+    noSeReescala: () => noSeReescala,
     normalizarBusqueda: () => normalizarBusqueda,
     ordenarCompeticiones: () => ordenarCompeticiones,
     parsearParametrosCSV: () => parsearParametrosCSV,
@@ -118,12 +119,14 @@ var Motor = (() => {
     raizAlimento: () => raizAlimento,
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
+    rolIngrediente: () => rolIngrediente,
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
     usosVariedadSemana: () => usosVariedadSemana,
     validarCompeticion: () => validarCompeticion,
     validarHorarioDia: () => validarHorarioDia,
     validarPlato: () => validarPlato,
+    validarPlatoGenerado: () => validarPlatoGenerado,
     validarReceta: () => validarReceta
   });
 
@@ -858,7 +861,7 @@ var Motor = (() => {
       const parentesis = nombreRaw.match(/\(([^)]*)\)/)?.[1] ?? "";
       const esNotaDeRegla = /cada una|por separado/i.test(parentesis);
       const ejemplos = parentesis && !esNotaDeRegla ? parentesis.replace(/\.\.\.$/, "").split(",").map((e) => e.trim()).filter(Boolean) : [];
-      const keywords = [...nombresBase, ...ejemplos].map((n) => tokens(n)).filter((t) => t.length > 0);
+      const keywords = [...nombresBase.flatMap((n) => n.split(/ y /)), ...ejemplos].map((n) => tokens(n)).filter((t) => t.length > 0);
       const categoria = nombresBase[0] ?? nombreRaw;
       const alias = ALIAS_EXTRA[normalizar(nombresBase.join(" / "))];
       if (alias) keywords.push(...alias.map((a2) => tokens(a2)));
@@ -959,6 +962,70 @@ var Motor = (() => {
       );
     }
     return { incumplimientos, avisos };
+  }
+  function rolIngrediente(nombre) {
+    const tabla = cargarTabla();
+    const limite = buscarLimite(tabla, nombre);
+    const c = limite ? normalizar(limite.categoria) : "";
+    if (/^condimento/.test(c)) return "condimento";
+    if (esProtegido(tabla, nombre)) return "fruta_lacteo";
+    if (!limite) return "fijo";
+    if (/^(pollo|ternera|pescado|atun|huevo|marisco|conejo|sepia)/.test(c)) return "proteina";
+    if (/^(legumbre|patata|cereal|pasta|pan)/.test(c)) return "base";
+    if (/^grasa/.test(c)) return "grasa";
+    if (/^cebolla/.test(c)) return "aromatico";
+    if (/^(verdura|hortaliza|hoja)/.test(c)) return "verdura";
+    return "fruta_lacteo";
+  }
+  var ROLES_PALANCA = ["base", "proteina", "grasa"];
+  var esPalanca = (nombre) => ROLES_PALANCA.includes(rolIngrediente(nombre));
+  var noSeReescala = (nombre) => !esPalanca(nombre);
+  function racionRealistaMaxima(nombre) {
+    const l = buscarLimite(cargarTabla(), nombre);
+    return l ? l.recomendado ?? l.tope : void 0;
+  }
+  function validarPlatoGenerado(franja, ingredientes, opts = {}) {
+    const tabla = cargarTabla();
+    const base = validarPlato(franja, ingredientes, opts.esLiquido === void 0 ? {} : { esLiquido: opts.esLiquido });
+    const incumplimientos = base.incumplimientos.filter((i) => !i.startsWith("Peso total del plato"));
+    const avisos = base.avisos.filter((a2) => !a2.startsWith("Peso total del plato"));
+    const esLiquido = opts.esLiquido ?? ingredientes.some((i) => esLiquidoPorNombre(i.nombre));
+    let peso = 0;
+    for (const ing of ingredientes) {
+      if (!esProtegido(tabla, ing.nombre)) peso += ing.gramos;
+      const max = racionRealistaMaxima(ing.nombre);
+      if (max !== void 0 && !esLiquido && ing.gramos > max && !incumplimientos.some((i) => i.startsWith(`${ing.nombre}:`))) {
+        incumplimientos.push(`${ing.nombre}: ${ing.gramos} g pasa de la raci\xF3n normal (${max} g)`);
+      }
+    }
+    const maxPeso = opts.cargaAlta ? tabla.pesoPlatoTope : tabla.pesoPlatoRecomendado;
+    if (peso > maxPeso) incumplimientos.push(`Peso total del plato: ${peso} g pasa del m\xE1ximo de ${maxPeso} g${opts.cargaAlta ? "" : " (hasta 900 g solo en d\xEDas de carga alta)"}`);
+    else if (opts.cargaAlta && peso > tabla.pesoPlatoRecomendado) avisos.push(`Peso total del plato: ${peso} g, por encima de 700 g (d\xEDa de carga alta)`);
+    return { incumplimientos, avisos };
+  }
+  function limitesDeFactor(franja, ingredientes, cargaAlta = false) {
+    const tabla = cargarTabla();
+    const esComidaOCena = franja === "comida" || franja === "cena";
+    const esLiquido = ingredientes.some((i) => esLiquidoPorNombre(i.nombre));
+    const maxPeso = cargaAlta ? tabla.pesoPlatoTope : tabla.pesoPlatoRecomendado;
+    let fMin = 0;
+    let fMax = Infinity;
+    let pesoFijo = 0;
+    let pesoPalancas = 0;
+    for (const ing of ingredientes) {
+      const cuentaPeso = !esProtegido(tabla, ing.nombre);
+      if (!esPalanca(ing.nombre)) {
+        if (cuentaPeso) pesoFijo += ing.gramos;
+        continue;
+      }
+      if (cuentaPeso) pesoPalancas += ing.gramos;
+      const limite = buscarLimite(tabla, ing.nombre);
+      const cap = limite ? limite.recomendado ?? limite.tope : void 0;
+      if (cap !== void 0 && ing.gramos > 0) fMax = Math.min(fMax, cap / ing.gramos);
+      if (limite?.minimo != null && esComidaOCena && !esLiquido && ing.gramos > 0) fMin = Math.max(fMin, limite.minimo / ing.gramos);
+    }
+    if (pesoPalancas > 0) fMax = Math.min(fMax, (maxPeso - pesoFijo) / pesoPalancas);
+    return { fMin, fMax, hayPalancas: pesoPalancas > 0 || ingredientes.some((i) => esPalanca(i.nombre)) };
   }
 
   // src/motor/semana.ts
@@ -1184,30 +1251,31 @@ var Motor = (() => {
   var FRANJAS_CON_LIMITE_VARIEDAD = ["comida", "cena"];
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
-  var PASO_RACION = 0.05;
-  function racionParaObjetivo(receta, kcalObjetivo, franja) {
-    const factorIdeal = kcalObjetivo / receta.kcal;
-    let factor = Math.min(1 + AJUSTE_MAX, Math.max(1 - AJUSTE_MAX, factorIdeal));
-    if (franja && factorIdeal > 1 + AJUSTE_MAX) {
-      const techo = Math.min(factorIdeal, RACION_MAX_SUBIDA);
-      for (let c = techo; c > 1 + AJUSTE_MAX + 1e-9; c = Math.floor((c - 1e-9) / PASO_RACION) * PASO_RACION) {
-        if (!incumplimientosRacion(franja, receta, Math.round(c * 100) / 100).incumplimientos.length) {
-          factor = c;
-          break;
-        }
-      }
-    }
-    const kcalResultante = Math.round(receta.kcal * factor);
-    return { factor, factorRedondeado: Math.round(factor * 100) / 100, kcalResultante, desviacion: Math.abs(kcalResultante - kcalObjetivo) };
+  function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
+    const { fMin, fMax, hayPalancas } = limitesDeFactor(franja ?? "comida", receta.ingredientes, !!opciones.cargaAlta);
+    const palancas = receta.ingredientes.filter((i) => esPalanca(i.nombre));
+    const hay = (rol) => palancas.some((i) => rolIngrediente(i.nombre) === rol);
+    const kcalPalancas = Math.min(
+      receta.kcal,
+      (hay("base") ? 4 * receta.hidrato : 0) + (hay("proteina") ? 4 * receta.proteina : 0) + 9 * palancas.filter((i) => rolIngrediente(i.nombre) === "grasa").reduce((s, i) => s + i.gramos, 0)
+    );
+    const factorIdeal = hayPalancas && kcalPalancas > 0 ? 1 + (kcalObjetivo - receta.kcal) / kcalPalancas : 1;
+    const suelo = Math.min(1, Math.max(1 - AJUSTE_MAX, fMin));
+    const techo = Math.max(suelo, Math.min(RACION_MAX_SUBIDA, fMax));
+    const factor = Math.min(techo, Math.max(suelo, factorIdeal));
+    const factorRedondeado = factor > 1 ? Math.floor(factor * 100 + 1e-9) / 100 : Math.ceil(factor * 100 - 1e-9) / 100;
+    const kcalResultante = Math.round(receta.kcal + kcalPalancas * (factorRedondeado - 1));
+    return { factor: factorRedondeado, factorRedondeado, kcalResultante, desviacion: Math.abs(kcalResultante - kcalObjetivo) };
   }
-  function incumplimientosRacion(franja, receta, factorRedondeado) {
-    const protegidos = receta.ingredientes.filter((i) => esIngredienteProtegido(i.nombre)).map((i) => i.nombre);
-    if (factorRedondeado === 1) return { protegidos, incumplimientos: [] };
-    const escalados = receta.ingredientes.map((i) => ({
+  function gramosEscalados(receta, factorRedondeado) {
+    return receta.ingredientes.map((i) => ({
       nombre: i.nombre,
-      gramos: protegidos.includes(i.nombre) ? i.gramos : Math.round(i.gramos * factorRedondeado * 10) / 10
+      gramos: esPalanca(i.nombre) ? Math.round(i.gramos * factorRedondeado * 10) / 10 : i.gramos
     }));
-    return { protegidos, incumplimientos: validarPlato(franja, escalados).incumplimientos };
+  }
+  function incumplimientosRacion(franja, receta, factorRedondeado, opciones = {}) {
+    const protegidos = receta.ingredientes.filter((i) => esIngredienteProtegido(i.nombre)).map((i) => i.nombre);
+    return { protegidos, incumplimientos: validarPlatoGenerado(franja, gramosEscalados(receta, factorRedondeado), opciones).incumplimientos };
   }
   function filtrarPorDias(items, dias) {
     const permitidos = new Set(dias);
@@ -1268,16 +1336,17 @@ var Motor = (() => {
         });
         continue;
       }
-      const validas = disponibles.filter((r) => validarPlato(slot.franja, r.ingredientes).incumplimientos.length === 0);
+      const validas = disponibles.filter((r) => validarPlatoGenerado(slot.franja, r.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos.length === 0);
       if (!validas.length) {
-        huecos.push({ dia: slot.dia, franja: slot.franja, motivo: "ninguna receta disponible pasa el validador de platos para esta franja" });
+        const detalle = disponibles.slice(0, 3).map((r) => `"${r.nombre}": ${validarPlatoGenerado(slot.franja, r.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos.join("; ")}`).join(" | ");
+        huecos.push({ dia: slot.dia, franja: slot.franja, motivo: `no cabe en una raci\xF3n normal: ninguna receta disponible pasa el validador de platos para esta franja (${detalle})` });
         continue;
       }
       let mejor;
       const descartadasPorEscala = [];
       for (const r of validas) {
-        const { factor, kcalResultante, desviacion, factorRedondeado: factorRedondeado2 } = racionParaObjetivo(r, slot.kcalObjetivo, slot.franja);
-        const { incumplimientos: rotos } = incumplimientosRacion(slot.franja, r, factorRedondeado2);
+        const { factor, kcalResultante, desviacion, factorRedondeado: factorRedondeado2 } = racionParaObjetivo(r, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta });
+        const { incumplimientos: rotos } = incumplimientosRacion(slot.franja, r, factorRedondeado2, { cargaAlta: slot.cargaAlta });
         if (rotos.length) {
           descartadasPorEscala.push(`"${r.nombre}" al ${Math.round(factorRedondeado2 * 100)} %: ${rotos.join("; ")}`);
           continue;
@@ -1295,7 +1364,7 @@ var Motor = (() => {
       const elegido = mejor;
       if (limitada) usos.set(elegido.receta.id, (usos.get(elegido.receta.id) ?? 0) + 1);
       const factorRedondeado = Math.round(elegido.factor * 100) / 100;
-      const { protegidos, incumplimientos } = incumplimientosRacion(slot.franja, elegido.receta, factorRedondeado);
+      const { protegidos, incumplimientos } = incumplimientosRacion(slot.franja, elegido.receta, factorRedondeado, { cargaAlta: slot.cargaAlta });
       if (incumplimientos.length) {
         avisos.push(`${slot.dia} ${slot.franja}: con la raci\xF3n escalada al ${Math.round(factorRedondeado * 100)} % "${elegido.receta.nombre}" ya no pasa el validador de platos (${incumplimientos.join("; ")}).`);
       }
@@ -1309,7 +1378,7 @@ var Motor = (() => {
       });
       if (elegido.desviacion > slot.kcalObjetivo * 0.1) {
         avisos.push(
-          `${slot.dia} ${slot.franja}: "${elegido.receta.nombre}" se queda a ${elegido.desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun ajustando la raci\xF3n todo lo que permiten los topes del m\xE9todo.`
+          `${slot.dia} ${slot.franja}: "${elegido.receta.nombre}" se queda a ${elegido.desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun ajustando la raci\xF3n todo lo que permiten los topes del m\xE9todo: no cabe en una raci\xF3n normal y no se infla nada. Reparte lo que falta entre las otras comidas del d\xEDa, cierra con un postre (fruta o yogur) o cambia el plato.`
         );
       }
     }
@@ -1347,7 +1416,7 @@ var Motor = (() => {
         estados.push({ alimento, cubierto: false, causa: "no hay ninguna receta en el cat\xE1logo que lo lleve" });
         continue;
       }
-      const aptas = conAlimento.filter((r) => (!ap || evaluarCompatibilidad(r, ap).compatible) && r.franjas.some((f2) => validarPlato(f2, r.ingredientes).incumplimientos.length === 0));
+      const aptas = conAlimento.filter((r) => (!ap || evaluarCompatibilidad(r, ap).compatible) && r.franjas.some((f2) => validarPlatoGenerado(f2, r.ingredientes).incumplimientos.length === 0));
       if (!aptas.length) {
         estados.push({ alimento, cubierto: false, causa: "las recetas que lo llevan chocan con tus alergias, tu lista negra o los topes del plato" });
         continue;
@@ -1360,13 +1429,13 @@ var Motor = (() => {
           if (slots.find((s) => s.dia === a2.dia && s.franja === a2.franja)?.sinFibraAlta && r.fibraAlta) continue;
           const slot = slots.find((s) => s.dia === a2.dia && s.franja === a2.franja);
           if (!slot) continue;
-          if (validarPlato(a2.franja, r.ingredientes).incumplimientos.length) continue;
+          if (validarPlatoGenerado(a2.franja, r.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
           if (esFranjaConLimiteVariedad(a2.franja)) {
             const usos = asignaciones.filter((b, j) => j !== i && b.receta === r.id && esFranjaConLimiteVariedad(b.franja)).length;
             if (usos >= maxRep) continue;
           }
-          const { factorRedondeado, kcalResultante, desviacion } = racionParaObjetivo(r, slot.kcalObjetivo, a2.franja);
-          if (incumplimientosRacion(a2.franja, r, factorRedondeado).incumplimientos.length) continue;
+          const { factorRedondeado, kcalResultante, desviacion } = racionParaObjetivo(r, slot.kcalObjetivo, a2.franja, { cargaAlta: slot.cargaAlta });
+          if (incumplimientosRacion(a2.franja, r, factorRedondeado, { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
           if (desviacion > slot.kcalObjetivo * 0.1) continue;
           if (!mejor || desviacion < mejor.desv) mejor = { i, r, factor: factorRedondeado, kcal: kcalResultante, desv: desviacion };
         }
@@ -2538,16 +2607,16 @@ var Motor = (() => {
     if (esFranjaConLimiteVariedad(slot.franja) && usos >= max) {
       return { receta: r, motivo: `ya aparece ${usos} veces esta semana entre comidas y cenas (m\xE1ximo ${max}): un cambio crear\xEDa una tercera aparici\xF3n` };
     }
-    const base = validarPlato(slot.franja, r.ingredientes).incumplimientos;
+    const base = validarPlatoGenerado(slot.franja, r.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos;
     if (base.length) return { receta: r, motivo: `no pasa el validador de platos (${base.join("; ")})` };
-    const { factorRedondeado, kcalResultante, desviacion } = racionParaObjetivo(r, slot.kcalObjetivo, slot.franja);
-    const { protegidos, incumplimientos } = incumplimientosRacion(slot.franja, r, factorRedondeado);
+    const { factorRedondeado, kcalResultante, desviacion } = racionParaObjetivo(r, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta });
+    const { protegidos, incumplimientos } = incumplimientosRacion(slot.franja, r, factorRedondeado, { cargaAlta: slot.cargaAlta });
     if (incumplimientos.length) {
       return { receta: r, motivo: `con la raci\xF3n escalada al ${Math.round(factorRedondeado * 100)} % no pasa el validador de platos (${incumplimientos.join("; ")})` };
     }
     const avisos = [];
     if (desviacion > slot.kcalObjetivo * 0.1) {
-      avisos.push(`se queda a ${desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun subiendo o bajando la raci\xF3n todo lo que permiten los topes del m\xE9todo`);
+      avisos.push(`se queda a ${desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun subiendo o bajando la raci\xF3n todo lo que permiten los topes del m\xE9todo (no cabe en una raci\xF3n normal: reparte lo que falta con otras comidas, cierra con postre o cambia el plato)`);
     }
     if (protegidos.length && factorRedondeado !== 1) {
       avisos.push(`${protegidos.join(", ")} no se escala${protegidos.length > 1 ? "n" : ""} (protegido): las kcal y macros del plato son aproximados`);
@@ -2977,7 +3046,7 @@ r20,aceite de oliva,12`;
     linea.push({
       minuto: -1,
       tipo: "vispera",
-      titulo: "V\xEDspera: hidrataci\xF3n",
+      titulo: "Hidrataci\xF3n",
       detalle: `Bebe a sorbos a lo largo del d\xEDa anterior.${salida < 9 * 60 ? " Salida antes de las 9:00: cena pronto." : ""}`
     });
     const objetivo = salida - 180;
