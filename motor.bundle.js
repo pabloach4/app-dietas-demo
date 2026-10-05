@@ -1316,8 +1316,7 @@ var Motor = (() => {
   }
   function combinanBien(primero, segundo) {
     const nombres = (r, rol) => r.ingredientes.filter((i) => rolIngrediente(i.nombre) === rol).map((i) => i.nombre);
-    const bases = [...nombres(primero, "base"), ...nombres(segundo, "base")];
-    if (new Set(bases.map((b) => b.toLowerCase())).size > 1) return false;
+    if (nombres(primero, "base").length && nombres(segundo, "base").length) return false;
     const pp = nombres(primero, "proteina");
     const ps = nombres(segundo, "proteina");
     return !pp.some((a2) => ps.some((b) => coincideAlimento(a2, b)));
