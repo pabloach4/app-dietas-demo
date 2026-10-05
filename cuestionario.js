@@ -845,6 +845,53 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (r) abrirDetalleReceta(id);
   });
 
+  // --- Issue #129: «mi semana fija». Lo fijado se repite cada semana en su día y franja; solo se recalcula su ración. ---
+  const CLAVE_FIJA = 'app-dietas-semana-fija';
+  let semanaFija = new Map(); // 'dia|franja' -> id de receta (o «id1+id2» si es una comida compuesta)
+  let historialFija = [];     // estados anteriores, para deshacer
+  let estadosFija = [];       // lo que dijo el último reparto
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_FIJA) || 'null');
+    if (g && typeof g === 'object') semanaFija = new Map(Object.entries(g).filter(([k, v]) => /^[LMXJVSD]\|(desayuno|media_manana|comida|merienda|cena)$/.test(k) && typeof v === 'string'));
+  } catch { /* sin almacenamiento o dato corrupto: nada fijado */ }
+  function guardarFija() { try { localStorage.setItem(CLAVE_FIJA, JSON.stringify(Object.fromEntries(semanaFija))); } catch { falloAlmacenamiento(); } }
+  function cambiarFija(fn) {
+    historialFija.push(new Map(semanaFija));
+    historialFija = historialFija.slice(-20);
+    fn();
+    guardarFija();
+    if (vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
+  }
+  function pintarFija() {
+    const caja = document.getElementById('r-fija');
+    if (!caja) return;
+    const lineas = estadosFija.filter((e) => !e.ok || e.causa || e.aviso).map((e) =>
+      `<li>${e.ok ? '⚠️' : '⛔'} <strong>${escaparHtml(e.dia)} · ${NOMBRE_FRANJA_SOS[e.franja]}</strong> · ${escaparHtml(e.nombre)}: ${escaparHtml(e.causa ?? e.aviso ?? '')}${e.arreglo ? ` <span style="color:var(--gris)">${escaparHtml(e.arreglo)}</span>` : ''}${e.aviso && e.causa ? ` <span style="color:var(--gris)">${escaparHtml(e.aviso)}</span>` : ''}</li>`).join('');
+    caja.innerHTML = `
+      <div class="acciones-rapidas" style="margin:0 0 0.5rem">
+        <button type="button" class="btn-secundario" id="fija-toda">📌 Fijar toda la semana</button>
+        <button type="button" class="btn-texto" id="fija-quitar" ${semanaFija.size ? '' : 'disabled'}>Quitar todas las fijaciones (${semanaFija.size})</button>
+        <button type="button" class="btn-texto" id="fija-deshacer" ${historialFija.length ? '' : 'disabled'}>↩️ Deshacer</button>
+      </div>
+      ${lineas ? `<details class="plegable" open><summary>Tu semana fija: avisos</summary><ul class="resumen-lista">${lineas}</ul></details>` : ''}`;
+  }
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest && ev.target.closest('.fijar-btn, #fija-toda, #fija-quitar, #fija-deshacer');
+    if (!b || !planActual) return;
+    if (b.id === 'fija-deshacer') {
+      if (!historialFija.length) return;
+      semanaFija = historialFija.pop();
+      guardarFija();
+      mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
+    } else if (b.id === 'fija-quitar') cambiarFija(() => semanaFija.clear());
+    else if (b.id === 'fija-toda') {
+      cambiarFija(() => { for (const a of asignacionSemanaActual.asignaciones) semanaFija.set(`${a.dia}|${a.franja}`, a.receta); });
+    } else {
+      const k = `${b.dataset.dia}|${b.dataset.franja}`;
+      cambiarFija(() => { if (semanaFija.has(k)) semanaFija.delete(k); else { const a = asignacionSemanaActual.asignaciones.find((x) => `${x.dia}|${x.franja}` === k); if (a) semanaFija.set(k, a.receta); } });
+    }
+  });
+
   const CLAVE_FAVORITAS = 'app-dietas-recetas-favoritas';
   let restriccionesActuales = null;
   let favoritasRecetas = [];
@@ -2391,7 +2438,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
     const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
-    const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi });
+    const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: [...semanaFija].map(([k, v]) => ({ dia: k[0], franja: k.slice(2), receta: v })) });
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
     const asignacionSemana = aplicadas.resultado;
@@ -2429,6 +2476,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // Issue #117: qué ha pasado con cada alimento de «sí o sí»: entra en la semana (se marca en la comida) o se explica por qué no.
     {
       const pedidos = asignacionBase.imprescindibles ?? [];
+      estadosFija = asignacionBase.fijadas ?? [];
+      pintarFija();
       estadosSiOSi = asignacionBase.recetasSiOSi ?? [];
       pintarListaSiOSi();
       const htmlAlimentos = pedidos.length
@@ -2450,7 +2499,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
           <div class="receta-franja hueco">⚠️ ${escaparHtml(textoConflicto(c))}
             <button type="button" class="hor-ir" data-dia="${d.dia}">Editar horario de este día</button></div>`).join('');
         const recetaHtml = asignada
-          ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong> <span class="etq-ejemplo">EJEMPLO</span>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div></div>`
+          ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong> <span class="etq-ejemplo">EJEMPLO</span>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}${asignada.fijada ? ' <span class="etq-pedido">📌 fijada</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div><button type="button" class="btn-texto fijar-btn" data-dia="${d.dia}" data-franja="${f.franja}">${semanaFija.has(`${d.dia}|${f.franja}`) ? '📌 Quitar fijación' : '📌 Fijar'}</button></div>`
           : `<div class="receta-franja hueco">⚠️ Sin receta de ejemplo que encaje${hueco ? `: ${escaparHtml(hueco.motivo)}` : ''}</div>`;
         return `
           <div class="franja-reparto-card ${f.rol !== 'normal' ? 'destacada' : ''}">
