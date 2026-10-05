@@ -1005,6 +1005,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
   function guardarCalendarioLocal() {
     try { localStorage.setItem(CLAVE_CALENDARIO, JSON.stringify({ inicio: calInicio, competiciones })); } catch { falloAlmacenamiento(); /* sin almacenamiento: solo dura esta sesión */ }
+    if (vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // la semana cambia con las competiciones (#124)
   }
 
   // Icono por actividad (#70): decorativo (el nombre de la actividad siempre va en texto) y sin efecto en ningún cálculo.
@@ -2145,6 +2146,11 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
   function mostrarResultado(semana, plan, respuestas, franjasBloque7) {
     // Issue #18: se guarda el estado para poder mover una sesión de día sin volver al formulario.
+    // Issue #124: con una competición cerca se ajusta la semana; el plan base se conserva (plan.planBase) para poder volver a calcular sin acumular cambios.
+    const planBase = plan.planBase ?? plan;
+    const compSem = calInicio && competiciones.length ? Motor.aplicarCompeticion(planBase, semana.perfil, competiciones, calInicio, Motor.fechaLocalISO(new Date())) : null;
+    plan = compSem && compSem.activa ? { ...compSem.plan, planBase } : planBase;
+    const compPorDia = new Map((compSem ? compSem.dias : []).map((x) => [x.dia, x]));
     semanaActual = semana;
     planActual = plan;
     respuestasActuales = respuestas;
@@ -2188,7 +2194,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       });
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}) });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,
@@ -2217,6 +2223,27 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       Motor.combinarConRecetas(asignacionSemana.asignaciones, RECETAS_EJEMPLO).map((a) => [`${a.dia}|${a.franja}`, a]),
     );
     const huecoPorSlot = new Map(asignacionSemana.huecos.map((h) => [`${h.dia}|${h.franja}`, h]));
+    // Issue #124: aviso de cabecera y bloque «Qué cambia esta semana» (compara con la misma semana sin competición).
+    {
+      const cajaComp = document.getElementById('r-competicion');
+      const partes = [];
+      if (compSem && compSem.avisos.length) partes.push(`<p style="margin:0 0 0.5rem"><strong>🏁 ${compSem.avisos.map(escaparHtml).join(' · ')}</strong></p>`);
+      if (compSem && compSem.activa) {
+        const kcalPorDia = new Map();
+        for (const a of asignacionSemana.asignaciones) kcalPorDia.set(a.dia, (kcalPorDia.get(a.dia) ?? 0) + a.kcalResultante);
+        const filas = compSem.dias.filter((x) => x.fase).map((x) => {
+          const falta = x.hidratoMinGKg && plan.dias.find((p) => p.dia === x.dia) ? plan.dias.find((p) => p.dia === x.dia).kcal - (kcalPorDia.get(x.dia) ?? 0) : 0;
+          const faltaTxt = falta > 0.08 * x.kcalDespues
+            ? ` Con los topes de plato, las recetas de este día se quedan a ~${Math.round(falta)} kcal (≈ ${Math.round(falta / 4)} g de hidrato) del objetivo: si no te llega, añade una bebida deportiva o una toma extra (no se fuerza ningún plato).`
+            : '';
+          const cambio = x.kcalDespues !== x.kcalAntes || x.hidratoDespues !== x.hidratoAntes
+            ? `${x.kcalAntes} → <strong>${x.kcalDespues}</strong> kcal · H ${x.hidratoAntes} → <strong>${x.hidratoDespues}</strong> g` : 'sin cambio de cifras';
+          return `<li><strong>${x.dia} · ${Motor.ETIQUETA_FASE[x.fase]}</strong>: ${cambio}.<br><span style="color:var(--gris)">${x.motivos.map(escaparHtml).join('; ')}${escaparHtml(faltaTxt)}</span></li>`;
+        }).join('');
+        partes.push(`<details class="plegable" open><summary>Qué cambia esta semana</summary><ul class="resumen-lista">${filas}</ul><p class="subt" style="font-size:0.8rem">${escaparHtml(Motor.NOTA_PAUTA_ORIENTATIVA)}</p></details>`);
+      }
+      cajaComp.innerHTML = partes.join('');
+    }
     // Issue #117: qué ha pasado con cada alimento de «sí o sí»: entra en la semana (se marca en la comida) o se explica por qué no.
     {
       const pedidos = asignacionBase.imprescindibles ?? [];
@@ -2303,7 +2330,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
           <div class="dia-cabecera">
             <div>
               <div class="dia-nombre">${diasConSesion.has(d.dia) ? `<span aria-hidden="true">${iconosDelDia(sesiones, d.dia)}</span> ` : ''}${d.dia}</div>
-              <div class="dia-tipo">${d.tipo}</div>
+              <div class="dia-tipo">${d.tipo}${compPorDia.get(d.dia)?.fase ? ` · <span class="etq-fase">${Motor.ETIQUETA_FASE[compPorDia.get(d.dia).fase]}</span>` : ''}</div>
             </div>
             <div class="dia-kcal">${d.kcal}<small style="font-size:0.55em;font-weight:400"> kcal</small></div>
           </div>

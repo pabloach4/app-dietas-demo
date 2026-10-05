@@ -21,12 +21,15 @@ var Motor = (() => {
   var motor_exports = {};
   __export(motor_exports, {
     ACTIVIDADES: () => ACTIVIDADES,
+    AVISO_DESCARGA: () => AVISO_DESCARGA,
     DIAS: () => DIAS,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
+    ETIQUETA_FASE: () => ETIQUETA_FASE,
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
     MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
+    NOTA_PAUTA_ORIENTATIVA: () => NOTA_PAUTA_ORIENTATIVA,
     OPCIONES_GELES: () => OPCIONES_GELES,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
@@ -38,6 +41,7 @@ var Motor = (() => {
     alternarFavorita: () => alternarFavorita,
     alternativasParaSlot: () => alternativasParaSlot,
     anadirCompeticion: () => anadirCompeticion,
+    aplicarCompeticion: () => aplicarCompeticion,
     aplicarSustituciones: () => aplicarSustituciones,
     asignarRecetas: () => asignarRecetas,
     avisoClasificacionSesion: () => avisoClasificacionSesion,
@@ -45,6 +49,7 @@ var Motor = (() => {
     buscarRecetas: () => buscarRecetas,
     calcular: () => calcular,
     cambiarHoraSesion: () => cambiarHoraSesion,
+    cargaDeHidratos: () => cargaDeHidratos,
     claveSlot: () => claveSlot,
     coincideAlimento: () => coincideAlimento,
     combinarConRecetas: () => combinarConRecetas,
@@ -1057,6 +1062,7 @@ var Motor = (() => {
       grasa: Number(grasa),
       hidrato: Number(hidrato),
       notas: notas ?? "",
+      .../fibraAlta/.test(notas ?? "") ? { fibraAlta: true } : {},
       ingredientes: ingredientesPorReceta.get(id) ?? []
     }));
   }
@@ -1228,9 +1234,9 @@ var Motor = (() => {
     const huecos = [];
     const avisos = [];
     for (const slot of slots) {
-      const candidatas = recetas.filter((r) => r.franjas.includes(slot.franja));
+      const candidatas = recetas.filter((r) => r.franjas.includes(slot.franja) && !(slot.sinFibraAlta && r.fibraAlta));
       if (!candidatas.length) {
-        huecos.push({ dia: slot.dia, franja: slot.franja, motivo: "ninguna receta del cat\xE1logo declara esta franja" });
+        huecos.push({ dia: slot.dia, franja: slot.franja, motivo: slot.sinFibraAlta ? "la v\xEDspera de competici\xF3n no se proponen recetas con fibra alta (legumbre, integral o verdura cruda) y no hay otra para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" });
         continue;
       }
       let candidatasAptas = candidatas;
@@ -1346,6 +1352,7 @@ var Motor = (() => {
         for (let i = 0; i < asignaciones.length; i++) {
           const a2 = asignaciones[i];
           if (a2.pedidoPorUsuario || !r.franjas.includes(a2.franja)) continue;
+          if (slots.find((s) => s.dia === a2.dia && s.franja === a2.franja)?.sinFibraAlta && r.fibraAlta) continue;
           const slot = slots.find((s) => s.dia === a2.dia && s.franja === a2.franja);
           if (!slot) continue;
           if (validarPlato(a2.franja, r.ingredientes).incumplimientos.length) continue;
@@ -2513,6 +2520,7 @@ var Motor = (() => {
   }
   function evaluar(slot, r, o) {
     if (!r.franjas.includes(slot.franja)) return { receta: r, motivo: "no declara esta franja" };
+    if (slot.sinFibraAlta && r.fibraAlta) return { receta: r, motivo: "la v\xEDspera de competici\xF3n se evita la fibra alta (legumbre, integral o verdura cruda)" };
     if (o.alergiasPreferencias) {
       const c = evaluarCompatibilidad(r, o.alergiasPreferencias);
       if (!c.compatible) return { receta: r, motivo: `no encaja con tus alergias/preferencias (${c.motivo?.detalle ?? "sin detalle"})` };
@@ -2625,7 +2633,7 @@ var Motor = (() => {
   var RECETAS_EJEMPLO_CSV = `id,nombre,franjas,kcal,proteina_g,grasa_g,hidrato_g,notas
 r01,Pollo con patatas y jud\xEDas verdes,comida;cena,650,45,18,70,
 r02,Tortitas de avena con yogur y pl\xE1tano,desayuno;media_manana;merienda,410,22,12,55,
-r03,Gazpacho con at\xFAn,comida,380,28,14,32,liquido
+r03,Gazpacho con at\xFAn,comida,380,28,14,32,liquido;fibraAlta
 r04,Merluza con br\xF3coli,cena,480,40,14,18,
 r05,Tostada con huevo y aguacate,desayuno,380,18,20,30,
 r06,Yogur griego con manzana,media_manana;merienda,205,12,7,26,
@@ -2636,11 +2644,11 @@ r10,Tostada con tomate y aceite,desayuno;media_manana;merienda,250,6,10,34,
 r11,Queso fresco con fresas,media_manana;merienda,175,15,5,16,
 r12,Arroz con pollo y pimiento,comida;cena,910,65,24,104,
 r13,Pasta con at\xFAn y tomate,comida,630,40,13,87,
-r14,Lentejas con zanahoria y patata,comida,585,28,12,90,
+r14,Lentejas con zanahoria y patata,comida,585,28,12,90,fibraAlta
 r15,Salm\xF3n con boniato y espinacas,comida;cena,775,51,39,54,
 r16,Ternera con arroz y jud\xEDas verdes,comida,855,50,31,88,
-r17,Tortilla de patata con ensalada,comida;cena,555,25,30,46,
-r18,Garbanzos con espinacas,comida;cena,515,25,19,60,
+r17,Tortilla de patata con ensalada,comida;cena,555,25,30,46,fibraAlta
+r18,Garbanzos con espinacas,comida;cena,515,25,19,60,fibraAlta
 r19,Pavo con quinoa y calabac\xEDn,comida;cena,730,72,20,64,
 r20,Merluza al horno con patata,comida;cena,555,54,15,48,`;
   var RECETAS_EJEMPLO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos
@@ -2753,6 +2761,146 @@ r20,aceite de oliva,12`;
     const factor = factorCocido(ingrediente);
     if (factor === void 0 || !Number.isFinite(gramosSecos) || gramosSecos <= 0) return void 0;
     return { gramos: Math.round(gramosSecos * factor / 5) * 5, factor };
+  }
+
+  // src/motor/competicion-semana.ts
+  var NOTA_PAUTA_ORIENTATIVA = "Pauta orientativa, pendiente de validar por Pablo.";
+  var ETIQUETA_FASE = {
+    descarga: "Descarga",
+    previa: "Previa",
+    carga: "Carga de hidratos",
+    vispera: "V\xEDspera",
+    competicion: "Competici\xF3n",
+    recuperacion: "Recuperaci\xF3n"
+  };
+  var AVISO_DESCARGA = "Si bajas el entreno esta semana, actualiza tus sesiones y el plan se ajusta.";
+  var KCAL_POR_G_HIDRATO = 4;
+  var MS_DIA2 = 864e5;
+  var PRIORIDAD = { descarga: 0, previa: 1, recuperacion: 2, carga: 3, vispera: 4, competicion: 5 };
+  var aUTC2 = (f2) => Date.UTC(Number(f2.slice(0, 4)), Number(f2.slice(5, 7)) - 1, Number(f2.slice(8, 10)));
+  var diasEntre = (a2, b) => Math.round((aUTC2(b) - aUTC2(a2)) / MS_DIA2);
+  var NOMBRE_DIA_SEMANA = ["domingo", "lunes", "martes", "mi\xE9rcoles", "jueves", "viernes", "s\xE1bado"];
+  function perfilDeEsfuerzo(c) {
+    if (!c.pruebas?.length) return { duracionMax: DURACION_PROPUESTA_MIN[c.tipo ?? "otra"], variasMismoDia: false };
+    const porDia = /* @__PURE__ */ new Map();
+    for (const p of c.pruebas) {
+      const f2 = p.fecha ?? c.fecha;
+      porDia.set(f2, (porDia.get(f2) ?? 0) + 1);
+    }
+    return { duracionMax: Math.max(...c.pruebas.map((p) => p.duracionMin)), variasMismoDia: [...porDia.values()].some((n) => n >= 2) };
+  }
+  function cargaDeHidratos(c) {
+    if (c.tipo === "categoria_peso") return void 0;
+    const { duracionMax, variasMismoDia } = perfilDeEsfuerzo(c);
+    if (duracionMax > 90) return { diasPrevios: [2, 1], gKg: 10 };
+    if (duracionMax >= 45 || variasMismoDia) return { diasPrevios: [1], gKg: 7 };
+    return void 0;
+  }
+  function aplicarCompeticion(base, perfil, competiciones, inicio, hoy) {
+    const avisos = [];
+    const dias = [];
+    const nuevosDias = [];
+    const mlg = perfil.grasa !== void 0 ? perfil.peso * (1 - perfil.grasa / 100) : void 0;
+    for (const d of base.dias) {
+      const fecha = fechaDelDia(inicio, d.dia);
+      let fase;
+      let nombre;
+      let pausa = false;
+      let minGKg = 0;
+      let sinFibra = false;
+      const motivos = [];
+      for (const c of competiciones) {
+        if (c.tipo === "categoria_peso") continue;
+        const fin = c.fechaFin ?? c.fecha;
+        const offset = fecha < c.fecha ? -diasEntre(fecha, c.fecha) : fecha > fin ? diasEntre(fin, fecha) : 0;
+        if (offset < -6 || offset > 1) continue;
+        const carga = cargaDeHidratos(c);
+        let f2;
+        if (offset === 0) f2 = "competicion";
+        else if (offset === 1) f2 = "recuperacion";
+        else if (offset === -1) f2 = "vispera";
+        else if (offset === -2 && carga?.diasPrevios.includes(2)) f2 = "carga";
+        else if (offset === -2) f2 = "previa";
+        else f2 = "descarga";
+        if (fase === void 0 || PRIORIDAD[f2] > PRIORIDAD[fase]) {
+          fase = f2;
+          nombre = c.nombre;
+        }
+        if (offset >= -3) pausa = true;
+        if (carga && offset < 0 && carga.diasPrevios.includes(-offset)) {
+          minGKg = Math.max(minGKg, carga.gKg);
+          if (offset === -1) sinFibra = true;
+        }
+      }
+      if (fase === void 0) {
+        nuevosDias.push(d);
+        dias.push({ dia: d.dia, deficitEnPausa: false, sinFibraAlta: false, kcalAntes: d.kcal, kcalDespues: d.kcal, hidratoAntes: d.hidratoG, hidratoDespues: d.hidratoG, motivos });
+        continue;
+      }
+      let kcal = d.kcal;
+      if (pausa && d.gasto > kcal) {
+        kcal = d.gasto;
+        motivos.push(`d\xE9ficit en pausa: comes lo que gastas (${d.gasto} kcal)`);
+      }
+      const base4 = 4 * d.proteinaG + 9 * d.grasaG;
+      let hidrato = d.hidratoG;
+      if (kcal !== d.kcal) hidrato = (kcal - base4) / KCAL_POR_G_HIDRATO;
+      if (minGKg > 0) {
+        const minimo = Math.ceil(minGKg * perfil.peso);
+        if (hidrato < minimo) {
+          kcal = base4 + KCAL_POR_G_HIDRATO * minimo;
+          hidrato = minimo;
+          motivos.push(`hidratos al m\xEDnimo de ${minGKg} g/kg (${minimo} g): suben las kcal lo mismo (4 kcal/g); prote\xEDna y grasa no cambian`);
+        } else {
+          motivos.push(`hidratos ya por encima del m\xEDnimo de ${minGKg} g/kg (${Math.ceil(minGKg * perfil.peso)} g)`);
+        }
+      }
+      if (sinFibra) motivos.push("v\xEDspera con poca fibra: sin legumbre, integrales ni verdura cruda");
+      if (fase === "descarga") motivos.push(AVISO_DESCARGA);
+      if (fase === "competicion") motivos.push("d\xEDa de competici\xF3n");
+      if (fase === "recuperacion") motivos.push("d\xEDa de recuperaci\xF3n; despu\xE9s vuelve el plan normal");
+      const kcalFinal = Math.round(kcal);
+      const hidratoFinal = kcalFinal === d.kcal && hidrato === d.hidratoG ? d.hidratoG : redondear(hidrato);
+      const cambia = kcalFinal !== d.kcal || hidratoFinal !== d.hidratoG;
+      nuevosDias.push(cambia ? {
+        ...d,
+        fase,
+        kcal: kcalFinal,
+        hidratoG: hidratoFinal,
+        hidratoGKg: redondear(hidrato / perfil.peso, 1),
+        ...mlg && d.disponibilidad !== void 0 ? { disponibilidad: redondear((kcalFinal - d.kcalEntreno) / mlg, 1) } : {}
+      } : { ...d, fase });
+      dias.push({
+        dia: d.dia,
+        fase,
+        competicion: nombre,
+        deficitEnPausa: pausa && kcalFinal !== d.kcal,
+        ...minGKg ? { hidratoMinGKg: minGKg } : {},
+        sinFibraAlta: sinFibra,
+        kcalAntes: d.kcal,
+        kcalDespues: kcalFinal,
+        hidratoAntes: d.hidratoG,
+        hidratoDespues: hidratoFinal,
+        motivos
+      });
+    }
+    const futuras = competiciones.filter((c) => hoy !== void 0 && c.tipo !== "categoria_peso" && diasEntre(hoy, c.fechaFin ?? c.fecha) >= 0 && diasEntre(hoy, c.fecha) <= 7).sort((a2, b) => a2.fecha.localeCompare(b.fecha));
+    if (hoy !== void 0 && futuras.length) {
+      const c = futuras[0];
+      const faltan = Math.max(0, diasEntre(hoy, c.fecha));
+      const diaSemana = NOMBRE_DIA_SEMANA[new Date(aUTC2(c.fecha)).getUTCDay()];
+      avisos.push(faltan === 0 ? `Compites hoy: ${c.nombre}.` : `Compites el ${diaSemana}: faltan ${faltan} ${faltan === 1 ? "d\xEDa" : "d\xEDas"} (${c.nombre}).`);
+    }
+    const pesoCerca = competiciones.some((c) => c.tipo === "categoria_peso" && DIAS.some((dia) => {
+      const f2 = fechaDelDia(inicio, dia);
+      return f2 >= c.fecha && f2 <= (c.fechaFin ?? c.fecha);
+    }));
+    if (pesoCerca) avisos.push(MENSAJE_CATEGORIA_PESO);
+    const activa = dias.some((x) => x.fase !== void 0);
+    if (!activa) return { activa: false, plan: base, base, dias, avisos, notas: [] };
+    const kcalMedia = redondear(nuevosDias.reduce((s, x) => s + x.kcal, 0) / nuevosDias.length);
+    const plan = { ...base, dias: nuevosDias, kcalMedia, notas: [...base.notas, `Semana con competici\xF3n: ${NOTA_PAUTA_ORIENTATIVA}`] };
+    return { activa, plan, base, dias, avisos, notas: [NOTA_PAUTA_ORIENTATIVA] };
   }
   return __toCommonJS(motor_exports);
 })();
