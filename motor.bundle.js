@@ -27,6 +27,7 @@ var Motor = (() => {
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
     ETIQUETA_FASE: () => ETIQUETA_FASE,
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
+    GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
     MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
     NOTA_PAUTA: () => NOTA_PAUTA,
@@ -36,6 +37,7 @@ var Motor = (() => {
     PAL_VIDA: () => PAL_VIDA,
     RECETAS_EJEMPLO_CSV: () => RECETAS_EJEMPLO_CSV,
     RECETAS_EJEMPLO_INGREDIENTES_CSV: () => RECETAS_EJEMPLO_INGREDIENTES_CSV,
+    TEXTO_NIVEL: () => TEXTO_NIVEL,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     ZONAS_ICS: () => ZONAS_ICS,
     aHoraTexto: () => aHoraTexto,
@@ -48,9 +50,12 @@ var Motor = (() => {
     aplicarSustituciones: () => aplicarSustituciones,
     asignarRecetas: () => asignarRecetas,
     avisoClasificacionSesion: () => avisoClasificacionSesion,
+    avisosVolumen: () => avisosVolumen,
+    bandaPesoServido: () => bandaPesoServido,
     borrarCompeticion: () => borrarCompeticion,
     buscarRecetas: () => buscarRecetas,
     calcular: () => calcular,
+    calcularNiveles: () => calcularNiveles,
     cambiarHoraSesion: () => cambiarHoraSesion,
     cargaDeHidratos: () => cargaDeHidratos,
     claveSlot: () => claveSlot,
@@ -66,6 +71,7 @@ var Motor = (() => {
     crearSemana: () => crearSemana,
     definirParametrosReparto: () => definirParametrosReparto,
     definirTablaLimites: () => definirTablaLimites,
+    densidadKcalG: () => densidadKcalG,
     deshacer: () => deshacer,
     diaDeLaFecha: () => diaDeLaFecha,
     editarCompeticion: () => editarCompeticion,
@@ -98,6 +104,7 @@ var Motor = (() => {
     formatearListaPendiente: () => formatearListaPendiente,
     generarIcs: () => generarIcs,
     generarListaCompra: () => generarListaCompra,
+    grupoDeFranja: () => grupoDeFranja,
     horaDeGuardado: () => horaDeGuardado,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
     limpiarNotaSesion: () => limpiarNotaSesion,
@@ -115,6 +122,7 @@ var Motor = (() => {
     parsearTablaLimites: () => parsearTablaLimites,
     perfilDesdeCuestionario: () => perfilDesdeCuestionario,
     pesoCocido: () => pesoCocido,
+    pesoServido: () => pesoServido,
     planDiaCompeticion: () => planDiaCompeticion,
     plegarLineaIcs: () => plegarLineaIcs,
     raizAlimento: () => raizAlimento,
@@ -1155,8 +1163,80 @@ var Motor = (() => {
     return { id: receta.id, nombre: receta.nombre, porFranja, ok };
   }
 
+  // src/motor/peso-cocido.ts
+  var FACTORES_COCIDO_EJEMPLO = [
+    ["arroz", 2.5],
+    ["pasta", 2.25],
+    ["quinoa", 3],
+    ["cuscus", 2.5],
+    ["legumbre seca", 2.5],
+    ["lentejas", 2.5],
+    ["garbanzos secos", 2.5]
+  ];
+  var normalizar2 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  function factorCocido(ingrediente) {
+    const n = normalizar2(ingrediente);
+    return FACTORES_COCIDO_EJEMPLO.find(([clave]) => n === clave || n.startsWith(`${clave} `))?.[1];
+  }
+  function pesoCocido(ingrediente, gramosSecos) {
+    const factor = factorCocido(ingrediente);
+    if (factor === void 0 || !Number.isFinite(gramosSecos) || gramosSecos <= 0) return void 0;
+    return { gramos: Math.round(gramosSecos * factor / 5) * 5, factor };
+  }
+
+  // src/motor/volumen.ts
+  var GRUPOS_VOLUMEN = ["desayuno", "principal", "pequena"];
+  var grupoDeFranja = (franja) => franja === "desayuno" ? "desayuno" : franja === "comida" || franja === "cena" ? "principal" : "pequena";
+  var BANDAS_PRINCIPAL = { [-2]: [250, 400], [-1]: [350, 500], 0: [450, 650], 1: [550, 750], 2: [650, 900] };
+  function bandaPesoServido(franja, nivel) {
+    const n = Math.max(-2, Math.min(2, Math.round(nivel)));
+    const [a2, b] = BANDAS_PRINCIPAL[n];
+    return grupoDeFranja(franja) === "principal" ? [a2, b] : [Math.round(a2 / 2), Math.round(b / 2)];
+  }
+  function pesoServido(ingredientes) {
+    return Math.round(ingredientes.reduce((s, i) => s + i.gramos * (factorCocido(i.nombre) ?? 1), 0));
+  }
+  var distanciaABanda = (peso, banda) => Math.max(0, banda[0] - peso, peso - banda[1]);
+  var densidadKcalG = (kcal, peso) => peso > 0 ? Math.round(kcal / peso * 100) / 100 : 0;
+  var SEMANA_MS = 7 * 864e5;
+  var aMs = (f2) => Date.UTC(Number(f2.slice(0, 4)), Number(f2.slice(5, 7)) - 1, Number(f2.slice(8, 10)));
+  function calcularNiveles(valoraciones, ajusteManual = {}) {
+    const niveles = { desayuno: 0, principal: 0, pequena: 0 };
+    for (const g of GRUPOS_VOLUMEN) {
+      const propias = valoraciones.filter((v) => grupoDeFranja(v.franja) === g).sort((a2, b) => a2.fecha.localeCompare(b.fecha));
+      let ultimas = [];
+      let ultimoCambio = -Infinity;
+      for (const v of propias) {
+        ultimas = [...ultimas, v.valor].slice(-3);
+        const mucha = ultimas.filter((x) => x === "mucha").length;
+        const hambre = ultimas.filter((x) => x === "hambre").length;
+        const paso = mucha >= 2 ? -1 : hambre >= 2 ? 1 : 0;
+        if (paso && aMs(v.fecha) - ultimoCambio >= SEMANA_MS) {
+          niveles[g] = Math.max(-2, Math.min(2, niveles[g] + paso));
+          ultimoCambio = aMs(v.fecha);
+          ultimas = [];
+        }
+      }
+      if (ajusteManual[g] !== void 0) niveles[g] = Math.max(-2, Math.min(2, ajusteManual[g]));
+    }
+    return niveles;
+  }
+  var TEXTO_NIVEL = (nivel) => nivel < 0 ? "Te hemos puesto platos m\xE1s concentrados: las mismas calor\xEDas en menos cantidad." : nivel > 0 ? "Te hemos puesto platos m\xE1s voluminosos: las mismas calor\xEDas en m\xE1s cantidad, para saciar m\xE1s." : "Cantidad habitual.";
+  function avisosVolumen(valoraciones, niveles, enDeficit, hoy) {
+    const avisos = [];
+    const dias = new Set(valoraciones.filter((v) => v.valor === "hambre" && aMs(hoy) - aMs(v.fecha) >= 0 && aMs(hoy) - aMs(v.fecha) < SEMANA_MS).map((v) => v.fecha));
+    if (enDeficit && dias.size >= 5) {
+      avisos.push("Has tenido hambre en 5 de los \xFAltimos 7 d\xEDas. Las calor\xEDas no se cambian solas con estos botones: si te pasa a menudo, cons\xFAltalo con Pablo.");
+    }
+    const principales = valoraciones.filter((v) => grupoDeFranja(v.franja) === "principal").sort((a2, b) => a2.fecha.localeCompare(b.fecha)).slice(-3);
+    if (niveles.principal <= -2 && principales.filter((v) => v.valor === "mucha").length >= 2) {
+      avisos.push("Sigues notando mucha comida aunque ya est\xE1 en el nivel m\xE1s concentrado. Las calor\xEDas no se cambian solas con estos botones: cons\xFAltalo con Pablo, o reparte en una toma m\xE1s.");
+    }
+    return avisos;
+  }
+
   // src/motor/filtro-alergias.ts
-  function normalizar2(s) {
+  function normalizar3(s) {
     return Array.from(s.normalize("NFD")).filter((c) => c.codePointAt(0) < 768 || c.codePointAt(0) > 879).join("").toLowerCase();
   }
   function raizPalabra(w) {
@@ -1167,7 +1247,7 @@ var Motor = (() => {
     return w;
   }
   function raizAlimento(s) {
-    return normalizar2(s).split(/[^a-z0-9ñ]+/).filter(Boolean).map(raizPalabra).join(" ");
+    return normalizar3(s).split(/[^a-z0-9ñ]+/).filter(Boolean).map(raizPalabra).join(" ");
   }
   function coincideAlimento(a2, b) {
     const x = raizAlimento(a2);
@@ -1206,7 +1286,7 @@ var Motor = (() => {
   var OTROS_NO_VEGANOS = ["huevo", "miel"];
   function buscarIngrediente(ingredientes, palabras) {
     for (const ing of ingredientes) {
-      const n = normalizar2(ing.nombre);
+      const n = normalizar3(ing.nombre);
       if (palabras.some((p) => n.includes(p))) return ing.nombre;
     }
     return void 0;
@@ -1514,25 +1594,27 @@ var Motor = (() => {
             descartadas.push(`"${r.nombre}" al ${Math.round(factorRedondeado2 * 100)} %: ${rotos.join("; ")}`);
             continue;
           }
-          if (!mejor || desviacion < mejor.desviacion) mejor = { receta: r, factor, kcalResultante, desviacion };
+          const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
+          if (!mejor || clave(desviacion, dist) < clave(mejor.desviacion, mejor.dist ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
         return { elegido: mejor };
       };
       const alcanza = (e) => !!e && e.desviacion <= slot.kcalObjetivo * 0.1;
+      const clave = (desv, dist) => desv > slot.kcalObjetivo * 0.1 ? 1e9 + desv : dist * 1e5 + desv;
       const fijada = fijadasPorSlot.get(claveSlotSiOSi(slot));
       const reservada = fijada ? void 0 : reservas.get(claveSlotSiOSi(slot));
       let res = fijada ? { elegido: fijada } : reservada ? { elegido: reservada } : intentar(recetas.filter((r) => esUnico(r) && !idsPedidos.has(r.id)), true);
-      if (!fijada && !reservada && (slot.franja === "comida" || slot.franja === "cena") && !alcanza(res.elegido)) {
+      if (!fijada && !reservada && (slot.franja === "comida" || slot.franja === "cena") && (!!slot.bandaPeso || !alcanza(res.elegido))) {
         const primeros = recetas.filter((r) => r.tipoPlato === "primero" && vale(r) && (!limitada || usosDe(r) < maxRep));
         const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
         const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));
         const parejas = primeros.flatMap((p) => segundos.filter((s) => combinanBien(p, s)).map((s) => componerComida([p, s])));
-        const mejorDe = (a2, b) => b.elegido && (!a2.elegido || b.elegido.desviacion < a2.elegido.desviacion) ? b : a2;
+        const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave(b.elegido.desviacion, b.elegido.dist ?? 0) < clave(a2.elegido.desviacion, a2.elegido.dist ?? 0)) ? b : a2;
         if (parejas.length) {
           const r2 = intentar(parejas, false);
           res = mejorDe(res, r2);
-          if (!alcanza(res.elegido)) {
+          if (!!slot.bandaPeso || !alcanza(res.elegido)) {
             const conPostre = parejas.flatMap((c) => postres.filter((po) => !c.platos.includes(po.id)).map((po) => componerComida([...c.platos.map((id) => recetas.find((x) => x.id === id)), po])));
             if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
           }
@@ -1559,6 +1641,7 @@ var Motor = (() => {
         ...reservada ? { pedidoPorUsuario: reservada.receta.nombre } : {},
         ...fijada ? { fijada: true } : {}
       });
+      if (slot.bandaPeso && (elegido.dist ?? 0) > 0) avisos.push(`${slot.dia} ${slot.franja}: con comida normal no se puede ajustar m\xE1s el volumen (queda a ${elegido.dist} g de la banda de peso servido): si quieres, reparte esta comida en una toma m\xE1s.`);
       if (elegido.desviacion > slot.kcalObjetivo * 0.1) {
         avisos.push(
           `${slot.dia} ${slot.franja}: "${elegido.receta.nombre}" se queda a ${elegido.desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun ajustando la raci\xF3n todo lo que permiten los topes del m\xE9todo: no cabe en una raci\xF3n normal y no se infla nada. Reparte lo que falta entre las otras comidas del d\xEDa, cierra con un postre (fruta o yogur) o cambia el plato.`
@@ -1645,7 +1728,7 @@ var Motor = (() => {
   }
 
   // src/motor/lista-compra.ts
-  function normalizar3(s) {
+  function normalizar4(s) {
     return Array.from(s.normalize("NFD")).filter((c) => c.codePointAt(0) < 768 || c.codePointAt(0) > 879).join("").toLowerCase();
   }
   var PALABRAS_SECCION = [
@@ -1737,14 +1820,14 @@ var Motor = (() => {
     ]]
   ];
   function clasificar(ingrediente) {
-    const n = normalizar3(ingrediente);
+    const n = normalizar4(ingrediente);
     for (const [seccion, palabras] of PALABRAS_SECCION) {
       if (palabras.some((p) => n.includes(p))) return seccion;
     }
     return "otros";
   }
   function redondearCompra(ingrediente, gramos) {
-    if (normalizar3(ingrediente).includes("huevo")) {
+    if (normalizar4(ingrediente).includes("huevo")) {
       const unidades = Math.ceil(gramos / 50);
       return `${unidades} ud${unidades === 1 ? "" : "s"} (huevos, ~50 g/ud)`;
     }
@@ -1860,7 +1943,7 @@ var Motor = (() => {
   var COLUMNAS = ["ingrediente", "unidad", "precio_medio", "nota"];
   var UNIDADES_VALIDAS = ["kg", "ud"];
   var GRAMOS_POR_UNIDAD = { huevo: 50 };
-  function normalizar4(s) {
+  function normalizar5(s) {
     return Array.from(s.normalize("NFD")).filter((c) => c.codePointAt(0) < 768 || c.codePointAt(0) > 879).join("").toLowerCase();
   }
   function parsearPrecios(csv) {
@@ -1896,12 +1979,12 @@ var Motor = (() => {
     return Math.round(n * 100) / 100;
   }
   function estimarCoste(lista, precios) {
-    const porNombre = new Map(precios.map((p) => [normalizar4(p.ingrediente), p]));
+    const porNombre = new Map(precios.map((p) => [normalizar5(p.ingrediente), p]));
     let total = 0;
     const porSeccion = {};
     const sinPrecio = [];
     for (const item of lista) {
-      const precio = porNombre.get(normalizar4(item.ingrediente));
+      const precio = porNombre.get(normalizar5(item.ingrediente));
       if (!precio) {
         sinPrecio.push(item.ingrediente);
         continue;
@@ -1910,7 +1993,7 @@ var Motor = (() => {
       if (precio.unidad === "kg") {
         coste = item.gramosTotales / 1e3 * precio.precioMedio;
       } else {
-        const gramosPorUnidad = GRAMOS_POR_UNIDAD[normalizar4(item.ingrediente)];
+        const gramosPorUnidad = GRAMOS_POR_UNIDAD[normalizar5(item.ingrediente)];
         if (!gramosPorUnidad) {
           sinPrecio.push(item.ingrediente);
           continue;
@@ -2800,6 +2883,22 @@ var Motor = (() => {
     ],
     r39: [
       "Sirve el queso fresco con las nueces troceadas por encima."
+    ],
+    r40: [
+      "Cocina el pollo a la plancha y c\xF3rtalo en lonchas.",
+      "Abre el pan y rell\xE9nalo con el pollo, el aguacate machacado y el tomate en rodajas."
+    ],
+    r41: [
+      "Cuece la pasta y esc\xFArrela.",
+      "M\xE9zclala con el at\xFAn escurrido y el aceite de oliva."
+    ],
+    r42: [
+      "Cocina la ternera a la plancha en tiras.",
+      "Rellena el pan con la ternera, el queso curado en l\xE1minas y el aguacate."
+    ],
+    r43: [
+      "Sofr\xEDe el pollo troceado y el pimiento con el aceite de oliva.",
+      "A\xF1ade el arroz y las jud\xEDas verdes, cubre con agua y cuece hasta que el arroz est\xE9 tierno."
     ]
   };
   function elaboracionEjemplo(recetaId) {
@@ -2984,7 +3083,6 @@ r17,Tortilla de patata con ensalada,comida;cena,555,25,30,46,fibraAlta
 r18,Garbanzos con espinacas,comida;cena,515,25,19,60,fibraAlta
 r19,Pavo con quinoa y calabac\xEDn,comida;cena,730,72,20,64,
 r20,Merluza al horno con patata,comida;cena,555,54,15,48,
-
 r21,Ensalada de can\xF3nigos con pollo y huevo duro,comida;cena,270,29,14,6,primero
 r22,Crema de calabac\xEDn con queso fresco,comida;cena,110,8,5,8,primero
 r23,Ensalada de tomate y at\xFAn,comida;cena,230,16,12,8,primero
@@ -3003,7 +3101,11 @@ r35,Pavo con arroz y pimiento,comida;cena,450,37,7,60,segundo
 r36,Hamburguesa de ternera con tomate,comida;cena,360,32,22,8,segundo
 r37,Yogur griego con fresas,comida;cena,130,11,4,12,postre
 r38,Manzana asada con canela,comida;cena,100,1,0,24,postre
-r39,Queso fresco con nueces,comida;cena,170,12,12,4,postre`;
+r39,Queso fresco con nueces,comida;cena,170,12,12,4,postre
+r40,Bocadillo de pollo con aguacate,comida;cena,650,42,17,81,
+r41,Pasta con at\xFAn y aceite de oliva,comida;cena,560,32,16,72,
+r42,Wrap de ternera con queso curado y aguacate,comida;cena,700,45,34,54,
+r43,Arroz caldoso de pollo y verduras,comida;cena,700,45,16,93,`;
   var RECETAS_EJEMPLO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos
 r01,pollo,300
 r01,patata,200
@@ -3071,7 +3173,6 @@ r20,merluza,280
 r20,patata,250
 r20,pimiento,100
 r20,aceite de oliva,12
-
 r21,can\xF3nigos,80
 r21,pollo,100
 r21,huevo,50
@@ -3135,7 +3236,23 @@ r37,fresas,100
 r38,manzana,180
 r38,canela,2
 r39,queso fresco,100
-r39,nueces,15`;
+r39,nueces,15
+r40,pan,150
+r40,pollo,120
+r40,aguacate,80
+r40,tomate,50
+r41,pasta,100
+r41,at\xFAn en lata,80
+r41,aceite de oliva,15
+r42,pan,100
+r42,ternera,120
+r42,queso curado,40
+r42,aguacate,50
+r43,arroz,100
+r43,pollo,150
+r43,pimiento,100
+r43,jud\xEDas verdes,100
+r43,aceite de oliva,10`;
 
   // src/motor/nota-sesion.ts
   var LIMITE_NOTA = 120;
@@ -3158,27 +3275,6 @@ r39,nueces,15`;
       return `Tu nota (\xAB${n}\xBB) parece tener intervalos o ritmos m\xE1s fuertes, pero la actividad elegida (\xAB${a2.nombre}\xBB) es de ritmo suave o constante. Revisa la actividad; la app no la cambia por su cuenta.`;
     }
     return void 0;
-  }
-
-  // src/motor/peso-cocido.ts
-  var FACTORES_COCIDO_EJEMPLO = [
-    ["arroz", 2.5],
-    ["pasta", 2.25],
-    ["quinoa", 3],
-    ["cuscus", 2.5],
-    ["legumbre seca", 2.5],
-    ["lentejas", 2.5],
-    ["garbanzos secos", 2.5]
-  ];
-  var normalizar5 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
-  function factorCocido(ingrediente) {
-    const n = normalizar5(ingrediente);
-    return FACTORES_COCIDO_EJEMPLO.find(([clave]) => n === clave || n.startsWith(`${clave} `))?.[1];
-  }
-  function pesoCocido(ingrediente, gramosSecos) {
-    const factor = factorCocido(ingrediente);
-    if (factor === void 0 || !Number.isFinite(gramosSecos) || gramosSecos <= 0) return void 0;
-    return { gramos: Math.round(gramosSecos * factor / 5) * 5, factor };
   }
 
   // src/motor/competicion-semana.ts

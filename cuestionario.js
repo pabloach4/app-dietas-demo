@@ -713,6 +713,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <p class="hoy-fecha">${escaparHtml(fechaTxt)} · ${horaTxt}</p>
       ${bloqueComida}
       ${bloqueEntreno}
+      ${bloqueVolumenHoy(iso, conHora.filter((c) => c.hora <= horaAct).map((c) => c.f.franja))}
       ${cardCompeticionHtml(dia)}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`;
   }
@@ -891,6 +892,67 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       cambiarFija(() => { if (semanaFija.has(k)) semanaFija.delete(k); else { const a = asignacionSemanaActual.asignaciones.find((x) => `${x.dia}|${x.franja}` === k); if (a) semanaFija.set(k, a.receta); } });
     }
   });
+
+  // --- Issue #133: «¿qué tal de cantidad?». Las valoraciones mueven un nivel de volumen por tipo de comida; las kcal y los macros no
+  // cambian nunca: solo se proponen platos más concentrados o más abundantes. Se guarda en este navegador. ---
+  const CLAVE_VOLUMEN = 'app-dietas-volumen';
+  let valoraciones = [];   // [{ fecha: 'YYYY-MM-DD', franja, valor: 'mucha' | 'bien' | 'hambre' }]
+  let nivelManual = {};    // ajuste a mano desde Perfil: { desayuno?, principal?, pequena? }
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_VOLUMEN) || 'null');
+    if (g && Array.isArray(g.valoraciones)) valoraciones = g.valoraciones.filter((v) => v && /^\d{4}-\d{2}-\d{2}$/.test(v.fecha) && NOMBRE_FRANJA_SOS[v.franja] && ['mucha', 'bien', 'hambre'].includes(v.valor)).slice(-200);
+    if (g && g.manual && typeof g.manual === 'object') for (const k of ['desayuno', 'principal', 'pequena']) if (Number.isInteger(g.manual[k]) && Math.abs(g.manual[k]) <= 2) nivelManual[k] = g.manual[k];
+  } catch { /* sin almacenamiento o dato corrupto: sin valoraciones */ }
+  function guardarVolumen() { try { localStorage.setItem(CLAVE_VOLUMEN, JSON.stringify({ valoraciones, manual: nivelManual })); } catch { falloAlmacenamiento(); } }
+  const nivelesVolumen = () => Motor.calcularNiveles(valoraciones, nivelManual);
+  const NOMBRE_GRUPO_VOL = { desayuno: 'Desayuno', principal: 'Comida y cena', pequena: 'Media mañana y merienda' };
+  function cambioVolumen() {
+    guardarVolumen();
+    if (vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // el reparto se rehace con el nuevo nivel
+    pintarVolumenPerfil();
+    if (panelActual === 'hoy') pintarHoy();
+  }
+  /** Tres botones tras cada comida ya pasada de hoy. Pulsar el mismo valor otra vez lo quita (deshacer). */
+  function bloqueVolumenHoy(iso, comidasPasadas) {
+    if (!comidasPasadas.length) return '';
+    const filas = comidasPasadas.map((f) => {
+      const actual = (valoraciones.find((v) => v.fecha === iso && v.franja === f) || {}).valor;
+      const b = (valor, texto) => `<button type="button" class="btn-secundario vol-btn" data-franja="${f}" data-valor="${valor}" aria-pressed="${actual === valor}" style="${actual === valor ? 'border-color:var(--verde);font-weight:700' : ''}">${texto}</button>`;
+      return `<div style="margin:0.4rem 0"><strong>${NOMBRE_FRANJA_SOS[f]}</strong><div class="acciones-rapidas" style="margin-top:0.2rem">${b('mucha', 'Mucha comida')}${b('bien', 'Bien de cantidad')}${b('hambre', 'Me he quedado con hambre')}</div></div>`;
+    }).join('');
+    return `<div class="hoy-bloque"><h3>¿Qué tal de cantidad?</h3>${filas}<p class="hoy-nota" style="margin:0">No cambia tus calorías ni tus macros: solo hace tus platos más concentrados o más abundantes.</p></div>`;
+  }
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest && ev.target.closest('.vol-btn');
+    if (!b) return;
+    const ahora = new Date();
+    const iso = Motor.fechaLocalISO(ahora);
+    const yaIgual = valoraciones.find((v) => v.fecha === iso && v.franja === b.dataset.franja && v.valor === b.dataset.valor);
+    valoraciones = valoraciones.filter((v) => !(v.fecha === iso && v.franja === b.dataset.franja));
+    if (!yaIgual) valoraciones.push({ fecha: iso, franja: b.dataset.franja, valor: b.dataset.valor });
+    cambioVolumen();
+  });
+  function pintarVolumenPerfil() {
+    const caja = document.getElementById('volumen-perfil');
+    if (!caja) return;
+    const niv = nivelesVolumen();
+    const avisos = Motor.avisosVolumen(valoraciones, niv, ['perder_grasa', 'recomposicion'].includes(() => { try { return (respuestasActuales && respuestasActuales.objetivo) || ''; } catch { return ''; } })(), Motor.fechaLocalISO(new Date()));
+    caja.innerHTML = ['desayuno', 'principal', 'pequena'].map((g) => `
+      <div class="comp-item"><span><strong>${NOMBRE_GRUPO_VOL[g]}</strong> · nivel ${niv[g] > 0 ? '+' : ''}${niv[g]}${nivelManual[g] !== undefined ? ' (a mano)' : ''}<br><span style="color:var(--gris)">${escaparHtml(Motor.TEXTO_NIVEL(niv[g]))}</span></span>
+        <span class="acciones"><button type="button" class="btn-secundario vol-nivel" data-g="${g}" data-d="-1" aria-label="Más concentrado: ${NOMBRE_GRUPO_VOL[g]}" ${niv[g] <= -2 ? 'disabled' : ''}>−</button>
+        <button type="button" class="btn-secundario vol-nivel" data-g="${g}" data-d="1" aria-label="Más abundante: ${NOMBRE_GRUPO_VOL[g]}" ${niv[g] >= 2 ? 'disabled' : ''}>+</button>
+        ${nivelManual[g] !== undefined ? `<button type="button" class="btn-texto vol-auto" data-g="${g}">Automático</button>` : ''}</span></div>`).join('')
+      + avisos.map((a) => `<p class="error-inline">⚠️ ${escaparHtml(a)}</p>`).join('');
+  }
+  document.addEventListener('click', (ev) => {
+    const n = ev.target.closest && ev.target.closest('.vol-nivel');
+    const a = ev.target.closest && ev.target.closest('.vol-auto');
+    if (!n && !a) return;
+    if (a) delete nivelManual[a.dataset.g];
+    else nivelManual[n.dataset.g] = Math.max(-2, Math.min(2, nivelesVolumen()[n.dataset.g] + Number(n.dataset.d)));
+    cambioVolumen();
+  });
+  pintarVolumenPerfil();
 
   const CLAVE_FAVORITAS = 'app-dietas-recetas-favoritas';
   let restriccionesActuales = null;
@@ -2423,7 +2485,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       });
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, cargaAlta: d.tipo === 'carga_alta', ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}) });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, cargaAlta: d.tipo === 'carga_alta', ...(nivelesVolumen()[Motor.grupoDeFranja(f.franja)] !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, nivelesVolumen()[Motor.grupoDeFranja(f.franja)]) } : {}), ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}) });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,
