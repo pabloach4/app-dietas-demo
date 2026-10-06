@@ -3315,6 +3315,7 @@ r43,aceite de oliva,10`;
     recuperacion: "Recuperaci\xF3n"
   };
   var AVISO_DESCARGA = "Si bajas el entreno esta semana, actualiza tus sesiones y el plan se ajusta.";
+  var UMBRAL_CARGA_COMPLETA_MIN = 150;
   var KCAL_POR_G_HIDRATO = 4;
   var MS_DIA2 = 864e5;
   var PRIORIDAD = { descarga: 0, previa: 1, recuperacion: 2, carga: 3, vispera: 4, competicion: 5 };
@@ -3333,7 +3334,7 @@ r43,aceite de oliva,10`;
   function cargaDeHidratos(c) {
     if (c.tipo === "categoria_peso") return void 0;
     const { duracionMax, variasMismoDia } = perfilDeEsfuerzo(c);
-    if (duracionMax > 90) return { diasPrevios: [2, 1], gKg: 10 };
+    if (duracionMax > UMBRAL_CARGA_COMPLETA_MIN) return { diasPrevios: [2, 1], gKg: 10 };
     if (duracionMax >= 45 || variasMismoDia) return { diasPrevios: [1], gKg: 7 };
     return void 0;
   }

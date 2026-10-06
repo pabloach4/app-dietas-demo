@@ -936,7 +936,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const caja = document.getElementById('volumen-perfil');
     if (!caja) return;
     const niv = nivelesVolumen();
-    const avisos = Motor.avisosVolumen(valoraciones, niv, ['perder_grasa', 'recomposicion'].includes(() => { try { return (respuestasActuales && respuestasActuales.objetivo) || ''; } catch { return ''; } })(), Motor.fechaLocalISO(new Date()));
+    // Se pinta también al cargar la página, cuando todavía no hay plan (y semanaActual aún no existe): sin plan no hay déficit que avisar.
+    // El objetivo se lee del perfil ya calculado (perder_grasa, recomposicion…), no del texto del cuestionario («perder grasa»).
+    const enDeficit = (() => { try { return !!semanaActual && ['perder_grasa', 'recomposicion'].includes(semanaActual.perfil.objetivo ?? 'perder_grasa'); } catch { return false; } })();
+    const avisos = Motor.avisosVolumen(valoraciones, niv, enDeficit, Motor.fechaLocalISO(new Date()));
     caja.innerHTML = ['desayuno', 'principal', 'pequena'].map((g) => `
       <div class="comp-item"><span><strong>${NOMBRE_GRUPO_VOL[g]}</strong> · nivel ${niv[g] > 0 ? '+' : ''}${niv[g]}${nivelManual[g] !== undefined ? ' (a mano)' : ''}<br><span style="color:var(--gris)">${escaparHtml(Motor.TEXTO_NIVEL(niv[g]))}</span></span>
         <span class="acciones"><button type="button" class="btn-secundario vol-nivel" data-g="${g}" data-d="-1" aria-label="Más concentrado: ${NOMBRE_GRUPO_VOL[g]}" ${niv[g] <= -2 ? 'disabled' : ''}>−</button>
