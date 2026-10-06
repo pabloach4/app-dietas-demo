@@ -391,7 +391,8 @@ var Motor = (() => {
       if (minima < 30) {
         aviso("disponibilidad_baja", `Disponibilidad energ\xE9tica m\xEDnima de ${minima} kcal/kg de masa libre de grasa (<30): riesgo de REDs (IOC 2023). Vigilar cansancio, rendimiento, sue\xF1o y regla.`);
       } else if (objetivo !== "perder_grasa" && minima < 45) {
-        notas.push(`Disponibilidad energ\xE9tica m\xEDnima de ${minima} (<45): reducida para ganar o mantener m\xFAsculo (IOC 2023).`);
+        const para = { mantener: "mantener el peso o mejorar el rendimiento", ganar_musculo: "ganar m\xFAsculo", recomposicion: "la recomposici\xF3n", perder_grasa: "perder grasa" }[objetivo];
+        notas.push(`Disponibilidad energ\xE9tica m\xEDnima de ${minima} (<45): reducida para ${para} (IOC 2023).`);
       }
     }
     if (kcalMedia < (p.sexo === "hombre" ? 1500 : 1200)) {
