@@ -2941,6 +2941,7 @@ var Motor = (() => {
   }
 
   // src/motor/sustitucion-receta.ts
+  var ROTULO_CAMBIO = { primero: "primero", segundo: "segundo", postre: "postre" };
   var claveSlot = (dia, franja) => `${dia}|${franja}`;
   function usosVariedadSemana(asignaciones, excluirClave) {
     const usos = {};
@@ -2958,7 +2959,7 @@ var Motor = (() => {
       if (!c.compatible) return { receta: r, motivo: `no encaja con tus alergias/preferencias (${c.motivo?.detalle ?? "sin detalle"})` };
     }
     const max = o.maxRepeticionesSemana ?? 2;
-    const usos = o.usosSemana?.[r.id] ?? 0;
+    const usos = Math.max(...(r.platos ?? [r.id]).map((id) => o.usosSemana?.[id] ?? 0));
     if (esFranjaConLimiteVariedad(slot.franja) && usos >= max) {
       return { receta: r, motivo: `ya aparece ${usos} veces esta semana entre comidas y cenas (m\xE1ximo ${max}): un cambio crear\xEDa una tercera aparici\xF3n` };
     }
@@ -2988,6 +2989,32 @@ var Motor = (() => {
         if (e.motivo !== "no declara esta franja") descartadas.push(e);
       } else alternativas.push(e);
     }
+    if (opciones.actual?.includes("+")) {
+      const porId = new Map(recetas.map((r) => [r.id, r]));
+      const actuales = opciones.actual.split("+").map((id) => porId.get(id));
+      if (actuales.every(Boolean)) {
+        const platos = actuales;
+        platos.forEach((plato, i) => {
+          for (const cand of recetas) {
+            if (cand.tipoPlato !== plato.tipoPlato || platos.some((p) => p.id === cand.id)) continue;
+            const nuevos = platos.map((p, j) => j === i ? cand : p);
+            const primero = nuevos.find((p) => p.tipoPlato === "primero");
+            const segundo = nuevos.find((p) => p.tipoPlato === "segundo");
+            const compuesta = componerComida(nuevos);
+            if (primero && segundo && !combinanBien(primero, segundo)) {
+              descartadas.push({ receta: compuesta, motivo: "no combina con el resto de la comida (una sola base de hidrato y prote\xEDnas distintas)" });
+              continue;
+            }
+            const e = evaluar(slot, compuesta, opciones);
+            if ("motivo" in e) {
+              descartadas.push(e);
+              continue;
+            }
+            alternativas.push({ ...e, avisos: [`cambia solo el ${ROTULO_CAMBIO[plato.tipoPlato ?? ""] ?? "plato"} (${plato.nombre} \u2192 ${cand.nombre}) y conserva el resto`, ...e.avisos] });
+          }
+        });
+      }
+    }
     alternativas.sort((a2, b) => a2.desviacion - b.desviacion || a2.receta.id.localeCompare(b.receta.id));
     return { alternativas, descartadas };
   }
@@ -2998,7 +3025,7 @@ var Motor = (() => {
     const invalidadas = [];
     for (const [clave, recetaId] of Object.entries(sustituciones)) {
       const slot = slots.find((s) => claveSlot(s.dia, s.franja) === clave);
-      const receta = recetas.find((r) => r.id === recetaId);
+      const receta = recetaDeId(new Map(recetas.map((r) => [r.id, r])), recetaId);
       if (!slot) {
         invalidadas.push({ clave, recetaId, motivo: "esa comida ya no existe en tu plan" });
         continue;
