@@ -866,8 +866,20 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   function pintarFija() {
     const caja = document.getElementById('r-fija');
     if (!caja) return;
+    // Issue #142: cuando una fijación no es viable, la app ya ha puesto otra receta compatible; aquí se dice cuál y se ofrecen otras para elegir.
+    const opcionesNoViable = (e) => {
+      if (e.ok || !vistaSemana) return '';
+      const clave = `${e.dia}|${e.franja}`;
+      const slot = vistaSemana.slots.find((x) => x.dia === e.dia && x.franja === e.franja);
+      if (!slot) return '';
+      const puesta = asignacionSemanaActual.asignaciones.find((a) => `${a.dia}|${a.franja}` === clave);
+      const nombrePuesta = puesta ? (Motor.recetaDeId(new Map(RECETAS_EJEMPLO.map((r) => [r.id, r])), puesta.receta) || {}).nombre : undefined;
+      const { alternativas } = Motor.alternativasParaSlot(slot, RECETAS_EJEMPLO, { alergiasPreferencias: restriccionesActuales ?? undefined, actual: puesta ? puesta.receta : undefined, usosSemana: Motor.usosVariedadSemana(asignacionSemanaActual.asignaciones, clave) });
+      const botones = alternativas.slice(0, 3).map((a) => `<button type="button" class="btn-secundario fija-elegir" data-dia="${e.dia}" data-franja="${e.franja}" data-id="${a.receta.id}">Fijar «${escaparHtml(a.receta.nombre)}» (~${a.kcalResultante} kcal)</button>`).join(' ');
+      return `<br><span>${nombrePuesta ? `Hemos puesto «${escaparHtml(nombrePuesta)}» en su lugar. ` : 'No hay ninguna receta compatible para esta comida. '}${botones ? 'Otras opciones:' : ''}</span> ${botones}`;
+    };
     const lineas = estadosFija.filter((e) => !e.ok || e.causa || e.aviso).map((e) =>
-      `<li>${e.ok ? '⚠️' : '⛔'} <strong>${escaparHtml(e.dia)} · ${NOMBRE_FRANJA_SOS[e.franja]}</strong> · ${escaparHtml(e.nombre)}: ${escaparHtml(e.causa ?? e.aviso ?? '')}${e.arreglo ? ` <span style="color:var(--gris)">${escaparHtml(e.arreglo)}</span>` : ''}${e.aviso && e.causa ? ` <span style="color:var(--gris)">${escaparHtml(e.aviso)}</span>` : ''}</li>`).join('');
+      `<li>${e.ok ? '⚠️' : '⛔'} <strong>${escaparHtml(e.dia)} · ${NOMBRE_FRANJA_SOS[e.franja]}</strong> · ${escaparHtml(e.nombre)}: ${escaparHtml(e.causa ?? e.aviso ?? '')}${opcionesNoViable(e)}${e.arreglo ? ` <span style="color:var(--gris)">${escaparHtml(e.arreglo)}</span>` : ''}${e.aviso && e.causa ? ` <span style="color:var(--gris)">${escaparHtml(e.aviso)}</span>` : ''}</li>`).join('');
     caja.innerHTML = `
       <div class="acciones-rapidas" style="margin:0 0 0.5rem">
         <button type="button" class="btn-secundario" id="fija-toda">📌 Fijar toda la semana</button>
@@ -877,7 +889,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ${lineas ? `<details class="plegable" open><summary>Tu semana fija: avisos</summary><ul class="resumen-lista">${lineas}</ul></details>` : ''}`;
   }
   document.addEventListener('click', (ev) => {
-    const b = ev.target.closest && ev.target.closest('.fijar-btn, #fija-toda, #fija-quitar, #fija-deshacer');
+    const b = ev.target.closest && ev.target.closest('.fijar-btn, .fija-elegir, #fija-toda, #fija-quitar, #fija-deshacer');
     if (!b || !planActual) return;
     if (b.id === 'fija-deshacer') {
       if (!historialFija.length) return;
@@ -885,6 +897,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       guardarFija();
       mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
     } else if (b.id === 'fija-quitar') cambiarFija(() => semanaFija.clear());
+    else if (b.classList.contains('fija-elegir')) cambiarFija(() => semanaFija.set(`${b.dataset.dia}|${b.dataset.franja}`, b.dataset.id)); // elegir una de las opciones: queda fijada esa receta
     else if (b.id === 'fija-toda') {
       cambiarFija(() => { for (const a of asignacionSemanaActual.asignaciones) semanaFija.set(`${a.dia}|${a.franja}`, a.receta); });
     } else {

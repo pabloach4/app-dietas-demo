@@ -1533,7 +1533,7 @@ var Motor = (() => {
         continue;
       }
       if (!receta.franjas.includes(slot.franja)) {
-        estadosFijadas.push({ ...base, ok: false, causa: "esta receta no vale para esta comida" });
+        estadosFijadas.push({ ...base, ok: false, causa: "esta receta no vale para esta comida", arreglo: "La app ha puesto otra receta compatible en su lugar; puedes elegir otra de las opciones o quitar la fijaci\xF3n." });
         continue;
       }
       const { factorRedondeado, kcalResultante, desviacion } = racionParaObjetivo(receta, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta, piso: 0.5 });
