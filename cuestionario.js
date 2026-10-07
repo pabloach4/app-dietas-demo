@@ -872,9 +872,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const clave = `${e.dia}|${e.franja}`;
       const slot = vistaSemana.slots.find((x) => x.dia === e.dia && x.franja === e.franja);
       if (!slot) return '';
-      const puesta = asignacionSemanaActual.asignaciones.find((a) => `${a.dia}|${a.franja}` === clave);
+      const puesta = vistaSemana.asignaciones.find((a) => `${a.dia}|${a.franja}` === clave);
       const nombrePuesta = puesta ? (Motor.recetaDeId(new Map(RECETAS_EJEMPLO.map((r) => [r.id, r])), puesta.receta) || {}).nombre : undefined;
-      const { alternativas } = Motor.alternativasParaSlot(slot, RECETAS_EJEMPLO, { alergiasPreferencias: restriccionesActuales ?? undefined, actual: puesta ? puesta.receta : undefined, usosSemana: Motor.usosVariedadSemana(asignacionSemanaActual.asignaciones, clave) });
+      const { alternativas } = Motor.alternativasParaSlot(slot, RECETAS_EJEMPLO, { alergiasPreferencias: restriccionesActuales ?? undefined, actual: puesta ? puesta.receta : undefined, usosSemana: Motor.usosVariedadSemana(vistaSemana.asignaciones, clave) });
       const botones = alternativas.slice(0, 3).map((a) => `<button type="button" class="btn-secundario fija-elegir" data-dia="${e.dia}" data-franja="${e.franja}" data-id="${a.receta.id}">Fijar «${escaparHtml(a.receta.nombre)}» (~${a.kcalResultante} kcal)</button>`).join(' ');
       return `<br><span>${nombrePuesta ? `Hemos puesto «${escaparHtml(nombrePuesta)}» en su lugar. ` : 'No hay ninguna receta compatible para esta comida. '}${botones ? 'Otras opciones:' : ''}</span> ${botones}`;
     };
@@ -2739,7 +2739,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     });
 
     filasPlanCSV = filasCSV;
-    vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana };
+    vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana, asignaciones: asignacionSemana.asignaciones };
     pintarFija(); // ya con la vista y la asignación de esta semana (issue #142: opciones para las fijaciones que no valen)
     pintarZonaSustituciones();
     pintarResumenDia();
