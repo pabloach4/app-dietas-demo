@@ -35,6 +35,8 @@ var Motor = (() => {
     OPCIONES_GELES: () => OPCIONES_GELES,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
+    RECETAS_CATALOGO_CSV: () => RECETAS_CATALOGO_CSV,
+    RECETAS_CATALOGO_INGREDIENTES_CSV: () => RECETAS_CATALOGO_INGREDIENTES_CSV,
     RECETAS_EJEMPLO_CSV: () => RECETAS_EJEMPLO_CSV,
     RECETAS_EJEMPLO_INGREDIENTES_CSV: () => RECETAS_EJEMPLO_INGREDIENTES_CSV,
     TEXTO_NIVEL: () => TEXTO_NIVEL,
@@ -70,6 +72,7 @@ var Motor = (() => {
     copiarAlPortapapeles: () => copiarAlPortapapeles,
     crearSemana: () => crearSemana,
     definirParametrosReparto: () => definirParametrosReparto,
+    definirRolIngrediente: () => definirRolIngrediente,
     definirTablaLimites: () => definirTablaLimites,
     densidadKcalG: () => densidadKcalG,
     deshacer: () => deshacer,
@@ -747,7 +750,9 @@ var Motor = (() => {
     "ternera / cerdo": ["hamburguesa", "solomillo", "carne picada"],
     "pescado blanco": ["merluza", "bacalao", "lenguado", "rape", "dorada", "lubina"],
     "pescado azul": ["salmon", "sardina", "caballa"],
-    "cereal crudo": ["pasta"]
+    "cereal crudo": ["pasta"],
+    "legumbre cocida": ["garbanzo cocido", "lenteja cocida", "alubia blanca cocida", "alubia roja cocida"],
+    "legumbre seca": ["lenteja seca", "alubia blanca seca"]
   };
   var VERDURA_EXTRA = [
     "judia verde",
@@ -980,6 +985,8 @@ var Motor = (() => {
     return { incumplimientos, avisos };
   }
   function rolIngrediente(nombre) {
+    const declarado = rolesCatalogo.get(normalizar(nombre));
+    if (declarado) return declarado;
     const tabla = cargarTabla();
     const limite = buscarLimite(tabla, nombre);
     const c = limite ? normalizar(limite.categoria) : "";
@@ -1042,6 +1049,11 @@ var Motor = (() => {
     }
     if (pesoPalancas > 0) fMax = Math.min(fMax, (maxPeso - pesoFijo) / pesoPalancas);
     return { fMin, fMax, hayPalancas: pesoPalancas > 0 || ingredientes.some((i) => esPalanca(i.nombre)) };
+  }
+  var rolesCatalogo = /* @__PURE__ */ new Map();
+  var ROLES_VALIDOS = ["base", "proteina", "verdura", "grasa", "aromatico", "condimento", "fruta_lacteo", "fijo"];
+  function definirRolIngrediente(nombre, rol) {
+    if (ROLES_VALIDOS.includes(rol)) rolesCatalogo.set(normalizar(nombre), rol);
   }
 
   // src/motor/semana.ts
@@ -1135,25 +1147,49 @@ var Motor = (() => {
     return lineas.slice(1).map(parseCsvLine2);
   }
   function parsearRecetas(csvRecetas, csvIngredientes) {
+    const cabIng = parseCsvLine2(csvIngredientes.split(/\r?\n/).find((l) => l.trim() !== "") ?? "");
+    const colIng = (n) => cabIng.indexOf(n);
     const ingredientesPorReceta = /* @__PURE__ */ new Map();
-    for (const [recetaId, ingrediente, gramosRaw] of lineasDatos(csvIngredientes)) {
-      const lista = ingredientesPorReceta.get(recetaId) ?? [];
-      lista.push({ nombre: ingrediente, gramos: Number(gramosRaw) });
-      ingredientesPorReceta.set(recetaId, lista);
+    for (const cols of lineasDatos(csvIngredientes)) {
+      const [recetaId, ingrediente, gramosRaw] = cols;
+      const lista2 = ingredientesPorReceta.get(recetaId) ?? [];
+      lista2.push({ nombre: ingrediente, gramos: Number(gramosRaw) });
+      ingredientesPorReceta.set(recetaId, lista2);
+      const iRol = colIng("rol");
+      if (iRol >= 0 && cols[iRol]) definirRolIngrediente(ingrediente, cols[iRol].trim());
     }
-    return lineasDatos(csvRecetas).map(([id, nombre, franjasRaw, kcal, proteina, grasa, hidrato, notas]) => ({
-      id,
-      nombre,
-      franjas: franjasRaw.split(";").map((f2) => f2.trim()).filter(Boolean),
-      kcal: Number(kcal),
-      proteina: Number(proteina),
-      grasa: Number(grasa),
-      hidrato: Number(hidrato),
-      notas: notas ?? "",
-      .../fibraAlta/.test(notas ?? "") ? { fibraAlta: true } : {},
-      .../\b(primero|segundo|postre)\b/.exec(notas ?? "") ? { tipoPlato: /\b(primero|segundo|postre)\b/.exec(notas ?? "")[1] } : {},
-      ingredientes: ingredientesPorReceta.get(id) ?? []
-    }));
+    const cab = parseCsvLine2(csvRecetas.split(/\r?\n/).find((l) => l.trim() !== "") ?? "");
+    const col = (n) => cab.indexOf(n);
+    const dato = (cols, n) => col(n) >= 0 ? (cols[col(n)] ?? "").trim() : "";
+    const lista = (t) => t.split(";").map((x) => x.trim()).filter(Boolean);
+    return lineasDatos(csvRecetas).map((cols) => {
+      const [id, nombre, franjasRaw, kcal, proteina, grasa, hidrato, notas] = cols;
+      const tipoCol = dato(cols, "tipoPlato");
+      const tipoNotas = /\b(primero|segundo|postre)\b/.exec(notas ?? "")?.[1];
+      const tipo = tipoCol || tipoNotas || "";
+      const uso = dato(cols, "uso_dia");
+      const apt = { vegetariano: dato(cols, "apto_vegetariano"), vegano: dato(cols, "apto_vegano"), sinLactosa: dato(cols, "apto_sin_lactosa"), sinGluten: dato(cols, "apto_sin_gluten") };
+      return {
+        id,
+        nombre,
+        franjas: franjasRaw.split(";").map((f2) => f2.trim()).filter(Boolean),
+        kcal: Number(kcal),
+        proteina: Number(proteina),
+        grasa: Number(grasa),
+        hidrato: Number(hidrato),
+        notas: notas ?? "",
+        .../fibraAlta/.test(notas ?? "") ? { fibraAlta: true } : {},
+        ...["primero", "segundo", "postre"].includes(tipo) ? { tipoPlato: tipo } : {},
+        ...uso === "carga" ? { usoDia: "carga" } : {},
+        ...col("alergenos") >= 0 ? { alergenos: lista(dato(cols, "alergenos")) } : {},
+        ...col("apto_vegano") >= 0 ? { aptitudes: apt } : {},
+        ...dato(cols, "bajo_fibra") ? { bajoFibra: dato(cols, "bajo_fibra") === "si" } : {},
+        ...dato(cols, "proteina_principal") ? { proteinaPrincipal: dato(cols, "proteina_principal") } : {},
+        ...dato(cols, "base_hidrato") ? { baseHidrato: lista(dato(cols, "base_hidrato")) } : {},
+        ...dato(cols, "preparacion") ? { preparacion: dato(cols, "preparacion") } : {},
+        ingredientes: ingredientesPorReceta.get(id) ?? []
+      };
+    });
   }
   function validarReceta(receta) {
     const porFranja = {};
@@ -1293,7 +1329,7 @@ var Motor = (() => {
     return void 0;
   }
   function evaluarCompatibilidad(receta, ap) {
-    if (ap.celiaquia) {
+    if (ap.celiaquia && receta.aptitudes?.sinGluten !== "si") {
       return {
         compatible: false,
         motivo: {
@@ -1302,16 +1338,29 @@ var Motor = (() => {
         }
       };
     }
+    const apt = receta.aptitudes;
     if (ap.lactosa) {
-      const ingrediente = buscarIngrediente(receta.ingredientes, LACTEOS);
-      if (ingrediente) return { compatible: false, motivo: { tipo: "lactosa", detalle: `lleva "${ingrediente}" (l\xE1cteo)` } };
+      if (apt) {
+        if (apt.sinLactosa !== "si") return { compatible: false, motivo: { tipo: "lactosa", detalle: apt.sinLactosa === "no" ? "lleva l\xE1cteo" : "no consta como sin lactosa (pendiente de ficha)" } };
+      } else {
+        const ingrediente = buscarIngrediente(receta.ingredientes, LACTEOS);
+        if (ingrediente) return { compatible: false, motivo: { tipo: "lactosa", detalle: `lleva "${ingrediente}" (l\xE1cteo)` } };
+      }
     }
     if (ap.vegano) {
-      const ingrediente = buscarIngrediente(receta.ingredientes, [...CARNE_PESCADO, ...LACTEOS, ...OTROS_NO_VEGANOS]);
-      if (ingrediente) return { compatible: false, motivo: { tipo: "no_vegano", detalle: `lleva "${ingrediente}" (no vegano)` } };
+      if (apt) {
+        if (apt.vegano !== "si") return { compatible: false, motivo: { tipo: "no_vegano", detalle: apt.vegano === "no" ? "lleva ingredientes de origen animal" : "no consta como vegana (pendiente de ficha)" } };
+      } else {
+        const ingrediente = buscarIngrediente(receta.ingredientes, [...CARNE_PESCADO, ...LACTEOS, ...OTROS_NO_VEGANOS]);
+        if (ingrediente) return { compatible: false, motivo: { tipo: "no_vegano", detalle: `lleva "${ingrediente}" (no vegano)` } };
+      }
     } else if (ap.vegetariano) {
-      const ingrediente = buscarIngrediente(receta.ingredientes, CARNE_PESCADO);
-      if (ingrediente) return { compatible: false, motivo: { tipo: "no_vegetariano", detalle: `lleva "${ingrediente}" (carne o pescado)` } };
+      if (apt) {
+        if (apt.vegetariano !== "si") return { compatible: false, motivo: { tipo: "no_vegetariano", detalle: "lleva carne, pescado o marisco" } };
+      } else {
+        const ingrediente = buscarIngrediente(receta.ingredientes, CARNE_PESCADO);
+        if (ingrediente) return { compatible: false, motivo: { tipo: "no_vegetariano", detalle: `lleva "${ingrediente}" (carne o pescado)` } };
+      }
     }
     for (const evitado of ap.evitados) {
       if (!raizAlimento(evitado)) continue;
@@ -1385,7 +1434,8 @@ var Motor = (() => {
         else ingredientes.push({ ...i });
       }
     }
-    const franjas = platos[0].franjas.filter((f2) => platos.every((p) => p.franjas.includes(f2)));
+    const principales = platos.filter((p) => p.tipoPlato !== "postre");
+    const franjas = (principales.length ? principales : platos)[0].franjas.filter((f2) => (principales.length ? principales : platos).every((p) => p.franjas.includes(f2)));
     return {
       id: platos.map((p) => p.id).join("+"),
       nombre: platos.map((p) => `${ROTULO_PLATO[p.tipoPlato ?? ""] ?? "Plato"}: ${p.nombre}`).join(" \xB7 "),
@@ -1397,6 +1447,7 @@ var Motor = (() => {
       notas: "",
       ingredientes,
       ...platos.some((p) => p.fibraAlta) ? { fibraAlta: true } : {},
+      ...platos.every((p) => p.preparacion) ? { preparacion: platos.map((p) => p.preparacion).join(" ") } : {},
       tipoPlato: "compuesta",
       platos: platos.map((p) => p.id)
     };
@@ -1565,10 +1616,12 @@ var Motor = (() => {
     for (const slot of slots) {
       const limitada = esFranjaConLimiteVariedad(slot.franja);
       const ap = opciones.alergiasPreferencias;
-      const vale = (r) => r.franjas.includes(slot.franja) && !(slot.sinFibraAlta && r.fibraAlta) && (!ap || evaluarCompatibilidad(r, ap).compatible);
-      const esUnico = (r) => !r.tipoPlato || r.tipoPlato === "unico";
+      const franjaVale = (r) => r.franjas.includes(slot.franja) || r.tipoPlato === "postre" && (r.franjas.includes("merienda") || r.franjas.includes("media_manana"));
+      const diaVale = (r) => !(r.usoDia === "carga" && !slot.cargaAlta);
+      const vale = (r) => franjaVale(r) && diaVale(r) && !(slot.sinFibraAlta && r.fibraAlta) && (!ap || evaluarCompatibilidad(r, ap).compatible);
+      const esUnico = (r) => !r.tipoPlato || r.tipoPlato === "unico" || r.tipoPlato === "postre" && slot.franja !== "comida" && slot.franja !== "cena";
       const intentar = (lista, filtrar) => {
-        const candidatas = filtrar ? lista.filter((r) => r.franjas.includes(slot.franja) && !(slot.sinFibraAlta && r.fibraAlta)) : lista;
+        const candidatas = filtrar ? lista.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !(slot.sinFibraAlta && r.fibraAlta)) : lista;
         if (!candidatas.length) {
           return { motivo: slot.sinFibraAlta ? "la v\xEDspera de competici\xF3n no se proponen recetas con fibra alta (legumbre, integral o verdura cruda) y no hay otra para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
         }
@@ -2902,8 +2955,8 @@ var Motor = (() => {
       "A\xF1ade el arroz y las jud\xEDas verdes, cubre con agua y cuece hasta que el arroz est\xE9 tierno."
     ]
   };
-  function elaboracionEjemplo(recetaId) {
-    return ELABORACIONES_EJEMPLO[recetaId];
+  function elaboracionEjemplo(recetaId, receta) {
+    return ELABORACIONES_EJEMPLO[recetaId] ?? (receta?.preparacion ? [receta.preparacion] : void 0);
   }
 
   // src/motor/catalogo-recetas.ts
@@ -3636,5 +3689,643 @@ r43,aceite de oliva,10`;
     salidas.sort((a2, b) => a2.minuto - b.minuto);
     return { tomas: salidas, cambios, avisos };
   }
+
+  // src/motor/catalogo-amplio.ts
+  var RECETAS_CATALOGO_CSV = `id,nombre,franjas,kcal,proteina_g,grasa_g,hidrato_g,notas,tipoPlato,fibra_g,proteina_principal,base_hidrato,alergenos,apto_vegetariano,apto_vegano,apto_sin_lactosa,apto_sin_gluten,bajo_fibra,tiempo_min,origen,preparacion,uso_dia
+R01,Puchero ligero de garbanzos y pollo,comida,673,50.9,18.1,78.2,EJEMPLO | fibraAlta | doble_base | carga,unico,17.0,pechuga de pollo asada,legumbre;patata,,no,no,si,pendiente_ficha,no,65,recetario42,Cocer verduras con agua; a\xF1adir garbanzo ya cocido y pollo asado pesado despu\xE9s de cocinar. Servir con aceite al final.,carga
+R02,Cocido sencillo de garbanzos y verduras,comida,639,46.4,17.8,76.0,EJEMPLO | fibraAlta | doble_base | carga,unico,19.5,pechuga de pollo asada,legumbre;patata,,no,no,si,pendiente_ficha,no,65,recetario42,"Cocer patata, zanahoria y repollo con agua. A\xF1adir garbanzo cocido y pollo asado; terminar con aceite.",carga
+R03,Pisto con huevo y pan integral,comida;cena,541,26.7,25.2,55.4,EJEMPLO | fibraAlta,unico,11.3,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,30,recetario42,Pochar cebolla y pimientos con aceite; a\xF1adir calabac\xEDn y tomate. Cocinar el huevo completamente y servir con pan.,normal
+R04,Escalivada con bacalao y patata,comida,542,36.9,17.1,63.5,EJEMPLO,unico,11.5,bacalao fresco,patata,pescado,no,no,si,pendiente_ficha,no,50,recetario42,"Asar pimiento, cebolla y tomate. Cocer patata y cocinar bacalao completamente; ali\xF1ar con aceite.",normal
+R05,"Caldo de alubias, repollo y patata",comida,560,24.1,13.0,91.9,EJEMPLO | fibraAlta | doble_base | carga,unico,20.7,,legumbre;patata,,si,si,si,pendiente_ficha,no,90,recetario42,Cocer alubias desde seco tras remojo y desechar el agua de remojo. A\xF1adir repollo y patata; aceite al servir.,carga
+R06,Arroz con pollo y jud\xEDas verdes,comida,706,48.8,18.6,84.6,EJEMPLO,unico,7.2,pechuga de pollo asada,cereal,,no,no,si,pendiente_ficha,no,45,recetario42,Cocer arroz con verduras y tomate; incorporar pollo asado pesado ya cocinado. Aceite incluido en el total.,normal
+R07,"Ensalada templada de garbanzos, at\xFAn y tomate",comida,677,44.8,19.8,84.6,EJEMPLO | fibraAlta | doble_base | carga,unico,20.1,at\xFAn en lata,legumbre;pan,gluten;pescado,no,no,pendiente_ficha,no,no,15,recetario42,Escurrir el at\xFAn y pesar. Mezclar con garbanzos cocidos y verduras; a\xF1adir aceite y pan aparte.,carga
+R08,Lentejas con arroz y verduras,comida,655,25.1,13.7,111.0,EJEMPLO | fibraAlta | doble_base | carga,unico,14.4,,cereal;legumbre,,si,si,si,pendiente_ficha,no,45,recetario42,"Pochar cebolla, ajo y zanahoria; a\xF1adir lentejas y agua. Cocer arroz por separado; combinar y ali\xF1ar.",carga
+R09,"Bol de yogur, avena, pl\xE1tano y almendras",desayuno;merienda,621,22.8,22.7,87.4,EJEMPLO,unico,12.2,,avena,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,5,recetario42,Mezclar yogur y copos de avena; a\xF1adir pl\xE1tano troceado y almendras picadas.,normal
+R10,Salm\xF3n con patata y espinacas,comida;cena,653,40.3,32.9,50.9,EJEMPLO,unico,8.8,salm\xF3n,patata,pescado,no,no,si,pendiente_ficha,no,30,recetario42,Asar salm\xF3n; cocer patata y saltear espinacas con el aceite pesado.,normal
+R11,"Tostadas integrales de huevo, tomate y fruta",desayuno,531,27.5,18.4,65.7,EJEMPLO | fibraAlta,unico,11.0,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,15,recetario42,Tostar el pan; cocinar huevo completamente con el aceite; acompa\xF1ar de tomate y naranja pelada.,normal
+R12,Arroz con ternera magra y verduras,comida,733,38.1,25.6,86.5,EJEMPLO,unico,6.0,ternera picada,cereal,,no,no,si,pendiente_ficha,si,30,recetario42,"Cocer arroz, saltear ternera y verduras con el aceite medido y mezclar.",normal
+R13,Marmitako ligero de at\xFAn y patata,comida,482,47.6,11.4,47.3,EJEMPLO,unico,7.4,at\xFAn fresco,patata,pescado,no,no,si,pendiente_ficha,no,40,recetario42,"Pochar cebolla, pimiento y tomate; a\xF1adir la patata chascada y agua y cocer. Incorporar el at\xFAn en dados los \xFAltimos 3-4 minutos.",normal
+R14,Fabada ligera de alubias con verduras,comida,433,20.4,11.1,67.1,EJEMPLO | fibraAlta,unico,17.2,,legumbre,,si,si,si,pendiente_ficha,no,45,recetario42,Pochar las verduras; a\xF1adir la alubia ya cocida con parte de su agua y cocer a fuego suave. Aceite al final.,normal
+R15,Pollo al chilindr\xF3n ligero con patata,comida,495,46.4,15.4,43.7,EJEMPLO,unico,8.1,pechuga de pollo asada,patata,,no,no,si,pendiente_ficha,no,45,recetario42,"Cocer la patata con el tomate, el pimiento y la cebolla pochados; a\xF1adir el pollo cocinado al final.",normal
+R16,Patatas estofadas con champi\xF1ones y huevo,comida,487,19.3,17.4,67.8,EJEMPLO,unico,10.6,huevo cocido,patata,huevo,si,no,si,pendiente_ficha,no,40,recetario42,"Pochar las verduras, a\xF1adir la patata y agua y cocer; terminar con el huevo duro en cuartos.",normal
+R17,Menestra de verduras con huevo,comida,384,14.3,17.1,46.9,EJEMPLO,unico,10.0,huevo cocido,patata,huevo,si,no,si,pendiente_ficha,no,35,recetario42,"Cocer las verduras por orden de dureza, escurrir y saltear con el aceite; servir con el huevo duro.",normal
+R18,Tumbet con huevo,comida;cena,414,15.2,16.7,54.9,EJEMPLO,unico,12.2,huevo,patata,huevo,si,no,si,pendiente_ficha,no,45,recetario42,Hornear las verduras en capas con el tomate; terminar con el huevo cuajado al horno.,normal
+R19,Papas con pescado blanco y mojo ligero,comida,440,34.1,13.4,46.0,EJEMPLO,unico,6.1,bacalao fresco,patata,pescado,no,no,si,pendiente_ficha,no,35,recetario42,Cocer la patata; cocinar el pescado a la plancha o al vapor; ali\xF1ar con el aceite y el pimiento picado.,normal
+R20,Zarangollo con patata,cena,458,22.3,22.4,44.2,EJEMPLO,unico,7.3,huevo,patata,huevo,si,no,si,pendiente_ficha,no,30,recetario42,Pochar calabac\xEDn y cebolla; a\xF1adir el huevo batido y cuajar; servir con la patata cocida.,normal
+R21,"Gazpacho con at\xFAn, huevo y pan integral",comida,545,38.1,25.2,44.5,EJEMPLO | fibraAlta,unico,8.9,at\xFAn en lata,pan,gluten;huevo;pescado,no,no,pendiente_ficha,no,no,15,recetario42,"Triturar tomate, pimiento y cebolla con el aceite; acompa\xF1ar con el at\xFAn, el huevo duro y el pan.",normal
+R22,Migas de pan integral con verduras y huevo,comida,534,21.6,21.3,66.9,EJEMPLO | fibraAlta,unico,11.7,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,25,recetario42,Humedecer el pan y dorarlo con el aceite y las verduras; cuajar el huevo; acompa\xF1ar de la naranja.,normal
+R23,Alubias estofadas con pavo y verduras,comida,575,52.9,13.4,62.3,EJEMPLO | fibraAlta,unico,15.8,pechuga de pavo asada,legumbre,,no,no,si,pendiente_ficha,no,35,recetario42,"Pochar las verduras, a\xF1adir la alubia cocida y cocer a fuego suave; incorporar el pavo al final.",normal
+R24,Cocido monta\xF1\xE9s ligero de alubias rojas,comida,597,44.8,13.0,78.4,EJEMPLO | fibraAlta | doble_base | carga,unico,21.8,pechuga de pavo asada,legumbre;patata,,no,no,si,pendiente_ficha,no,45,recetario42,Cocer las verduras y la patata; a\xF1adir la alubia cocida y el pavo; cocer a fuego suave y ali\xF1ar.,carga
+R25,"Porridge de avena con yogur, manzana y nueces",desayuno,558,18.3,23.7,73.4,EJEMPLO,unico,11.0,,avena,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,10,recetario42,"Cocer la avena con agua; a\xF1adir el yogur, la manzana en dados y las nueces picadas.",normal
+R26,Tortitas de avena y huevo con fresas y yogur,desayuno,527,35.4,20.6,50.7,EJEMPLO,unico,8.1,huevo,avena,gluten;huevo;l\xE1cteos,si,no,no,no,no,15,recetario42,Batir la avena y el huevo; cocinar dos tortitas con el aceite; cubrir con el yogur y las fresas.,normal
+R27,Tostadas integrales de at\xFAn y tomate con naranja,desayuno,483,30.4,14.1,62.3,EJEMPLO | fibraAlta,unico,11.0,at\xFAn en lata,pan,gluten;pescado,no,no,pendiente_ficha,no,no,10,recetario42,Tostar el pan con el tomate rallado y el aceite; a\xF1adir el at\xFAn; acompa\xF1ar de la naranja.,normal
+R28,"Queso fresco batido con avena, fresas y miel",desayuno,445,28.5,8.2,67.2,"EJEMPLO | queso cottage: solo en desayuno o dentro de una elaboraci\xF3n, nunca como plato principal ni merienda (Pablo, 05/10)",unico,8.1,queso cottage,avena,gluten;l\xE1cteos,si,no,no,no,no,5,recetario42,"Mezclar todo en un bol, sin cocci\xF3n.",normal
+R29,Bocadillo integral de tortilla francesa con yogur,desayuno,563,31.5,26.8,49.0,EJEMPLO | fibraAlta,unico,6.6,huevo,pan,gluten;huevo;l\xE1cteos,si,no,no,no,no,15,recetario42,Cuajar el huevo con el aceite; rellenar el pan con la tortilla y el tomate; yogur aparte.,normal
+R30,"Batido de leche, pl\xE1tano, avena y crema de cacahuete",desayuno;merienda,558,22.0,21.8,74.5,EJEMPLO,unico,8.4,,avena,cacahuete;gluten;l\xE1cteos,si,no,no,no,no,5,recetario42,Triturar todo y servir fr\xEDo.,normal
+R31,"Bol pre-entreno de arroz, pollo y pl\xE1tano",comida,654,44.0,10.1,95.0,EJEMPLO,unico,3.7,pechuga de pollo asada,cereal,,no,no,si,pendiente_ficha,si,20,recetario42,Cocer el arroz; calentarlo con el pollo; a\xF1adir el pl\xE1tano y la miel.,normal
+R32,Tostadas de pan blanco con pavo y yogur,desayuno;comida,510,39.4,16.8,49.3,EJEMPLO,unico,3.4,pechuga de pavo asada,pan,gluten;l\xE1cteos,no,no,no,no,si,10,recetario42,Tostar el pan con el tomate y el aceite; a\xF1adir el pavo; yogur aparte.,normal
+R33,"Post-entreno de arroz, at\xFAn y claras",comida,551,44.0,10.0,68.7,EJEMPLO,unico,2.3,claras de huevo,cereal,huevo;pescado,no,no,si,pendiente_ficha,si,20,recetario42,"Cuajar las claras; mezclar con el arroz, el at\xFAn y el pimiento; ali\xF1ar.",normal
+R34,Merluza al horno con patata y jud\xEDas verdes,comida;cena,453,35.6,11.3,54.2,EJEMPLO | pescado/carne con equivalente USDA aproximado,unico,9.3,merluza,patata,pescado,no,no,si,pendiente_ficha,no,25,recetario42,Hornear el pescado y la patata; cocer las jud\xEDas; ali\xF1ar.,normal
+R35,Pasta con pavo y tomate (d\xEDa de carga),comida,681,51.2,14.4,84.2,EJEMPLO,unico,5.2,pechuga de pavo asada,cereal,gluten,no,no,si,no,si,20,recetario42,"Cocer la pasta; mezclar con el tomate pochado, el pavo y el aceite.",carga
+R36,"Bol r\xE1pido de yogur griego, avena y pl\xE1tano",merienda;media_manana,580,37.0,15.1,79.1,EJEMPLO,unico,10.2,,avena,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,5,recetario42,Mezclar todo en un bol.,normal
+R37,Tortilla de calabac\xEDn con tomate y pan integral,cena,462,25.1,24.0,38.3,EJEMPLO | fibraAlta,unico,7.3,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,20,recetario42,Pochar el calabac\xEDn y la cebolla y cuajar el huevo; servir con el tomate y el pan.,normal
+R38,Crema de calabaza con pollo y pan integral,cena,557,45.4,14.0,65.4,EJEMPLO | fibraAlta | doble_base | carga,unico,7.4,pechuga de pollo asada,pan;patata,gluten,no,no,pendiente_ficha,no,no,30,recetario42,"Cocer la calabaza, el puerro y la patata; triturar; servir con el pollo y el pan.",carga
+R39,Pavo a la plancha con boniato y br\xF3coli,cena,548,48.4,13.2,60.5,EJEMPLO,unico,11.4,pechuga de pavo,patata,,no,no,si,pendiente_ficha,no,25,recetario42,Asar el boniato; cocer el br\xF3coli; hacer el pavo a la plancha con el aceite.,normal
+R40,Ensalada templada de lentejas con huevo,cena,534,30.5,18.8,63.6,EJEMPLO | fibraAlta | doble_base | carga,unico,19.1,huevo cocido,legumbre;pan,gluten;huevo,si,no,pendiente_ficha,no,no,15,recetario42,Mezclar la lenteja templada con las verduras y el huevo; ali\xF1ar y servir con el pan.,carga
+R41,Sepia a la plancha con patata y pimiento,cena,436,37.8,11.8,44.8,EJEMPLO,unico,6.3,sepia,patata,moluscos,no,no,si,pendiente_ficha,no,25,recetario42,Cocer la patata; hacer la sepia y el pimiento a la plancha con el aceite.,normal
+R42,Tostas de sardina con tomate y espinacas,cena,495,37.6,19.8,42.2,EJEMPLO | fibraAlta,unico,7.9,sardina en lata,pan,gluten;pescado,no,no,pendiente_ficha,no,no,10,recetario42,Tostar el pan con el tomate rallado; a\xF1adir las sardinas y las espinacas; ali\xF1ar.,normal
+R43,"Ensalada de can\xF3nigos, huevo duro y pollo",comida;cena,339,37.3,17.9,6.1,EJEMPLO | fibraAlta,primero,2.0,pechuga de pollo asada,,huevo,no,no,si,pendiente_ficha,no,15,nuevo,"Cocer el huevo, trocear el pollo ya asado, mezclar con la lechuga y el tomate y ali\xF1ar con aceite.",normal
+R44,"Ensalada de lechuga, tomate y at\xFAn",comida;cena,171,14.1,9.1,10.6,EJEMPLO | fibraAlta,primero,3.5,at\xFAn en lata,,pescado,no,no,si,pendiente_ficha,no,10,nuevo,Mezclar las verduras troceadas con el at\xFAn escurrido y ali\xF1ar.,normal
+R45,"Ensalada de r\xFAcula, pera y nueces",comida;cena,252,4.3,18.3,22.5,EJEMPLO | fibraAlta,primero,5.7,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,10,nuevo,Montar la r\xFAcula con la pera en l\xE1minas y las nueces; ali\xF1ar con aceite.,normal
+R46,"Ensalada de tomate, pepino y aceituna",comida;cena,175,2.9,12.7,15.4,EJEMPLO | fibraAlta,primero,3.7,,,,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,no,10,nuevo,Trocear y ali\xF1ar.,normal
+R47,"Ensalada de remolacha, zanahoria y huevo",comida;cena,248,10.7,14.8,19.7,EJEMPLO | fibraAlta,primero,4.9,huevo cocido,,huevo,si,no,si,pendiente_ficha,no,15,nuevo,"Rallar la zanahoria, trocear la remolacha cocida y el huevo cocido, mezclar y ali\xF1ar.",normal
+R48,Crema de calabaza y zanahoria,comida;cena,194,3.7,8.6,29.7,EJEMPLO,primero,4.7,,,,si,si,si,pendiente_ficha,si,30,nuevo,"Cocer las verduras con agua, triturar y a\xF1adir el aceite al servir.",normal
+R49,Crema de calabac\xEDn y puerro con patata,comida;cena,246,6.1,9.0,38.5,EJEMPLO,primero,6.0,,patata,,si,si,si,pendiente_ficha,si,30,nuevo,"Cocer todo en agua, triturar y servir con un hilo de aceite.",normal
+R50,Gazpacho andaluz,comida;cena,296,6.6,16.8,33.4,EJEMPLO | fibraAlta,primero,5.8,,pan,gluten,si,pendiente_ficha,pendiente_ficha,no,no,10,nuevo,Triturar las verduras con el pan remojado y el aceite; servir fr\xEDo.,normal
+R51,Salmorejo con huevo,comida;cena,428,14.4,22.9,42.9,EJEMPLO | fibraAlta,primero,5.3,huevo cocido,pan,gluten;huevo,si,no,pendiente_ficha,no,no,10,nuevo,"Triturar tomate, pan, ajo y aceite hasta obtener una crema; servir con huevo cocido picado.",normal
+R52,Menestra de verduras salteadas,comida;cena,227,7.1,10.7,31.4,EJEMPLO,primero,12.2,,,,si,si,si,pendiente_ficha,no,25,nuevo,Cocer las verduras y saltearlas con el aceite.,normal
+R53,Esp\xE1rragos y champi\xF1ones a la plancha,comida;cena,132,7.3,8.6,10.9,EJEMPLO,primero,4.5,,,,si,si,si,pendiente_ficha,si,15,nuevo,Marcar a la plancha con el ajo laminado; perejil al final.,normal
+R54,Br\xF3coli y coliflor al horno,comida;cena,181,7.3,11.0,18.4,EJEMPLO,primero,7.0,,,,si,si,si,pendiente_ficha,no,30,nuevo,Hornear a 200 \xB0C con el aceite y el ajo.,normal
+R55,Lentejas estofadas con verduras,comida;cena,304,15.3,9.2,43.8,EJEMPLO | fibraAlta,primero,16.0,,legumbre,,si,si,si,pendiente_ficha,no,35,nuevo,"Sofre\xEDr la verdura, a\xF1adir la lenteja cocida y el piment\xF3n y estofar unos minutos.",normal
+R56,Garbanzos con espinacas,comida;cena,348,16.5,12.5,46.2,EJEMPLO | fibraAlta,primero,13.8,,legumbre,,si,si,si,pendiente_ficha,no,15,nuevo,"Saltear el ajo, a\xF1adir las espinacas, el garbanzo cocido y el comino.",normal
+R57,Arroz con tomate,comida;cena,362,6.5,8.9,64.0,EJEMPLO,primero,4.3,,cereal,,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,si,25,nuevo,"Sofre\xEDr la cebolla, a\xF1adir el tomate y el arroz y cocer con agua.",normal
+R58,Pasta con tomate,comida;cena,396,11.8,9.6,65.9,EJEMPLO,primero,5.5,,cereal,gluten,si,pendiente_ficha,pendiente_ficha,no,si,20,nuevo,Cocer la pasta y mezclar con el tomate sofrito con ajo.,normal
+R59,Sopa de verduras con fideos,comida;cena,266,7.6,6.0,46.9,EJEMPLO,primero,5.5,,cereal,gluten,si,si,si,no,si,25,nuevo,Cocer las verduras en agua y a\xF1adir los fideos al final.,normal
+R60,Pollo a la plancha con patata asada y pimiento,comida;cena,508,50.1,15.7,41.0,EJEMPLO,segundo,6.3,pechuga de pollo,patata,,no,no,si,pendiente_ficha,no,35,nuevo,Asar patata y pimiento; hacer el pollo a la plancha.,normal
+R61,Pollo al lim\xF3n con arroz y jud\xEDas verdes,comida;cena,597,51.8,13.9,62.9,EJEMPLO,segundo,3.6,pechuga de pollo,cereal,,no,no,si,pendiente_ficha,si,30,nuevo,Marcar el pollo con lim\xF3n; cocer arroz y jud\xEDas aparte.,normal
+R62,Pavo en salsa de verduras con patata,comida;cena,504,52.2,13.4,43.2,EJEMPLO,segundo,6.7,pechuga de pavo,patata,,no,no,si,pendiente_ficha,no,40,nuevo,"Sofre\xEDr la verdura, estofar el pavo y la patata.",normal
+R63,Ternera salteada con champi\xF1ones y arroz,comida;cena,650,48.9,19.3,67.9,EJEMPLO | pescado/carne con equivalente USDA aproximado,segundo,2.2,ternera magra (solomillo de aguja),cereal,,no,no,si,pendiente_ficha,si,30,nuevo,Saltear la ternera en tiras con el champi\xF1\xF3n; servir con el arroz cocido.,normal
+R64,Lomo de cerdo con boniato y br\xF3coli,comida;cena,541,45.1,18.7,48.2,EJEMPLO,segundo,9.1,lomo de cerdo,patata,,no,no,si,pendiente_ficha,no,35,nuevo,Hornear el boniato; lomo a la plancha; br\xF3coli al vapor.,normal
+R65,Hamburguesa de ternera con patata y ensalada,comida;cena,528,35.5,25.4,39.5,EJEMPLO,segundo,5.8,ternera picada,patata,,no,no,si,pendiente_ficha,si,35,nuevo,"Hamburguesa a la plancha, patata asada y ensalada aparte.",normal
+R66,Conejo a la cazadora con patata,comida;cena,564,46.0,21.7,46.4,EJEMPLO,segundo,7.3,conejo,patata,,no,no,si,pendiente_ficha,no,50,nuevo,"Sofre\xEDr la verdura, estofar el conejo con la patata.",normal
+R67,Merluza en salsa verde con patata y guisantes,comida;cena,445,40.3,11.4,44.8,EJEMPLO | pescado/carne con equivalente USDA aproximado,segundo,7.8,merluza,patata,pescado,no,no,si,pendiente_ficha,no,30,nuevo,"Cocer patata y guisantes, a\xF1adir la merluza con ajo y perejil.",normal
+R68,Bacalao con tomate y arroz,comida;cena,548,42.2,12.2,64.9,EJEMPLO,segundo,4.4,bacalao fresco,cereal,pescado,no,no,pendiente_ficha,pendiente_ficha,si,35,nuevo,Sofrito de cebolla y tomate; cocer el bacalao en \xE9l; arroz aparte.,normal
+R69,Salm\xF3n al horno con esp\xE1rragos y patata,comida;cena,519,37.0,25.4,36.1,EJEMPLO,segundo,6.3,salm\xF3n,patata,pescado,no,no,si,pendiente_ficha,no,30,nuevo,Hornear salm\xF3n y esp\xE1rragos; patata cocida.,normal
+R70,At\xFAn a la plancha con pisto,comida;cena,342,42.8,11.7,16.9,EJEMPLO,segundo,4.9,at\xFAn fresco,,pescado,no,no,si,pendiente_ficha,si,35,nuevo,Pisto con la verdura y at\xFAn a la plancha.,normal
+R71,Caballa al horno con patata y cebolla,comida;cena,571,33.4,29.2,43.7,EJEMPLO,segundo,6.2,caballa,patata,pescado,no,no,si,pendiente_ficha,no,40,nuevo,Hornear la caballa sobre la patata y la cebolla.,normal
+R72,Lubina al horno con verduras,comida;cena,430,40.5,13.3,37.0,EJEMPLO | pescado/carne con equivalente USDA aproximado,segundo,6.4,lubina,patata,pescado,no,no,si,pendiente_ficha,no,40,nuevo,Hornear el pescado con las verduras laminadas.,normal
+R73,Mejillones al vapor con arroz,comida;cena,528,30.0,13.2,70.0,EJEMPLO,segundo,2.6,mejill\xF3n,cereal,moluscos,no,no,si,pendiente_ficha,si,25,nuevo,Abrir los mejillones al vapor; arroz con tomate y cebolla.,normal
+R74,Calamar a la plancha con patata y ensalada,comida;cena,436,36.4,13.2,43.0,EJEMPLO,segundo,5.6,calamar,patata,moluscos,no,no,si,pendiente_ficha,si,30,nuevo,Calamar a la plancha; patata cocida y ensalada.,normal
+R75,Tortilla francesa con ensalada y pan,comida;cena,472,25.8,24.6,36.3,EJEMPLO,segundo,3.6,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,si,15,nuevo,Tortilla de 3 huevos; ensalada y pan aparte.,normal
+R76,Tortilla de patata ligera con ensalada,comida;cena,480,24.1,24.6,41.2,EJEMPLO,segundo,5.5,huevo,patata,huevo,si,no,si,pendiente_ficha,si,35,nuevo,"Pochar patata y cebolla con poco aceite, cuajar con el huevo.",normal
+R77,Huevos al plato con verduras y pan,comida;cena,433,22.8,20.2,41.5,EJEMPLO | fibraAlta,segundo,7.9,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,25,nuevo,"Sofrito de verduras, cuajar los huevos en \xE9l; pan aparte.",normal
+R78,Tofu salteado con br\xF3coli y arroz,comida;cena,609,34.5,22.1,74.4,EJEMPLO,segundo,9.2,tofu firme,cereal,soja,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,no,25,nuevo,Saltear el tofu y las verduras; arroz cocido aparte.,normal
+R79,Tempeh a la plancha con boniato y espinacas,comida;cena,496,30.3,21.5,53.0,EJEMPLO,segundo,8.2,tempeh,patata,soja,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,no,30,nuevo,"Tempeh a la plancha, boniato asado, espinacas salteadas.",normal
+R80,Garbanzos salteados con espinacas y huevo,comida;cena,493,29.2,22.1,47.6,EJEMPLO | fibraAlta,segundo,14.4,huevo,legumbre,huevo,si,no,si,pendiente_ficha,no,20,nuevo,Saltear garbanzo cocido con espinacas y ajo; a\xF1adir huevo cocinado.,normal
+R81,Pavo con calabaza asada y champi\xF1ones,comida;cena,373,52.4,11.5,16.5,EJEMPLO,segundo,2.0,pechuga de pavo,,,no,no,si,pendiente_ficha,si,35,nuevo,Hornear la calabaza; pavo y champi\xF1\xF3n a la plancha.,normal
+R82,Pasta con ternera y tomate (d\xEDa de carga),comida,822,42.6,24.4,106.0,EJEMPLO,unico,7.7,ternera picada,cereal,gluten,no,no,pendiente_ficha,no,no,30,nuevo,Sofre\xEDr la ternera con cebolla y tomate; mezclar con la pasta cocida.,carga
+R83,"Arroz con pollo y zanahoria (carga, bajo en fibra)",comida;cena,853,55.0,18.3,111.6,EJEMPLO,unico,3.9,pechuga de pollo,cereal,,no,no,si,pendiente_ficha,si,35,nuevo,Cocer el arroz con la zanahoria; saltear el pollo y mezclar.,carga
+R84,Pasta blanca con at\xFAn y tomate (v\xEDspera de competici\xF3n),comida;cena,622,32.1,12.9,93.8,EJEMPLO,unico,6.1,at\xFAn en lata,cereal,gluten;pescado,no,no,pendiente_ficha,no,no,20,nuevo,Pasta cocida con el at\xFAn escurrido y el tomate.,normal
+R85,Patata cocida con huevo y at\xFAn (v\xEDspera de competici\xF3n),comida;cena,526,30.4,21.5,53.6,EJEMPLO,unico,6.3,huevo cocido,patata,huevo;pescado,no,no,si,pendiente_ficha,no,30,nuevo,"Cocer la patata, mezclar con el huevo cocido y el at\xFAn; ali\xF1ar.",normal
+R86,"Salteado de tofu, verduras y arroz",comida;cena,706,35.9,24.4,92.0,EJEMPLO,unico,10.1,tofu firme,cereal,soja,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,no,30,nuevo,Saltear tofu y verduras; mezclar con el arroz cocido.,normal
+R87,"Pasta con calabac\xEDn, tomate y mozzarella",comida;cena,660,28.7,23.4,83.7,EJEMPLO,unico,5.6,mozzarella,cereal,gluten;l\xE1cteos,si,no,no,no,si,25,nuevo,Saltear calabac\xEDn y tomate; mezclar con la pasta y la mozzarella.,normal
+R88,Cusc\xFAs de verduras y tofu,comida;cena,632,34.0,21.5,79.8,EJEMPLO,unico,9.5,tofu firme,cereal,gluten;soja,si,pendiente_ficha,pendiente_ficha,no,no,20,nuevo,Hidratar el cusc\xFAs; saltear verduras y tofu y mezclar.,normal
+R89,"Wrap de pollo, pimiento y aguacate (d\xEDa de carga)",comida;cena,650,56.7,20.6,59.2,EJEMPLO,unico,7.8,pechuga de pollo asada,pan,gluten,no,no,pendiente_ficha,no,no,20,nuevo,Rellenar la tortilla con el pollo ya asado y las verduras.,carga
+R90,Tostada integral con aguacate y huevo,desayuno,367,17.9,17.1,37.4,EJEMPLO | fibraAlta,unico,8.8,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,10,nuevo,"Tostar el pan, aguacate machacado, huevo cocinado y tomate.",normal
+R91,"Mollete con tomate, aceite y at\xFAn",desayuno;merienda,363,16.6,11.6,48.4,EJEMPLO,unico,3.6,at\xFAn en lata,pan,gluten;pescado,no,no,pendiente_ficha,no,si,10,nuevo,"Pan abierto con tomate rallado, at\xFAn y aceite.",normal
+R92,Gachas de avena con leche y pl\xE1tano,desayuno,404,15.9,8.5,68.7,EJEMPLO,unico,7.7,,avena,gluten;l\xE1cteos,si,no,no,no,no,10,nuevo,Calentar la avena con la leche y a\xF1adir el pl\xE1tano.,normal
+R93,Tortilla francesa con pan y naranja,desayuno,444,20.2,17.0,52.9,EJEMPLO,unico,5.5,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,si,10,nuevo,"Tortilla de 2 huevos, pan y naranja.",normal
+R94,Tostada con crema de cacahuete y pl\xE1tano,desayuno;merienda,360,13.0,12.7,52.9,EJEMPLO | fibraAlta,unico,7.2,,pan,cacahuete;gluten,si,pendiente_ficha,pendiente_ficha,no,no,5,nuevo,Pan tostado con la crema y el pl\xE1tano en rodajas.,normal
+R95,Yogur con nueces y manzana,media_manana;merienda,226,6.9,14.0,21.7,EJEMPLO,unico,3.4,,,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Mezclar.,normal
+R96,Hummus con zanahoria,media_manana;merienda,183,5.6,10.9,18.6,EJEMPLO | fibraAlta,unico,6.1,,legumbre,s\xE9samo,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,no,5,nuevo,Bastones de zanahoria con el hummus.,normal
+R97,Pl\xE1tano con almendras,media_manana;merienda,205,5.3,10.3,27.1,EJEMPLO,unico,5.1,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,2,nuevo,Tomar junto.,normal
+R98,Bocadillo peque\xF1o de pavo y tomate,media_manana;merienda,226,17.7,2.9,31.2,EJEMPLO,unico,2.1,pechuga de pavo asada,pan,gluten,no,no,pendiente_ficha,no,si,5,nuevo,Pan con pavo asado y tomate.,normal
+R99,Tostada de at\xFAn y tomate,media_manana;merienda,176,12.6,2.1,26.7,EJEMPLO,unico,2.0,at\xFAn en lata,pan,gluten;pescado,no,no,pendiente_ficha,no,si,5,nuevo,Pan tostado con at\xFAn escurrido y tomate.,normal
+R100,Batido de yogur griego y fresas,media_manana;merienda,170,19.3,2.9,17.9,EJEMPLO,unico,2.0,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Triturar.,normal
+R101,Huevo cocido con pera,media_manana;merienda,178,8.1,6.6,23.5,EJEMPLO,unico,4.7,huevo cocido,,huevo,si,no,si,pendiente_ficha,si,10,nuevo,Huevo cocido y pera.,normal
+R102,Frutos secos y mandarina,media_manana;merienda,264,6.7,17.7,25.3,EJEMPLO,unico,5.6,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,2,nuevo,Pu\xF1ado de frutos secos y fruta.,normal
+R103,Yogur con avena y miel,media_manana;merienda,176,7.0,5.4,26.0,EJEMPLO,unico,2.0,,avena,gluten;l\xE1cteos,si,no,no,no,si,5,nuevo,Mezclar.,normal
+R104,Manzana con crema de cacahuete,media_manana;merienda,168,3.7,8.0,24.1,EJEMPLO,unico,4.3,,,cacahuete,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,si,3,nuevo,Manzana en gajos con la crema.,normal
+R105,Yogur natural con fresas,comida;cena,108,5.0,4.4,13.5,EJEMPLO,postre,2.0,,,l\xE1cteos,si,no,no,pendiente_ficha,si,3,nuevo,Mezclar.,normal
+R106,Yogur griego con miel y nueces,comida;cena,163,14.3,7.0,12.5,EJEMPLO,postre,0.7,,,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,si,3,nuevo,Mezclar.,normal
+R107,Manzana asada con canela,comida;cena,111,0.5,0.3,29.8,EJEMPLO,postre,4.9,,,,si,no,si,pendiente_ficha,si,25,nuevo,Hornear la manzana con canela y un toque de miel.,normal
+R108,Macedonia de frutas,comida;cena,162,2.7,0.8,40.4,EJEMPLO,postre,7.2,,,,si,si,si,pendiente_ficha,no,10,nuevo,Trocear y mezclar.,normal
+R109,Pl\xE1tano con yogur y cacao,comida;cena,177,6.4,5.1,31.6,EJEMPLO,postre,4.5,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Pl\xE1tano troceado con yogur y cacao.,normal
+R110,Pera cocida con canela,comida;cena,116,0.8,0.3,31.3,EJEMPLO,postre,6.7,,,,si,si,si,pendiente_ficha,no,20,nuevo,Cocer la pera pelada con canela.,normal
+R111,Mel\xF3n,comida;cena,85,2.1,0.5,20.4,EJEMPLO,postre,2.2,,,,si,si,si,pendiente_ficha,si,2,nuevo,Servir fr\xEDo.,normal
+R112,Sand\xEDa,comida;cena,90,1.8,0.5,22.6,EJEMPLO,postre,1.2,,,,si,si,si,pendiente_ficha,si,2,nuevo,Servir fr\xEDa.,normal
+R113,Naranja con almendras,comida;cena,181,5.1,7.7,26.7,EJEMPLO,postre,6.7,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,3,nuevo,Naranja pelada con almendras.,normal
+R114,Kiwi con yogur griego,comida;cena,147,14.1,1.1,22.1,EJEMPLO,postre,3.6,,,l\xE1cteos,si,no,no,pendiente_ficha,si,3,nuevo,Kiwi troceado con el yogur.,normal
+R115,Compota de manzana sin az\xFAcar,comida;cena,106,0.6,0.4,28.4,EJEMPLO,postre,5.3,,,,si,si,si,pendiente_ficha,si,20,nuevo,Cocer la manzana pelada con canela y triturar.,normal`;
+  var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
+R01,garbanzo cocido,140,base,173757,peso cocido,
+R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
+R01,patata,130,base,170026,peso crudo,
+R01,zanahoria,90,verdura,170393,peso crudo,
+R01,puerro,60,aromatico,169246,peso crudo,
+R01,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R02,garbanzo cocido,160,base,173757,peso cocido,
+R02,pechuga de pollo asada,90,proteina,171477,peso cocinado,
+R02,patata,100,base,170026,peso crudo,
+R02,zanahoria,80,verdura,170393,peso crudo,
+R02,repollo,120,verdura,169975,peso crudo,
+R02,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R03,calabac\xEDn,180,verdura,169291,peso crudo,
+R03,tomate,170,verdura,170457,peso crudo,
+R03,pimiento rojo,100,verdura,170108,peso crudo,
+R03,cebolla,70,aromatico,170000,peso crudo,
+R03,aceite de oliva,12,grasa,171413,peso a\xF1adido,
+R03,huevo,100,proteina,171287,peso crudo,
+R03,pan integral,70,base,172688,peso del pan,
+R04,pimiento rojo,180,verdura,170108,peso crudo,
+R04,cebolla,110,aromatico,170000,peso crudo,
+R04,tomate,100,verdura,170457,peso crudo,
+R04,patata,220,base,170026,peso crudo,
+R04,bacalao fresco,160,proteina,171955,peso crudo,
+R04,aceite de oliva,15,grasa,171413,peso a\xF1adido,
+R05,alubia blanca seca,75,base,175202,peso seco,
+R05,repollo,180,verdura,169975,peso crudo,
+R05,patata,170,base,170026,peso crudo,
+R05,cebolla,70,aromatico,170000,peso crudo,
+R05,aceite de oliva,12,grasa,171413,peso a\xF1adido,
+R06,arroz,85,base,169756,peso seco,
+R06,pechuga de pollo asada,125,proteina,171477,peso cocinado,
+R06,jud\xEDa verde,130,verdura,169961,peso crudo,
+R06,tomate,100,verdura,170457,peso crudo,
+R06,pimiento verde,80,verdura,170427,peso crudo,
+R06,aceite de oliva,13,grasa,171413,peso a\xF1adido,
+R07,garbanzo cocido,160,base,173757,peso cocido,
+R07,at\xFAn en lata,105,proteina,173709,peso escurrido,
+R07,tomate,160,verdura,170457,peso crudo,
+R07,pimiento verde,90,verdura,170427,peso crudo,
+R07,cebolla,50,aromatico,170000,peso crudo,
+R07,aceite de oliva,12,grasa,171413,peso a\xF1adido,
+R07,pan integral,60,base,172688,peso del pan,
+R08,lenteja seca,75,base,172420,peso seco,
+R08,arroz,50,base,169756,peso seco,
+R08,cebolla,80,aromatico,170000,peso crudo,
+R08,zanahoria,110,verdura,170393,peso crudo,
+R08,tomate,100,verdura,170457,peso crudo,
+R08,ajo,5,condimento,169230,peso crudo,
+R08,aceite de oliva,12,grasa,171413,peso a\xF1adido,
+R09,yogur natural,250,fruta_lacteo,171284,peso neto,
+R09,copos de avena,65,base,173904,peso seco,
+R09,pl\xE1tano,120,fruta_lacteo,173944,peso comestible,
+R09,almendra,20,grasa,170567,peso comestible,
+R10,salm\xF3n,150,proteina,175167,peso crudo,
+R10,patata,260,base,170026,peso crudo,
+R10,espinacas,150,verdura,168462,peso crudo,
+R10,aceite de oliva,12,grasa,171413,peso a\xF1adido,
+R11,pan integral,100,base,172688,peso del pan,
+R11,huevo,100,proteina,171287,peso crudo,
+R11,tomate,120,verdura,170457,peso crudo,
+R11,naranja,150,fruta_lacteo,169097,peso comestible,
+R11,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R12,arroz,90,base,169756,peso seco,
+R12,ternera picada,140,proteina,174030,peso crudo,
+R12,calabac\xEDn,150,verdura,169291,peso crudo,
+R12,pimiento rojo,100,verdura,170108,peso crudo,
+R12,tomate,100,verdura,170457,peso crudo,
+R12,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R13,at\xFAn fresco,170,proteina,175159,peso crudo,
+R13,patata,200,base,170026,peso crudo,
+R13,pimiento verde,60,verdura,170427,peso crudo,
+R13,cebolla,60,aromatico,170000,peso crudo,
+R13,tomate,100,verdura,170457,peso crudo,
+R13,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R14,alubia blanca cocida,180,base,175203,peso cocido,
+R14,repollo,100,verdura,169975,peso crudo,
+R14,zanahoria,80,verdura,170393,peso crudo,
+R14,puerro,60,aromatico,169246,peso crudo,
+R14,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R15,pechuga de pollo asada,130,proteina,171477,peso cocinado,
+R15,pimiento rojo,100,verdura,170108,peso crudo,
+R15,tomate,150,verdura,170457,peso crudo,
+R15,cebolla,60,aromatico,170000,peso crudo,
+R15,patata,150,base,170026,peso crudo,
+R15,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R16,patata,280,base,170026,peso crudo,
+R16,champi\xF1\xF3n,150,verdura,169251,peso crudo,
+R16,zanahoria,80,verdura,170393,peso crudo,
+R16,cebolla,60,aromatico,170000,peso crudo,
+R16,huevo cocido,60,proteina,173424,peso cocido,
+R16,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R17,jud\xEDa verde,150,verdura,169961,peso crudo,
+R17,zanahoria,100,verdura,170393,peso crudo,
+R17,patata,150,base,170026,peso crudo,
+R17,huevo cocido,60,proteina,173424,peso cocido,
+R17,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R18,patata,200,base,170026,peso crudo,
+R18,berenjena,150,verdura,169228,peso crudo,
+R18,pimiento rojo,80,verdura,170108,peso crudo,
+R18,tomate,150,verdura,170457,peso crudo,
+R18,huevo,60,proteina,171287,peso crudo,
+R18,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R19,patata,250,base,170026,peso crudo,
+R19,bacalao fresco,160,proteina,171955,peso crudo,
+R19,pimiento verde,50,verdura,170427,peso crudo,
+R19,aceite de oliva,12,grasa,171413,peso a\xF1adido,
+R20,calabac\xEDn,250,verdura,169291,peso crudo,
+R20,cebolla,100,aromatico,170000,peso crudo,
+R20,huevo,120,proteina,171287,peso crudo,
+R20,patata,150,base,170026,peso crudo,
+R20,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R21,tomate,300,verdura,170457,peso crudo,
+R21,pimiento verde,60,verdura,170427,peso crudo,
+R21,cebolla,40,aromatico,170000,peso crudo,
+R21,at\xFAn en lata,100,proteina,173709,peso escurrido,
+R21,huevo cocido,60,proteina,173424,peso cocido,
+R21,pan integral,60,base,172688,peso tal cual,
+R21,aceite de oliva,15,grasa,171413,peso a\xF1adido,
+R22,pan integral,90,base,172688,peso tal cual,
+R22,pimiento rojo,80,verdura,170108,peso crudo,
+R22,cebolla,60,aromatico,170000,peso crudo,
+R22,huevo,60,proteina,171287,peso crudo,
+R22,aceite de oliva,12,grasa,171413,peso a\xF1adido,
+R22,naranja,150,fruta_lacteo,169097,peso comestible,
+R23,alubia blanca cocida,180,base,175203,peso cocido,
+R23,pechuga de pavo asada,110,proteina,171496,peso cocinado,
+R23,zanahoria,80,verdura,170393,peso crudo,
+R23,cebolla,60,aromatico,170000,peso crudo,
+R23,tomate,100,verdura,170457,peso crudo,
+R23,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R24,alubia roja cocida,180,base,175194,peso cocido,
+R24,repollo,150,verdura,169975,peso crudo,
+R24,zanahoria,80,verdura,170393,peso crudo,
+R24,patata,120,base,170026,peso crudo,
+R24,pechuga de pavo asada,80,proteina,171496,peso cocinado,
+R24,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R25,copos de avena,60,base,173904,peso en seco,
+R25,yogur natural,200,fruta_lacteo,171284,peso tal cual,
+R25,manzana,150,fruta_lacteo,171688,peso comestible,
+R25,nueces,20,grasa,170187,peso comestible,
+R26,copos de avena,50,base,173904,peso en seco,
+R26,huevo,120,proteina,171287,peso crudo,
+R26,fresas,150,fruta_lacteo,167762,peso comestible,
+R26,yogur griego,125,fruta_lacteo,170894,peso tal cual,
+R26,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R27,pan integral,80,base,172688,peso tal cual,
+R27,at\xFAn en lata,90,proteina,173709,peso escurrido,
+R27,tomate,120,verdura,170457,peso crudo,
+R27,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R27,naranja,200,fruta_lacteo,169097,peso comestible,
+R28,queso cottage,200,proteina,172182,peso tal cual,
+R28,copos de avena,50,base,173904,peso en seco,
+R28,fresas,150,fruta_lacteo,167762,peso comestible,
+R28,miel,15,condimento,169640,peso a\xF1adido,
+R29,pan integral,90,base,172688,peso tal cual,
+R29,huevo,120,proteina,171287,peso crudo,
+R29,tomate,100,verdura,170457,peso crudo,
+R29,aceite de oliva,8,grasa,171413,peso a\xF1adido,
+R29,yogur natural,125,fruta_lacteo,171284,peso tal cual,
+R30,leche semidesnatada,300,fruta_lacteo,171267,peso tal cual,
+R30,pl\xE1tano,120,fruta_lacteo,173944,peso pelado,
+R30,copos de avena,40,base,173904,peso en seco,
+R30,crema de cacahuete,25,grasa,172470,peso a\xF1adido,
+R31,arroz,80,base,169756,"peso seco (convertido de 220 g cocido, mismas kcal)",
+R31,pechuga de pollo asada,120,proteina,171477,peso cocinado,
+R31,pl\xE1tano,100,fruta_lacteo,173944,peso pelado,
+R31,miel,10,condimento,169640,peso a\xF1adido,
+R31,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R32,pan blanco,80,base,174924,peso tal cual,
+R32,pechuga de pavo asada,90,proteina,171496,peso cocinado,
+R32,tomate,100,verdura,170457,peso crudo,
+R32,aceite de oliva,8,grasa,171413,peso a\xF1adido,
+R32,yogur natural,125,fruta_lacteo,171284,peso tal cual,
+R33,arroz,80,base,169756,"peso seco (convertido de 220 g cocido, mismas kcal)",
+R33,at\xFAn en lata,110,proteina,173709,peso escurrido,
+R33,claras de huevo,150,proteina,172183,peso crudo,
+R33,pimiento rojo,60,verdura,170108,peso crudo,
+R33,aceite de oliva,8,grasa,171413,peso a\xF1adido,
+R34,merluza,170,proteina,171964,peso crudo (aprox. haddock USDA),si
+R34,patata,250,base,170026,peso crudo,
+R34,jud\xEDa verde,150,verdura,169961,peso crudo,
+R34,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R35,pasta,105,base,168927,"peso seco (convertido de 250 g cocido, mismas kcal)",
+R35,pechuga de pavo asada,120,proteina,171496,peso cocinado,
+R35,tomate,150,verdura,170457,peso crudo,
+R35,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R36,yogur griego,250,fruta_lacteo,170894,peso tal cual,
+R36,copos de avena,60,base,173904,peso en seco,
+R36,pl\xE1tano,120,fruta_lacteo,173944,peso pelado,
+R36,nueces,15,grasa,170187,peso comestible,
+R37,huevo,120,proteina,171287,peso crudo,
+R37,calabac\xEDn,150,verdura,169291,peso crudo,
+R37,cebolla,60,aromatico,170000,peso crudo,
+R37,tomate,150,verdura,170457,peso crudo,
+R37,pan integral,50,base,172688,peso tal cual,
+R37,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R38,calabaza,300,verdura,168448,peso crudo,
+R38,puerro,80,aromatico,169246,peso crudo,
+R38,patata,100,base,170026,peso crudo,
+R38,pechuga de pollo asada,110,proteina,171477,peso cocinado,
+R38,pan integral,40,base,172688,peso tal cual,
+R38,aceite de oliva,8,grasa,171413,peso a\xF1adido,
+R39,pechuga de pavo,170,proteina,171098,peso crudo,
+R39,boniato,250,base,168482,peso crudo,
+R39,br\xF3coli,150,verdura,170379,peso crudo,
+R39,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R40,lenteja cocida,180,base,172421,peso cocido,
+R40,huevo cocido,60,proteina,173424,peso cocido,
+R40,tomate,150,verdura,170457,peso crudo,
+R40,cebolla,40,aromatico,170000,peso crudo,
+R40,pan integral,40,base,172688,peso tal cual,
+R40,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R41,sepia,200,proteina,174215,peso crudo,
+R41,patata,220,base,170026,peso crudo,
+R41,pimiento verde,100,verdura,170427,peso crudo,
+R41,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R42,sardina en lata,100,proteina,175139,peso escurrido,
+R42,pan integral,80,base,172688,peso tal cual,
+R42,tomate,150,verdura,170457,peso crudo,
+R42,espinacas,60,verdura,168462,peso crudo,
+R42,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R43,lechuga hoja verde,80,verdura,169249,crudo,
+R43,huevo cocido,60,proteina,173424,crudo,
+R43,pechuga de pollo asada,90,proteina,171477,crudo,
+R43,tomate,80,verdura,170457,crudo,
+R43,aceite de oliva,8,grasa,171413,crudo,
+R44,lechuga romana,80,verdura,169247,crudo,
+R44,tomate,100,verdura,170457,crudo,
+R44,pepino,60,verdura,168409,crudo,
+R44,at\xFAn en lata,60,proteina,173709,crudo,
+R44,cebolla,20,aromatico,170000,crudo,
+R44,aceite de oliva,8,grasa,171413,crudo,
+R45,r\xFAcula,60,verdura,169387,crudo,
+R45,pera,120,fruta_lacteo,169118,crudo,
+R45,nueces,15,grasa,170187,crudo,
+R45,aceite de oliva,8,grasa,171413,crudo,
+R46,tomate,200,verdura,170457,crudo,
+R46,pepino,100,verdura,168409,crudo,
+R46,cebolla,30,aromatico,170000,crudo,
+R46,aceituna negra,20,grasa,169094,crudo,
+R46,aceite de oliva,10,grasa,171413,crudo,
+R47,remolacha cocida,100,verdura,169146,crudo,
+R47,zanahoria,80,verdura,170393,crudo,
+R47,lechuga hoja verde,50,verdura,169249,crudo,
+R47,huevo cocido,60,proteina,173424,crudo,
+R47,aceite de oliva,8,grasa,171413,crudo,
+R48,calabaza,200,verdura,168448,crudo,
+R48,zanahoria,100,verdura,170393,crudo,
+R48,puerro,50,aromatico,169246,crudo,
+R48,aceite de oliva,8,grasa,171413,crudo,
+R49,calabac\xEDn,200,verdura,169291,crudo,
+R49,puerro,80,aromatico,169246,crudo,
+R49,patata,120,base,170026,crudo,
+R49,aceite de oliva,8,grasa,171413,crudo,
+R50,tomate,300,verdura,170457,crudo,
+R50,pepino,100,verdura,168409,crudo,
+R50,pimiento verde,50,verdura,170427,crudo,
+R50,ajo,3,condimento,169230,crudo,
+R50,pan blanco,30,base,174924,crudo,
+R50,aceite de oliva,15,grasa,171413,crudo,
+R51,tomate,300,verdura,170457,crudo,
+R51,pan blanco,60,base,174924,crudo,
+R51,ajo,3,condimento,169230,crudo,
+R51,huevo cocido,50,proteina,173424,crudo,
+R51,aceite de oliva,15,grasa,171413,crudo,
+R52,jud\xEDa verde,150,verdura,169961,crudo,
+R52,alcachofa,100,verdura,169205,crudo,
+R52,zanahoria,80,verdura,170393,crudo,
+R52,cebolla,30,aromatico,170000,crudo,
+R52,aceite de oliva,10,grasa,171413,crudo,
+R53,esp\xE1rrago,150,verdura,168389,crudo,
+R53,champi\xF1\xF3n,120,verdura,169251,crudo,
+R53,ajo,3,condimento,169230,crudo,
+R53,perejil,2,condimento,170416,crudo,
+R53,aceite de oliva,8,grasa,171413,crudo,
+R54,br\xF3coli,150,verdura,170379,crudo,
+R54,coliflor,150,verdura,169986,crudo,
+R54,ajo,3,condimento,169230,crudo,
+R54,aceite de oliva,10,grasa,171413,crudo,
+R55,lenteja cocida,150,base,172421,cocido,
+R55,zanahoria,60,verdura,170393,crudo,
+R55,cebolla,40,aromatico,170000,crudo,
+R55,pimiento rojo,50,verdura,170108,crudo,
+R55,piment\xF3n,2,condimento,171329,crudo,
+R55,aceite de oliva,8,grasa,171413,crudo,
+R56,garbanzo cocido,150,base,173757,cocido,
+R56,espinacas,100,verdura,168462,crudo,
+R56,ajo,3,condimento,169230,crudo,
+R56,comino,1,condimento,170923,crudo,
+R56,aceite de oliva,8,grasa,171413,crudo,
+R57,arroz,70,base,169756,crudo,
+R57,tomate triturado,150,verdura,170051,crudo,
+R57,cebolla,30,aromatico,170000,crudo,
+R57,aceite de oliva,8,grasa,171413,crudo,
+R58,pasta,80,base,168927,crudo,
+R58,tomate triturado,150,verdura,170051,crudo,
+R58,ajo,3,condimento,169230,crudo,
+R58,aceite de oliva,8,grasa,171413,crudo,
+R59,pasta,40,base,168927,crudo,
+R59,zanahoria,60,verdura,170393,crudo,
+R59,puerro,50,aromatico,169246,crudo,
+R59,jud\xEDa verde,60,verdura,169961,crudo,
+R59,aceite de oliva,5,grasa,171413,crudo,
+R60,pechuga de pollo,200,proteina,171077,crudo,
+R60,patata,200,base,170026,crudo,
+R60,pimiento rojo,100,verdura,170108,crudo,
+R60,aceite de oliva,10,grasa,171413,crudo,
+R61,pechuga de pollo,200,proteina,171077,crudo,
+R61,arroz,70,base,169756,crudo,
+R61,jud\xEDa verde,100,verdura,169961,crudo,
+R61,aceite de oliva,8,grasa,171413,crudo,
+R62,pechuga de pavo,200,proteina,171098,crudo,
+R62,patata,180,base,170026,crudo,
+R62,zanahoria,80,verdura,170393,crudo,
+R62,cebolla,40,aromatico,170000,crudo,
+R62,aceite de oliva,10,grasa,171413,crudo,
+R63,ternera magra (solomillo de aguja),180,proteina,174763,crudo,si
+R63,champi\xF1\xF3n,120,verdura,169251,crudo,
+R63,arroz,80,base,169756,crudo,
+R63,aceite de oliva,10,grasa,171413,crudo,
+R64,lomo de cerdo,180,proteina,168230,crudo,
+R64,boniato,200,base,168482,crudo,
+R64,br\xF3coli,120,verdura,170379,crudo,
+R64,aceite de oliva,8,grasa,171413,crudo,
+R65,ternera picada,150,proteina,174030,crudo,
+R65,patata,200,base,170026,crudo,
+R65,lechuga hoja verde,50,verdura,169249,crudo,
+R65,tomate,80,verdura,170457,crudo,
+R65,aceite de oliva,10,grasa,171413,crudo,
+R66,conejo,200,proteina,172521,crudo,
+R66,patata,200,base,170026,crudo,
+R66,cebolla,50,aromatico,170000,crudo,
+R66,pimiento rojo,60,verdura,170108,crudo,
+R66,tomate,80,verdura,170457,crudo,
+R66,aceite de oliva,10,grasa,171413,crudo,
+R67,merluza,200,proteina,171964,crudo,si
+R67,patata,200,base,170026,crudo,
+R67,guisantes,60,verdura,170419,crudo,
+R67,ajo,3,condimento,169230,crudo,
+R67,perejil,3,condimento,170416,crudo,
+R67,aceite de oliva,10,grasa,171413,crudo,
+R68,bacalao fresco,200,proteina,171955,crudo,
+R68,arroz,70,base,169756,crudo,
+R68,tomate triturado,150,verdura,170051,crudo,
+R68,cebolla,40,aromatico,170000,crudo,
+R68,aceite de oliva,10,grasa,171413,crudo,
+R69,salm\xF3n,150,proteina,175167,crudo,
+R69,esp\xE1rrago,120,verdura,168389,crudo,
+R69,patata,180,base,170026,crudo,
+R69,aceite de oliva,5,grasa,171413,crudo,
+R70,at\xFAn fresco,160,proteina,175159,crudo,
+R70,tomate,150,verdura,170457,crudo,
+R70,calabac\xEDn,120,verdura,169291,crudo,
+R70,pimiento rojo,60,verdura,170108,crudo,
+R70,cebolla,40,aromatico,170000,crudo,
+R70,aceite de oliva,10,grasa,171413,crudo,
+R71,caballa,150,proteina,175119,crudo,
+R71,patata,200,base,170026,crudo,
+R71,cebolla,60,aromatico,170000,crudo,
+R71,tomate,80,verdura,170457,crudo,
+R71,aceite de oliva,8,grasa,171413,crudo,
+R72,lubina,200,proteina,171948,crudo,si
+R72,calabac\xEDn,100,verdura,169291,crudo,
+R72,zanahoria,80,verdura,170393,crudo,
+R72,patata,150,base,170026,crudo,
+R72,aceite de oliva,8,grasa,171413,crudo,
+R73,mejill\xF3n,200,proteina,174216,crudo,
+R73,arroz,70,base,169756,crudo,
+R73,tomate,100,verdura,170457,crudo,
+R73,cebolla,30,aromatico,170000,crudo,
+R73,aceite de oliva,8,grasa,171413,crudo,
+R74,calamar,200,proteina,174223,crudo,
+R74,patata,180,base,170026,crudo,
+R74,lechuga hoja verde,50,verdura,169249,crudo,
+R74,tomate,100,verdura,170457,crudo,
+R74,aceite de oliva,10,grasa,171413,crudo,
+R75,huevo,150,proteina,171287,crudo,
+R75,lechuga hoja verde,60,verdura,169249,crudo,
+R75,tomate,100,verdura,170457,crudo,
+R75,pan blanco,60,base,174924,crudo,
+R75,aceite de oliva,8,grasa,171413,crudo,
+R76,huevo,150,proteina,171287,crudo,
+R76,patata,200,base,170026,crudo,
+R76,cebolla,40,aromatico,170000,crudo,
+R76,lechuga hoja verde,50,verdura,169249,crudo,
+R76,aceite de oliva,10,grasa,171413,crudo,
+R77,huevo,100,proteina,171287,crudo,
+R77,tomate,200,verdura,170457,crudo,
+R77,pimiento rojo,60,verdura,170108,crudo,
+R77,cebolla,40,aromatico,170000,crudo,
+R77,pan integral,60,base,172688,crudo,
+R77,aceite de oliva,8,grasa,171413,crudo,
+R78,tofu firme,150,proteina,172475,crudo,
+R78,br\xF3coli,100,verdura,170379,crudo,
+R78,zanahoria,80,verdura,170393,crudo,
+R78,arroz,70,base,169756,crudo,
+R78,aceite de oliva,8,grasa,171413,crudo,
+R79,tempeh,120,proteina,174272,crudo,
+R79,boniato,200,base,168482,crudo,
+R79,espinacas,100,verdura,168462,crudo,
+R79,aceite de oliva,8,grasa,171413,crudo,
+R80,garbanzo cocido,150,base,173757,cocido,
+R80,espinacas,100,verdura,168462,crudo,
+R80,huevo,100,proteina,171287,crudo,
+R80,ajo,3,condimento,169230,crudo,
+R80,piment\xF3n,2,condimento,171329,crudo,
+R80,aceite de oliva,8,grasa,171413,crudo,
+R81,pechuga de pavo,200,proteina,171098,crudo,
+R81,calabaza,200,verdura,168448,crudo,
+R81,champi\xF1\xF3n,100,verdura,169251,crudo,
+R81,aceite de oliva,8,grasa,171413,crudo,
+R82,pasta,130,base,168927,crudo,
+R82,ternera picada,120,proteina,174030,crudo,
+R82,tomate triturado,150,verdura,170051,crudo,
+R82,cebolla,40,aromatico,170000,crudo,
+R82,aceite de oliva,10,grasa,171413,crudo,
+R83,arroz,130,base,169756,crudo,
+R83,pechuga de pollo,200,proteina,171077,crudo,
+R83,zanahoria,80,verdura,170393,crudo,
+R83,aceite de oliva,12,grasa,171413,crudo,
+R84,pasta,120,base,168927,crudo,
+R84,at\xFAn en lata,80,proteina,173709,crudo,
+R84,tomate triturado,120,verdura,170051,crudo,
+R84,aceite de oliva,10,grasa,171413,crudo,
+R85,patata,300,base,170026,crudo,
+R85,huevo cocido,100,proteina,173424,crudo,
+R85,at\xFAn en lata,60,proteina,173709,crudo,
+R85,aceite de oliva,10,grasa,171413,crudo,
+R86,tofu firme,150,proteina,172475,crudo,
+R86,arroz,90,base,169756,crudo,
+R86,pimiento rojo,80,verdura,170108,crudo,
+R86,zanahoria,60,verdura,170393,crudo,
+R86,br\xF3coli,80,verdura,170379,crudo,
+R86,aceite de oliva,10,grasa,171413,crudo,
+R87,pasta,100,base,168927,crudo,
+R87,calabac\xEDn,120,verdura,169291,crudo,
+R87,tomate,100,verdura,170457,crudo,
+R87,mozzarella,60,proteina,170845,crudo,
+R87,aceite de oliva,8,grasa,171413,crudo,
+R88,cusc\xFAs,90,base,169699,crudo,
+R88,tofu firme,120,proteina,172475,crudo,
+R88,calabac\xEDn,100,verdura,169291,crudo,
+R88,pimiento rojo,60,verdura,170108,crudo,
+R88,aceite de oliva,10,grasa,171413,crudo,
+R89,tortilla de trigo,100,base,167535,crudo,
+R89,pechuga de pollo asada,150,proteina,171477,crudo,
+R89,pimiento rojo,80,verdura,170108,crudo,
+R89,lechuga hoja verde,30,verdura,169249,crudo,
+R89,aguacate,50,grasa,171705,crudo,
+R90,pan integral,70,base,172688,crudo,
+R90,aguacate,60,grasa,171705,crudo,
+R90,huevo,60,proteina,171287,crudo,
+R90,tomate,50,verdura,170457,crudo,
+R91,pan blanco,90,base,174924,crudo,
+R91,tomate,100,verdura,170457,crudo,
+R91,at\xFAn en lata,40,proteina,173709,crudo,
+R91,aceite de oliva,8,grasa,171413,crudo,
+R92,copos de avena,50,base,173904,crudo,
+R92,leche semidesnatada,250,fruta_lacteo,171267,crudo,
+R92,pl\xE1tano,100,fruta_lacteo,173944,crudo,
+R93,huevo,100,proteina,171287,crudo,
+R93,pan blanco,70,base,174924,crudo,
+R93,naranja,150,fruta_lacteo,169097,crudo,
+R93,aceite de oliva,5,grasa,171413,crudo,
+R94,pan integral,60,base,172688,crudo,
+R94,crema de cacahuete,20,grasa,172470,crudo,
+R94,pl\xE1tano,100,fruta_lacteo,173944,crudo,
+R95,yogur natural,125,fruta_lacteo,171284,crudo,
+R95,nueces,15,grasa,170187,crudo,
+R95,manzana,100,fruta_lacteo,171688,crudo,
+R96,hummus,60,base,174289,cocido,
+R96,zanahoria,100,verdura,170393,crudo,
+R97,pl\xE1tano,100,fruta_lacteo,173944,crudo,
+R97,almendra,20,grasa,170567,crudo,
+R98,pan blanco,60,base,174924,crudo,
+R98,pechuga de pavo asada,40,proteina,171496,crudo,
+R98,tomate,40,verdura,170457,crudo,
+R99,pan blanco,50,base,174924,crudo,
+R99,at\xFAn en lata,40,proteina,173709,crudo,
+R99,tomate,50,verdura,170457,crudo,
+R100,yogur griego,150,fruta_lacteo,170894,crudo,
+R100,fresas,100,fruta_lacteo,167762,crudo,
+R100,leche semidesnatada,100,fruta_lacteo,171267,crudo,
+R101,huevo cocido,60,proteina,173424,crudo,
+R101,pera,150,fruta_lacteo,169118,crudo,
+R102,nueces,15,grasa,170187,crudo,
+R102,almendra,15,grasa,170567,crudo,
+R102,mandarina,150,fruta_lacteo,169105,crudo,
+R103,yogur natural,125,fruta_lacteo,171284,crudo,
+R103,copos de avena,20,base,173904,crudo,
+R103,miel,8,condimento,169640,crudo,
+R104,manzana,150,fruta_lacteo,171688,crudo,
+R104,crema de cacahuete,15,grasa,172470,crudo,
+R105,yogur natural,125,fruta_lacteo,171284,crudo,
+R105,fresas,100,fruta_lacteo,167762,crudo,
+R106,yogur griego,125,fruta_lacteo,170894,crudo,
+R106,miel,8,condimento,169640,crudo,
+R106,nueces,10,grasa,170187,crudo,
+R107,manzana,180,fruta_lacteo,171688,crudo,
+R107,canela,1,condimento,171320,crudo,
+R107,miel,5,condimento,169640,crudo,
+R108,naranja,100,fruta_lacteo,169097,crudo,
+R108,kiwi,80,fruta_lacteo,168153,crudo,
+R108,pi\xF1a,100,fruta_lacteo,169124,crudo,
+R108,fresas,50,fruta_lacteo,167762,crudo,
+R109,pl\xE1tano,100,fruta_lacteo,173944,crudo,
+R109,yogur natural,125,fruta_lacteo,171284,crudo,
+R109,cacao puro en polvo,5,condimento,169593,crudo,
+R110,pera,200,fruta_lacteo,169118,crudo,
+R110,canela,1,condimento,171320,crudo,
+R111,mel\xF3n,250,fruta_lacteo,169092,crudo,
+R112,sand\xEDa,300,fruta_lacteo,167765,crudo,
+R113,naranja,200,fruta_lacteo,169097,crudo,
+R113,almendra,15,grasa,170567,crudo,
+R114,kiwi,120,fruta_lacteo,168153,crudo,
+R114,yogur griego,125,fruta_lacteo,170894,crudo,
+R115,manzana,200,fruta_lacteo,171688,crudo,
+R115,canela,1,condimento,171320,crudo,`;
   return __toCommonJS(motor_exports);
 })();

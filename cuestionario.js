@@ -82,8 +82,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // Catálogo de recetas de EJEMPLO (issue #16/#23/#30): igual que tests/asignador-recetas.test.ts.
   // Ninguna es una receta real de Pablo — solo para ver la forma de la lista de la compra.
   // Catálogo de EJEMPLO: una sola fuente en el motor (src/motor/catalogo-ejemplo.ts), compartida con los tests (#66/#103).
-  const RECETAS_EJEMPLO_CSV = Motor.RECETAS_EJEMPLO_CSV;
-  const RECETAS_EJEMPLO_INGREDIENTES_CSV = Motor.RECETAS_EJEMPLO_INGREDIENTES_CSV;
+  const RECETAS_EJEMPLO_CSV = Motor.RECETAS_CATALOGO_CSV; // catálogo EJEMPLO de 115 recetas (issue #135)
+  const RECETAS_EJEMPLO_INGREDIENTES_CSV = Motor.RECETAS_CATALOGO_INGREDIENTES_CSV;
   const RECETAS_EJEMPLO = Motor.parsearRecetas(RECETAS_EJEMPLO_CSV, RECETAS_EJEMPLO_INGREDIENTES_CSV);
   /** Catálogo + las comidas compuestas (primero y segundo) que usa un plan, para la compra y el detalle (issue #131). */
   const catalogoPlan = (asignaciones) => RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
@@ -1026,7 +1026,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const ap = restriccionesActuales;
     const c = ap ? Motor.evaluarCompatibilidad(r, ap) : { compatible: true };
     const NOMBRE = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
-    const pasos = Motor.elaboracionEjemplo(r.id);
+    const pasos = Motor.elaboracionEjemplo(r.id, r);
     const ings = Motor.ingredientesDeLaRacion(r, 1, Motor.noSeReescala).map((i) => `
       <li class="dc-ing"><span class="dc-ing-nombre">${escaparHtml(i.nombre)}</span>
         <span class="dc-ing-dato"><span class="dc-ing-etq">Ración base</span> <strong>${String(i.gramosBase).replace('.', ',')} g</strong></span></li>`).join('');
@@ -2201,7 +2201,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
           <span class="dc-ing-compra">compra: ${enCompra ? escaparHtml(comprados.get(i.nombre) ?? '—') : 'día fuera de la compra'}</span>
         </li>`;
       }).join('');
-      const pasos = Motor.elaboracionEjemplo(asignada.receta.id);
+      const pasos = Motor.elaboracionEjemplo(asignada.receta.id, asignada.receta);
       const hayCocido = Motor.ingredientesDeLaRacion(asignada.receta, 1).some((i) => Motor.factorCocido(i.nombre));
       const bloqueCocido = hayCocido ? `
         <label class="check"><input type="checkbox" id="dc-ver-cocido" ${verCocido ? 'checked' : ''}> Ver también el peso en cocido</label>
