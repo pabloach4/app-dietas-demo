@@ -2893,3 +2893,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
   cargarPerfilGuardadoSiHay();
 })();
+
+// --- Issue #137: apartado de Fuentes al final, por tema y con el estado de cada referencia. ---
+(function pintarFuentes() {
+  const caja = document.getElementById('fuentes-lista');
+  if (!caja || !Array.isArray(window.FUENTES)) return;
+  const ESTADO = { publicada: 'Publicada · enlace comprobado', doi_aportado: 'DOI aportado · aún sin abrir', criterio_pablo: 'Criterio de Pablo, no un estudio', dato_ejemplo: 'Dato de EJEMPLO, sin validar' };
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const temas = [...new Set(window.FUENTES.map((f) => f.tema))];
+  caja.innerHTML = temas.map((t) => `<details class="plegable"><summary>${esc(t)}</summary><ul class="resumen-lista">${window.FUENTES.filter((f) => f.tema === t).map((f) =>
+    `<li><strong>${f.enlace ? `<a href="${esc(f.enlace)}" target="_blank" rel="noopener noreferrer">${esc(f.referencia)}</a>` : esc(f.referencia)}</strong><br><span style="color:var(--gris)">${esc(f.respalda)}</span><br><small>${esc(ESTADO[f.estado] || f.estado)}</small></li>`).join('')}</ul></details>`).join('');
+})();
