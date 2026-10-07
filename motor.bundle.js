@@ -28,6 +28,8 @@ var Motor = (() => {
     ETIQUETA_FASE: () => ETIQUETA_FASE,
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
+    MAX_BAJADA_COMIDA: () => MAX_BAJADA_COMIDA,
+    MAX_SUBIDA_COMIDA: () => MAX_SUBIDA_COMIDA,
     MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
     NOTA_PAUTA: () => NOTA_PAUTA,
@@ -41,6 +43,7 @@ var Motor = (() => {
     RECETAS_EJEMPLO_INGREDIENTES_CSV: () => RECETAS_EJEMPLO_INGREDIENTES_CSV,
     TEXTO_NIVEL: () => TEXTO_NIVEL,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
+    TOLERANCIA_DIA: () => TOLERANCIA_DIA,
     ZONAS_ICS: () => ZONAS_ICS,
     aHoraTexto: () => aHoraTexto,
     aMinutos: () => aMinutos2,
@@ -61,6 +64,7 @@ var Motor = (() => {
     cambiarHoraSesion: () => cambiarHoraSesion,
     cargaDeHidratos: () => cargaDeHidratos,
     claveSlot: () => claveSlot,
+    coherenciaKcalMacros: () => coherenciaKcalMacros,
     coincideAlimento: () => coincideAlimento,
     combinarConRecetas: () => combinarConRecetas,
     competicionesDelDia: () => competicionesDelDia,
@@ -71,6 +75,7 @@ var Motor = (() => {
     contextoDiaPorDefecto: () => contextoDiaPorDefecto,
     copiarAlPortapapeles: () => copiarAlPortapapeles,
     crearSemana: () => crearSemana,
+    cuadrarDias: () => cuadrarDias,
     definirParametrosReparto: () => definirParametrosReparto,
     definirRolIngrediente: () => definirRolIngrediente,
     definirTablaLimites: () => definirTablaLimites,
@@ -1187,6 +1192,7 @@ var Motor = (() => {
         ...dato(cols, "proteina_principal") ? { proteinaPrincipal: dato(cols, "proteina_principal") } : {},
         ...dato(cols, "base_hidrato") ? { baseHidrato: lista(dato(cols, "base_hidrato")) } : {},
         ...dato(cols, "preparacion") ? { preparacion: dato(cols, "preparacion") } : {},
+        ...dato(cols, "fibra_g") ? { fibraG: Number(dato(cols, "fibra_g")) } : {},
         ingredientes: ingredientesPorReceta.get(id) ?? []
       };
     });
@@ -1483,7 +1489,8 @@ var Motor = (() => {
           kcalResultante: a2.kcalResultante,
           ...a2.protegidosSinEscalar ? { protegidosSinEscalar: a2.protegidosSinEscalar } : {},
           ...a2.pedidoPorUsuario ? { pedidoPorUsuario: a2.pedidoPorUsuario } : {},
-          ...a2.fijada ? { fijada: true } : {}
+          ...a2.fijada ? { fijada: true } : {},
+          ...a2.ajusteDia ? { ajusteDia: a2.ajusteDia } : {}
         });
       }
     }
@@ -4327,5 +4334,81 @@ R114,kiwi,120,fruta_lacteo,168153,crudo,
 R114,yogur griego,125,fruta_lacteo,170894,crudo,
 R115,manzana,200,fruta_lacteo,171688,crudo,
 R115,canela,1,condimento,171320,crudo,`;
+
+  // src/motor/coherencia-nutricional.ts
+  var TOLERANCIA_RELATIVA = 0.1;
+  var TOLERANCIA_ABSOLUTA_KCAL = 10;
+  function coherenciaKcalMacros(r) {
+    const conFibra = typeof r.fibraG === "number" && Number.isFinite(r.fibraG) && r.fibraG >= 0 && r.fibraG <= r.hidrato;
+    const estimadas = conFibra ? 4 * r.proteina + 4 * (r.hidrato - r.fibraG) + 2 * r.fibraG + 9 * r.grasa : 4 * r.proteina + 4 * r.hidrato + 9 * r.grasa;
+    const diferencia = estimadas - r.kcal;
+    const relativa = r.kcal > 0 ? Math.abs(diferencia) / r.kcal : Infinity;
+    return {
+      kcalDeclaradas: r.kcal,
+      kcalEstimadas: Math.round(estimadas),
+      diferencia: Math.round(diferencia),
+      relativa,
+      ok: Math.abs(diferencia) <= Math.max(TOLERANCIA_RELATIVA * r.kcal, TOLERANCIA_ABSOLUTA_KCAL),
+      metodo: conFibra ? "con_fibra" : "simple"
+    };
+  }
+
+  // src/motor/cuadrar-dia.ts
+  var TOLERANCIA_DIA = 0.05;
+  var MAX_SUBIDA_COMIDA = 0.35;
+  var MAX_BAJADA_COMIDA = 0.2;
+  var ORDEN_SUBIDA = ["comida", "cena", "desayuno", "merienda", "media_manana"];
+  var ORDEN_BAJADA = ["media_manana", "merienda", "desayuno", "cena", "comida"];
+  function cuadrarDias(asignaciones, slots, recetas, opciones = {}) {
+    const porId = new Map(recetas.map((r) => [r.id, r]));
+    const salida = asignaciones.map((a2) => ({ ...a2 }));
+    const dias = [];
+    const avisos = [];
+    const diasPresentes = [...new Set(slots.map((s) => s.dia))];
+    for (const dia of diasPresentes) {
+      const delDia = slots.filter((s) => s.dia === dia);
+      const objetivo = delDia.reduce((s, x) => s + x.kcalObjetivo, 0);
+      const mias = salida.filter((a2) => a2.dia === dia);
+      const sumar = () => mias.reduce((s, a2) => s + a2.kcalResultante, 0);
+      const antes = sumar();
+      const margen = TOLERANCIA_DIA * objetivo;
+      let resto = objetivo - antes;
+      if (Math.abs(resto) > margen && objetivo > 0) {
+        const subir = resto > 0;
+        const orden = subir ? ORDEN_SUBIDA : ORDEN_BAJADA;
+        const candidatas = [...mias].sort((a2, b) => orden.indexOf(a2.franja) - orden.indexOf(b.franja));
+        for (const a2 of candidatas) {
+          if (Math.abs(resto) <= margen * 0.5) break;
+          if (opciones.noMover?.(dia, a2.franja)) continue;
+          const slot = delDia.find((s) => s.franja === a2.franja);
+          const receta = recetaDeId(porId, a2.receta);
+          if (!slot || !receta) continue;
+          const tope = subir ? slot.kcalObjetivo * (1 + MAX_SUBIDA_COMIDA) : slot.kcalObjetivo * (1 - MAX_BAJADA_COMIDA);
+          const deseada = subir ? Math.min(tope, a2.kcalResultante + resto) : Math.max(tope, a2.kcalResultante + resto);
+          if (subir ? deseada <= a2.kcalResultante : deseada >= a2.kcalResultante) continue;
+          const r = racionParaObjetivo(receta, deseada, a2.franja, { cargaAlta: slot.cargaAlta, piso: 0.5 });
+          const mejora = subir ? r.kcalResultante > a2.kcalResultante : r.kcalResultante < a2.kcalResultante;
+          const dentro = subir ? r.kcalResultante <= tope + 1 : r.kcalResultante >= tope - 1;
+          if (!mejora || !dentro) continue;
+          if (incumplimientosRacion(a2.franja, receta, r.factorRedondeado, { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+          if (validarPlatoGenerado(a2.franja, gramosEscalados(receta, r.factorRedondeado), { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+          const delta = r.kcalResultante - a2.kcalResultante;
+          a2.racionAjustada = r.factorRedondeado;
+          a2.kcalResultante = r.kcalResultante;
+          a2.ajusteDia = {
+            kcal: (a2.ajusteDia?.kcal ?? 0) + delta,
+            motivo: `Hoy esta comida lleva ${Math.abs(delta)} kcal ${delta > 0 ? "m\xE1s" : "menos"} porque las otras comidas del d\xEDa ${delta > 0 ? "no daban m\xE1s de s\xED" : "se pasaban"} con cantidades normales.`
+          };
+          resto = objetivo - sumar();
+        }
+      }
+      const servido = sumar();
+      const cuadrado = Math.abs(objetivo - servido) <= margen || objetivo === 0;
+      const aviso = cuadrado ? void 0 : `${dia}: ${objetivo - servido > 0 ? "faltan" : "sobran"} ${Math.abs(Math.round(objetivo - servido))} kcal del d\xEDa (objetivo ${Math.round(objetivo)}, servido ${Math.round(servido)}) con cantidades normales. Se puede repartir en otra toma, cerrar con un postre o cambiar alg\xFAn plato; no se infla nada.`;
+      if (aviso) avisos.push(aviso);
+      dias.push({ dia, objetivo: Math.round(objetivo), servidoAntes: Math.round(antes), servido: Math.round(servido), cuadrado, ...aviso ? { aviso } : {} });
+    }
+    return { asignaciones: salida, dias, avisos };
+  }
   return __toCommonJS(motor_exports);
 })();

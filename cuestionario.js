@@ -2217,6 +2217,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
             ${fila('H', 'h', `${f.hidrato} g`, `${asignada.receta.hidrato} g base`)}
           </tbody>
         </table>
+        ${asignada.ajusteDia ? `<p class="dc-nota">⚖️ ${escaparHtml(asignada.ajusteDia.motivo)}</p>` : ''}
         <p class="dc-nota">La receta usa valores declarados (ración base ${asignada.receta.kcal} kcal), no medidos: sirve para acercarse a las kcal, no para clavar los macros.${asignada.protegidosSinEscalar && asignada.protegidosSinEscalar.length ? ` ${escaparHtml(asignada.protegidosSinEscalar.join(', '))} no se reescala${asignada.protegidosSinEscalar.length > 1 ? 'n' : ''}, así que las cifras son aproximadas.` : ''}</p>`;
       receta = `
         <h3 class="dc-plato">🍽️ ${escaparHtml(asignada.receta.nombre)} <span class="etq-ejemplo">EJEMPLO</span> <span class="dc-racion">ración ${Math.round(asignada.racionAjustada * 100)} %</span></h3>
@@ -2506,7 +2507,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: [...semanaFija].map(([k, v]) => ({ dia: k[0], franja: k.slice(2), receta: v })) });
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
-    const asignacionSemana = aplicadas.resultado;
+    // Issue #145: lo que no cabe en una comida con cantidades normales se reparte entre las otras comidas del día (sin inflar nada).
+    const cuadrado = Motor.cuadrarDias(aplicadas.resultado.asignaciones, slotsSemana, RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(aplicadas.resultado.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO)), { noMover: (dia) => (compPorDia.get(dia) && compPorDia.get(dia).fase === 'competicion') });
+    const asignacionSemana = { ...aplicadas.resultado, asignaciones: cuadrado.asignaciones, avisos: [...aplicadas.resultado.avisos, ...cuadrado.avisos] };
     if (aplicadas.invalidadas.length) {
       aplicadas.invalidadas.forEach((i) => { delete sustituciones[i.clave]; });
       avisoSustituciones = [...avisoSustituciones, ...aplicadas.invalidadas];
