@@ -2740,6 +2740,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
     filasPlanCSV = filasCSV;
     vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana };
+    pintarFija(); // ya con la vista y la asignación de esta semana (issue #142: opciones para las fijaciones que no valen)
     pintarZonaSustituciones();
     pintarResumenDia();
     pintarHoy();
