@@ -21,6 +21,7 @@ var Motor = (() => {
   var motor_exports = {};
   __export(motor_exports, {
     ACTIVIDADES: () => ACTIVIDADES,
+    ACTIVIDAD_POR_TIPO: () => ACTIVIDAD_POR_TIPO,
     AVISO_DESCARGA: () => AVISO_DESCARGA,
     DIAS: () => DIAS,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
@@ -110,6 +111,7 @@ var Motor = (() => {
     filtrarCatalogo: () => filtrarCatalogo,
     filtrarPorDias: () => filtrarPorDias,
     formatearListaPendiente: () => formatearListaPendiente,
+    gastoDePrueba: () => gastoDePrueba,
     generarIcs: () => generarIcs,
     generarListaCompra: () => generarListaCompra,
     grupoDeFranja: () => grupoDeFranja,
@@ -3382,6 +3384,31 @@ r43,aceite de oliva,10`;
   var KCAL_POR_G_HIDRATO = 4;
   var MS_DIA2 = 864e5;
   var PRIORIDAD = { descarga: 0, previa: 1, recuperacion: 2, carga: 3, vispera: 4, competicion: 5 };
+  var ACTIVIDAD_POR_TIPO = {
+    carrera_10k: [["correr", 1]],
+    media_maraton: [["correr", 1]],
+    maraton: [["correr", 1]],
+    trail_ultra: [["correr_suave", 1]],
+    triatlon_sprint: [["natacion", 0.15], ["bici", 0.5], ["correr", 0.35]],
+    triatlon_olimpico: [["natacion", 0.15], ["bici", 0.5], ["correr", 0.35]],
+    triatlon_medio: [["natacion", 0.1], ["bici", 0.55], ["correr", 0.35]],
+    triatlon_largo: [["natacion", 0.1], ["bici", 0.55], ["correr", 0.35]],
+    marcha_ciclista: [["bici", 1]],
+    hyrox: [["hyrox", 1]],
+    crossfit: [["crossfit", 1]],
+    equipo: [["futbol_partido", 1]]
+  };
+  function gastoDePrueba(tipo, minutos, peso) {
+    const partes = ACTIVIDAD_POR_TIPO[tipo ?? "otra"];
+    if (!partes || !(minutos > 0)) return void 0;
+    return partes.reduce((s, [act, fr]) => s + kcalSesionNeta(act, minutos * fr, peso), 0);
+  }
+  var TIPO_POR_MINUTOS = (min) => min >= 180 ? { tipo: "carga_alta", rango: [6, 10] } : min >= 60 ? { tipo: "duro", rango: [5, 7] } : { tipo: "suave", rango: [3, 5] };
+  var ORDEN_TIPO = { descanso: 0, suave: 1, fuerza: 2, duro: 3, carga_alta: 4 };
+  function minutosDelDia(c, fecha) {
+    if (c.pruebas?.length) return c.pruebas.filter((p) => (p.fecha ?? c.fecha) === fecha).reduce((s, p) => s + p.duracionMin, 0);
+    return DURACION_PROPUESTA_MIN[c.tipo ?? "otra"];
+  }
   var aUTC2 = (f2) => Date.UTC(Number(f2.slice(0, 4)), Number(f2.slice(5, 7)) - 1, Number(f2.slice(8, 10)));
   var diasEntre = (a2, b) => Math.round((aUTC2(b) - aUTC2(a2)) / MS_DIA2);
   var NOMBRE_DIA_SEMANA = ["domingo", "lunes", "martes", "mi\xE9rcoles", "jueves", "viernes", "s\xE1bado"];
@@ -3414,6 +3441,9 @@ r43,aceite de oliva,10`;
       let pausa = false;
       let minGKg = 0;
       let sinFibra = false;
+      let minPrueba = 0;
+      let kcalPrueba = 0;
+      const nombresAct = /* @__PURE__ */ new Set();
       const motivos = [];
       for (const c of competiciones) {
         if (c.tipo === "categoria_peso") continue;
@@ -3422,8 +3452,16 @@ r43,aceite de oliva,10`;
         if (offset < -6 || offset > 1) continue;
         const carga = cargaDeHidratos(c);
         let f2;
-        if (offset === 0) f2 = "competicion";
-        else if (offset === 1) f2 = "recuperacion";
+        if (offset === 0) {
+          f2 = "competicion";
+          const min = minutosDelDia(c, fecha);
+          const kcal2 = gastoDePrueba(c.tipo, min, perfil.peso);
+          if (kcal2 !== void 0) {
+            minPrueba += min;
+            kcalPrueba += kcal2;
+            for (const [act] of ACTIVIDAD_POR_TIPO[c.tipo ?? "otra"]) nombresAct.add(ACTIVIDADES[act].nombre);
+          }
+        } else if (offset === 1) f2 = "recuperacion";
         else if (offset === -1) f2 = "vispera";
         else if (offset === -2 && carga?.diasPrevios.includes(2)) f2 = "carga";
         else if (offset === -2) f2 = "previa";
@@ -3443,13 +3481,34 @@ r43,aceite de oliva,10`;
         dias.push({ dia: d.dia, deficitEnPausa: false, sinFibraAlta: false, kcalAntes: d.kcal, kcalDespues: d.kcal, hidratoAntes: d.hidratoG, hidratoDespues: d.hidratoG, motivos });
         continue;
       }
-      let kcal = d.kcal;
-      if (pausa && d.gasto - kcal >= 20) {
-        kcal = d.gasto;
-        motivos.push(`d\xE9ficit en pausa: comes lo que gastas (${d.gasto} kcal)`);
+      let gastoDia = d.gasto;
+      let kcalDia = d.kcal;
+      let tipoDia2 = d.tipo;
+      let rangoDia = d.hidratoRecomendadoGKg;
+      let kcalEntrenoDia = d.kcalEntreno;
+      let minutosCargaDia = d.minutosCarga;
+      let gastoPrueba;
+      if (fase === "competicion" && kcalPrueba > 0) {
+        gastoDia = d.gasto + (kcalPrueba - d.kcalEntreno) * (1 - COMPENSACION_ENTRENO);
+        kcalDia = d.kcal + (gastoDia - d.gasto);
+        kcalEntrenoDia = kcalPrueba;
+        minutosCargaDia = minPrueba;
+        const t = TIPO_POR_MINUTOS(minPrueba);
+        if (ORDEN_TIPO[t.tipo] >= ORDEN_TIPO[d.tipo]) {
+          tipoDia2 = t.tipo;
+          rangoDia = t.rango;
+        }
+        gastoPrueba = { kcal: Math.round(kcalPrueba), minutos: minPrueba, actividad: [...nombresAct].join(" + ") };
+        motivos.push(`gasto estimado de la prueba: ~${gastoPrueba.kcal} kcal (tu peso, ${minPrueba} min de ${gastoPrueba.actividad}); sustituye al entreno habitual de este d\xEDa`);
+      }
+      let kcal = kcalDia;
+      if (pausa && gastoDia - kcal >= 20) {
+        kcal = gastoDia;
+        motivos.push(`d\xE9ficit en pausa: comes lo que gastas (${Math.round(gastoDia)} kcal)`);
       }
       const base4 = 4 * d.proteinaG + 9 * d.grasaG;
       let hidrato = d.hidratoG;
+      if (Math.abs(kcal - d.kcal) < 1) kcal = d.kcal;
       if (kcal !== d.kcal) hidrato = (kcal - base4) / KCAL_POR_G_HIDRATO;
       if (minGKg > 0) {
         const minimo = Math.ceil(minGKg * perfil.peso);
@@ -3470,14 +3529,15 @@ r43,aceite de oliva,10`;
       if (fase === "recuperacion") motivos.push("d\xEDa de recuperaci\xF3n; despu\xE9s vuelve el plan normal");
       const kcalFinal = Math.round(kcal);
       const hidratoFinal = kcalFinal === d.kcal && hidrato === d.hidratoG ? d.hidratoG : redondear(hidrato);
-      const cambia = kcalFinal !== d.kcal || hidratoFinal !== d.hidratoG;
+      const cambia = kcalFinal !== d.kcal || hidratoFinal !== d.hidratoG || gastoPrueba !== void 0;
       nuevosDias.push(cambia ? {
         ...d,
         fase,
         kcal: kcalFinal,
         hidratoG: hidratoFinal,
         hidratoGKg: redondear(hidrato / perfil.peso, 1),
-        ...mlg && d.disponibilidad !== void 0 ? { disponibilidad: redondear((kcalFinal - d.kcalEntreno) / mlg, 1) } : {}
+        ...gastoPrueba ? { tipo: tipoDia2, gasto: Math.round(gastoDia), kcalEntreno: Math.round(kcalEntrenoDia), minutosCarga: minutosCargaDia, hidratoRecomendadoGKg: rangoDia } : {},
+        ...mlg && d.disponibilidad !== void 0 ? { disponibilidad: redondear((kcalFinal - kcalEntrenoDia) / mlg, 1) } : {}
       } : { ...d, fase });
       dias.push({
         dia: d.dia,
@@ -3486,6 +3546,7 @@ r43,aceite de oliva,10`;
         deficitEnPausa: pausa && kcalFinal !== d.kcal,
         ...minGKg ? { hidratoMinGKg: minGKg } : {},
         sinFibraAlta: sinFibra,
+        ...gastoPrueba ? { gastoPrueba } : {},
         kcalAntes: d.kcal,
         kcalDespues: kcalFinal,
         hidratoAntes: d.hidratoG,
