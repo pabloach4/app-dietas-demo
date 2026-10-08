@@ -673,27 +673,44 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       return { f, hora: h && h.hora !== undefined ? h.hora : undefined };
     });
     const conHora = comidas.filter((c) => c.hora !== undefined).sort((a, b) => a.hora - b.hora);
-    const siguiente = conHora.find((c) => c.hora >= horaAct);
+    // La comida que toca es la última cuya hora ya llegó y sigue ahí hasta que la persona la marca como hecha (Pablo, 08/10).
+    // Red de seguridad para quien no pulsa el botón: a las 2 h, o al llegar la hora de la siguiente, pasa sola a la próxima.
+    const hechas = hechasDe(iso);
+    const enCurso = conHora.filter((c) => c.hora <= horaAct && horaAct - c.hora < 2).pop();
+    const tocaAhora = Boolean(enCurso) && !hechas.includes(enCurso.f.franja);
+    const siguiente = tocaAhora ? enCurso : conHora.find((c) => c.hora > horaAct && !hechas.includes(c.f.franja));
+    const valorando = porValorar && porValorar.fecha === iso ? comidas.find((c) => c.f.franja === porValorar.franja) : undefined;
     const sinHora = comidas.filter((c) => c.hora === undefined);
 
     let bloqueComida;
     if (!comidas.length) {
       bloqueComida = '<p>Hoy no hay comidas activas en tu plan.</p>';
+    } else if (valorando) {
+      // Recién marcada como hecha: se pregunta la cantidad solo de esa comida, y después se pasa a la siguiente.
+      bloqueComida = `
+        <div class="hoy-bloque destacado hoy-toca">
+          <h3>${NOMBRE[valorando.f.franja] ?? valorando.f.franja} · hecha</h3>
+          <div class="hoy-plato">¿Qué tal de cantidad?</div>
+          <div class="hoy-valores">${botonesVolumenHtml(iso, valorando.f.franja)}</div>
+          <div class="hoy-valorar-pie"><button type="button" class="btn-texto hoy-valorar-saltar">Ahora no</button><button type="button" class="btn-texto hoy-hecha-deshacer">Deshacer</button></div>
+        </div>`;
     } else if (siguiente) {
       const asignada = vistaSemana.recetaPorSlot.get(`${dia}|${siguiente.f.franja}`);
       const hueco = vistaSemana.huecoPorSlot.get(`${dia}|${siguiente.f.franja}`);
       // A la vista, solo lo que toca comer y tres botones (Pablo, 08/10): las cifras y los porqués van dentro de la hoja o plegados.
       const nombreComida = NOMBRE[siguiente.f.franja] ?? siguiente.f.franja;
+      const partesPlato = asignada ? asignada.receta.nombre.split(' · ') : []; // «Primero: … · Segundo: …» va en una línea por plato
       const accion = (vista, texto) => `<button type="button" class="hoy-accion" data-dia="${dia}" data-franja="${siguiente.f.franja}" data-vista="${vista}" aria-label="${texto}: ${nombreComida.toLowerCase()} de hoy">${texto}</button>`;
       bloqueComida = `
         <div class="hoy-bloque destacado hoy-toca">
-          <h3>Siguiente · ${nombreComida} · ${horaDecimalATexto(siguiente.hora)}</h3>
-          ${asignada ? `<div class="hoy-plato">${escaparHtml(asignada.receta.nombre)} <span class="etq-ejemplo">EJEMPLO</span></div>
-          <div class="hoy-acciones">${accion('receta', 'Receta')}${accion('cantidades', 'Cantidades')}${accion('cambiar', 'Cambiar')}</div>`
+          <h3>${tocaAhora ? 'Ahora' : 'Siguiente'} · ${nombreComida} · ${horaDecimalATexto(siguiente.hora)}</h3>
+          ${asignada ? `<div class="hoy-plato${partesPlato.length > 1 ? ' hoy-plato-menu' : ''}">${partesPlato.map((p) => `<span>${escaparHtml(p)}</span>`).join(' ')} <span class="etq-ejemplo">EJEMPLO</span></div>
+          <div class="hoy-acciones">${accion('receta', 'Receta')}${accion('cantidades', 'Cantidades')}${accion('cambiar', 'Cambiar')}</div>
+          <button type="button" class="hoy-hecha" data-franja="${siguiente.f.franja}" aria-label="Ya he comido: ${nombreComida.toLowerCase()} de hoy">Ya he comido</button>`
             : `<div class="error-inline" style="margin:0">Sin receta de ejemplo que encaje${hueco ? `: ${escaparHtml(hueco.motivo)}` : ''}.</div>
           ${botonVerComida(dia, siguiente.f.franja)}`}
         </div>`;
-      const resto = conHora.slice(conHora.indexOf(siguiente) + 1);
+      const resto = conHora.slice(conHora.indexOf(siguiente) + 1).filter((c) => !hechas.includes(c.f.franja));
       if (resto.length) {
         bloqueComida += `<div class="hoy-bloque hoy-despues"><h3>Después</h3>${resto.map((c) => {
           const r = vistaSemana.recetaPorSlot.get(`${dia}|${c.f.franja}`);
@@ -702,8 +719,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         }).join('')}</div>`;
       }
     } else if (conHora.length) {
-      bloqueComida = `<div class="hoy-bloque"><h3>Comidas</h3><div class="titulo">Ya pasó la hora de todas las comidas de hoy según tu horario.</div>
-        <div class="hoy-nota" style="margin:0">La última fue ${NOMBRE[conHora[conHora.length - 1].f.franja]} a las ${horaDecimalATexto(conHora[conHora.length - 1].hora)}. No se registra si la tomaste (lo que pase en la cocina queda entre tú y la nevera).</div></div>`;
+      bloqueComida = '<div class="hoy-bloque"><h3>Comidas</h3><div class="titulo">Hoy ya no te queda ninguna comida por delante. ¡Buen trabajo!</div></div>';
     } else {
       bloqueComida = '<div class="hoy-bloque"><h3>Comidas</h3><div class="titulo">Ninguna comida de hoy tiene hora indicada.</div></div>';
     }
@@ -735,10 +751,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <p class="hoy-nota">${escaparHtml(nota)}</p>`;
     cont.innerHTML = `
       <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)}</p>
+      ${previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${bloqueComida}
       ${bloqueEntreno}
       ${cardCompeticionHtml(dia)}
-      ${mas('volumen', '¿Qué tal de cantidad?', bloqueVolumenHoy(iso, conHora.filter((c) => c.hora <= horaAct).map((c) => c.f.franja)))}
       ${mas('numeros', 'Tus números de hoy', numeros)}`;
   }
   setInterval(() => { if (panelActual === 'hoy' && !document.getElementById('resultado').hidden) pintarHoy(); }, 60000);
@@ -949,16 +965,42 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     pintarVolumenPerfil();
     if (panelActual === 'hoy') pintarHoy();
   }
-  /** Tres botones tras cada comida ya pasada de hoy. Pulsar el mismo valor otra vez lo quita (deshacer). */
-  function bloqueVolumenHoy(iso, comidasPasadas) {
-    if (!comidasPasadas.length) return '';
-    const filas = comidasPasadas.map((f) => {
-      const actual = (valoraciones.find((v) => v.fecha === iso && v.franja === f) || {}).valor;
-      const b = (valor, texto) => `<button type="button" class="btn-secundario vol-btn" data-franja="${f}" data-valor="${valor}" aria-pressed="${actual === valor}" style="${actual === valor ? 'border-color:var(--verde);font-weight:700' : ''}">${texto}</button>`;
-      return `<div style="margin:0.4rem 0"><strong>${NOMBRE_FRANJA_SOS[f]}</strong><div class="acciones-rapidas" style="margin-top:0.2rem">${b('mucha', 'Mucha comida')}${b('bien', 'Bien de cantidad')}${b('hambre', 'Me he quedado con hambre')}</div></div>`;
-    }).join('');
-    return `<div class="hoy-bloque"><h3>¿Qué tal de cantidad?</h3>${filas}<p class="hoy-nota" style="margin:0">No cambia tus calorías ni tus macros: solo hace tus platos más concentrados o más abundantes.</p></div>`;
+  /** Tres botones tras marcar una comida como hecha en «Hoy». Al contestar, «Hoy» pasa a la siguiente comida. */
+  function botonesVolumenHtml(iso, f) {
+    const actual = (valoraciones.find((v) => v.fecha === iso && v.franja === f) || {}).valor;
+    const b = (valor, texto) => `<button type="button" class="btn-secundario vol-btn" data-franja="${f}" data-valor="${valor}" aria-pressed="${actual === valor}">${texto}</button>`;
+    return `${b('mucha', 'Mucha comida')}${b('bien', 'Bien de cantidad')}${b('hambre', 'Me he quedado con hambre')}`;
   }
+  // Comidas marcadas como hechas hoy (Pablo, 08/10): «Hoy» pasa a la siguiente cuando la persona lo dice. Solo se guarda el día
+  // en curso y solo sirve para eso: no es un registro de lo comido ni cambia el plan.
+  const CLAVE_HECHAS = 'app-dietas-comidas-hechas';
+  let comidasHechas = { fecha: '', franjas: [] };
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_HECHAS) || 'null');
+    if (g && typeof g.fecha === 'string' && Array.isArray(g.franjas)) comidasHechas = { fecha: g.fecha, franjas: g.franjas.filter((x) => typeof x === 'string').slice(0, 8) };
+  } catch { /* sin almacenamiento o dato corrupto: ninguna marcada */ }
+  function hechasDe(iso) {
+    if (comidasHechas.fecha !== iso) comidasHechas = { fecha: iso, franjas: [] };
+    return comidasHechas.franjas;
+  }
+  let porValorar = null; // { fecha, franja }: comida recién marcada como hecha, a la espera de «¿qué tal de cantidad?»
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest && ev.target.closest('.hoy-hecha, .hoy-valorar-saltar, .hoy-hecha-deshacer');
+    if (!b) return;
+    const iso = Motor.fechaLocalISO(new Date());
+    const hechas = hechasDe(iso);
+    if (b.classList.contains('hoy-hecha')) {
+      if (!hechas.includes(b.dataset.franja)) hechas.push(b.dataset.franja);
+      porValorar = { fecha: iso, franja: b.dataset.franja };
+    } else {
+      if (b.classList.contains('hoy-hecha-deshacer') && porValorar) comidasHechas.franjas = hechas.filter((f) => f !== porValorar.franja);
+      porValorar = null;
+    }
+    try { localStorage.setItem(CLAVE_HECHAS, JSON.stringify(comidasHechas)); } catch { falloAlmacenamiento(); }
+    pintarHoy();
+    const foco = document.querySelector('#hoy-ahora .hoy-valores .vol-btn, #hoy-ahora .hoy-accion');
+    if (foco) foco.focus();
+  });
   document.addEventListener('click', (ev) => {
     const b = ev.target.closest && ev.target.closest('.vol-btn');
     if (!b) return;
@@ -967,6 +1009,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const yaIgual = valoraciones.find((v) => v.fecha === iso && v.franja === b.dataset.franja && v.valor === b.dataset.valor);
     valoraciones = valoraciones.filter((v) => !(v.fecha === iso && v.franja === b.dataset.franja));
     if (!yaIgual) valoraciones.push({ fecha: iso, franja: b.dataset.franja, valor: b.dataset.valor });
+    porValorar = null;
     cambioVolumen();
   });
   function pintarVolumenPerfil() {
@@ -1263,6 +1306,21 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const alt = c.alternativas ? `<br><span style="color:var(--gris)">Alternativas: ${c.alternativas.map(escaparHtml).join('; ')}.</span>` : '';
       return `<li>Prueba ${c.prueba} (${c.duracionMin} min): <strong>${c.hidratoG[0]}–${c.hidratoG[1]} g</strong> de hidratos (${c.hidratoGHora[0]}–${c.hidratoGHora[1]} g/h)${c.obligatorio ? '' : ' · opcional'}${gel}${alt}<br><span style="color:var(--gris)">Agua: ${c.aguaL[0]}–${c.aguaL[1]} L, sin beber de más${c.sodio ? '; bebida con sodio' : ''}${c.nota ? ` · ${escaparHtml(c.nota)}` : ''}.</span></li>`;
     }).join('');
+  }
+  // Días previos a una competición (Pablo, 08/10): que el paciente vea en «Hoy» que esos días ya se está preparando la prueba
+  // (y que está en carga, si le toca), con una frase de ánimo. `x` es el día de Motor.aplicarCompeticion.
+  function previaCompeticionHtml(dia, x) {
+    if (!x || !calInicio || !['descarga', 'previa', 'carga', 'vispera'].includes(x.fase)) return '';
+    const c = competiciones.find((o) => o.nombre === x.competicion);
+    const utc = (f) => Date.UTC(Number(f.slice(0, 4)), Number(f.slice(5, 7)) - 1, Number(f.slice(8, 10)));
+    const faltan = c ? Math.round((utc(c.fecha) - utc(Motor.fechaDelDia(calInicio, dia))) / 86400000) : 0;
+    const cuando = faltan === 1 ? 'Mañana compites' : faltan > 1 ? `Faltan ${faltan} días` : 'Se acerca tu competición';
+    const enCarga = (x.hidratoMinGKg ?? 0) > 0;
+    const frase = x.fase === 'vispera'
+      ? `${enCarga ? 'Hoy estás en carga: hidratos arriba y poca fibra para llegar con el depósito lleno.' : 'Hoy, comida conocida y a descansar.'} El trabajo ya está hecho: solo queda disfrutarlo.`
+      : enCarga ? 'Ya estás en carga: hoy suben los hidratos para llenar el depósito. Comer bien estos días también es entrenar.'
+        : 'Ya estamos preparando la competición: cada comida de estos días suma para llegar a tope.';
+    return `<div class="hoy-bloque hoy-previa"><h3>${cuando}${x.competicion ? ` · ${escaparHtml(x.competicion)}` : ''}</h3><div class="titulo">${frase}</div></div>`;
   }
   function cardCompeticionHtml(dia) {
     const x = competicionDelDia(dia);
@@ -2785,7 +2843,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     });
 
     filasPlanCSV = filasCSV;
-    vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana, asignaciones: asignacionSemana.asignaciones };
+    vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana, asignaciones: asignacionSemana.asignaciones, compPorDia };
     pintarFija(); // ya con la vista y la asignación de esta semana (issue #142: opciones para las fijaciones que no valen)
     pintarZonaSustituciones();
     pintarResumenDia();

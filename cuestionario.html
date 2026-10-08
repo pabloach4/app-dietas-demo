@@ -793,6 +793,8 @@
   .hoy-toca { padding: 1.1rem 1rem 1rem; }
   .hoy-toca h3, .hoy-despues h3 { margin-bottom: 0.35rem; font-size: 0.82rem; }
   .hoy-plato { margin: 0 0 1rem; font-size: 1.5rem; line-height: 1.18; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+  .hoy-plato-menu { font-size: 1.15rem; line-height: 1.25; }
+  .hoy-plato-menu > span:not(.etq-ejemplo) { display: block; margin-bottom: 0.3rem; }
   .hoy-acciones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
   .hoy-accion {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; min-height: 76px; padding: 0.6rem 0.2rem;
@@ -864,6 +866,20 @@
   }
   details.saber-mas[open] > summary::after { margin-top: 3px; transform: rotate(-135deg); }
   details.saber-mas > p { margin: 0 0 0.4rem; font-size: 0.92rem; line-height: 1.45; color: var(--gris); }
+  /* «Ya he comido» (Pablo, 08/10): al pulsarlo se pregunta la cantidad solo de esa comida y «Hoy» pasa a la siguiente. */
+  .hoy-hecha {
+    display: flex; align-items: center; justify-content: center; width: 100%; min-height: 50px; margin-top: 0.6rem; border: 0; border-radius: 14px;
+    background: var(--acento-cta); color: #fff; font-size: 1rem; font-weight: 650; cursor: pointer; box-shadow: 0 8px 18px -10px rgba(11, 130, 121, .8);
+  }
+  .hoy-hecha:hover { background: var(--acento-fuerte); }
+  .hoy-valores { display: grid; gap: 0.5rem; }
+  .hoy-valores .vol-btn { width: 100%; min-height: 50px; padding: 0.6rem 0.8rem; font-size: 1rem; }
+  .hoy-valorar-pie { display: flex; justify-content: space-between; margin-top: 0.4rem; }
+  .hoy-valorar-pie .btn-texto { width: auto; min-height: 44px; padding: 0 0.3rem; font-size: 0.95rem; }
+  /* Días previos a la competición: aviso corto arriba del todo, en ámbar para que no se confunda con la comida. */
+  .hoy-bloque.hoy-previa { background: var(--aviso); }
+  .hoy-previa h3 { margin-bottom: 0.3rem; font-size: 0.82rem; color: #8A4A06; }
+  .hoy-previa .titulo { font-size: 0.98rem; font-weight: 600; line-height: 1.35; }
 </style>
 </head>
 <body>
@@ -1304,9 +1320,9 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=cecdde2"></script>
-<script src="fuentes.js?v=cecdde2"></script>
-<script src="motor.bundle.js?v=cecdde2"></script>
-<script src="cuestionario.js?v=cecdde2"></script>
+<script src="novedades.js?v=e1c205a"></script>
+<script src="fuentes.js?v=e1c205a"></script>
+<script src="motor.bundle.js?v=e1c205a"></script>
+<script src="cuestionario.js?v=e1c205a"></script>
 </body>
 </html>
