@@ -850,6 +850,20 @@
   .dc-vistas button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--gris); font-size: 0.95rem; font-weight: 600; cursor: pointer; }
   .dc-vistas button[aria-pressed="true"] { background: var(--tarjeta); color: var(--texto); box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
   .dc-parte[data-parte="receta"] > h3:first-child { display: none; } /* la pestaña ya dice «Receta» */
+  /* «Saber más» (Pablo, 08/10): en cada tarjeta, título y una línea como mucho; la explicación espera plegada. */
+  .tarjeta .una-linea { margin: 0 0 0.2rem; font-size: 0.95rem; line-height: 1.4; color: var(--gris); }
+  details.saber-mas { margin: 0 0 0.6rem; }
+  details.saber-mas > summary {
+    display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; font-size: 0.92rem; font-weight: 600; color: var(--acento-fuerte);
+    cursor: pointer; list-style: none;
+  }
+  details.saber-mas > summary::-webkit-details-marker { display: none; }
+  details.saber-mas > summary::after {
+    content: ""; width: 7px; height: 7px; margin-top: -3px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+    transform: rotate(45deg); transition: transform var(--normal) var(--curva);
+  }
+  details.saber-mas[open] > summary::after { margin-top: 3px; transform: rotate(-135deg); }
+  details.saber-mas > p { margin: 0 0 0.4rem; font-size: 0.92rem; line-height: 1.45; color: var(--gris); }
 </style>
 </head>
 <body>
@@ -1179,24 +1193,27 @@
       <div class="tarjeta" id="perfil-resumen">
         <h2>Tu perfil</h2>
         <ul class="resumen-lista" id="perfil-datos"></ul>
-        <p class="subt" style="font-size:0.82rem;margin:0.6rem 0">Salud, alergias y preferencias <strong>no se guardan</strong> en este navegador: cada vez que vuelvas a abrir la app tendrás que revisarlos. Tu lista negra (alimentos que no quieres) sí se guarda.</p>
+        <details class="saber-mas"><summary>Qué se guarda y qué no</summary><p>Salud, alergias y preferencias <strong>no se guardan</strong> en este navegador: cada vez que vuelvas a abrir la app tendrás que revisarlos. Tu lista negra (alimentos que no quieres) sí se guarda.</p></details>
         <button type="button" class="btn-principal" id="empezar-de-nuevo">Editar perfil</button>
         <button type="button" class="btn-texto" id="perfil-reiniciar" style="margin-top:0.4rem;color:#b3271e">Empezar de cero (borra el perfil guardado)</button>
       </div>
     <div class="tarjeta" id="recetas-si-o-si">
       <h2>Mis recetas sí o sí</h2>
-      <p class="subt" style="margin:0 0 0.6rem">Recetas que quieres que salgan sí o sí cada semana. Se eligen desde la ficha de una receta (pestaña Recetas) y se quedan guardadas en este navegador hasta que las quites.</p>
+      <p class="una-linea">Las que quieres que salgan cada semana.</p>
+      <details class="saber-mas"><summary>Saber más</summary><p>Se eligen desde la ficha de una receta (pestaña Recetas) y se quedan guardadas en este navegador hasta que las quites.</p></details>
       <ul class="resumen-lista" id="sos-lista"></ul>
       <p class="subt" id="sos-vacio">Todavía no has pedido ninguna.</p>
     </div>
     <div class="tarjeta" id="volumen">
       <h2>Volumen de tus comidas</h2>
-      <p class="subt" style="margin:0 0 0.6rem">Tras cada comida puedes decir «mucha comida», «bien de cantidad» o «me he quedado con hambre» (pestaña Hoy). Eso no cambia tus calorías ni tus macros: solo hace tus platos más concentrados o más abundantes. Aquí ves el nivel y lo puedes ajustar a mano.</p>
+      <p class="una-linea">Platos más abundantes o más concentrados, con las mismas calorías.</p>
+      <details class="saber-mas"><summary>Saber más</summary><p>Tras cada comida puedes decir «mucha comida», «bien de cantidad» o «me he quedado con hambre» (pestaña Hoy). Eso no cambia tus calorías ni tus macros: solo hace tus platos más concentrados o más abundantes. Aquí ves el nivel y lo puedes ajustar a mano.</p></details>
       <div id="volumen-perfil"></div>
     </div>
     <div class="tarjeta" id="lista-negra">
       <h2>Mi lista negra</h2>
-      <p class="subt" style="margin:0 0 0.6rem">Alimentos que seguro que no te vas a comer. No aparecerán en tus recetas y se quedan guardados en este navegador. Para alergias e intolerancias usa el paso 5 del cuestionario: aquí solo van los gustos.</p>
+      <p class="una-linea">Alimentos que no te vas a comer (gustos, no alergias).</p>
+      <details class="saber-mas"><summary>Saber más</summary><p>No aparecerán en tus recetas y se quedan guardados en este navegador. Para alergias e intolerancias usa el paso 5 del cuestionario: aquí solo van los gustos.</p></details>
       <div class="ln-fila">
         <input id="ln-nuevo" type="text" maxlength="40" aria-label="Alimento que no quieres comer" placeholder="Ej.: hígado, coliflor…">
         <button type="button" class="btn-secundario" id="ln-anadir">Añadir</button>
@@ -1207,7 +1224,8 @@
     </div>
     <div class="tarjeta">
       <h2>Para más adelante</h2>
-      <p style="font-size:0.85rem;color:var(--gris);margin-top:0">Estos datos no cambian las kcal ni los macros. Sí se usan ya en las recetas de ejemplo: las alergias e intolerancias (y lo que evitas) excluyen las recetas que los contienen, sin garantía de seguridad alimentaria (con celiaquía, ninguna receta de ejemplo se da por segura). Lo demás todavía no cambia nada.</p>
+      <p class="una-linea">Con alergias o celiaquía, las recetas de ejemplo no garantizan seguridad alimentaria.</p>
+      <details class="saber-mas"><summary>Saber más</summary><p>Estos datos no cambian las kcal ni los macros. Sí se usan ya en las recetas de ejemplo: las alergias e intolerancias (y lo que evitas) excluyen las recetas que los contienen, sin garantía de seguridad alimentaria (con celiaquía, ninguna receta de ejemplo se da por segura). Lo demás todavía no cambia nada.</p></details>
       <ul class="resumen-lista" id="r-resumen"></ul>
     </div>
 
@@ -1286,9 +1304,9 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=1c63a98"></script>
-<script src="fuentes.js?v=1c63a98"></script>
-<script src="motor.bundle.js?v=1c63a98"></script>
-<script src="cuestionario.js?v=1c63a98"></script>
+<script src="novedades.js?v=cecdde2"></script>
+<script src="fuentes.js?v=cecdde2"></script>
+<script src="motor.bundle.js?v=cecdde2"></script>
+<script src="cuestionario.js?v=cecdde2"></script>
 </body>
 </html>
