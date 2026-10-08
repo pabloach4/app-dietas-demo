@@ -376,6 +376,7 @@
   details.dc-notas summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; color: var(--verde); }
   .ln-fila { display: flex; gap: 0.5rem; }
   .ln-fila input { flex: 1; min-width: 0; }
+  .ln-fila .btn-secundario { flex: none; width: auto; } /* si no, el botón se lleva todo el ancho y el campo se queda en 26 px: no se ve lo que escribes */
   .ln-chips { list-style: none; margin: 0.6rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .ln-chips li { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.3rem 0.2rem 0.7rem; border-radius: 999px; background: var(--derivar); border: 1px solid var(--derivar-borde); font-size: 0.88rem; }
   .ln-chips button { border: 0; background: transparent; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0.15rem 0.4rem; color: #7a1f18; }
@@ -1029,7 +1030,7 @@
     </div>
     <div class="tarjeta">
       <h2>Competiciones</h2>
-      <p class="subt" style="margin-bottom:0.8rem">Son anotaciones tuyas: <strong>no cambian las kcal ni los macros</strong> ni activan ninguna carga o protocolo. Se guardan solo en este navegador (sin cuenta ni nube) y no se envían a ningún calendario.</p>
+      <p class="subt" style="margin-bottom:0.8rem">Con la fecha y la duración de cada prueba, <strong>la semana de la competición cambia</strong>: pausa del déficit, carga de hidratos, poca fibra, el gasto de la propia prueba y la recuperación después (pauta orientativa). Se guardan solo en este navegador (sin cuenta ni nube) y no se envían a ningún calendario.</p>
       <form id="cal-form-comp" novalidate>
         <div class="campo"><label for="cal-comp-nombre">Nombre</label><input id="cal-comp-nombre" type="text" maxlength="80" autocomplete="off"></div>
         <div class="campo"><label for="cal-comp-tipo">Tipo de competición</label>
@@ -1222,9 +1223,9 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=2eef366"></script>
-<script src="fuentes.js?v=2eef366"></script>
-<script src="motor.bundle.js?v=2eef366"></script>
-<script src="cuestionario.js?v=2eef366"></script>
+<script src="novedades.js?v=dcfe69e"></script>
+<script src="fuentes.js?v=dcfe69e"></script>
+<script src="motor.bundle.js?v=dcfe69e"></script>
+<script src="cuestionario.js?v=dcfe69e"></script>
 </body>
 </html>

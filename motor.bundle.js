@@ -3726,7 +3726,12 @@ r43,aceite de oliva,10`;
       minuto: fin + 30,
       tipo: "recuperacion",
       titulo: "Despu\xE9s: recuperaci\xF3n",
-      detalle: opciones.compiteAlDiaSiguiente ? "Compites ma\xF1ana: hidratos r\xE1pidos en la primera hora y la primera comida principal como recuperaci\xF3n." : "La primera comida principal es la de recuperaci\xF3n."
+      // #155 B: hidratos 1,0–1,2 g/kg/h (Burke 2011, Tabla II, en docs/1-evidencia-competicion-14-tipos-v3.md); si hay que recuperar rápido
+      // (compites mañana), durante las 4 primeras horas. Proteína 0,25 g/kg, la misma cifra que ya usa la app entre pruebas. El líquido
+      // (L por kg perdido) está pendiente de contrastar con el texto de ACSM 2016: no se da cifra hasta entonces.
+      hidratoG: opciones.compiteAlDiaSiguiente ? [redondear3(peso * 4 * 1), redondear3(peso * 4 * 1.2)] : [redondear3(peso * 1), redondear3(peso * 1.2)],
+      proteinaG: [redondear3(peso * 0.25), redondear3(peso * 0.25)],
+      detalle: (opciones.compiteAlDiaSiguiente ? "Compites ma\xF1ana: hidratos en las 4 primeras horas (1,0\u20131,2 g/kg cada hora, repartidos en comidas y tomas) y la primera comida principal como recuperaci\xF3n." : "La primera comida principal es la de recuperaci\xF3n: con hidratos y prote\xEDna de verdad (cantidades a la derecha).") + " Bebe con la comida y despu\xE9s; la cantidad exacta de l\xEDquido est\xE1 pendiente de validar."
     });
     linea.sort((a2, b) => a2.minuto - b.minuto);
     return { fecha, nombre: c.nombre, pruebas, linea, combustible, avisos, nota: NOTA_PAUTA };
