@@ -564,8 +564,6 @@
     width: min(560px, 100%); max-width: 100%; max-height: 92vh; max-height: 92dvh; margin: auto auto 0; border: 0;
     border-radius: 26px 26px 0 0; box-shadow: var(--sombra-flotante); padding-bottom: env(safe-area-inset-bottom);
   }
-  dialog#detalle-comida[open] { animation: hoja-sube var(--hoja) var(--curva); }
-  dialog#detalle-comida::backdrop { background: rgba(15, 18, 25, .42); animation: aparece .2s ease-out; }
   .dc-cab { align-items: center; padding: 1.1rem 1rem 0.7rem; border-bottom: 0; z-index: 2; }
   .dc-cab::before { content: ""; position: absolute; top: 7px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--pista); }
   .dc-cab h2 { font-size: 1.05rem; font-weight: 650; letter-spacing: -0.01em; }
@@ -585,28 +583,151 @@
   @keyframes entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
   @keyframes hoja-sube { from { transform: translateY(100%); } to { transform: none; } }
   @keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
-  .panel-app:not([hidden]) > *, .paso.activo { animation: entra var(--pantalla) var(--curva) both; }
-  .panel-app:not([hidden]) > :nth-child(2) { animation-delay: 30ms; }
-  .panel-app:not([hidden]) > :nth-child(3) { animation-delay: 60ms; }
-  .panel-app:not([hidden]) > :nth-child(4) { animation-delay: 90ms; }
-  .panel-app:not([hidden]) > :nth-child(5) { animation-delay: 120ms; }
-  .panel-app:not([hidden]) > :nth-child(n+6) { animation-delay: 150ms; }
-  @media print { .tabs-app, nav.barra { display: none !important; } .panel-app > *, .paso { animation: none !important; } }
+  /* Tres capas de movimiento (#152): entre pestañas, un fundido corto y nada más; los pasos del cuestionario entran
+     desde abajo; el detalle sube como hoja y baja al cerrar. */
+  .panel-app:not([hidden]) { animation: aparece .16s ease-out both; }
+  .paso.activo { animation: entra var(--pantalla) var(--curva) both; }
+  @media print { .tabs-app, nav.barra { display: none !important; } .panel-app, .paso { animation: none !important; } }
+
+  /* ===== Tema visual, parte 2 (#152 y #153): contraste, título por pestaña, casillas de cifras, filas y hoja. ===== */
+  :root { --acento-cta: #0B8279; --gris: #5E626B; --ambar: #A4550B; --hoja-sale: .22s; }
+  html { scrollbar-gutter: stable; }
+  html:has(dialog#detalle-comida[open]) { overflow: hidden; } /* con la hoja abierta, el fondo no se desplaza */
+  body { overflow-wrap: break-word; } /* «anywhere» dejaba partir palabras letra a letra en columnas estrechas */
+
+  /* Botón principal: blanco sobre turquesa oscuro, 4,7:1 (el turquesa de la referencia se queda para lo decorativo). */
+  .btn-principal { background: var(--acento-cta); box-shadow: 0 8px 18px -10px rgba(11, 130, 121, .8); }
+  .btn-principal:hover { background: var(--acento-fuerte); }
+  .btn-principal:disabled { opacity: 1; background: var(--pista); color: var(--gris); box-shadow: none; }
+
+  /* Cabecera: un título grande por pantalla. */
+  header.top h1 { font-size: 2rem; }
+  body.vista-resultado header.top { padding-bottom: 0.1rem; }
+  body.vista-resultado header.top h1 { margin-bottom: 0.7rem; }
+  body.vista-resultado #ejemplos-titulo { display: none; }
+  .antetitulo { margin: 0 0 0.4rem; font-size: 0.72rem; line-height: 1.3; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--acento-fuerte); }
+  header.top #ejemplos-titulo { margin-top: 1rem; }
+  .ejemplos { padding-top: 0; }
+  /* Los nombres de actividades y comidas vienen en minúscula del motor: en títulos de fila empiezan con mayúscula. */
+  .hoy-bloque .titulo::first-letter, .hoy-bloque strong::first-letter, .fila-texto strong::first-letter { text-transform: uppercase; }
+  .hoy-bloque strong { display: inline-block; }
+  .ejemplos button { padding-inline: 1rem; border-radius: 999px; }
+
+  /* Hoy: fecha, plan del día en casillas y, destacada, la siguiente comida con su botón. */
+  #hoy-ahora h2 { margin-bottom: 0.7rem; }
+  .dia-tipo {
+    display: inline-block; margin-left: 0.25rem; padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--acento-suave);
+    color: var(--acento-fuerte); font-size: 0.72rem; font-weight: 600; letter-spacing: 0; vertical-align: middle;
+  }
+  .casillas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; margin: 0 0 0.3rem; }
+  .casilla { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 0.6rem 0.55rem; border-radius: var(--radio-chico); background: var(--tarjeta-suave); }
+  .casilla .n { font-size: 1.06rem; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .casilla .l { font-size: 0.69rem; color: var(--gris); }
+  @media (max-width: 359px) { .casillas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .hoy-bloque { margin-top: 0.7rem; }
+  .hoy-bloque .titulo { font-size: 1rem; font-weight: 650; letter-spacing: -0.01em; }
+  .hoy-bloque.destacado .ver-comida {
+    display: flex; justify-content: center; width: 100%; min-height: 48px; margin-top: 0.8rem; border-radius: 14px;
+    background: var(--acento-cta); color: #fff; font-size: 0.95rem; font-weight: 650; box-shadow: 0 8px 18px -10px rgba(11, 130, 121, .8);
+  }
+  .hoy-bloque.destacado .ver-comida:hover { background: var(--acento-fuerte); }
+
+  /* Filas de lista (entrenos y comidas del día): icono, dos líneas y flecha; separadas por una línea fina, no por cajas. */
+  .dia-resumen-lista { gap: 0; margin-top: 0.2rem; }
+  .dia-resumen-lista li, .dia-resumen-lista li.entreno, .dia-resumen-lista li.hueco {
+    padding: 0.7rem 0; border: 0; border-top: 1px solid var(--borde); border-radius: 0; background: none; color: var(--gris); font-size: 0.84rem;
+  }
+  .dia-resumen-lista li:first-child { border-top: 0; }
+  .dia-resumen-lista li.fila { position: relative; display: flex; align-items: center; gap: 0.75rem; color: var(--texto); }
+  .fila-icono {
+    flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px;
+    background: var(--acento-suave); color: var(--acento-fuerte); font-size: 1.1rem; line-height: 1;
+  }
+  .fila-icono.ic-comida::before, .fila-icono.ic-aviso::before {
+    content: ""; width: 20px; height: 20px; background: currentColor;
+    -webkit-mask: var(--icono) center / contain no-repeat; mask: var(--icono) center / contain no-repeat;
+  }
+  .ic-comida { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3v18M4.5 3v5a2.5 2.5 0 0 0 5 0V3M17.5 21v-7.5M17.5 13.500c-2-.6-3-2.300-3-5 0-2.400 1-4.300 3-5.500z'/%3E%3C/svg%3E"); }
+  .fila-icono.ic-aviso { background: var(--aviso); color: var(--ambar); --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4 3 19.500h18z'/%3E%3Cpath d='M12 10v4.500M12 17v.2'/%3E%3C/svg%3E"); }
+  .fila-texto { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .fila-texto strong { font-size: 0.94rem; font-weight: 600; }
+  .fila-sub { font-size: 0.8rem; color: var(--gris); }
+  .fila-aviso { font-size: 0.8rem; font-weight: 600; color: #7a1f18; }
+  .fila .error-inline { margin: 0.15rem 0 0; font-size: 0.8rem; }
+  /* «Ver detalle» en una fila es la flecha de la derecha, pero se pulsa la fila entera (su nombre accesible no cambia). */
+  .fila .ver-comida {
+    position: static; flex: none; justify-content: center; width: 24px; min-height: 44px; margin: 0; padding: 0;
+    background: none; box-shadow: none; font-size: 0; transform: none;
+  }
+  .fila .ver-comida::before { content: ""; position: absolute; inset: 0 -0.4rem; border-radius: 12px; transition: background-color var(--rapido) var(--curva); }
+  .fila .ver-comida:active::before { background: rgba(16, 24, 40, .05); }
+  .fila .ver-comida::after {
+    content: ""; width: 8px; height: 8px; margin: 0; border-top: 2px solid var(--gris-claro); border-right: 2px solid var(--gris-claro); transform: rotate(45deg);
+  }
+  .fila .ver-comida:focus-visible { outline: none; }
+  .fila .ver-comida:focus-visible::before { outline: 2px solid var(--acento-fuerte); outline-offset: -2px; }
+  .fila details, .fila a { position: relative; z-index: 1; }
+
+  /* Hoja del detalle: «Cerrar» a la izquierda y título centrado. Fija en su sitio también mientras se cierra. */
+  dialog#detalle-comida { position: fixed; inset: 0; z-index: 50; }
+  .dc-cab { flex-direction: row-reverse; }
+  .dc-cab h2 { flex: 1 1 auto; min-width: 0; margin-right: 4.6rem; text-align: center; }
+  dialog#detalle-comida::backdrop { background: rgba(15, 18, 25, .42); }
+  @supports not (transition-behavior: allow-discrete) {
+    dialog#detalle-comida[open] { animation: hoja-sube var(--hoja) var(--curva); }
+    dialog#detalle-comida::backdrop { animation: aparece .2s ease-out; }
+  }
+  @supports (transition-behavior: allow-discrete) {
+    dialog#detalle-comida {
+      transform: translateY(100%);
+      transition: transform var(--hoja-sale) ease-in, overlay var(--hoja-sale) allow-discrete, display var(--hoja-sale) allow-discrete;
+    }
+    dialog#detalle-comida[open] {
+      transform: none;
+      transition: transform var(--hoja) var(--curva), overlay var(--hoja) allow-discrete, display var(--hoja) allow-discrete;
+    }
+    @starting-style { dialog#detalle-comida[open] { transform: translateY(100%); } }
+    dialog#detalle-comida::backdrop {
+      background: rgba(15, 18, 25, 0);
+      transition: background-color var(--hoja-sale) ease-out, overlay var(--hoja-sale) allow-discrete, display var(--hoja-sale) allow-discrete;
+    }
+    dialog#detalle-comida[open]::backdrop { background: rgba(15, 18, 25, .42); }
+    @starting-style { dialog#detalle-comida[open]::backdrop { background: rgba(15, 18, 25, 0); } }
+  }
+  /* En pantallas anchas no es una hoja: es un cuadro centrado que aparece con un fundido. */
+  @media (min-width: 720px) {
+    dialog#detalle-comida { margin: auto; max-height: min(86vh, 860px); border-radius: 26px; padding-bottom: 0; }
+    .dc-cab::before { display: none; }
+    @supports (transition-behavior: allow-discrete) {
+      dialog#detalle-comida {
+        opacity: 0; transform: translateY(14px) scale(.985);
+        transition: transform var(--hoja-sale) ease-in, opacity var(--hoja-sale) ease-in, overlay var(--hoja-sale) allow-discrete, display var(--hoja-sale) allow-discrete;
+      }
+      dialog#detalle-comida[open] {
+        opacity: 1; transform: none;
+        transition: transform var(--pantalla) var(--curva), opacity var(--normal) ease-out, overlay var(--pantalla) allow-discrete, display var(--pantalla) allow-discrete;
+      }
+      @starting-style { dialog#detalle-comida[open] { opacity: 0; transform: translateY(14px) scale(.985); } }
+    }
+    @supports not (transition-behavior: allow-discrete) { dialog#detalle-comida[open] { animation: aparece var(--normal) ease-out; } }
+  }
+  @media (prefers-reduced-motion: reduce) { dialog#detalle-comida::backdrop { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
 <header class="top">
-  <h1>🥗 Tu plan, paso a paso</h1>
-  <p class="subt">Cuestionario de la demo (las mismas preguntas que hará la app). Sin servidor: recuerda tu último perfil solo en este navegador. <a href="index.html">Formulario técnico →</a></p>
-  <p class="subt" id="aviso-guardado" hidden>📋 Se ha precargado tu último perfil calculado. <button type="button" id="empezar-de-cero" class="btn-texto" style="padding:0">Empezar de cero</button><br><strong>No se guardan</strong> tu salud, alergias ni preferencias (tu lista negra sí): antes de calcular tendrás que revisarlos en el paso 4.</p>
+  <h1 id="titulo-pantalla">Tu plan, paso a paso</h1>
+  <p class="subt">Cuatro pasos y tienes tu semana de comidas. Tu último perfil se recuerda solo en este navegador.</p>
+  <p class="subt" id="aviso-guardado" hidden>Se ha precargado tu último perfil calculado. <button type="button" id="empezar-de-cero" class="btn-texto" style="padding:0">Empezar de cero</button><br><strong>No se guardan</strong> tu salud, alergias ni preferencias (tu lista negra sí): antes de calcular tendrás que revisarlos en el paso 4.</p>
   <p class="error-inline" id="aviso-almacenamiento" role="status" hidden>⚠️ Este navegador no deja guardar datos (modo privado, almacenamiento bloqueado o lleno). La app sigue funcionando, pero tu perfil, favoritas, cambios de receta y lista de la compra a mano <strong>no se conservarán al recargar</strong>.</p>
-  <div class="ejemplos">
-    <button type="button" data-perfil="general">Ejemplo: general</button>
-    <button type="button" data-perfil="maraton">Ejemplo: maratón</button>
-    <button type="button" data-perfil="hyrox">Ejemplo: Hyrox</button>
-    <button type="button" data-perfil="diabetes">Ejemplo: con diabetes</button>
+  <p class="antetitulo" id="ejemplos-titulo">Probar con un ejemplo</p>
+  <div class="ejemplos" role="group" aria-labelledby="ejemplos-titulo">
+    <button type="button" data-perfil="general">General</button>
+    <button type="button" data-perfil="maraton">Maratón</button>
+    <button type="button" data-perfil="hyrox">Hyrox</button>
+    <button type="button" data-perfil="diabetes">Con diabetes</button>
   </div>
-  <details class="plegable" style="margin-bottom:0.6rem"><summary style="font-size:0.85rem;font-weight:600">¿Qué se borra al cargar un ejemplo?</summary><p class="subt" id="alcance-reset" style="font-size:0.8rem;margin:0 0 0.4rem">Al cargar un ejemplo o empezar de cero se restablecen el perfil, alergias, preferencias, horarios y contexto por día y «deshacer». No se borran tu lista de la compra hecha a mano, las competiciones anotadas ni tus recetas favoritas.</p></details>
+  <details class="plegable" style="margin-bottom:0.6rem"><summary style="font-size:0.85rem;font-weight:600">¿Qué se borra al cargar un ejemplo?</summary><p class="subt" id="alcance-reset" style="font-size:0.8rem;margin:0 0 0.4rem">Al cargar un ejemplo o empezar de cero se restablecen el perfil, alergias, preferencias, horarios y contexto por día y «deshacer». No se borran tu lista de la compra hecha a mano, las competiciones anotadas ni tus recetas favoritas.</p><p class="subt" style="font-size:0.8rem;margin:0 0 0.4rem">Esto es una demo sin servidor, con las mismas preguntas que hará la app. <a href="index.html">Formulario técnico →</a></p></details>
   <div class="progreso" id="progreso"></div>
   <p class="paso-nombre" id="paso-nombre"></p>
 </header>
@@ -807,12 +928,12 @@
     <details class="mas-acciones">
       <summary>Más acciones</summary>
       <div class="cuerpo">
-        <button type="button" class="btn-secundario" id="btn-comparar">🔍 Comparar con otro escenario</button>
-        <button type="button" class="btn-secundario" id="btn-copiar">📋 Copiar resumen</button>
+        <button type="button" class="btn-secundario" id="btn-comparar">Comparar con otro escenario</button>
+        <button type="button" class="btn-secundario" id="btn-copiar">Copiar resumen</button>
         <p class="subt" id="estado-copiar" role="status" aria-live="polite" style="margin:0"></p>
         <textarea id="resumen-manual" readonly hidden rows="8" aria-label="Resumen para copiar a mano" style="width:100%;font-size:0.8rem"></textarea>
-        <button type="button" class="btn-secundario" id="btn-descargar-csv">⬇️ Descargar CSV</button>
-        <button type="button" class="btn-secundario" id="btn-imprimir">🖨️ Imprimir / guardar PDF</button>
+        <button type="button" class="btn-secundario" id="btn-descargar-csv">Descargar CSV</button>
+        <button type="button" class="btn-secundario" id="btn-imprimir">Imprimir o guardar PDF</button>
       </div>
     </details>
     </section>
@@ -823,7 +944,7 @@
       <button type="button" class="sub-calendario" aria-pressed="true">Calendario</button>
     </div>
     <div class="tarjeta">
-      <h2>📅 Calendario semanal</h2>
+      <h2>Calendario semanal</h2>
       <p class="subt" style="margin-bottom:0.8rem">Elige el lunes en que empieza tu semana para ver las fechas reales. Sin fecha elegida solo se muestran los días L–D del plan: no se inventa ninguna fecha.</p>
       <div class="campo"><label for="cal-inicio">Lunes de inicio</label><input id="cal-inicio" type="date" aria-describedby="cal-inicio-error"></div>
       <button type="button" class="btn-texto" id="cal-lunes-actual" style="padding-top:0">Usar el lunes de esta semana</button>
@@ -832,7 +953,7 @@
       <div id="cal-detalle" aria-live="polite"></div>
     </div>
     <div class="tarjeta">
-      <h2>🏁 Competiciones</h2>
+      <h2>Competiciones</h2>
       <p class="subt" style="margin-bottom:0.8rem">Son anotaciones tuyas: <strong>no cambian las kcal ni los macros</strong> ni activan ninguna carga o protocolo. Se guardan solo en este navegador (sin cuenta ni nube) y no se envían a ningún calendario.</p>
       <form id="cal-form-comp" novalidate>
         <div class="campo"><label for="cal-comp-nombre">Nombre</label><input id="cal-comp-nombre" type="text" maxlength="80" autocomplete="off"></div>
@@ -855,10 +976,10 @@
         <button type="button" class="btn-texto" id="cal-comp-cancelar" hidden>Cancelar edición</button>
       </form>
       <ul class="resumen-lista" id="cal-lista-comp" style="margin-top:1rem"></ul>
-      <button type="button" class="btn-texto" id="cal-borrar-todo" style="color:#b3271e">🗑️ Borrar todas las anotaciones y la fecha elegida</button>
+      <button type="button" class="btn-texto" id="cal-borrar-todo" style="color:#b3271e">Borrar todas las anotaciones y la fecha elegida</button>
     </div>
     <div class="tarjeta" id="cal-exportar">
-      <h2>📤 Añadir a mi calendario (.ics)</h2>
+      <h2>Añadir a mi calendario (.ics)</h2>
       <p class="subt" style="margin-bottom:0.8rem"><strong>Exportación manual, no sincronización.</strong> Descargas un archivo .ics y lo importas tú en Google Calendar o en el Calendario del iPhone. La app no se conecta a ninguna cuenta ni escribe en tu calendario. Si importas el mismo archivo dos veces, pueden duplicarse los eventos.</p>
       <p class="error-inline" id="cal-exp-aviso" hidden></p>
       <fieldset class="exp-campos">
@@ -875,7 +996,7 @@
       </div>
       <h3>Vista previa de lo que se descargará</h3>
       <div id="cal-exp-preview" aria-live="polite"></div>
-      <button type="button" class="btn-principal" id="cal-exp-descargar" style="margin-top:0.8rem">⬇️ Descargar .ics</button>
+      <button type="button" class="btn-principal" id="cal-exp-descargar" style="margin-top:0.8rem">Descargar .ics</button>
       <p class="subt" id="cal-exp-estado" role="status" aria-live="polite" style="margin-top:0.5rem"></p>
       <details class="como-importar">
         <summary>Cómo importarlo a mano</summary>
@@ -920,22 +1041,22 @@
         <h2>Tu perfil</h2>
         <ul class="resumen-lista" id="perfil-datos"></ul>
         <p class="subt" style="font-size:0.82rem;margin:0.6rem 0">Salud, alergias y preferencias <strong>no se guardan</strong> en este navegador: cada vez que vuelvas a abrir la app tendrás que revisarlos. Tu lista negra (alimentos que no quieres) sí se guarda.</p>
-        <button type="button" class="btn-principal" id="empezar-de-nuevo">✏️ Editar perfil (abrir el cuestionario)</button>
+        <button type="button" class="btn-principal" id="empezar-de-nuevo">Editar perfil</button>
         <button type="button" class="btn-texto" id="perfil-reiniciar" style="margin-top:0.4rem;color:#b3271e">Empezar de cero (borra el perfil guardado)</button>
       </div>
     <div class="tarjeta" id="recetas-si-o-si">
-      <h2>⭐ Mis recetas sí o sí</h2>
+      <h2>Mis recetas sí o sí</h2>
       <p class="subt" style="margin:0 0 0.6rem">Recetas que quieres que salgan sí o sí cada semana. Se eligen desde la ficha de una receta (pestaña Recetas) y se quedan guardadas en este navegador hasta que las quites.</p>
       <ul class="resumen-lista" id="sos-lista"></ul>
       <p class="subt" id="sos-vacio">Todavía no has pedido ninguna.</p>
     </div>
     <div class="tarjeta" id="volumen">
-      <h2>🍽️ Volumen de tus comidas</h2>
+      <h2>Volumen de tus comidas</h2>
       <p class="subt" style="margin:0 0 0.6rem">Tras cada comida puedes decir «mucha comida», «bien de cantidad» o «me he quedado con hambre» (pestaña Hoy). Eso no cambia tus calorías ni tus macros: solo hace tus platos más concentrados o más abundantes. Aquí ves el nivel y lo puedes ajustar a mano.</p>
       <div id="volumen-perfil"></div>
     </div>
     <div class="tarjeta" id="lista-negra">
-      <h2>🚫 Mi lista negra</h2>
+      <h2>Mi lista negra</h2>
       <p class="subt" style="margin:0 0 0.6rem">Alimentos que seguro que no te vas a comer. No aparecerán en tus recetas y se quedan guardados en este navegador. Para alergias e intolerancias usa el paso 5 del cuestionario: aquí solo van los gustos.</p>
       <div class="ln-fila">
         <input id="ln-nuevo" type="text" maxlength="40" aria-label="Alimento que no quieres comer" placeholder="Ej.: hígado, coliflor…">
@@ -959,7 +1080,7 @@
 <dialog id="detalle-comida" aria-labelledby="dc-titulo">
   <div class="dc-cab">
     <h2 id="dc-titulo" tabindex="-1"></h2>
-    <button type="button" class="btn-texto" id="dc-cerrar" aria-label="Cerrar detalle de la comida">✕ Cerrar</button>
+    <button type="button" class="btn-texto" id="dc-cerrar" aria-label="Cerrar detalle de la comida">Cerrar</button>
   </div>
   <div id="dc-cuerpo"></div>
   <div class="dc-pie"><button type="button" class="btn-secundario" id="dc-volver">Volver al plan</button></div>
@@ -1017,12 +1138,12 @@
 </nav>
 
   <section class="tarjeta" id="fuentes" style="margin-top:1rem">
-    <h2>📚 Fuentes</h2>
+    <h2>Fuentes</h2>
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="fuentes.js?v=f252d0a"></script>
-<script src="motor.bundle.js?v=f252d0a"></script>
-<script src="cuestionario.js?v=f252d0a"></script>
+<script src="fuentes.js?v=5b608a2"></script>
+<script src="motor.bundle.js?v=5b608a2"></script>
+<script src="cuestionario.js?v=5b608a2"></script>
 </body>
 </html>

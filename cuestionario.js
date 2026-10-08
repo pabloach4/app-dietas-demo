@@ -164,6 +164,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
   function mostrarFormulario() {
     document.body.classList.remove('vista-resultado');
+    document.getElementById('titulo-pantalla').textContent = 'Tu plan, paso a paso';
     document.getElementById('form-cuestionario').hidden = false;
     document.getElementById('barra-pasos').hidden = false;
     document.getElementById('progreso').hidden = false;
@@ -629,9 +630,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   let panelActual = 'hoy';
 
   const PANELES = ['hoy', 'semana', 'calendario', 'recetas', 'compra', 'perfil'];
-  function mostrarPanel(nombre, { mover = true } = {}) {
+  // Rediseño (#152): cada pestaña lleva su título grande y recuerda por dónde iba al volver a ella.
+  const TITULO_PANEL = { hoy: 'Hoy', semana: 'Semana', recetas: 'Recetas', compra: 'Compra', perfil: 'Perfil' };
+  let scrollPorPanel = {};
+  function mostrarPanel(nombre, { mover = true, recordar = false } = {}) {
+    if (recordar && nombre !== panelActual) scrollPorPanel[panelActual] = window.scrollY;
     panelActual = nombre;
     const pestana = nombre === 'calendario' ? 'semana' : nombre; // el calendario es una vista dentro de «Semana»
+    document.getElementById('titulo-pantalla').textContent = TITULO_PANEL[pestana];
     document.querySelectorAll('#tabs-app [role="tab"]').forEach((t) => {
       const activa = t.dataset.panel === pestana;
       t.setAttribute('aria-selected', String(activa));
@@ -641,7 +647,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (nombre === 'hoy') pintarHoy();
     if (nombre === 'semana' && typeof pintarResumenDia === 'function') pintarResumenDia(); // la marca «hoy» sigue al reloj (#105)
     if (nombre === 'recetas') pintarRecetas();
-    if (mover) window.scrollTo({ top: 0 });
+    if (mover) window.scrollTo({ top: recordar ? (scrollPorPanel[nombre] || 0) : 0 });
   }
   document.querySelectorAll('.subvista .sub-plan').forEach((b) => b.addEventListener('click', () => mostrarPanel('semana')));
   document.querySelectorAll('.subvista .sub-calendario').forEach((b) => b.addEventListener('click', () => mostrarPanel('calendario')));
@@ -708,9 +714,13 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       return `<div class="hoy-bloque"><h3>Entreno de hoy</h3><div class="titulo">${escaparHtml(nombre)} · ${s.minutos}'${notaSesionHtml(s)}</div><div>${estado}</div></div>`;
     }).join('') : '<div class="hoy-bloque"><h3>Entreno de hoy</h3><div class="titulo">Sin entreno previsto hoy. Descansar también es parte del plan (y de los buenos).</div></div>';
 
+    // Las casillas son cifras del PLAN de hoy (lo que toca), nunca lo comido: la app no registra ingesta.
+    const dHoy = planActual.dias.find((x) => x.dia === dia);
+    const casilla = (n, l) => `<div class="casilla"><span class="n">${n}</span><span class="l">${l}</span></div>`;
     cont.innerHTML = `
-      <h2>Hoy · ${NOMBRE_DIA_LARGO[dia]}</h2>
-      <p class="hoy-fecha">${escaparHtml(fechaTxt)} · ${horaTxt}</p>
+      <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)} · ${horaTxt}</p>
+      <h2>Tu plan de hoy${dHoy ? ` <span class="dia-tipo">${escaparHtml(dHoy.tipo)}</span>` : ''}</h2>
+      ${dHoy ? `<div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
       ${bloqueComida}
       ${bloqueEntreno}
       ${bloqueVolumenHoy(iso, conHora.filter((c) => c.hora <= horaAct).map((c) => c.f.franja))}
@@ -824,7 +834,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const ya = recetasSiOSi.find((p) => p.id === r.id);
     const franja = ya ? ya.franja : r.franjas[0];
     return `
-      <h3>⭐ Recetas «sí o sí»</h3>
+      <h3>Recetas «sí o sí»</h3>
       <p class="subt" style="margin:0 0 0.5rem">Si la quieres sí o sí, saldrá en tu semana las veces que elijas (en comidas y cenas, 1 o 2 como máximo; en desayunos, medias mañanas y meriendas, hasta 7) y se mantendrá cada semana hasta que la quites. Si choca con una alergia, tu lista negra o los topes, no se fuerza y se te avisa.</p>
       <div class="campo"><label for="sos-franja">Comida</label><select id="sos-franja">${r.franjas.map((f) => `<option value="${f}" ${f === franja ? 'selected' : ''}>${NOMBRE_FRANJA_SOS[f]}</option>`).join('')}</select></div>
       <div class="campo"><label for="sos-veces">Veces por semana</label><select id="sos-veces">${opcionesVeces(franja, ya ? ya.veces : 1)}</select></div>
@@ -882,9 +892,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       `<li>${e.ok ? '⚠️' : '⛔'} <strong>${escaparHtml(e.dia)} · ${NOMBRE_FRANJA_SOS[e.franja]}</strong> · ${escaparHtml(e.nombre)}: ${escaparHtml(e.causa ?? e.aviso ?? '')}${opcionesNoViable(e)}${e.arreglo ? ` <span style="color:var(--gris)">${escaparHtml(e.arreglo)}</span>` : ''}${e.aviso && e.causa ? ` <span style="color:var(--gris)">${escaparHtml(e.aviso)}</span>` : ''}</li>`).join('');
     caja.innerHTML = `
       <div class="acciones-rapidas" style="margin:0 0 0.5rem">
-        <button type="button" class="btn-secundario" id="fija-toda">📌 Fijar toda la semana</button>
+        <button type="button" class="btn-secundario" id="fija-toda">Fijar toda la semana</button>
         <button type="button" class="btn-texto" id="fija-quitar" ${semanaFija.size ? '' : 'disabled'}>Quitar todas las fijaciones (${semanaFija.size})</button>
-        <button type="button" class="btn-texto" id="fija-deshacer" ${historialFija.length ? '' : 'disabled'}>↩️ Deshacer</button>
+        <button type="button" class="btn-texto" id="fija-deshacer" ${historialFija.length ? '' : 'disabled'}>Deshacer</button>
       </div>
       ${lineas ? `<details class="plegable" open><summary>Tu semana fija: avisos</summary><ul class="resumen-lista">${lineas}</ul></details>` : ''}`;
   }
@@ -1114,7 +1124,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   });
 
   document.querySelectorAll('#tabs-app [role="tab"]').forEach((tab) => {
-    tab.addEventListener('click', () => mostrarPanel(tab.dataset.panel));
+    tab.addEventListener('click', () => mostrarPanel(tab.dataset.panel, { recordar: true }));
     tab.addEventListener('keydown', (ev) => {
       if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
       const tabs = Array.from(document.querySelectorAll('#tabs-app [role="tab"]'));
@@ -1142,15 +1152,16 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // La hora de inicio no viaja en el perfil del motor: está en ultimasSesiones, en el mismo orden.
     const sesiones = sesionesSemana.map((s, i) => ({ ...s, horaInicio: (ultimasSesiones[i] ?? {}).horaInicio, nota: (ultimasSesiones[i] ?? {}).nota })).filter((s) => s.dia === dia);
     const entrenosHtml = sesiones.length
-      ? sesiones.map((s) => `<li class="entreno"><span aria-hidden="true">${iconoActividad(s.actividad)}</span> ${(Motor.ACTIVIDADES[s.actividad] && Motor.ACTIVIDADES[s.actividad].nombre) || s.actividad}${notaSesionHtml(s)} · ${s.minutos}'${s.horaInicio !== undefined ? ` · ${horaDecimalATexto(s.horaInicio)}` : ' · hora sin indicar'}</li>`).join('')
+      ? sesiones.map((s) => `<li class="fila entreno"><span class="fila-icono" aria-hidden="true">${iconoActividad(s.actividad)}</span><div class="fila-texto"><strong>${(Motor.ACTIVIDADES[s.actividad] && Motor.ACTIVIDADES[s.actividad].nombre) || s.actividad}${notaSesionHtml(s)}</strong><span class="fila-sub">${s.minutos}'${s.horaInicio !== undefined ? ` · ${horaDecimalATexto(s.horaInicio)}` : ' · hora sin indicar'}</span></div></li>`).join('')
       : '<li>Día sin entreno: hoy los músculos se recuperan solos, tú solo tienes que comer bien.</li>';
     const horaFranja = (f) => { const x = franjasDelDia(dia).find((y) => y.franja === f); return x && x.hora !== undefined ? `${horaDecimalATexto(x.hora)} · ` : ''; };
     const comidasHtml = reparto.franjas.length ? reparto.franjas.map((f) => {
-      const conflicto = reparto.conflictos.filter((c) => c.franja === f.franja).map((c) => `<br><span class="error-inline">⚠️ ${escaparHtml(textoConflicto(c))}</span>`).join('');
+      const conflicto = reparto.conflictos.filter((c) => c.franja === f.franja).map((c) => `<span class="error-inline">⚠️ ${escaparHtml(textoConflicto(c))}</span>`).join('');
       const asignada = vistaSemana.recetaPorSlot.get(`${dia}|${f.franja}`);
+      const cabecera = `<strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong><span class="fila-sub">${horaFranja(f.franja)}~${f.kcalAprox} kcal</span>`;
       return asignada
-        ? `<li>🍽️ <strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong> · ${horaFranja(f.franja)}~${f.kcalAprox} kcal${conflicto}<br><span style="color:var(--gris)">EJEMPLO: ${asignada.receta.nombre} (${Math.round(asignada.racionAjustada * 100)} %)</span><br>${botonVerComida(dia, f.franja)}</li>`
-        : `<li class="hueco">⚠️ <strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong> · ${horaFranja(f.franja)}~${f.kcalAprox} kcal${conflicto}<br>Sin receta de ejemplo que encaje.<br>${botonVerComida(dia, f.franja)}</li>`;
+        ? `<li class="fila"><span class="fila-icono ic-comida" aria-hidden="true"></span><div class="fila-texto">${cabecera}<span class="fila-sub">EJEMPLO: ${asignada.receta.nombre} (${Math.round(asignada.racionAjustada * 100)} %)</span>${conflicto}</div>${botonVerComida(dia, f.franja)}</li>`
+        : `<li class="fila hueco"><span class="fila-icono ic-aviso" aria-hidden="true"></span><div class="fila-texto">${cabecera}<span class="fila-aviso">Sin receta de ejemplo que encaje.</span>${conflicto}</div>${botonVerComida(dia, f.franja)}</li>`;
     }).join('') : '<li>Sin comidas activas este día.</li>';
 
     const activas = new Set(reparto.franjas.map((f) => f.franja));
@@ -1187,7 +1198,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <ul class="dia-resumen-lista">${comidasHtml}</ul>
       ${cardCompeticionHtml(diaResumen)}
       <div class="acciones-rapidas">
-        <button type="button" class="btn-secundario" id="ir-a-compra">🛒 Ver la compra</button>
+        <button type="button" class="btn-secundario" id="ir-a-compra">Ver la compra</button>
       </div>
     `;
     document.getElementById('ir-a-compra').addEventListener('click', () => mostrarPanel('compra'));
@@ -1250,7 +1261,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const cambios = r.cambios.map((c) => `<li>${NOMBRE_TOMA[c.franja] ?? c.franja}: ${c.de !== undefined ? `${hm(c.de)} → ` : ''}<strong>${hm(c.a)}</strong> — ${escaparHtml(c.motivo)}</li>`).join('');
     return `
       <div class="tarjeta comp-dia" style="margin-top:1rem">
-        <h3 style="margin-top:0">🏁 Día de competición · ${escaparHtml(x.c.nombre)}</h3>
+        <h3 style="margin-top:0">Día de competición · ${escaparHtml(x.c.nombre)}</h3>
         <p class="subt" style="font-size:0.8rem;margin:0 0 0.5rem">${escaparHtml(Motor.NOTA_PAUTA)} Las tomas de antes, entre pruebas y después cuentan dentro del total del día.</p>
         <ul class="dia-resumen-lista">${lineaCompeticionHtml(x)}</ul>
         <details class="plegable"><summary>Combustible de carrera (aparte del total del día)</summary><ul class="dia-resumen-lista">${combustibleHtml(x)}</ul></details>
@@ -2009,7 +2020,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     ` : '';
 
     const manualesHtml = `
-      <h3 style="font-size:0.85rem;text-transform:uppercase;color:var(--gris);margin:1rem 0 0.4rem">✏️ Añadidos a mano</h3>
+      <h3 style="font-size:0.85rem;text-transform:uppercase;color:var(--gris);margin:1rem 0 0.4rem">Añadidos a mano</h3>
       ${manualQuitado ? `<div class="cambio-zona" role="status">Quitado «${escaparHtml(manualQuitado.articulo.nombre)}». <button type="button" class="btn-texto" id="deshacer-quitar-manual">↩ Deshacer</button></div>` : ''}
       ${articulosManuales.length ? `<ul class="resumen-lista">
         ${articulosManuales.map((a) => `
@@ -2026,7 +2037,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <input type="text" id="manual-nombre" placeholder="Ingrediente (p. ej. sal)">
         <input type="text" id="manual-cantidad" placeholder="Cantidad (p. ej. 1)">
         <input type="text" id="manual-unidad" placeholder="Unidad (p. ej. bote)">
-        <button type="button" id="btn-anadir-manual" class="btn-texto">➕ Añadir</button>
+        <button type="button" id="btn-anadir-manual" class="btn-texto">+ Añadir</button>
       </div>
       ${(marcadosEnCasa.size || articulosManuales.length) ? `
         <button type="button" id="btn-borrar-lista-manual" class="btn-texto" style="color:#b3271e">
@@ -2036,7 +2047,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     `;
 
     document.getElementById('lista-compra').innerHTML = `
-      <h2>🛒 Lista de la compra</h2>
+      <h2>Lista de la compra</h2>
       <p style="font-size:0.85rem;color:#7a1f18;font-weight:600;margin-top:0">
         ⚠️ Con recetas de EJEMPLO (docs/recetas-formato.md), no reales — la forma de la lista, no los platos.
       </p>
@@ -2049,8 +2060,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ${huecosHtml}
       ${manualesHtml}
       <div class="acciones-compra">
-        <button type="button" class="btn-secundario" id="btn-copiar-compra">📋 Copiar compra pendiente</button>
-        <button type="button" class="btn-secundario" id="btn-descargar-compra">⬇️ Descargar .txt</button>
+        <button type="button" class="btn-secundario" id="btn-copiar-compra">Copiar compra pendiente</button>
+        <button type="button" class="btn-secundario" id="btn-descargar-compra">Descargar .txt</button>
         <p id="estado-compra" class="subt" role="status" aria-live="polite"></p>
       </div>
     `;
@@ -2164,7 +2175,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const hayHistorial = (semanaActual.historial ?? []).length > 0;
     zona.innerHTML = `
       ${mensajeDeshacer ? `<p style="font-size:0.85rem;color:var(--verde);font-weight:600;margin:0 0 0.6rem">${mensajeDeshacer}</p>` : ''}
-      ${hayHistorial ? '<button type="button" id="btn-deshacer">↩️ Deshacer último movimiento</button>' : ''}
+      ${hayHistorial ? '<button type="button" id="btn-deshacer">Deshacer último movimiento</button>' : ''}
     `;
     const btn = document.getElementById('btn-deshacer');
     if (btn) btn.addEventListener('click', deshacerUltimoMovimiento);
@@ -2233,7 +2244,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         ${asignada.ajusteDia ? `<p class="dc-nota">⚖️ ${escaparHtml(asignada.ajusteDia.motivo)}</p>` : ''}
         <p class="dc-nota">La receta usa valores declarados (ración base ${asignada.receta.kcal} kcal), no medidos: sirve para acercarse a las kcal, no para clavar los macros.${asignada.protegidosSinEscalar && asignada.protegidosSinEscalar.length ? ` ${escaparHtml(asignada.protegidosSinEscalar.join(', '))} no se reescala${asignada.protegidosSinEscalar.length > 1 ? 'n' : ''}, así que las cifras son aproximadas.` : ''}</p>`;
       receta = `
-        <h3 class="dc-plato">🍽️ ${escaparHtml(asignada.receta.nombre)} <span class="etq-ejemplo">EJEMPLO</span> <span class="dc-racion">ración ${Math.round(asignada.racionAjustada * 100)} %</span></h3>
+        <h3 class="dc-plato">${escaparHtml(asignada.receta.nombre)} <span class="etq-ejemplo">EJEMPLO</span> <span class="dc-racion">ración ${Math.round(asignada.racionAjustada * 100)} %</span></h3>
         <div class="dc-ings-cab"><span>Ingrediente</span><span>Lo que comes</span><span>Lo que compras</span></div>
         <ul class="dc-ings">${filas}</ul>
         ${bloqueCocido}
@@ -2261,7 +2272,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       </details>`;
 
     document.getElementById('dc-cuerpo').innerHTML = receta + contexto
-      + `<div class="dc-acciones"><button type="button" class="btn-secundario" id="dc-cambiar">🔄 Cambiar receta de esta comida</button></div>`;
+      + `<div class="dc-acciones"><button type="button" class="btn-secundario" id="dc-cambiar">Cambiar receta de esta comida</button></div>`;
     document.getElementById('dc-cambiar').addEventListener('click', () => abrirAlternativas(dia, franja));
     const chkCocido = document.getElementById('dc-ver-cocido');
     if (chkCocido) chkCocido.addEventListener('change', () => { verCocido = chkCocido.checked; abrirDetalleComida(dia, franja); const nuevo = document.getElementById('dc-ver-cocido'); if (nuevo) nuevo.focus(); });
@@ -2795,6 +2806,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (!yaVisible) {
       ocultarFormulario();
       document.getElementById('resultado').hidden = false;
+      scrollPorPanel = {}; // plan nuevo: ninguna pestaña conserva la posición del anterior
       mostrarPanel('hoy');
     }
   }
