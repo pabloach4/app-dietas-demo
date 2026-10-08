@@ -110,6 +110,7 @@ var Motor = (() => {
     fechaLocalISO: () => fechaLocalISO,
     filtrarCatalogo: () => filtrarCatalogo,
     filtrarPorDias: () => filtrarPorDias,
+    finUltimaPruebaH: () => finUltimaPruebaH,
     formatearListaPendiente: () => formatearListaPendiente,
     gastoDePrueba: () => gastoDePrueba,
     generarIcs: () => generarIcs,
@@ -117,6 +118,7 @@ var Motor = (() => {
     grupoDeFranja: () => grupoDeFranja,
     horaDeGuardado: () => horaDeGuardado,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
+    limiteFibraG: () => limiteFibraG,
     limpiarNotaSesion: () => limpiarNotaSesion,
     lineasIcs: () => lineasIcs,
     listaManualDesdeJson: () => listaManualDesdeJson,
@@ -1395,6 +1397,20 @@ var Motor = (() => {
   }
 
   // src/motor/asignador-recetas.ts
+  function fibraServidaEstimada(r, slot) {
+    if (typeof r.fibraG !== "number" || !(r.kcal > 0)) return void 0;
+    return r.fibraG * Math.min(2, Math.max(0.5, slot.kcalObjetivo / r.kcal));
+  }
+  function fibraExcede(slot, r) {
+    if (slot.sinFibraAlta && r.fibraAlta) return true;
+    if (slot.maxFibraG === void 0) return false;
+    if (r.fibraAlta) return true;
+    const f2 = fibraServidaEstimada(r, slot);
+    return f2 !== void 0 && f2 > slot.maxFibraG;
+  }
+  function motivoFibra(slot) {
+    return slot.maxFibraG !== void 0 && !slot.sinFibraAlta ? `antes de la prueba la raci\xF3n servida lleva como mucho ${slot.maxFibraG} g de fibra` : "la v\xEDspera de una competici\xF3n evita la fibra alta (legumbre, integral o verdura cruda)";
+  }
   function validarPeticionSiOSi(franja, veces) {
     if (!Number.isInteger(veces) || veces < 1) return "las veces por semana deben ser un n\xFAmero entero de 1 en adelante";
     const max = franja === "comida" || franja === "cena" ? 2 : 7;
@@ -1457,6 +1473,7 @@ var Motor = (() => {
       notas: "",
       ingredientes,
       ...platos.some((p) => p.fibraAlta) ? { fibraAlta: true } : {},
+      ...platos.every((p) => typeof p.fibraG === "number") ? { fibraG: platos.reduce((s, p) => s + p.fibraG, 0) } : {},
       ...platos.every((p) => p.preparacion) ? { preparacion: platos.map((p) => p.preparacion).join(" ") } : {},
       tipoPlato: "compuesta",
       platos: platos.map((p) => p.id)
@@ -1532,8 +1549,8 @@ var Motor = (() => {
         estadosFijadas.push({ ...base, ok: false, causa: `choca con tu perfil (${compat.motivo?.detalle ?? "alergia o lista negra"}): no se sirve`, arreglo: "Quita la fijaci\xF3n o elige una receta parecida." });
         continue;
       }
-      if (slot.sinFibraAlta && receta.fibraAlta) {
-        estadosFijadas.push({ ...base, ok: false, causa: "es v\xEDspera de competici\xF3n y esta receta lleva fibra alta: ese d\xEDa elige la app", arreglo: "Se propone otra receta solo para este d\xEDa." });
+      if (fibraExcede(slot, receta)) {
+        estadosFijadas.push({ ...base, ok: false, causa: slot.sinFibraAlta ? "es v\xEDspera de competici\xF3n y esta receta lleva fibra alta: ese d\xEDa elige la app" : "es un d\xEDa de competici\xF3n con poca fibra y esta receta lleva demasiada: ese d\xEDa elige la app", arreglo: "Se propone otra receta solo para este d\xEDa." });
         continue;
       }
       if (!receta.franjas.includes(slot.franja)) {
@@ -1583,8 +1600,8 @@ var Motor = (() => {
       const motivos = /* @__PURE__ */ new Set();
       const candidatos = [];
       for (const slot of slots.filter((s) => s.franja === p.franja)) {
-        if (slot.sinFibraAlta && receta.fibraAlta) {
-          motivos.add("la v\xEDspera de una competici\xF3n evita la fibra alta (legumbre, integral o verdura cruda)");
+        if (fibraExcede(slot, receta)) {
+          motivos.add(motivoFibra(slot));
           continue;
         }
         const ap = opciones.alergiasPreferencias;
@@ -1629,12 +1646,12 @@ var Motor = (() => {
       const ap = opciones.alergiasPreferencias;
       const franjaVale = (r) => r.franjas.includes(slot.franja) || r.tipoPlato === "postre" && (r.franjas.includes("merienda") || r.franjas.includes("media_manana"));
       const diaVale = (r) => !(r.usoDia === "carga" && !slot.cargaAlta);
-      const vale = (r) => franjaVale(r) && diaVale(r) && !(slot.sinFibraAlta && r.fibraAlta) && (!ap || evaluarCompatibilidad(r, ap).compatible);
+      const vale = (r) => franjaVale(r) && diaVale(r) && !fibraExcede(slot, r) && (!ap || evaluarCompatibilidad(r, ap).compatible);
       const esUnico = (r) => !r.tipoPlato || r.tipoPlato === "unico" || r.tipoPlato === "postre" && slot.franja !== "comida" && slot.franja !== "cena";
       const intentar = (lista, filtrar) => {
-        const candidatas = filtrar ? lista.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !(slot.sinFibraAlta && r.fibraAlta)) : lista;
+        const candidatas = filtrar ? lista.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista;
         if (!candidatas.length) {
-          return { motivo: slot.sinFibraAlta ? "la v\xEDspera de competici\xF3n no se proponen recetas con fibra alta (legumbre, integral o verdura cruda) y no hay otra para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
+          return { motivo: slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
         }
         let aptas = candidatas;
         if (ap && filtrar) {
@@ -1757,7 +1774,10 @@ var Motor = (() => {
         for (let i = 0; i < asignaciones.length; i++) {
           const a2 = asignaciones[i];
           if (a2.pedidoPorUsuario || !r.franjas.includes(a2.franja)) continue;
-          if (slots.find((s) => s.dia === a2.dia && s.franja === a2.franja)?.sinFibraAlta && r.fibraAlta) continue;
+          {
+            const sl = slots.find((s) => s.dia === a2.dia && s.franja === a2.franja);
+            if (sl && fibraExcede(sl, r)) continue;
+          }
           const slot = slots.find((s) => s.dia === a2.dia && s.franja === a2.franja);
           if (!slot) continue;
           if (validarPlatoGenerado(a2.franja, r.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
@@ -3018,7 +3038,7 @@ var Motor = (() => {
   }
   function evaluar(slot, r, o) {
     if (!r.franjas.includes(slot.franja)) return { receta: r, motivo: "no declara esta franja" };
-    if (slot.sinFibraAlta && r.fibraAlta) return { receta: r, motivo: "la v\xEDspera de competici\xF3n se evita la fibra alta (legumbre, integral o verdura cruda)" };
+    if (fibraExcede(slot, r)) return { receta: r, motivo: motivoFibra(slot) };
     if (o.alergiasPreferencias) {
       const c = evaluarCompatibilidad(r, o.alergiasPreferencias);
       if (!c.compatible) return { receta: r, motivo: `no encaja con tus alergias/preferencias (${c.motivo?.detalle ?? "sin detalle"})` };
@@ -3408,6 +3428,26 @@ r43,aceite de oliva,10`;
   function minutosDelDia(c, fecha) {
     if (c.pruebas?.length) return c.pruebas.filter((p) => (p.fecha ?? c.fecha) === fecha).reduce((s, p) => s + p.duracionMin, 0);
     return DURACION_PROPUESTA_MIN[c.tipo ?? "otra"];
+  }
+  var FIBRA_VISPERA_PRINCIPAL_G = 5;
+  var FIBRA_VISPERA_TOMA_G = 2;
+  var FIBRA_ANTES_PRUEBA_G = 3;
+  function limiteFibraG(fase, franja, horaH, finUltimaPruebaH2) {
+    if (fase === "vispera") return franja === "comida" || franja === "cena" ? FIBRA_VISPERA_PRINCIPAL_G : FIBRA_VISPERA_TOMA_G;
+    if (fase === "competicion" && (finUltimaPruebaH2 === void 0 || horaH === void 0 || horaH < finUltimaPruebaH2)) return FIBRA_ANTES_PRUEBA_G;
+    return void 0;
+  }
+  function finUltimaPruebaH(competiciones, fecha) {
+    let fin;
+    for (const c of competiciones) {
+      if (c.tipo === "categoria_peso") continue;
+      const pruebas = c.pruebas?.length ? c.pruebas.filter((p) => (p.fecha ?? c.fecha) === fecha) : fecha >= c.fecha && fecha <= (c.fechaFin ?? c.fecha) && c.hora ? [{ hora: c.hora, duracionMin: DURACION_PROPUESTA_MIN[c.tipo ?? "otra"] }] : [];
+      for (const p of pruebas) {
+        const h = Number(p.hora.slice(0, 2)) + Number(p.hora.slice(3, 5)) / 60 + p.duracionMin / 60;
+        fin = fin === void 0 ? h : Math.max(fin, h);
+      }
+    }
+    return fin;
   }
   var aUTC2 = (f2) => Date.UTC(Number(f2.slice(0, 4)), Number(f2.slice(5, 7)) - 1, Number(f2.slice(8, 10)));
   var diasEntre = (a2, b) => Math.round((aUTC2(b) - aUTC2(a2)) / MS_DIA2);

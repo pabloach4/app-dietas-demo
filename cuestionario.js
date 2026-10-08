@@ -2513,7 +2513,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       });
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, cargaAlta: d.tipo === 'carga_alta', ...(nivelesVolumen()[Motor.grupoDeFranja(f.franja)] !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, nivelesVolumen()[Motor.grupoDeFranja(f.franja)]) } : {}), ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}) });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, cargaAlta: d.tipo === 'carga_alta', ...(nivelesVolumen()[Motor.grupoDeFranja(f.franja)] !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, nivelesVolumen()[Motor.grupoDeFranja(f.franja)]) } : {}), ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase === 'vispera' && cd.sinFibraAlta)) ? cd.fase : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()) });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,
