@@ -2473,23 +2473,20 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const tarjetas = alternativas.map((a, i) => `
       <li class="alt-card">
         <div class="titulo">${escaparHtml(a.receta.nombre)} <span class="rec-etiqueta">EJEMPLO</span></div>
-        <div class="dato">Ración propuesta ${Math.round(a.racionAjustada * 100)} % · ~${a.kcalResultante} kcal (objetivo de la comida ~${slot.kcalObjetivo})</div>
-        ${a.avisos.map((x) => `<div class="aviso">⚠️ ${escaparHtml(x)}.</div>`).join('')}
+        <div class="dato">~${a.kcalResultante} kcal</div>
+        ${a.avisos.length ? `<details class="saber-mas"><summary>Aviso sobre este plato</summary>${a.avisos.map((x) => `<div class="aviso">⚠️ ${escaparHtml(x)}.</div>`).join('')}</details>` : ''}
         <div class="alt-acciones"><button type="button" class="btn-secundario alt-previsualizar" data-i="${i}" aria-label="Ver cómo quedaría: ${escaparHtml(a.receta.nombre)}">Ver cómo quedaría</button></div>
       </li>`).join('');
     const bloqueadasPorVariedad = descartadas.filter((d) => d.motivo.includes('tercera aparición'));
-    const avisoVariedad = bloqueadasPorVariedad.length
-      ? `<p class="error-inline">No se ofrece ${bloqueadasPorVariedad.map((d) => `«${escaparHtml(d.receta.nombre)}»`).join(', ')} porque crearía una tercera aparición del mismo plato entre las comidas y cenas de la semana (máximo 2).${alternativas.length ? ' Elige otra opción de la lista.' : ''}</p>` : '';
     const motivos = descartadas.length ? `
       <details class="como-importar"><summary>Recetas no disponibles para esta comida y por qué</summary>
         <ul>${descartadas.map((d) => `<li><strong>${escaparHtml(d.receta.nombre)}:</strong> ${escaparHtml(d.motivo)}.</li>`).join('')}</ul></details>` : '';
     document.getElementById('dc-cuerpo').innerHTML = `
-      <p>${actual ? `Ahora: <strong>${escaparHtml(actual.receta.nombre)}</strong> (ración ${Math.round(actual.racionAjustada * 100)} %).` : `Ahora: sin receta de ejemplo${hueco ? ` (${escaparHtml(hueco.motivo)})` : ''}.`}</p>
+      <p>${actual ? `Ahora: <strong>${escaparHtml(actual.receta.nombre)}</strong>.` : `Ahora: sin receta de ejemplo${hueco ? ` (${escaparHtml(hueco.motivo)})` : ''}.`}</p>
       ${dia === LETRA_DIA_JS[new Date().getDay()] ? '<button type="button" class="btn-secundario" id="alt-fuera">He comido fuera</button>' : ''}
-      <p class="dc-aviso" style="color:var(--gris)">Cambia solo esta comida: no añade otra ni registra que la hayas tomado, y el resto de la semana y tus objetivos no se tocan. Las opciones <strong>no son equivalentes nutricionales</strong>: solo cumplen tus restricciones, el validador de platos, la variedad semanal en comidas y cenas (máx. 2 veces el mismo plato) y la franja. Las kcal y macros de las recetas de ejemplo son aproximados.</p>
-      ${avisoVariedad}
       ${alternativas.length ? `<ul class="alt-lista">${tarjetas}</ul>` : `<p class="error-inline">No hay ninguna receta de ejemplo compatible para esta comida${bloqueadasPorVariedad.length ? ' que respete el límite de variedad' : ''}. No se cambia nada ni se rebajan tus restricciones.</p>`}
       ${motivos}
+      <details class="saber-mas"><summary>Saber más</summary><p>Cambia solo esta comida: no añade otra ni registra que la hayas tomado, y el resto de la semana y tus objetivos no se tocan. Las opciones <strong>no son equivalentes nutricionales</strong>: solo cumplen tus restricciones, el validador de platos, la variedad semanal en comidas y cenas (máx. 2 veces el mismo plato) y la franja. Las kcal y macros de las recetas de ejemplo son aproximados.</p></details>
       <div id="alt-previa"></div>
       <div class="dc-acciones"><button type="button" class="btn-texto" id="alt-cancelar">Cancelar y volver al detalle</button></div>`;
     document.getElementById('dc-cuerpo').querySelectorAll('.alt-previsualizar').forEach((b) => b.addEventListener('click', () => previsualizarAlternativa(dia, franja, alternativas[Number(b.dataset.i)], slot, b)));
