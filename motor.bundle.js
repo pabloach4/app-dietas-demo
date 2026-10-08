@@ -4474,6 +4474,7 @@ R115,canela,1,condimento,171320,crudo,`;
   var TOLERANCIA_DIA = 0.05;
   var MAX_SUBIDA_COMIDA = 0.35;
   var MAX_BAJADA_COMIDA = 0.2;
+  var FRACCIONES_AJUSTE = [1, 0.75, 0.5, 0.25];
   var ORDEN_SUBIDA = ["comida", "cena", "desayuno", "merienda", "media_manana"];
   var ORDEN_BAJADA = ["media_manana", "merienda", "desayuno", "cena", "comida"];
   function cuadrarDias(asignaciones, slots, recetas, opciones = {}) {
@@ -4503,12 +4504,19 @@ R115,canela,1,condimento,171320,crudo,`;
           const tope = subir ? slot.kcalObjetivo * (1 + MAX_SUBIDA_COMIDA) : slot.kcalObjetivo * (1 - MAX_BAJADA_COMIDA);
           const deseada = subir ? Math.min(tope, a2.kcalResultante + resto) : Math.max(tope, a2.kcalResultante + resto);
           if (subir ? deseada <= a2.kcalResultante : deseada >= a2.kcalResultante) continue;
-          const r = racionParaObjetivo(receta, deseada, a2.franja, { cargaAlta: slot.cargaAlta, piso: 0.5 });
-          const mejora = subir ? r.kcalResultante > a2.kcalResultante : r.kcalResultante < a2.kcalResultante;
-          const dentro = subir ? r.kcalResultante <= tope + 1 : r.kcalResultante >= tope - 1;
-          if (!mejora || !dentro) continue;
-          if (incumplimientosRacion(a2.franja, receta, r.factorRedondeado, { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
-          if (validarPlatoGenerado(a2.franja, gramosEscalados(receta, r.factorRedondeado), { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+          let r;
+          for (const fraccion of FRACCIONES_AJUSTE) {
+            const objetivoIntento = a2.kcalResultante + fraccion * (deseada - a2.kcalResultante);
+            const cand = racionParaObjetivo(receta, objetivoIntento, a2.franja, { cargaAlta: slot.cargaAlta, piso: 0.5 });
+            const mejora = subir ? cand.kcalResultante > a2.kcalResultante : cand.kcalResultante < a2.kcalResultante;
+            const dentro = subir ? cand.kcalResultante <= tope + 1 : cand.kcalResultante >= tope - 1;
+            if (!mejora || !dentro) continue;
+            if (incumplimientosRacion(a2.franja, receta, cand.factorRedondeado, { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+            if (validarPlatoGenerado(a2.franja, gramosEscalados(receta, cand.factorRedondeado), { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+            r = cand;
+            break;
+          }
+          if (!r) continue;
           const delta = r.kcalResultante - a2.kcalResultante;
           a2.racionAjustada = r.factorRedondeado;
           a2.kcalResultante = r.kcalResultante;
