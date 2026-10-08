@@ -2533,6 +2533,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
     // Issue #145: lo que no cabe en una comida con cantidades normales se reparte entre las otras comidas del día (sin inflar nada).
     const cuadrado = Motor.cuadrarDias(aplicadas.resultado.asignaciones, slotsSemana, RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(aplicadas.resultado.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO)), { noMover: (dia) => (compPorDia.get(dia) && compPorDia.get(dia).fase === 'competicion') });
+    const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     const asignacionSemana = { ...aplicadas.resultado, asignaciones: cuadrado.asignaciones, avisos: [...aplicadas.resultado.avisos, ...cuadrado.avisos] };
     if (aplicadas.invalidadas.length) {
       aplicadas.invalidadas.forEach((i) => { delete sustituciones[i.clave]; });
@@ -2664,6 +2665,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
             <div class="dia-kcal">${d.kcal}<small style="font-size:0.55em;font-weight:400"> kcal</small></div>
           </div>
           <div class="dia-macros">P ${d.proteinaG} g · G ${d.grasaG} g · H ${d.hidratoG} g</div>
+          ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
           ${porqueDiaHtml(`card-dia-${d.dia}`, d.dia)}
           ${badgesHtml}
           ${moverHtml}
