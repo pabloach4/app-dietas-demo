@@ -745,15 +745,17 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const casilla = (n, l) => `<div class="casilla"><span class="n">${n}</span><span class="l">${l}</span></div>`;
     const fueraHoy = comidasFuera.filter((x) => x.fecha === iso && comidas.some((c) => c.f.franja === x.franja));
     const previstas = (franja) => comidas.find((c) => c.f.franja === franja).f.kcalAprox;
-    const bloqueFuera = fueraHoy.length ? `<div class="hoy-bloque hoy-despues"><h3>Has comido fuera</h3>${fueraHoy.map((x) => `<button type="button" class="hoy-fila-comida" data-dia="${dia}" data-franja="${x.franja}" data-vista="fuera" aria-label="Editar lo que has comido fuera: ${(NOMBRE[x.franja] ?? x.franja).toLowerCase()}"><span class="texto"><strong>${NOMBRE[x.franja] ?? x.franja}</strong>${escaparHtml(x.texto)}${x.kcal !== undefined ? ` · ~${x.kcal} kcal (tu plan preveía ~${previstas(x.franja)})` : ''}</span></button>`).join('')}</div>` : '';
-    const fueraConKcal = fueraHoy.filter((x) => x.kcal !== undefined);
-    const difFuera = Math.round(fueraConKcal.reduce((s, x) => s + x.kcal - previstas(x.franja), 0) / 10) * 10;
+    const cuadreHoy = vistaSemana.cuadreDias && vistaSemana.cuadreDias.get(dia);
+    const desvioHoy = cuadreHoy ? Math.round((cuadreHoy.servido - cuadreHoy.objetivo) / 10) * 10 : 0;
+    const notaFuera = !fueraHoy.some((x) => x.kcal !== undefined) ? 'Sin calorías apuntadas, el resto del día no se ajusta.'
+      : !cuadreHoy || cuadreHoy.cuadrado ? 'El resto del día está ajustado a lo que has comido fuera, con raciones normales.'
+        : `El resto del día se ha ajustado hasta donde dan las raciones normales: hoy te quedas unas ${Math.abs(desvioHoy)} kcal ${desvioHoy > 0 ? 'por encima' : 'por debajo'}. Mañana se sigue con el plan normal.`;
+    const bloqueFuera = fueraHoy.length ? `<div class="hoy-bloque hoy-despues"><h3>Has comido fuera</h3>${fueraHoy.map((x) => `<button type="button" class="hoy-fila-comida" data-dia="${dia}" data-franja="${x.franja}" data-vista="fuera" aria-label="Editar lo que has comido fuera: ${(NOMBRE[x.franja] ?? x.franja).toLowerCase()}"><span class="texto"><strong>${NOMBRE[x.franja] ?? x.franja}</strong>${escaparHtml(x.texto)}${x.kcal !== undefined ? ` · ~${x.kcal} kcal (tu plan preveía ~${previstas(x.franja)})` : ''}</span></button>`).join('')}<p class="hoy-nota hoy-nota-fuera">${notaFuera}</p></div>` : '';
     // Lo que no hace falta para saber qué toca se queda plegado; lo que estaba abierto sigue abierto al repintar (cada minuto).
     const abiertos = new Set([...cont.querySelectorAll('details.hoy-mas[open]')].map((x) => x.dataset.mas));
     const mas = (id, titulo, cuerpo) => (cuerpo ? `<details class="hoy-mas" data-mas="${id}"${abiertos.has(id) ? ' open' : ''}><summary>${titulo}</summary>${cuerpo}</details>` : '');
     const numeros = `${dHoy ? `<p class="hoy-tipo">Tipo de día: <span class="dia-tipo">${escaparHtml(dHoy.tipo)}</span></p>
       <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
-      ${fueraConKcal.length ? `<p class="hoy-tipo">Con lo que has comido fuera, hoy vas ${difFuera === 0 ? 'como estaba previsto' : `unas ${Math.abs(difFuera)} kcal ${difFuera > 0 ? 'por encima' : 'por debajo'} de lo previsto`}. El resto del día no cambia.</p>` : ''}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`;
     cont.innerHTML = `
       <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)}</p>
@@ -992,7 +994,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   }
   let porValorar = null; // { fecha, franja }: comida recién marcada como hecha, a la espera de «¿qué tal de cantidad?»
   // Comidas hechas fuera de casa (Pablo, 08/10): se apunta qué se comió y, si se saben, las kcal, para compararlas con lo que
-  // preveía el plan. No cambia el plan ni el resto del día. Se guardan las 30 últimas, solo en este navegador.
+  // preveía el plan. Con kcal apuntadas, el resto de ese día se regula (ver el cuadre en mostrarResultado). Se guardan las 30
+  // últimas, solo en este navegador.
   const CLAVE_FUERA = 'app-dietas-comidas-fuera';
   let comidasFuera = []; // [{ fecha: 'YYYY-MM-DD', franja, texto, kcal? }]
   try {
@@ -2498,7 +2501,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('dc-titulo').focus();
   }
   // «He comido fuera» (Pablo, 08/10): se apunta qué se comió y, si se saben, las kcal; se compara con lo previsto y la comida
-  // queda como hecha. No cambia el plan ni el resto del día. El buscador de platos y cadenas llegará con su tabla de datos.
+  // queda como hecha. Con kcal apuntadas, el resto del día se regula. El buscador de platos y cadenas llegará con su tabla de datos.
   function abrirComidaFuera(dia, franja) {
     if (!vistaSemana || !planActual) return;
     const iso = Motor.fechaLocalISO(new Date());
@@ -2510,7 +2513,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('dc-cuerpo').innerHTML = `
       <div class="campo"><label for="fuera-texto">¿Qué has comido?</label><input id="fuera-texto" type="text" maxlength="80" autocomplete="off" placeholder="Ej.: hamburguesa de pollo con patatas"></div>
       <div class="campo"><label for="fuera-kcal">Calorías aproximadas, si las sabes</label><input id="fuera-kcal" type="number" inputmode="numeric" min="0" max="5000" step="10" placeholder="Ej.: 850"></div>
-      <p class="una-linea">Tu plan preveía ~${f.kcalAprox} kcal para esta comida. Apuntarlo no cambia el resto del día.</p>
+      <p class="una-linea">Tu plan preveía ~${f.kcalAprox} kcal para esta comida. Si apuntas las calorías, el resto del día se ajusta solo.</p>
       <p class="error-inline" id="fuera-error" role="alert" hidden></p>
       <div class="dc-acciones">
         <button type="button" class="btn-principal" id="fuera-guardar">Guardar</button>
@@ -2524,6 +2527,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const terminar = () => {
       try { localStorage.setItem(CLAVE_HECHAS, JSON.stringify(comidasHechas)); localStorage.setItem(CLAVE_FUERA, JSON.stringify(comidasFuera)); } catch { falloAlmacenamiento(); }
       dlg.close();
+      if (vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // el resto del día se regula
       if (panelActual === 'hoy') pintarHoy();
     };
     const avisar = (texto, campo) => { const e = document.getElementById('fuera-error'); e.textContent = texto; e.hidden = false; campo.focus(); };
@@ -2700,7 +2704,25 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
     // Issue #145: lo que no cabe en una comida con cantidades normales se reparte entre las otras comidas del día (sin inflar nada).
-    const cuadrado = Motor.cuadrarDias(aplicadas.resultado.asignaciones, slotsSemana, RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(aplicadas.resultado.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO)), { noMover: (dia) => (compPorDia.get(dia) && compPorDia.get(dia).fase === 'competicion') });
+    const recetasCuadre = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(aplicadas.resultado.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
+    const enCompeticion = (dia) => Boolean(compPorDia.get(dia) && compPorDia.get(dia).fase === 'competicion');
+    let cuadrado = Motor.cuadrarDias(aplicadas.resultado.asignaciones, slotsSemana, recetasCuadre, { noMover: enCompeticion });
+    // «He comido fuera» (Pablo, 08/10): «igual que si come otra cosa en su casa y cambia, si sale fuera debería regularse también».
+    // Hoy esa comida cuenta con las kcal apuntadas y una segunda pasada del mismo cuadre regula las comidas que van DESPUÉS de ella
+    // (las anteriores ya han pasado y no se tocan), con los mismos topes de cantidades normales. Al día siguiente deja de aplicarse.
+    const hoyIso = Motor.fechaLocalISO(new Date());
+    const diaHoy = LETRA_DIA_JS[new Date().getDay()];
+    const fueraHoy = new Map(comidasFuera.filter((x) => x.fecha === hoyIso && x.kcal !== undefined && slotsSemana.some((s) => s.dia === diaHoy && s.franja === x.franja)).map((x) => [x.franja, x.kcal]));
+    if (fueraHoy.size) {
+      const horaDe = (franja) => { const h = franjasDelDia(diaHoy).find((x) => x.franja === franja); return h && h.hora !== undefined ? h.hora : undefined; };
+      const primeraFuera = Math.min(...[...fueraHoy.keys()].map((f) => horaDe(f) ?? -1));
+      const primera = cuadrado.asignaciones;
+      const entrada = primera.map((a) => (a.dia === diaHoy && fueraHoy.has(a.franja) ? { ...a, kcalResultante: fueraHoy.get(a.franja) } : a))
+        .concat([...fueraHoy].filter(([f]) => !primera.some((a) => a.dia === diaHoy && a.franja === f)).map(([f, kcal]) => ({ dia: diaHoy, franja: f, kcalResultante: kcal, soloFuera: true })));
+      const segunda = Motor.cuadrarDias(entrada, slotsSemana, recetasCuadre, { noMover: (dia, franja) => dia !== diaHoy || enCompeticion(dia) || fueraHoy.has(franja) || (horaDe(franja) ?? 24) <= primeraFuera });
+      // La comida hecha fuera conserva en el plan su receta y su ración de antes: lo apuntado solo cuenta para el cuadre del día.
+      cuadrado = { ...segunda, asignaciones: segunda.asignaciones.filter((a) => !a.soloFuera).map((a) => (a.dia === diaHoy && fueraHoy.has(a.franja) ? primera.find((b) => b.dia === a.dia && b.franja === a.franja) : a)) };
+    }
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     const asignacionSemana = { ...aplicadas.resultado, asignaciones: cuadrado.asignaciones, avisos: [...aplicadas.resultado.avisos, ...cuadrado.avisos] };
     if (aplicadas.invalidadas.length) {
@@ -2926,7 +2948,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     });
 
     filasPlanCSV = filasCSV;
-    vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana, asignaciones: asignacionSemana.asignaciones, compPorDia };
+    vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana, asignaciones: asignacionSemana.asignaciones, compPorDia, cuadreDias: new Map(cuadrado.dias.map((x) => [x.dia, x])) };
     pintarFija(); // ya con la vista y la asignación de esta semana (issue #142: opciones para las fijaciones que no valen)
     pintarZonaSustituciones();
     pintarResumenDia();
