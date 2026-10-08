@@ -649,6 +649,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (nombre === 'recetas') pintarRecetas();
     if (mover) window.scrollTo({ top: recordar ? (scrollPorPanel[nombre] || 0) : 0 });
   }
+  // «Semana» abre por el Calendario, que va primero; el Plan queda a su derecha (Pablo, 08/10).
+  const panelDeTab = (tab) => (tab.dataset.panel === 'semana' ? 'calendario' : tab.dataset.panel);
   document.querySelectorAll('.subvista .sub-plan').forEach((b) => b.addEventListener('click', () => mostrarPanel('semana')));
   document.querySelectorAll('.subvista .sub-calendario').forEach((b) => b.addEventListener('click', () => mostrarPanel('calendario')));
 
@@ -1202,13 +1204,13 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   });
 
   document.querySelectorAll('#tabs-app [role="tab"]').forEach((tab) => {
-    tab.addEventListener('click', () => mostrarPanel(tab.dataset.panel, { recordar: true }));
+    tab.addEventListener('click', () => mostrarPanel(panelDeTab(tab), { recordar: true }));
     tab.addEventListener('keydown', (ev) => {
       if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
       const tabs = Array.from(document.querySelectorAll('#tabs-app [role="tab"]'));
       const siguiente = tabs[(tabs.indexOf(tab) + (ev.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
       siguiente.focus();
-      mostrarPanel(siguiente.dataset.panel, { mover: false });
+      mostrarPanel(panelDeTab(siguiente), { mover: false });
     });
   });
 
