@@ -661,8 +661,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const dia = LETRA_DIA_JS[ahora.getDay()];
     const horaAct = ahora.getHours() + ahora.getMinutes() / 60;
     const iso = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
-    const fechaTxt = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    const horaTxt = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+    const fechaTxt = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
     let nota = 'Día y hora de este dispositivo; el plan se muestra por día de la semana. No está conectado a ningún calendario ni sabe lo que has hecho.';
     if (calInicio && !Motor.diaDeLaFecha(calInicio, iso)) nota = `Hoy queda fuera de la semana con fechas que elegiste en el calendario (lunes ${calInicio}). ${nota}`;
 
@@ -683,14 +682,25 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     } else if (siguiente) {
       const asignada = vistaSemana.recetaPorSlot.get(`${dia}|${siguiente.f.franja}`);
       const hueco = vistaSemana.huecoPorSlot.get(`${dia}|${siguiente.f.franja}`);
+      // A la vista, solo lo que toca comer y tres botones (Pablo, 08/10): las cifras y los porqués van dentro de la hoja o plegados.
+      const nombreComida = NOMBRE[siguiente.f.franja] ?? siguiente.f.franja;
+      const accion = (vista, texto) => `<button type="button" class="hoy-accion" data-dia="${dia}" data-franja="${siguiente.f.franja}" data-vista="${vista}" aria-label="${texto}: ${nombreComida.toLowerCase()} de hoy">${texto}</button>`;
       bloqueComida = `
-        <div class="hoy-bloque destacado">
-          <h3>Siguiente comida</h3>
-          <div class="titulo">${NOMBRE[siguiente.f.franja] ?? siguiente.f.franja} · ${horaDecimalATexto(siguiente.hora)} · ~${siguiente.f.kcalAprox} kcal</div>
-          ${asignada ? `<div>EJEMPLO: ${escaparHtml(asignada.receta.nombre)} (ración ${Math.round(asignada.racionAjustada * 100)} %)</div>`
-            : `<div class="error-inline" style="margin:0">Sin receta de ejemplo que encaje${hueco ? `: ${escaparHtml(hueco.motivo)}` : ''}.</div>`}
-          ${botonVerComida(dia, siguiente.f.franja)}
+        <div class="hoy-bloque destacado hoy-toca">
+          <h3>Siguiente · ${nombreComida} · ${horaDecimalATexto(siguiente.hora)}</h3>
+          ${asignada ? `<div class="hoy-plato">${escaparHtml(asignada.receta.nombre)} <span class="etq-ejemplo">EJEMPLO</span></div>
+          <div class="hoy-acciones">${accion('receta', 'Receta')}${accion('cantidades', 'Cantidades')}${accion('cambiar', 'Cambiar')}</div>`
+            : `<div class="error-inline" style="margin:0">Sin receta de ejemplo que encaje${hueco ? `: ${escaparHtml(hueco.motivo)}` : ''}.</div>
+          ${botonVerComida(dia, siguiente.f.franja)}`}
         </div>`;
+      const resto = conHora.slice(conHora.indexOf(siguiente) + 1);
+      if (resto.length) {
+        bloqueComida += `<div class="hoy-bloque hoy-despues"><h3>Después</h3>${resto.map((c) => {
+          const r = vistaSemana.recetaPorSlot.get(`${dia}|${c.f.franja}`);
+          const n = NOMBRE[c.f.franja] ?? c.f.franja;
+          return `<button type="button" class="hoy-fila-comida" data-dia="${dia}" data-franja="${c.f.franja}" data-vista="cantidades" aria-label="Ver ${n.toLowerCase()} de hoy"><span class="hora">${horaDecimalATexto(c.hora)}</span><span class="texto"><strong>${n}</strong>${r ? escaparHtml(r.receta.nombre) : 'Sin receta de ejemplo'}</span></button>`;
+        }).join('')}</div>`;
+      }
     } else if (conHora.length) {
       bloqueComida = `<div class="hoy-bloque"><h3>Comidas</h3><div class="titulo">Ya pasó la hora de todas las comidas de hoy según tu horario.</div>
         <div class="hoy-nota" style="margin:0">La última fue ${NOMBRE[conHora[conHora.length - 1].f.franja]} a las ${horaDecimalATexto(conHora[conHora.length - 1].hora)}. No se registra si la tomaste (lo que pase en la cocina queda entre tú y la nevera).</div></div>`;
@@ -717,15 +727,19 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // Las casillas son cifras del PLAN de hoy (lo que toca), nunca lo comido: la app no registra ingesta.
     const dHoy = planActual.dias.find((x) => x.dia === dia);
     const casilla = (n, l) => `<div class="casilla"><span class="n">${n}</span><span class="l">${l}</span></div>`;
+    // Lo que no hace falta para saber qué toca se queda plegado; lo que estaba abierto sigue abierto al repintar (cada minuto).
+    const abiertos = new Set([...cont.querySelectorAll('details.hoy-mas[open]')].map((x) => x.dataset.mas));
+    const mas = (id, titulo, cuerpo) => (cuerpo ? `<details class="hoy-mas" data-mas="${id}"${abiertos.has(id) ? ' open' : ''}><summary>${titulo}</summary>${cuerpo}</details>` : '');
+    const numeros = `${dHoy ? `<p class="hoy-tipo">Tipo de día: <span class="dia-tipo">${escaparHtml(dHoy.tipo)}</span></p>
+      <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
+      <p class="hoy-nota">${escaparHtml(nota)}</p>`;
     cont.innerHTML = `
-      <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)} · ${horaTxt}</p>
-      <h2>Tu plan de hoy${dHoy ? ` <span class="dia-tipo">${escaparHtml(dHoy.tipo)}</span>` : ''}</h2>
-      ${dHoy ? `<div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
+      <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)}</p>
       ${bloqueComida}
       ${bloqueEntreno}
-      ${bloqueVolumenHoy(iso, conHora.filter((c) => c.hora <= horaAct).map((c) => c.f.franja))}
       ${cardCompeticionHtml(dia)}
-      <p class="hoy-nota">${escaparHtml(nota)}</p>`;
+      ${mas('volumen', '¿Qué tal de cantidad?', bloqueVolumenHoy(iso, conHora.filter((c) => c.hora <= horaAct).map((c) => c.f.franja)))}
+      ${mas('numeros', 'Tus números de hoy', numeros)}`;
   }
   setInterval(() => { if (panelActual === 'hoy' && !document.getElementById('resultado').hidden) pintarHoy(); }, 60000);
 
@@ -2196,8 +2210,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   }
 
   let verCocido = false; // interruptor del detalle: el peso por defecto es en seco, el cocido es opcional
-  function abrirDetalleComida(dia, franja) {
+  let vistaDetalle = 'cantidades'; // qué parte del plato enseña la hoja: «cantidades» (ingredientes y gramos) o «receta» (elaboración)
+  function abrirDetalleComida(dia, franja, vista) {
     if (!vistaSemana || !planActual) return;
+    if (vista) vistaDetalle = vista;
     const NOMBRE = { desayuno: 'Desayuno', media_manana: 'Media mañana', comida: 'Comida', merienda: 'Merienda', cena: 'Cena' };
     const d = planActual.dias.find((x) => x.dia === dia);
     const { reparto } = vistaSemana.repartosPorDia.find((r) => r.dia.dia === dia);
@@ -2230,6 +2246,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const bloqueCocido = hayCocido ? `
         <label class="check"><input type="checkbox" id="dc-ver-cocido" ${verCocido ? 'checked' : ''}> Ver también el peso en cocido</label>
         ${verCocido ? '<p class="dc-chiste">Los pesos son en seco. Lo único que tendrías que hacer es sacar el móvil y multiplicar por el factor (arroz ×2,5, pasta ×2,25…), pero tranquilo: para trabajar ya estamos nosotros.</p>' : ''}` : '';
+      const vistas = `<div class="dc-vistas" role="group" aria-label="Qué quieres ver de este plato">${[['cantidades', 'Cantidades'], ['receta', 'Receta']].map(([v, t]) => `<button type="button" data-vista="${v}" aria-pressed="${vistaDetalle === v}">${t}</button>`).join('')}</div>`;
       const fila = (letra, clase, objetivo, deLaReceta) => `<tr><th><span class="chip chip-${clase}">${letra}</span></th><td>${objetivo}</td><td>${deLaReceta}</td></tr>`;
       const cuadre = `
         <table class="dc-cuadre">
@@ -2245,14 +2262,20 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <p class="dc-nota">La receta usa valores declarados (ración base ${asignada.receta.kcal} kcal), no medidos: sirve para acercarse a las kcal, no para clavar los macros.${asignada.protegidosSinEscalar && asignada.protegidosSinEscalar.length ? ` ${escaparHtml(asignada.protegidosSinEscalar.join(', '))} no se reescala${asignada.protegidosSinEscalar.length > 1 ? 'n' : ''}, así que las cifras son aproximadas.` : ''}</p>`;
       receta = `
         <h3 class="dc-plato">${escaparHtml(asignada.receta.nombre)} <span class="etq-ejemplo">EJEMPLO</span> <span class="dc-racion">ración ${Math.round(asignada.racionAjustada * 100)} %</span></h3>
+        ${vistas}
+        <div class="dc-parte" data-parte="cantidades"${vistaDetalle === 'cantidades' ? '' : ' hidden'}>
         <div class="dc-ings-cab"><span>Ingrediente</span><span>Lo que comes</span><span>Lo que compras</span></div>
         <ul class="dc-ings">${filas}</ul>
         ${bloqueCocido}
+        </div>
+        <div class="dc-parte" data-parte="receta"${vistaDetalle === 'receta' ? '' : ' hidden'}>
         <h3>Elaboración</h3>
         ${pasos ? `<ol class="dc-pasos">${pasos.map((p) => `<li>${escaparHtml(p)}</li>`).join('')}</ol>`
           : '<p><strong>Elaboración pendiente:</strong> esta receta no tiene pasos en su ficha y no se inventa una.</p>'}
-        <h3>Cómo encaja con tu objetivo</h3>
+        </div>
+        <details class="dc-notas"><summary>Cómo encaja con tu objetivo</summary>
         ${cuadre}
+        </details>
         <details class="dc-notas"><summary>Notas sobre los pesos</summary>
           <p class="dc-nota">La compra suma esta comida con las demás de los días elegidos y redondea hacia arriba (carne y pescado de 50 en 50 g, el resto de 25 en 25 g, huevos de 50 g): por eso no coincide con lo que se come. Los pesos son de ejemplo, en crudo, y están pendientes de validar; el cocido es orientativo.</p>
         </details>`;
@@ -2274,6 +2297,12 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('dc-cuerpo').innerHTML = receta + contexto
       + `<div class="dc-acciones"><button type="button" class="btn-secundario" id="dc-cambiar">Cambiar receta de esta comida</button></div>`;
     document.getElementById('dc-cambiar').addEventListener('click', () => abrirAlternativas(dia, franja));
+    const botonesVista = document.querySelectorAll('#dc-cuerpo .dc-vistas button');
+    botonesVista.forEach((b) => b.addEventListener('click', () => {
+      vistaDetalle = b.dataset.vista;
+      botonesVista.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      document.querySelectorAll('#dc-cuerpo .dc-parte').forEach((p) => { p.hidden = p.dataset.parte !== vistaDetalle; });
+    }));
     const chkCocido = document.getElementById('dc-ver-cocido');
     if (chkCocido) chkCocido.addEventListener('change', () => { verCocido = chkCocido.checked; abrirDetalleComida(dia, franja); const nuevo = document.getElementById('dc-ver-cocido'); if (nuevo) nuevo.focus(); });
     const dlg = document.getElementById('detalle-comida');
@@ -2291,7 +2320,11 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   let disparadorDetalle = null; // para devolver el foco al botón que abrió el detalle
   document.addEventListener('click', (ev) => {
     const b = ev.target.closest && ev.target.closest('.ver-comida');
-    if (b) abrirDetalleComida(b.dataset.dia, b.dataset.franja);
+    if (b) { abrirDetalleComida(b.dataset.dia, b.dataset.franja, 'cantidades'); return; }
+    const h = ev.target.closest && ev.target.closest('.hoy-accion, .hoy-fila-comida'); // botones de «Hoy»: receta, cantidades o cambiar
+    if (!h) return;
+    if (h.dataset.vista === 'cambiar') abrirAlternativas(h.dataset.dia, h.dataset.franja);
+    else abrirDetalleComida(h.dataset.dia, h.dataset.franja, h.dataset.vista);
   });
   (() => {
     const dlg = document.getElementById('detalle-comida');
