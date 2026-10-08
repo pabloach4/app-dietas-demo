@@ -934,8 +934,10 @@ var Motor = (() => {
     const limite = buscarLimite(tabla, nombre);
     return limite !== void 0 && /^condimentos/i.test(limite.categoria);
   }
+  var NO_LIQUIDO = /crema de (leche|cacahuete|cacao|avellana|almendra|queso|pistacho|coco)|crema (untable|de untar)/;
   function esLiquidoPorNombre(nombre) {
     const n = normalizar(nombre);
+    if (NO_LIQUIDO.test(n)) return false;
     return LIQUIDO_KEYWORDS.some((k) => n.includes(k));
   }
   function validarPlato(franja, ingredientes, opts = {}) {

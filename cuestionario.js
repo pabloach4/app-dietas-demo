@@ -1027,7 +1027,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const fav = favoritasRecetas.includes(r.id);
       return `
         <li class="rec-card">
-          <div class="rec-img" aria-hidden="true"><span>🍽️</span>Sin imagen</div>
+          <div class="rec-img" aria-hidden="true"></div>
           <div class="rec-cuerpo">
             <div class="rec-nombre">${escaparHtml(r.nombre)}</div>
             <span class="rec-etiqueta">EJEMPLO</span>
@@ -2041,7 +2041,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       </div>
       ${(marcadosEnCasa.size || articulosManuales.length) ? `
         <button type="button" id="btn-borrar-lista-manual" class="btn-texto" style="color:#b3271e">
-          🗑️ Borrar marcas y añadidos a mano
+          Borrar marcas y añadidos a mano
         </button>
       ` : ''}
     `;
@@ -2658,7 +2658,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <div class="dia-card ${diasConSesion.has(d.dia) ? 'con-entreno' : ''}">
           <div class="dia-cabecera">
             <div>
-              <div class="dia-nombre">${diasConSesion.has(d.dia) ? `<span aria-hidden="true">${iconosDelDia(sesiones, d.dia)}</span> ` : ''}${d.dia}</div>
+              <div class="dia-nombre">${diasConSesion.has(d.dia) ? `<span aria-hidden="true">${iconosDelDia(sesiones, d.dia)}</span> ` : ''}${NOMBRE_DIA_LARGO[d.dia] ?? d.dia}</div>
               <div class="dia-tipo">${d.tipo}${compPorDia.get(d.dia)?.fase ? ` · <span class="etq-fase">${Motor.ETIQUETA_FASE[compPorDia.get(d.dia).fase]}</span>` : ''}</div>
             </div>
             <div class="dia-kcal">${d.kcal}<small style="font-size:0.55em;font-weight:400"> kcal</small></div>

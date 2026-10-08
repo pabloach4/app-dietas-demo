@@ -712,6 +712,72 @@
     @supports not (transition-behavior: allow-discrete) { dialog#detalle-comida[open] { animation: aparece var(--normal) ease-out; } }
   }
   @media (prefers-reduced-motion: reduce) { dialog#detalle-comida::backdrop { transition: none !important; animation: none !important; } }
+  /* ===== Tema visual, parte 3 (#153): Semana, Recetas, Compra y Perfil. Tarjetas blancas sobre el fondo y filas con línea fina. ===== */
+  :root { --icono-cubiertos: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3v18M4.5 3v5a2.5 2.5 0 0 0 5 0V3M17.5 21v-7.5M17.5 13.500c-2-.6-3-2.300-3-5 0-2.400 1-4.300 3-5.500z'/%3E%3C/svg%3E"); }
+
+  /* Semana: cada día es una tarjeta blanca; «Día a día» deja de ser una caja que envuelve otras cajas. */
+  .tarjeta:has(> #r-dias) { padding: 0; background: none; box-shadow: none; }
+  .tarjeta:has(> #r-dias) > h2 { margin: 1.4rem 0.2rem 0.7rem; }
+  .dias-grid { gap: 0.85rem; }
+  .dia-card, .dia-card.con-entreno { padding: 1.05rem 1.15rem 0.4rem; border-radius: var(--radio); background: var(--tarjeta); box-shadow: var(--sombra); }
+  .dia-cabecera { align-items: center; gap: 0.6rem; }
+  .dia-card .dia-nombre { font-size: 1.125rem; font-weight: 650; letter-spacing: -0.01em; }
+  .dia-card .dia-tipo { margin: 0.3rem 0 0; }
+  .dia-card .dia-kcal { font-size: 1.5rem; white-space: nowrap; }
+  .dia-card .dia-macros { margin-top: 0.5rem; font-size: 0.8rem; }
+  .dia-card .sesion-mover { margin-top: 0.6rem; background: var(--tarjeta-suave); }
+  .dia-card .franja-reparto-card:not(.destacada) { background: var(--tarjeta-suave); }
+  .dia-card input:not([type="checkbox"]), .dia-card select, .dia-card .campo input, .dia-card .campo select { background-color: var(--tarjeta-suave); }
+  .dia-card .sesion-mover select { background-color: var(--tarjeta); }
+  /* Los tres desplegables de cada día, como filas (la flecha ya va en su texto). */
+  .dia-card .dia-toggle, .dia-card .contexto-toggle, .dia-card .horario-toggle {
+    display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; margin: 0; padding: 0 0.1rem;
+    border: 0; border-top: 1px solid var(--borde); border-radius: 0; background: none; color: var(--texto); font-size: 0.9rem; font-weight: 500; text-align: left;
+  }
+  .dia-card .dia-toggle { margin-top: 0.8rem; }
+  .dia-card .dia-franjas, .dia-card .contexto-dia, .dia-card .horario-dia { margin: 0 0 0.8rem; }
+
+  /* Recetas: lista de filas con icono, no fichas con hueco de foto; buscador con lupa. */
+  .rec-grid { grid-template-columns: 1fr; gap: 0; margin-bottom: 0.6rem; }
+  .rec-card { flex-direction: row; align-items: flex-start; gap: 0.75rem; padding: 0.9rem 0; border-top: 1px solid var(--borde); border-radius: 0; background: none; box-shadow: none; overflow: visible; }
+  .rec-card:first-child { border-top: 0; }
+  .rec-img { flex: none; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 12px; }
+  .rec-img::before {
+    content: ""; width: 22px; height: 22px; background: currentColor;
+    -webkit-mask: var(--icono-cubiertos) center / contain no-repeat; mask: var(--icono-cubiertos) center / contain no-repeat;
+  }
+  .rec-cuerpo { min-width: 0; padding: 0; gap: 0.2rem; }
+  .rec-nombre { font-size: 0.97rem; font-weight: 600; line-height: 1.3; }
+  .rec-etiqueta { border: 0; font-size: 0.66rem; letter-spacing: 0.04em; }
+  .rec-acciones { margin-top: 0.5rem; }
+  .rec-acciones button { border-radius: 999px; font-size: 0.85rem; }
+  .rec-acciones .rec-ver { flex: 0 1 auto; padding: 0 1.1rem; background: var(--acento-suave); color: var(--acento-fuerte); }
+  .rec-acciones .rec-fav { order: 2; width: 44px; padding: 0; font-size: 1.1rem; }
+  #rec-buscar {
+    padding-left: 2.6rem; background-repeat: no-repeat; background-position: 0.85rem center; background-size: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235E626B' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M16 16l4.500 4.500'/%3E%3C/svg%3E");
+  }
+  #rec-buscar::-webkit-search-cancel-button { display: none; } /* ya hay un botón propio para borrar */
+
+  /* Compra: secciones con antetítulo y artículos en filas con casilla grande. */
+  #lista-compra h3 { margin: 1.3rem 0 0.2rem !important; font-size: 0.72rem !important; color: var(--acento-fuerte) !important; }
+  #lista-compra .resumen-lista li.item-compra { margin: 0; padding: 0.1rem 0; border-top: 1px solid var(--borde); }
+  #lista-compra .resumen-lista li.item-compra:first-child { border-top: 0; }
+  .item-compra label { gap: 0.7rem; min-height: 48px; font-size: 0.9rem; color: var(--texto); }
+  .item-compra input[type="checkbox"] { width: 22px; height: 22px; }
+  .item-compra strong { font-variant-numeric: tabular-nums; }
+  .item-compra .tachado { opacity: 1; color: var(--gris); }
+
+  /* Perfil: datos como filas de etiqueta y valor. */
+  #perfil-datos li {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: 0; padding: 0.7rem 0;
+    border-top: 1px solid var(--borde); font-size: 0.92rem; color: var(--texto); text-align: right;
+  }
+  #perfil-datos li:first-child { border-top: 0; padding-top: 0.1rem; }
+  #perfil-datos li strong { flex: none; font-weight: 400; color: var(--gris); text-align: left; }
+  #r-resumen li { margin: 0; padding: 0.65rem 0; border-top: 1px solid var(--borde); color: var(--texto); }
+  #r-resumen li:first-child { border-top: 0; }
+  #r-resumen li strong { display: block; font-size: 0.8rem; font-weight: 400; color: var(--gris); }
 </style>
 </head>
 <body>
@@ -1142,8 +1208,8 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="fuentes.js?v=5b608a2"></script>
-<script src="motor.bundle.js?v=5b608a2"></script>
-<script src="cuestionario.js?v=5b608a2"></script>
+<script src="fuentes.js?v=ef3d768"></script>
+<script src="motor.bundle.js?v=ef3d768"></script>
+<script src="cuestionario.js?v=ef3d768"></script>
 </body>
 </html>
