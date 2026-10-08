@@ -743,16 +743,23 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // Las casillas son cifras del PLAN de hoy (lo que toca), nunca lo comido: la app no registra ingesta.
     const dHoy = planActual.dias.find((x) => x.dia === dia);
     const casilla = (n, l) => `<div class="casilla"><span class="n">${n}</span><span class="l">${l}</span></div>`;
+    const fueraHoy = comidasFuera.filter((x) => x.fecha === iso && comidas.some((c) => c.f.franja === x.franja));
+    const previstas = (franja) => comidas.find((c) => c.f.franja === franja).f.kcalAprox;
+    const bloqueFuera = fueraHoy.length ? `<div class="hoy-bloque hoy-despues"><h3>Has comido fuera</h3>${fueraHoy.map((x) => `<button type="button" class="hoy-fila-comida" data-dia="${dia}" data-franja="${x.franja}" data-vista="fuera" aria-label="Editar lo que has comido fuera: ${(NOMBRE[x.franja] ?? x.franja).toLowerCase()}"><span class="texto"><strong>${NOMBRE[x.franja] ?? x.franja}</strong>${escaparHtml(x.texto)}${x.kcal !== undefined ? ` · ~${x.kcal} kcal (tu plan preveía ~${previstas(x.franja)})` : ''}</span></button>`).join('')}</div>` : '';
+    const fueraConKcal = fueraHoy.filter((x) => x.kcal !== undefined);
+    const difFuera = Math.round(fueraConKcal.reduce((s, x) => s + x.kcal - previstas(x.franja), 0) / 10) * 10;
     // Lo que no hace falta para saber qué toca se queda plegado; lo que estaba abierto sigue abierto al repintar (cada minuto).
     const abiertos = new Set([...cont.querySelectorAll('details.hoy-mas[open]')].map((x) => x.dataset.mas));
     const mas = (id, titulo, cuerpo) => (cuerpo ? `<details class="hoy-mas" data-mas="${id}"${abiertos.has(id) ? ' open' : ''}><summary>${titulo}</summary>${cuerpo}</details>` : '');
     const numeros = `${dHoy ? `<p class="hoy-tipo">Tipo de día: <span class="dia-tipo">${escaparHtml(dHoy.tipo)}</span></p>
       <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
+      ${fueraConKcal.length ? `<p class="hoy-tipo">Con lo que has comido fuera, hoy vas ${difFuera === 0 ? 'como estaba previsto' : `unas ${Math.abs(difFuera)} kcal ${difFuera > 0 ? 'por encima' : 'por debajo'} de lo previsto`}. El resto del día no cambia.</p>` : ''}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`;
     cont.innerHTML = `
       <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)}</p>
       ${previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${bloqueComida}
+      ${bloqueFuera}
       ${bloqueEntreno}
       ${cardCompeticionHtml(dia)}
       ${mas('numeros', 'Tus números de hoy', numeros)}`;
@@ -984,6 +991,17 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     return comidasHechas.franjas;
   }
   let porValorar = null; // { fecha, franja }: comida recién marcada como hecha, a la espera de «¿qué tal de cantidad?»
+  // Comidas hechas fuera de casa (Pablo, 08/10): se apunta qué se comió y, si se saben, las kcal, para compararlas con lo que
+  // preveía el plan. No cambia el plan ni el resto del día. Se guardan las 30 últimas, solo en este navegador.
+  const CLAVE_FUERA = 'app-dietas-comidas-fuera';
+  let comidasFuera = []; // [{ fecha: 'YYYY-MM-DD', franja, texto, kcal? }]
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_FUERA) || 'null');
+    if (Array.isArray(g)) {
+      comidasFuera = g.filter((x) => x && typeof x.fecha === 'string' && typeof x.franja === 'string' && typeof x.texto === 'string')
+        .map((x) => ({ fecha: x.fecha, franja: x.franja, texto: x.texto.slice(0, 80), ...(Number.isFinite(x.kcal) ? { kcal: Math.round(x.kcal) } : {}) })).slice(-30);
+    }
+  } catch { /* sin almacenamiento o dato corrupto: ninguna */ }
   document.addEventListener('click', (ev) => {
     const b = ev.target.closest && ev.target.closest('.hoy-hecha, .hoy-valorar-saltar, .hoy-hecha-deshacer');
     if (!b) return;
@@ -2381,7 +2399,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (b) { abrirDetalleComida(b.dataset.dia, b.dataset.franja, 'cantidades'); return; }
     const h = ev.target.closest && ev.target.closest('.hoy-accion, .hoy-fila-comida'); // botones de «Hoy»: receta, cantidades o cambiar
     if (!h) return;
-    if (h.dataset.vista === 'cambiar') abrirAlternativas(h.dataset.dia, h.dataset.franja);
+    if (h.dataset.vista === 'fuera') abrirComidaFuera(h.dataset.dia, h.dataset.franja);
+    else if (h.dataset.vista === 'cambiar') abrirAlternativas(h.dataset.dia, h.dataset.franja);
     else abrirDetalleComida(h.dataset.dia, h.dataset.franja, h.dataset.vista);
   });
   (() => {
@@ -2463,6 +2482,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <ul>${descartadas.map((d) => `<li><strong>${escaparHtml(d.receta.nombre)}:</strong> ${escaparHtml(d.motivo)}.</li>`).join('')}</ul></details>` : '';
     document.getElementById('dc-cuerpo').innerHTML = `
       <p>${actual ? `Ahora: <strong>${escaparHtml(actual.receta.nombre)}</strong> (ración ${Math.round(actual.racionAjustada * 100)} %).` : `Ahora: sin receta de ejemplo${hueco ? ` (${escaparHtml(hueco.motivo)})` : ''}.`}</p>
+      ${dia === LETRA_DIA_JS[new Date().getDay()] ? '<button type="button" class="btn-secundario" id="alt-fuera">He comido fuera</button>' : ''}
       <p class="dc-aviso" style="color:var(--gris)">Cambia solo esta comida: no añade otra ni registra que la hayas tomado, y el resto de la semana y tus objetivos no se tocan. Las opciones <strong>no son equivalentes nutricionales</strong>: solo cumplen tus restricciones, el validador de platos, la variedad semanal en comidas y cenas (máx. 2 veces el mismo plato) y la franja. Las kcal y macros de las recetas de ejemplo son aproximados.</p>
       ${avisoVariedad}
       ${alternativas.length ? `<ul class="alt-lista">${tarjetas}</ul>` : `<p class="error-inline">No hay ninguna receta de ejemplo compatible para esta comida${bloqueadasPorVariedad.length ? ' que respete el límite de variedad' : ''}. No se cambia nada ni se rebajan tus restricciones.</p>`}
@@ -2471,9 +2491,66 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <div class="dc-acciones"><button type="button" class="btn-texto" id="alt-cancelar">Cancelar y volver al detalle</button></div>`;
     document.getElementById('dc-cuerpo').querySelectorAll('.alt-previsualizar').forEach((b) => b.addEventListener('click', () => previsualizarAlternativa(dia, franja, alternativas[Number(b.dataset.i)], slot, b)));
     document.getElementById('alt-cancelar').addEventListener('click', () => abrirDetalleComida(dia, franja));
+    const botonFuera = document.getElementById('alt-fuera');
+    if (botonFuera) botonFuera.addEventListener('click', () => abrirComidaFuera(dia, franja));
     const dlg = document.getElementById('detalle-comida');
     if (!dlg.open) { disparadorDetalle = document.activeElement; dlg.showModal(); }
     document.getElementById('dc-titulo').focus();
+  }
+  // «He comido fuera» (Pablo, 08/10): se apunta qué se comió y, si se saben, las kcal; se compara con lo previsto y la comida
+  // queda como hecha. No cambia el plan ni el resto del día. El buscador de platos y cadenas llegará con su tabla de datos.
+  function abrirComidaFuera(dia, franja) {
+    if (!vistaSemana || !planActual) return;
+    const iso = Motor.fechaLocalISO(new Date());
+    const { reparto } = vistaSemana.repartosPorDia.find((r) => r.dia.dia === dia);
+    const f = reparto.franjas.find((x) => x.franja === franja);
+    if (!f) return;
+    const previa = comidasFuera.find((x) => x.fecha === iso && x.franja === franja);
+    document.getElementById('dc-titulo').textContent = `Comida fuera · ${nombreSlot(`${dia}|${franja}`)}`;
+    document.getElementById('dc-cuerpo').innerHTML = `
+      <div class="campo"><label for="fuera-texto">¿Qué has comido?</label><input id="fuera-texto" type="text" maxlength="80" autocomplete="off" placeholder="Ej.: hamburguesa de pollo con patatas"></div>
+      <div class="campo"><label for="fuera-kcal">Calorías aproximadas, si las sabes</label><input id="fuera-kcal" type="number" inputmode="numeric" min="0" max="5000" step="10" placeholder="Ej.: 850"></div>
+      <p class="una-linea">Tu plan preveía ~${f.kcalAprox} kcal para esta comida. Apuntarlo no cambia el resto del día.</p>
+      <p class="error-inline" id="fuera-error" role="alert" hidden></p>
+      <div class="dc-acciones">
+        <button type="button" class="btn-principal" id="fuera-guardar">Guardar</button>
+        ${previa ? '<button type="button" class="btn-texto" id="fuera-quitar">Quitar esta anotación</button>' : ''}
+        <button type="button" class="btn-texto" id="fuera-volver">Volver a las opciones</button>
+      </div>`;
+    const campoTexto = document.getElementById('fuera-texto');
+    const campoKcal = document.getElementById('fuera-kcal');
+    if (previa) { campoTexto.value = previa.texto; if (previa.kcal !== undefined) campoKcal.value = previa.kcal; }
+    const dlg = document.getElementById('detalle-comida');
+    const terminar = () => {
+      try { localStorage.setItem(CLAVE_HECHAS, JSON.stringify(comidasHechas)); localStorage.setItem(CLAVE_FUERA, JSON.stringify(comidasFuera)); } catch { falloAlmacenamiento(); }
+      dlg.close();
+      if (panelActual === 'hoy') pintarHoy();
+    };
+    const avisar = (texto, campo) => { const e = document.getElementById('fuera-error'); e.textContent = texto; e.hidden = false; campo.focus(); };
+    [campoTexto, campoKcal].forEach((c) => c.addEventListener('input', () => { document.getElementById('fuera-error').hidden = true; }));
+    document.getElementById('fuera-guardar').addEventListener('click', () => {
+      const texto = campoTexto.value.trim().slice(0, 80);
+      const kcal = campoKcal.value.trim() === '' ? undefined : Number(campoKcal.value);
+      if (!texto) { avisar('Escribe qué has comido, aunque sea por encima.', campoTexto); return; }
+      if (kcal !== undefined && !(Number.isFinite(kcal) && kcal >= 0 && kcal <= 5000)) { avisar('Las calorías tienen que ser un número entre 0 y 5000; si no las sabes, déjalo vacío.', campoKcal); return; }
+      comidasFuera = comidasFuera.filter((x) => !(x.fecha === iso && x.franja === franja))
+        .concat({ fecha: iso, franja, texto, ...(kcal !== undefined ? { kcal: Math.round(kcal) } : {}) }).slice(-30);
+      const hechas = hechasDe(iso);
+      if (!hechas.includes(franja)) hechas.push(franja);
+      porValorar = null; // la pregunta de cantidad es sobre las raciones del plan: aquí no aplica
+      terminar();
+    });
+    const quitar = document.getElementById('fuera-quitar');
+    if (quitar) {
+      quitar.addEventListener('click', () => {
+        comidasFuera = comidasFuera.filter((x) => !(x.fecha === iso && x.franja === franja));
+        comidasHechas.franjas = hechasDe(iso).filter((x) => x !== franja);
+        terminar();
+      });
+    }
+    document.getElementById('fuera-volver').addEventListener('click', () => abrirAlternativas(dia, franja));
+    if (!dlg.open) { disparadorDetalle = document.activeElement; dlg.showModal(); }
+    campoTexto.focus();
   }
 
   function previsualizarAlternativa(dia, franja, alt, slot, botonOrigen) {
