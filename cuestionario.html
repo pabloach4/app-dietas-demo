@@ -3,7 +3,8 @@
 <head>
 <meta name="robots" content="noindex,nofollow">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F0F0F4">
 <title>Cuestionario · Demo de la app de dietas</title>
 <style>
   :root {
@@ -404,6 +405,193 @@
   .revision-precargado { border: 2px solid #b45309; background: #fffbeb; border-radius: 8px; padding: 0.7rem 0.8rem; margin-bottom: 1rem; }
   .revision-precargado.error { border-color: #b91c1c; background: #fef2f2; }
   .revision-precargado p { margin: 0 0 0.5rem; }
+
+  /* ===== Tema visual (issue #151, parte 1). Referencia de Pablo: investigacion/referencia-visual/GUIA-ESTILO.md.
+     Va al final a propósito: reviste lo anterior sin tocar la estructura ni los ids. Colores medidos en los fotogramas. ===== */
+  :root {
+    color-scheme: light;
+    --fondo: #F0F0F4; --tarjeta: #FFFFFF; --tarjeta-suave: #F4F5F8; --pista: #E8E9EE;
+    --texto: #15171C; --gris: #666A73; --gris-claro: #9AA0AB; --borde: #E4E5EB;
+    --acento: #10ACA0; --acento-oscuro: #0E968B; --acento-fuerte: #09766E; --acento-suave: #E4F4F3; --acento-borde: #B4E2DD;
+    --verde: var(--acento); --verde-suave: var(--acento-suave);
+    --ambar: #C86A10; --aviso: #FDF1E0; --aviso-borde: #F5DDB8;
+    --nota: #EEF3FB; --nota-borde: #D9E4F5; --derivar: #FDECEA; --derivar-borde: #F4C7C1;
+    --radio: 22px; --radio-medio: 16px; --radio-chico: 12px;
+    --sombra: 0 1px 2px rgba(16, 24, 40, .05), 0 0 1px rgba(16, 24, 40, .04);
+    --sombra-flotante: 0 14px 34px -10px rgba(16, 24, 40, .22), 0 2px 6px rgba(16, 24, 40, .06);
+    --curva: cubic-bezier(.2, .8, .2, 1); --rapido: .12s; --normal: .18s; --pantalla: .28s; --hoja: .34s;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px; line-height: 1.45; -webkit-font-smoothing: antialiased; padding-bottom: 7rem;
+  }
+  header.top { padding-top: 1.4rem; }
+  h1 { font-size: 1.75rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+  .subt { font-size: 0.875rem; line-height: 1.45; }
+  .subt a, .btn-texto, #add-sesion, .dia-toggle, .franja-reparto-card .rol, .dc-racion, .dc-ing-gramos .dc-cocido,
+  details.dc-notas summary, details.porque > summary, .ver-comida, .hor-ir, .contexto-badge, #btn-deshacer { color: var(--acento-fuerte); }
+  :focus-visible { outline: 2px solid var(--acento-fuerte); outline-offset: 2px; border-radius: 10px; }
+  input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color: var(--acento); }
+
+  /* Tarjetas: blancas, sin borde, con aire. Lo que va dentro de una tarjeta es gris muy claro, no otra caja con borde. */
+  .tarjeta { border: 0; border-radius: var(--radio); padding: 1.15rem; margin-bottom: 0.85rem; box-shadow: var(--sombra); }
+  .tarjeta h2 { font-size: 1.125rem; line-height: 1.25; font-weight: 650; letter-spacing: -0.01em; margin-bottom: 0.8rem; }
+  .tarjeta h3, .hoy-bloque h3 { font-size: 0.72rem; line-height: 1.3; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--acento-fuerte); }
+  .sesion-card, .franja-card, .dia-card, .hoy-bloque, .stat, .franja-reparto-card, .alt-card, .comp-item, .dia-resumen-lista li,
+  .coste-estimado, .exp-preview-lista { border: 0; border-radius: var(--radio-medio); background: var(--tarjeta-suave); }
+  .franja-reparto-card, .sesion-mover, .dia-toggle, .contexto-toggle, .horario-toggle { border: 0; border-radius: var(--radio-chico); background: var(--tarjeta); }
+  .hoy-bloque.destacado, .franja-reparto-card.destacada, .dia-resumen-lista li.entreno, .cambio-zona { border: 0; background: var(--acento-suave); }
+  .dia-card.con-entreno { border: 0; background: var(--tarjeta-suave); } /* casi todos los días llevan entreno: el tinte se reserva para lo que destaca */
+  body.vista-resultado header.top details.plegable { display: none; } /* habla de los ejemplos del cuestionario; con el plan a la vista no pinta nada */
+  .hoy-bloque { padding: 0.9rem 1rem; }
+  .stat .n, .dia-card .dia-kcal, .dia-resumen-kcal, .dc-ing-gramos, .franja-reparto-card .macros strong { font-variant-numeric: tabular-nums; }
+  .dia-resumen-kcal, .dia-card .dia-kcal { letter-spacing: -0.02em; }
+  .stat .l { font-size: 0.7rem; }
+  .avisos li, .notas li, .rec-restricciones, .dc-chiste { border: 0; border-radius: var(--radio-chico); }
+  #incompleto, #derivar, #elegir-deporte { border: 0; }
+  .contexto-badge, .etq-pedido { border: 0; background: var(--acento-suave); color: var(--acento-fuerte); }
+  details.mas-acciones { border: 0; box-shadow: var(--sombra); }
+  body > section.tarjeta { width: min(528px, calc(100% - 2 * var(--gutter))); margin-left: auto; margin-right: auto; }
+
+  /* Botones: uno principal turquesa por pantalla; el secundario, turquesa muy claro; todo responde al pulsar. */
+  button, summary, .dia-compra-chip {
+    transition: background-color var(--normal) var(--curva), color var(--normal) var(--curva), box-shadow var(--normal) var(--curva), transform var(--rapido) var(--curva);
+  }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  .btn-principal {
+    min-height: 50px; padding: 0.8rem 1rem; border-radius: 14px; font-size: 1rem; font-weight: 650;
+    background: var(--acento); box-shadow: 0 8px 18px -10px rgba(16, 172, 160, .8);
+  }
+  .btn-principal:hover { background: var(--acento-oscuro); }
+  .btn-principal:disabled { opacity: 0.5; box-shadow: none; }
+  .btn-secundario { min-height: 48px; padding: 0.75rem 1rem; border: 0; border-radius: 14px; background: var(--acento-suave); color: var(--acento-fuerte); font-weight: 600; }
+  .btn-secundario:hover { background: #D8EEEC; }
+  .btn-secundario[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--acento); }
+  #add-sesion { border: 0; border-radius: 14px; min-height: 48px; background: var(--acento-suave); }
+  #btn-deshacer { border: 0; border-radius: 14px; }
+  .ejemplos button { border: 0; box-shadow: var(--sombra); font-weight: 600; }
+  .ejemplos button:hover { box-shadow: 0 0 0 1.5px var(--acento); }
+  /* «¿Qué tal de cantidad?»: tres píldoras que parten por palabras, nunca por letras. */
+  .acciones-rapidas { gap: 0.4rem; }
+  .acciones-rapidas button { min-width: 0; }
+  .vol-btn {
+    padding: 0.55rem 0.3rem; font-size: 0.8rem; line-height: 1.2; font-weight: 600; background: var(--tarjeta); color: var(--texto);
+    box-shadow: var(--sombra); overflow-wrap: normal; word-break: keep-all; hyphens: none;
+  }
+  .vol-btn[aria-pressed="true"] { background: var(--acento-suave); color: var(--acento-fuerte); }
+
+  /* Campos: sin borde, gris muy claro, anillo turquesa al enfocar. 16 px para que el iPhone no haga zoom. */
+  .campo label { font-size: 0.84rem; font-weight: 600; margin-bottom: 0.35rem; }
+  .campo input[type="text"], .campo input[type="number"], .campo input[type="time"], .campo input[type="date"], .campo select,
+  .manual-form input, .buscador input, .sesion-mover select {
+    border: 1px solid transparent; border-radius: 14px; background-color: var(--tarjeta-suave); font-size: 1rem; min-height: 48px;
+    transition: box-shadow var(--normal) var(--curva), background-color var(--normal) var(--curva);
+  }
+  .campo input:focus, .campo select:focus, .manual-form input:focus, .buscador input:focus, .sesion-mover select:focus {
+    outline: none; box-shadow: 0 0 0 2px var(--acento); background-color: var(--tarjeta);
+  }
+  .sesion-card .campo input, .sesion-card .campo select, .franja-card .campo input, .franja-card .campo select,
+  .dia-card .campo input, .dia-card .campo select, .hoy-bloque .campo input, .sesion-mover select { background-color: var(--tarjeta); }
+  .campo select, .sesion-mover select {
+    padding-right: 2.3rem; background-repeat: no-repeat; background-position: right 0.8rem center; background-size: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666A73' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  }
+  /* El resto de campos (filas de sesión, horarios, calendario…) no llevan .campo: mismo aspecto para todos. */
+  :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea) {
+    border: 1px solid transparent; border-radius: 14px; background-color: var(--tarjeta-suave); color: var(--texto);
+    font: inherit; font-size: 1rem; padding: 0.6rem 0.75rem; min-width: 0;
+    transition: box-shadow var(--normal) var(--curva), background-color var(--normal) var(--curva);
+  }
+  :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea):focus {
+    outline: none; box-shadow: 0 0 0 2px var(--acento); background-color: var(--tarjeta);
+  }
+  .sesion-card input, .sesion-card select, .franja-card input:not([type="checkbox"]), .franja-card select, .dia-card input:not([type="checkbox"]),
+  .dia-card select, .hoy-bloque input:not([type="checkbox"]), .comp-item input, .comp-item select { background-color: var(--tarjeta); }
+  :where(select) {
+    -webkit-appearance: none; appearance: none; padding-right: 2.1rem; background-repeat: no-repeat; background-position: right 0.7rem center; background-size: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666A73' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  }
+  .dia-compra-chip { border: 0; background: var(--tarjeta-suave); }
+  .dia-compra-chip:has(input:checked) { background: var(--acento-suave); box-shadow: inset 0 0 0 1.5px var(--acento); color: var(--acento-fuerte); }
+  .progreso { gap: 5px; }
+  .progreso .punto { height: 4px; border-radius: 2px; background: var(--pista); transition: background-color .4s var(--curva); }
+
+  /* Control segmentado: días de la semana y subvistas. */
+  .subvista, .dias-chips { gap: 0; padding: 4px; border-radius: 14px; background: var(--pista); }
+  .subvista button, .dias-chips button { border: 0; border-radius: 10px; background: transparent; color: var(--gris); font-size: 0.84rem; font-weight: 600; }
+  .subvista button[aria-pressed="true"], .dias-chips button[aria-pressed="true"] { border: 0; background: var(--tarjeta); color: var(--texto); box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+  .dias-chips button.hoy::after { color: var(--acento); }
+
+  /* Barra de navegación: flotante abajo, en píldora, con icono y nombre. Mismos botones, mismos ids y mismo teclado. */
+  .tabs-app {
+    position: fixed; top: auto; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    width: min(430px, calc(100% - 24px)); margin: 0; padding: 6px; gap: 2px; z-index: 30;
+    background: rgba(255, 255, 255, .84); border: 1px solid rgba(255, 255, 255, .7); border-radius: 30px;
+    -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6); box-shadow: var(--sombra-flotante);
+  }
+  .tabs-app button {
+    flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    padding: 6px 2px; min-height: 52px; border: 0; border-radius: 22px; background: transparent;
+    color: var(--gris); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.01em;
+  }
+  .tabs-app button::before {
+    content: ""; width: 22px; height: 22px; background: currentColor;
+    -webkit-mask: var(--icono) center / contain no-repeat; mask: var(--icono) center / contain no-repeat;
+  }
+  .tabs-app button[aria-selected="true"] { border: 0; background: var(--acento-suave); color: var(--acento-fuerte); }
+  #tab-hoy { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2.5v2M12 19.5v2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M2.5 12h2M19.5 12h2M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4'/%3E%3C/svg%3E"); }
+  #tab-semana { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='3.5'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E"); }
+  #tab-recetas { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3v18M4.5 3v5a2.5 2.5 0 0 0 5 0V3M17.5 21v-7.5M17.5 13.500c-2-.6-3-2.300-3-5 0-2.400 1-4.300 3-5.500z'/%3E%3C/svg%3E"); }
+  #tab-compra { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 8.500h13l-1 11.500h-11z'/%3E%3Cpath d='M9 8.500V7a3 3 0 0 1 6 0v1.500'/%3E%3C/svg%3E"); }
+  #tab-perfil { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4.500 20.500c1.200-3.700 4-5.500 7.500-5.500s6.300 1.800 7.500 5.500'/%3E%3C/svg%3E"); }
+  /* La barra de «Atrás / Siguiente» del cuestionario flota igual. */
+  nav.barra {
+    left: 50%; right: auto; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    width: min(536px, calc(100% - 24px)); max-width: none; margin: 0; padding: 8px; gap: 8px; z-index: 30;
+    background: rgba(255, 255, 255, .84); border: 1px solid rgba(255, 255, 255, .7); border-radius: 24px;
+    -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6); box-shadow: var(--sombra-flotante);
+  }
+  nav.barra .btn-secundario { flex: 0 0 6rem; background: transparent; color: var(--texto); }
+
+  /* Recetas */
+  .rec-card { border: 0; border-radius: var(--radio-medio); box-shadow: var(--sombra); }
+  .rec-img { background: var(--acento-suave); color: var(--acento-fuerte); }
+  .rec-acciones button { border: 0; border-radius: var(--radio-chico); background: var(--tarjeta-suave); }
+  .rec-acciones .rec-fav[aria-pressed="true"] { border: 0; background: var(--aviso); color: var(--ambar); }
+
+  /* Detalle de la comida: hoja que sube desde abajo. */
+  dialog#detalle-comida {
+    width: min(560px, 100%); max-width: 100%; max-height: 92vh; max-height: 92dvh; margin: auto auto 0; border: 0;
+    border-radius: 26px 26px 0 0; box-shadow: var(--sombra-flotante); padding-bottom: env(safe-area-inset-bottom);
+  }
+  dialog#detalle-comida[open] { animation: hoja-sube var(--hoja) var(--curva); }
+  dialog#detalle-comida::backdrop { background: rgba(15, 18, 25, .42); animation: aparece .2s ease-out; }
+  .dc-cab { align-items: center; padding: 1.1rem 1rem 0.7rem; border-bottom: 0; z-index: 2; }
+  .dc-cab::before { content: ""; position: absolute; top: 7px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--pista); }
+  .dc-cab h2 { font-size: 1.05rem; font-weight: 650; letter-spacing: -0.01em; }
+  #dc-cerrar { flex: none; padding: 0 0.9rem; border-radius: 999px; background: var(--tarjeta-suave); font-size: 0.85rem; }
+  #dc-titulo:focus { outline: none; } /* recibe el foco para el lector de pantalla; no necesita anillo */
+  /* «Ver detalle» deja de ser un enlace subrayado: píldora blanca con flecha. */
+  .ver-comida, .hor-ir {
+    margin-top: 0.5rem; padding: 0 0.9rem; border-radius: 999px; background: var(--tarjeta); box-shadow: var(--sombra);
+    font-size: 0.82rem; text-decoration: none;
+  }
+  .ver-comida::after, .hor-ir::after { content: "›"; margin-left: 0.4rem; font-size: 1.1rem; line-height: 1; }
+  #dc-cuerpo h3 { margin: 1.3rem 0 0.5rem; padding-bottom: 0; border-bottom: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--acento-fuerte); }
+  #dc-cuerpo h3.dc-plato { margin-top: 0.3rem; font-size: 1.15rem; line-height: 1.25; font-weight: 650; letter-spacing: -0.01em; text-transform: none; color: var(--texto); }
+  .dc-ing { padding: 0.6rem 0.8rem; border-radius: var(--radio-chico); background: var(--tarjeta-suave); }
+
+  /* Movimiento: corto y suave. Con «reducir movimiento», la regla de arriba lo apaga todo. */
+  @keyframes entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes hoja-sube { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
+  .panel-app:not([hidden]) > *, .paso.activo { animation: entra var(--pantalla) var(--curva) both; }
+  .panel-app:not([hidden]) > :nth-child(2) { animation-delay: 30ms; }
+  .panel-app:not([hidden]) > :nth-child(3) { animation-delay: 60ms; }
+  .panel-app:not([hidden]) > :nth-child(4) { animation-delay: 90ms; }
+  .panel-app:not([hidden]) > :nth-child(5) { animation-delay: 120ms; }
+  .panel-app:not([hidden]) > :nth-child(n+6) { animation-delay: 150ms; }
+  @media print { .tabs-app, nav.barra { display: none !important; } .panel-app > *, .paso { animation: none !important; } }
 </style>
 </head>
 <body>
@@ -833,8 +1021,8 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="fuentes.js?v=d2c5654"></script>
-<script src="motor.bundle.js?v=d2c5654"></script>
-<script src="cuestionario.js?v=d2c5654"></script>
+<script src="fuentes.js?v=f252d0a"></script>
+<script src="motor.bundle.js?v=f252d0a"></script>
+<script src="cuestionario.js?v=f252d0a"></script>
 </body>
 </html>
