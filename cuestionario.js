@@ -1844,6 +1844,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   const diasHorarioAbiertos = new Set();
   function franjasDelDia(dia) { return excepcionesHorario.get(dia) ?? franjasActuales ?? []; }
   let diasAbiertos = new Set(); // qué tarjetas de día quedan desplegadas al volver a pintar
+  const diasMasAbiertos = new Set(); // y en cuáles está abierto «Más opciones de este día» (porqué, contexto y horario)
   let diasContextoAbiertos = new Set(); // issue #37: qué formularios de "contexto del día" quedan desplegados
   let contextoPorDia = new Map(DIAS.map((d) => [d, Motor.contextoDiaPorDefecto()])); // issue #37: turno, táper, etc. por día — solo anotación, no cambia kcal ni recetas
   let historialMovimientos = []; // issue #38: días afectados de cada movimiento, en el mismo orden que semana.historial (para el mensaje de "Deshacer")
@@ -2120,10 +2121,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
     document.getElementById('lista-compra').innerHTML = `
       <h2>Lista de la compra</h2>
-      <p style="font-size:0.85rem;color:#7a1f18;font-weight:600;margin-top:0">
-        ⚠️ Con recetas de EJEMPLO (docs/recetas-formato.md), no reales — la forma de la lista, no los platos.
-      </p>
-      <p style="font-size:0.82rem;color:var(--gris);margin:0 0 0.6rem">Marca lo que ya has comprado o tienes en casa (el pan olvidado en el congelador también cuenta). Si después cambia la cantidad que hace falta (otra receta, otros días), te avisamos en lugar de darlo por cubierto. «Dieta» es lo que pide el plan; «comprar» está redondeado hacia arriba.</p>
+      <p class="una-linea">Hecha con las recetas de EJEMPLO de tu semana, no definitivas.</p>
+      <details class="saber-mas"><summary>Saber más</summary><p>Marca lo que ya has comprado o tienes en casa (el pan olvidado en el congelador también cuenta). Si después cambia la cantidad que hace falta (otra receta, otros días), te avisamos en lugar de darlo por cubierto. «Dieta» es lo que pide el plan; «comprar» está redondeado hacia arriba.</p></details>
       <p style="font-size:0.85rem;color:var(--gris);margin:0 0 0.4rem">¿Qué días seguirás el plan esta semana?</p>
       ${diasHtml}
       ${porqueCompra}
@@ -2371,6 +2370,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const b = ev.target.closest && ev.target.closest('.hor-ir');
     if (!b) return;
     diasHorarioAbiertos.add(b.dataset.dia);
+    diasMasAbiertos.add(b.dataset.dia); // el horario vive dentro de «Más opciones de este día»
     mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
     const panel = document.querySelector(`#r-dias .horario-dia[data-dia="${b.dataset.dia}"]`);
     if (panel) { panel.scrollIntoView({ block: 'center' }); const i = panel.querySelector('input'); if (i) i.focus(); }
@@ -2757,16 +2757,22 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
           </div>
           <div class="dia-macros">P ${d.proteinaG} g · G ${d.grasaG} g · H ${d.hidratoG} g</div>
           ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
-          ${porqueDiaHtml(`card-dia-${d.dia}`, d.dia)}
           ${badgesHtml}
           ${moverHtml}
           <button type="button" class="dia-toggle" aria-expanded="${abierta}" aria-controls="panel-franjas-${d.dia}">${abierta ? 'Ocultar reparto por comidas ▴' : 'Ver reparto por comidas ▾'}</button>
           <div class="dia-franjas" id="panel-franjas-${d.dia}" ${abierta ? '' : 'hidden'}>${franjasHtml}</div>
-          ${contextoFormHtml}
-          ${horarioDiaHtml(d.dia)}
+          <details class="saber-mas dia-mas" data-dia="${d.dia}"${diasMasAbiertos.has(d.dia) ? ' open' : ''}>
+            <summary>Más opciones de este día</summary>
+            ${porqueDiaHtml(`card-dia-${d.dia}`, d.dia)}
+            ${contextoFormHtml}
+            ${horarioDiaHtml(d.dia)}
+          </details>
         </div>
       `;
     }).join('');
+    document.querySelectorAll('#r-dias details.dia-mas').forEach((det) => det.addEventListener('toggle', () => {
+      if (det.open) diasMasAbiertos.add(det.dataset.dia); else diasMasAbiertos.delete(det.dataset.dia);
+    }));
 
     document.querySelectorAll('#r-dias .dia-toggle').forEach((btn, idx) => {
       const dia = plan.dias[idx].dia;
@@ -2992,6 +2998,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       if (!mismas) excepcionesHorario.delete(dia); // las comidas activas cambiaron: esa excepción ya no encaja
     });
     diasAbiertos = new Set(); // cálculo nuevo: todas las tarjetas empiezan cerradas
+    diasMasAbiertos.clear();
     guardarPerfilLocal(); // issue #20: para precargarlo la próxima vez que se abra la demo
     mostrarResultado(Motor.crearSemana(resultado.perfil), plan, respuestas, leerFranjas());
   });

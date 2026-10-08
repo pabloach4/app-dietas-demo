@@ -880,6 +880,9 @@
   .hoy-bloque.hoy-previa { background: var(--aviso); }
   .hoy-previa h3 { margin-bottom: 0.3rem; font-size: 0.82rem; color: #8A4A06; }
   .hoy-previa .titulo { font-size: 0.98rem; font-weight: 600; line-height: 1.35; }
+  /* Semana: lo secundario de cada día (porqué, contexto, horario) espera en «Más opciones de este día». */
+  details.dia-mas { margin: 0.3rem 0 0; }
+  @media print { details.dia-mas, details.saber-mas { display: none !important; } }
 </style>
 </head>
 <body>
@@ -1114,7 +1117,8 @@
     </div>
     <div class="tarjeta">
       <h2>Calendario semanal</h2>
-      <p class="subt" style="margin-bottom:0.8rem">Elige el lunes en que empieza tu semana para ver las fechas reales. Sin fecha elegida solo se muestran los días L–D del plan: no se inventa ninguna fecha.</p>
+      <p class="una-linea">Elige el lunes en que empieza tu semana.</p>
+      <details class="saber-mas"><summary>Saber más</summary><p>Elige el lunes en que empieza tu semana para ver las fechas reales. Sin fecha elegida solo se muestran los días L–D del plan: no se inventa ninguna fecha.</p></details>
       <div class="campo"><label for="cal-inicio">Lunes de inicio</label><input id="cal-inicio" type="date" aria-describedby="cal-inicio-error"></div>
       <button type="button" class="btn-texto" id="cal-lunes-actual" style="padding-top:0">Usar el lunes de esta semana</button>
       <p class="error-inline" id="cal-inicio-error" role="alert" hidden></p>
@@ -1123,7 +1127,8 @@
     </div>
     <div class="tarjeta">
       <h2>Competiciones</h2>
-      <p class="subt" style="margin-bottom:0.8rem">Con la fecha y la duración de cada prueba, <strong>la semana de la competición cambia</strong>: pausa del déficit, carga de hidratos, poca fibra, el gasto de la propia prueba y la recuperación después (pauta orientativa). Se guardan solo en este navegador (sin cuenta ni nube) y no se envían a ningún calendario.</p>
+      <p class="una-linea">Añade tu competición y la semana se adapta sola.</p>
+      <details class="saber-mas"><summary>Saber más</summary><p>Con la fecha y la duración de cada prueba, <strong>la semana de la competición cambia</strong>: pausa del déficit, carga de hidratos, poca fibra, el gasto de la propia prueba y la recuperación después (pauta orientativa). Se guardan solo en este navegador (sin cuenta ni nube) y no se envían a ningún calendario.</p></details>
       <form id="cal-form-comp" novalidate>
         <div class="campo"><label for="cal-comp-nombre">Nombre</label><input id="cal-comp-nombre" type="text" maxlength="80" autocomplete="off"></div>
         <div class="campo"><label for="cal-comp-tipo">Tipo de competición</label>
@@ -1149,7 +1154,8 @@
     </div>
     <div class="tarjeta" id="cal-exportar">
       <h2>Añadir a mi calendario (.ics)</h2>
-      <p class="subt" style="margin-bottom:0.8rem"><strong>Exportación manual, no sincronización.</strong> Descargas un archivo .ics y lo importas tú en Google Calendar o en el Calendario del iPhone. La app no se conecta a ninguna cuenta ni escribe en tu calendario. Si importas el mismo archivo dos veces, pueden duplicarse los eventos.</p>
+      <p class="una-linea">Descarga tu semana y añádela tú a tu calendario.</p>
+      <details class="saber-mas"><summary>Saber más</summary><p><strong>Exportación manual, no sincronización.</strong> Descargas un archivo .ics y lo importas tú en Google Calendar o en el Calendario del iPhone. La app no se conecta a ninguna cuenta ni escribe en tu calendario. Si importas el mismo archivo dos veces, pueden duplicarse los eventos.</p></details>
       <p class="error-inline" id="cal-exp-aviso" hidden></p>
       <fieldset class="exp-campos">
         <legend>Qué incluir</legend>
@@ -1320,9 +1326,9 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=e1c205a"></script>
-<script src="fuentes.js?v=e1c205a"></script>
-<script src="motor.bundle.js?v=e1c205a"></script>
-<script src="cuestionario.js?v=e1c205a"></script>
+<script src="novedades.js?v=99cad68"></script>
+<script src="fuentes.js?v=99cad68"></script>
+<script src="motor.bundle.js?v=99cad68"></script>
+<script src="cuestionario.js?v=99cad68"></script>
 </body>
 </html>
