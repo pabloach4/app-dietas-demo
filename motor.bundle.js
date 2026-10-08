@@ -1641,7 +1641,9 @@ var Motor = (() => {
     }
     const idsDe = (r) => r.platos ?? [r.id];
     const usosDe = (r) => Math.max(...idsDe(r).map((id) => usos.get(id) ?? 0));
-    for (const slot of slots) {
+    const cola = [...slots];
+    for (let iSlot = 0; iSlot < cola.length; iSlot++) {
+      const slot = cola[iSlot];
       const limitada = esFranjaConLimiteVariedad(slot.franja);
       const ap = opciones.alergiasPreferencias;
       const franjaVale = (r) => r.franjas.includes(slot.franja) || r.tipoPlato === "postre" && (r.franjas.includes("merienda") || r.franjas.includes("media_manana"));
@@ -1701,6 +1703,13 @@ var Motor = (() => {
             if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
           }
         }
+      }
+      if (!res.elegido && slot.maxFibraG !== void 0) {
+        const { maxFibraG, ...resto } = slot;
+        avisos.push(`${slot.dia} ${slot.franja}: no hay receta que lleve tan poca fibra (m\xE1x. ${maxFibraG} g por raci\xF3n servida); se propone la mejor sin fibra alta. A\xF1adir recetas bajas en fibra al cat\xE1logo lo resuelve.`);
+        cola[iSlot] = resto;
+        iSlot--;
+        continue;
       }
       if (!res.elegido) {
         huecos.push({ dia: slot.dia, franja: slot.franja, motivo: res.motivo ?? "ninguna receta disponible" });

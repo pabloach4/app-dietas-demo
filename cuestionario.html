@@ -778,11 +778,20 @@
   #r-resumen li { margin: 0; padding: 0.65rem 0; border-top: 1px solid var(--borde); color: var(--texto); }
   #r-resumen li:first-child { border-top: 0; }
   #r-resumen li strong { display: block; font-size: 0.8rem; font-weight: 400; color: var(--gris); }
+
+  /* Novedades: la demo publicada dice cuándo se actualizó y qué ha cambiado (lo rellena scripts/publicar-demo.sh). */
+  .novedades-aviso { display: flex; align-items: center; min-height: 44px; margin: -0.4rem 0 0.2rem; padding: 0; font-size: 0.8rem; font-weight: 600; text-align: left; }
+  #novedades-lista li { margin: 0; padding: 0.55rem 0; border-top: 1px solid var(--borde); color: var(--texto); }
+  #novedades-lista li:first-child { border-top: 0; }
+  #novedades-lista li strong { font-weight: 400; color: var(--gris); font-variant-numeric: tabular-nums; }
+  #novedades:focus { outline: none; }
+  @media print { #novedades { display: none !important; } }
 </style>
 </head>
 <body>
 <header class="top">
   <h1 id="titulo-pantalla">Tu plan, paso a paso</h1>
+  <button type="button" class="btn-texto novedades-aviso" id="novedades-aviso" hidden></button>
   <p class="subt">Cuatro pasos y tienes tu semana de comidas. Tu último perfil se recuerda solo en este navegador.</p>
   <p class="subt" id="aviso-guardado" hidden>Se ha precargado tu último perfil calculado. <button type="button" id="empezar-de-cero" class="btn-texto" style="padding:0">Empezar de cero</button><br><strong>No se guardan</strong> tu salud, alergias ni preferencias (tu lista negra sí): antes de calcular tendrás que revisarlos en el paso 4.</p>
   <p class="error-inline" id="aviso-almacenamiento" role="status" hidden>⚠️ Este navegador no deja guardar datos (modo privado, almacenamiento bloqueado o lleno). La app sigue funcionando, pero tu perfil, favoritas, cambios de receta y lista de la compra a mano <strong>no se conservarán al recargar</strong>.</p>
@@ -1203,13 +1212,19 @@
   <button type="button" class="btn-principal" id="btn-siguiente">Siguiente</button>
 </nav>
 
+  <section class="tarjeta" id="novedades" style="margin-top:1rem" tabindex="-1" hidden>
+    <h2>Novedades</h2>
+    <p class="subt" id="novedades-fecha" style="margin:0 0 0.4rem"></p>
+    <ul class="resumen-lista" id="novedades-lista"></ul>
+  </section>
   <section class="tarjeta" id="fuentes" style="margin-top:1rem">
     <h2>Fuentes</h2>
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="fuentes.js?v=566c2b0"></script>
-<script src="motor.bundle.js?v=566c2b0"></script>
-<script src="cuestionario.js?v=566c2b0"></script>
+<script src="novedades.js?v=2eef366"></script>
+<script src="fuentes.js?v=2eef366"></script>
+<script src="motor.bundle.js?v=2eef366"></script>
+<script src="cuestionario.js?v=2eef366"></script>
 </body>
 </html>

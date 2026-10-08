@@ -2918,3 +2918,24 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   caja.innerHTML = temas.map((t) => `<details class="plegable"><summary>${esc(t)}</summary><ul class="resumen-lista">${window.FUENTES.filter((f) => f.tema === t).map((f) =>
     `<li><strong>${f.enlace ? `<a href="${esc(f.enlace)}" target="_blank" rel="noopener noreferrer">${esc(f.referencia)}</a>` : esc(f.referencia)}</strong><br><span style="color:var(--gris)">${esc(f.respalda)}</span><br><small>${esc(ESTADO[f.estado] || f.estado)}</small></li>`).join('')}</ul></details>`).join('');
 })();
+
+// Novedades: la demo publicada trae en novedades.js cuándo se publicó y los últimos cambios, para ver los avances al abrirla.
+(() => {
+  const n = window.NOVEDADES;
+  const caja = document.getElementById('novedades');
+  const aviso = document.getElementById('novedades-aviso');
+  if (!n || !caja || !aviso || !Array.isArray(n.cambios)) return;
+  document.getElementById('novedades-fecha').textContent = `Actualizada el ${n.fecha} · versión ${n.version}`;
+  const lista = document.getElementById('novedades-lista');
+  n.cambios.forEach((c) => {
+    const li = document.createElement('li');
+    const dia = document.createElement('strong');
+    dia.textContent = `${c.dia} · `;
+    li.append(dia, c.texto);
+    lista.appendChild(li);
+  });
+  aviso.textContent = `Actualizada el ${n.fecha} · Ver novedades`;
+  aviso.addEventListener('click', () => { caja.scrollIntoView({ behavior: 'smooth', block: 'start' }); caja.focus({ preventScroll: true }); });
+  caja.hidden = false;
+  aviso.hidden = false;
+})();
