@@ -1481,17 +1481,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const { d, entrenosHtml, comidasHtml } = construirDetalleDia(diaCal);
       const fecha = calInicio ? Motor.fechaDelDia(calInicio, diaCal) : '';
       const delDia = calInicio ? Motor.competicionesDelDia(competiciones, calInicio, diaCal) : [];
-      const compHtml = !calInicio
-        ? '<li style="color:var(--gris)">Elige el lunes de inicio para ver las competiciones de este día.</li>'
-        : delDia.length
-          ? delDia.map((c) => `<li class="entreno">🏁 <strong>${escaparHtml(c.nombre)}</strong> · ${escaparHtml(resumenCompeticion(c))}</li>`).join('')
-          : '<li>Ninguna competición anotada este día.</li>';
+      // La competición solo se nombra el día que la hay (Pablo, 08/10: «todos los días no te apuntas a una competición»).
+      const compHtml = delDia.map((c) => `<li class="entreno">🏁 <strong>${escaparHtml(c.nombre)}</strong> · ${escaparHtml(resumenCompeticion(c))}</li>`).join('');
       detalle.innerHTML = `
         <p class="dia-resumen-titulo">${NOMBRE_DIA_LARGO[diaCal]}${fecha ? ` · ${fechaLegible(fecha)}` : ''} · ${d.tipo}</p>
         <p class="dia-resumen-kcal">${d.kcal} <small style="font-size:0.5em;font-weight:400">kcal</small></p>
+        ${compHtml ? `<h3 style="margin-top:1rem">Competición</h3><ul class="dia-resumen-lista">${compHtml}</ul>` : ''}
         <h3 style="margin-top:1rem">Entrenos</h3><ul class="dia-resumen-lista">${entrenosHtml}</ul>
         <h3>Comidas</h3><ul class="dia-resumen-lista">${comidasHtml}</ul>
-        <h3>Competiciones</h3><ul class="dia-resumen-lista">${compHtml}</ul>
         ${cardCompeticionHtml(diaCal)}
       `;
     }

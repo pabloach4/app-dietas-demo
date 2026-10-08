@@ -833,15 +833,15 @@
   }
   details.hoy-mas[open] > summary::after { transform: rotate(-135deg); }
   /* El resumen del día entero (todas las comidas y cifras) también espera plegado debajo. */
-  details#resumen-dia > summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; cursor: pointer; list-style: none; }
-  details#resumen-dia > summary::-webkit-details-marker { display: none; }
-  details#resumen-dia > summary h2 { margin: 0; }
-  details#resumen-dia > summary::after {
+  details:is(#resumen-dia, #tarjeta-competiciones) > summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; cursor: pointer; list-style: none; }
+  details:is(#resumen-dia, #tarjeta-competiciones) > summary::-webkit-details-marker { display: none; }
+  details:is(#resumen-dia, #tarjeta-competiciones) > summary h2 { margin: 0; }
+  details:is(#resumen-dia, #tarjeta-competiciones) > summary::after {
     content: ""; flex: none; width: 9px; height: 9px; margin-right: 0.3rem; border-right: 2px solid var(--gris); border-bottom: 2px solid var(--gris);
     transform: rotate(45deg); transition: transform var(--normal) var(--curva);
   }
-  details#resumen-dia[open] > summary { margin-bottom: 0.8rem; }
-  details#resumen-dia[open] > summary::after { transform: rotate(-135deg); }
+  details:is(#resumen-dia, #tarjeta-competiciones)[open] > summary { margin-bottom: 0.8rem; }
+  details:is(#resumen-dia, #tarjeta-competiciones)[open] > summary::after { transform: rotate(-135deg); }
   details.hoy-mas > :not(summary) { margin-left: 1rem; margin-right: 1rem; }
   details.hoy-mas > :last-child { margin-bottom: 0; padding-bottom: 1rem; }
   details.hoy-mas .hoy-bloque { margin-top: 0; padding: 0 0 1rem; background: transparent; }
@@ -886,6 +886,8 @@
   /* «He comido fuera»: opción dentro de «Cambiar» y fila en «Hoy» con lo apuntado. */
   #alt-fuera { margin: 0 0 0.8rem; }
   .hoy-nota-fuera { margin: 0.5rem 0.5rem 0.6rem; font-size: 0.9rem; line-height: 1.4; color: var(--texto); }
+  /* Las competiciones se apuntan en Perfil, plegadas: no es algo de todos los días (Pablo, 08/10). */
+  @media print { #tarjeta-competiciones { display: none !important; } }
 </style>
 </head>
 <body>
@@ -1128,33 +1130,6 @@
       <div class="dias-chips" id="cal-chips" role="group" aria-label="Elegir día del calendario"></div>
       <div id="cal-detalle" aria-live="polite"></div>
     </div>
-    <div class="tarjeta">
-      <h2>Competiciones</h2>
-      <p class="una-linea">Añade tu competición y la semana se adapta sola.</p>
-      <details class="saber-mas"><summary>Saber más</summary><p>Con la fecha y la duración de cada prueba, <strong>la semana de la competición cambia</strong>: pausa del déficit, carga de hidratos, poca fibra, el gasto de la propia prueba y la recuperación después (pauta orientativa). Se guardan solo en este navegador (sin cuenta ni nube) y no se envían a ningún calendario.</p></details>
-      <form id="cal-form-comp" novalidate>
-        <div class="campo"><label for="cal-comp-nombre">Nombre</label><input id="cal-comp-nombre" type="text" maxlength="80" autocomplete="off"></div>
-        <div class="campo"><label for="cal-comp-tipo">Tipo de competición</label>
-          <select id="cal-comp-tipo"></select></div>
-        <p class="error-inline" id="cal-comp-peso" hidden></p>
-        <div class="fila2">
-          <div class="campo"><label for="cal-comp-fecha">Fecha</label><input id="cal-comp-fecha" type="date"></div>
-          <div class="campo"><label for="cal-comp-fin">Último día (si dura varios)</label><input id="cal-comp-fin" type="date"></div>
-        </div>
-        <div id="cal-comp-pruebas-caja">
-          <p class="subt" style="margin:0 0 0.4rem"><strong>Pruebas</strong>: hora de inicio y minutos que durarán. Sin hora = todo el día. En CrossFit añade una por WOD.</p>
-          <div id="cal-comp-pruebas"></div>
-          <button type="button" class="btn-secundario" id="cal-comp-add-prueba">+ Añadir prueba</button>
-        </div>
-        <div class="campo" id="cal-comp-geles-caja" style="margin-top:0.8rem"><label for="cal-comp-geles">¿Tomas geles?</label>
-          <select id="cal-comp-geles"><option value="no_se">No lo sé</option><option value="si">Sí</option><option value="no">No</option></select></div>
-        <p class="error-inline" id="cal-comp-error" role="alert" hidden></p>
-        <button type="submit" class="btn-principal" id="cal-comp-guardar">Añadir competición</button>
-        <button type="button" class="btn-texto" id="cal-comp-cancelar" hidden>Cancelar edición</button>
-      </form>
-      <ul class="resumen-lista" id="cal-lista-comp" style="margin-top:1rem"></ul>
-      <button type="button" class="btn-texto" id="cal-borrar-todo" style="color:#b3271e">Borrar todas las anotaciones y la fecha elegida</button>
-    </div>
     <div class="tarjeta" id="cal-exportar">
       <h2>Añadir a mi calendario (.ics)</h2>
       <p class="una-linea">Descarga tu semana y añádela tú a tu calendario.</p>
@@ -1247,6 +1222,33 @@
       <p class="subt" id="ln-vacio">Todavía no has añadido ninguno. ¡Aquí no se juzga a nadie!</p>
       <div id="perfil-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
     </div>
+    <details class="tarjeta" id="tarjeta-competiciones">
+      <summary><h2>Mis competiciones</h2></summary>
+      <p class="una-linea">Añade tu competición y la semana se adapta sola.</p>
+      <details class="saber-mas"><summary>Saber más</summary><p>Con la fecha y la duración de cada prueba, <strong>la semana de la competición cambia</strong>: pausa del déficit, carga de hidratos, poca fibra, el gasto de la propia prueba y la recuperación después (pauta orientativa). Se guardan solo en este navegador (sin cuenta ni nube) y no se envían a ningún calendario.</p></details>
+      <form id="cal-form-comp" novalidate>
+        <div class="campo"><label for="cal-comp-nombre">Nombre</label><input id="cal-comp-nombre" type="text" maxlength="80" autocomplete="off"></div>
+        <div class="campo"><label for="cal-comp-tipo">Tipo de competición</label>
+          <select id="cal-comp-tipo"></select></div>
+        <p class="error-inline" id="cal-comp-peso" hidden></p>
+        <div class="fila2">
+          <div class="campo"><label for="cal-comp-fecha">Fecha</label><input id="cal-comp-fecha" type="date"></div>
+          <div class="campo"><label for="cal-comp-fin">Último día (si dura varios)</label><input id="cal-comp-fin" type="date"></div>
+        </div>
+        <div id="cal-comp-pruebas-caja">
+          <p class="subt" style="margin:0 0 0.4rem"><strong>Pruebas</strong>: hora de inicio y minutos que durarán. Sin hora = todo el día. En CrossFit añade una por WOD.</p>
+          <div id="cal-comp-pruebas"></div>
+          <button type="button" class="btn-secundario" id="cal-comp-add-prueba">+ Añadir prueba</button>
+        </div>
+        <div class="campo" id="cal-comp-geles-caja" style="margin-top:0.8rem"><label for="cal-comp-geles">¿Tomas geles?</label>
+          <select id="cal-comp-geles"><option value="no_se">No lo sé</option><option value="si">Sí</option><option value="no">No</option></select></div>
+        <p class="error-inline" id="cal-comp-error" role="alert" hidden></p>
+        <button type="submit" class="btn-principal" id="cal-comp-guardar">Añadir competición</button>
+        <button type="button" class="btn-texto" id="cal-comp-cancelar" hidden>Cancelar edición</button>
+      </form>
+      <ul class="resumen-lista" id="cal-lista-comp" style="margin-top:1rem"></ul>
+      <button type="button" class="btn-texto" id="cal-borrar-todo" style="color:#b3271e">Borrar todas las anotaciones y la fecha elegida</button>
+    </details>
     <div class="tarjeta">
       <h2>Para más adelante</h2>
       <p class="una-linea">Con alergias o celiaquía, las recetas de ejemplo no garantizan seguridad alimentaria.</p>
@@ -1329,9 +1331,9 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=352d7f4"></script>
-<script src="fuentes.js?v=352d7f4"></script>
-<script src="motor.bundle.js?v=352d7f4"></script>
-<script src="cuestionario.js?v=352d7f4"></script>
+<script src="novedades.js?v=42868fa"></script>
+<script src="fuentes.js?v=42868fa"></script>
+<script src="motor.bundle.js?v=42868fa"></script>
+<script src="cuestionario.js?v=42868fa"></script>
 </body>
 </html>
