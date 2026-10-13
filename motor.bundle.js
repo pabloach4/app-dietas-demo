@@ -1629,8 +1629,8 @@ var Motor = (() => {
   var OTROS_NO_VEGANOS = ["huevo", "miel"];
   function buscarIngrediente(ingredientes, palabras) {
     for (const ing of ingredientes) {
-      const n = normalizar3(ing.nombre);
-      if (palabras.some((p) => n.includes(p))) return ing.nombre;
+      const n = raizAlimento(ing.nombre);
+      if (palabras.some((p) => contienePalabras(n, raizAlimento(p)))) return ing.nombre;
     }
     return void 0;
   }
@@ -2247,10 +2247,13 @@ var Motor = (() => {
       "salmorejo"
     ]]
   ];
+  function contienePalabra(nombreNormalizado, palabra) {
+    return new RegExp(`(^| )${palabra}(s|es)?( |$)`).test(nombreNormalizado.replace(/[^a-z0-9ñ]+/g, " ").trim());
+  }
   function clasificar(ingrediente) {
     const n = normalizar4(ingrediente);
     for (const [seccion, palabras] of PALABRAS_SECCION) {
-      if (palabras.some((p) => n.includes(p))) return seccion;
+      if (palabras.some((p) => contienePalabra(n, p))) return seccion;
     }
     return "otros";
   }
