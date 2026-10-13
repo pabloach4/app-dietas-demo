@@ -1,3 +1,4 @@
+"use strict";
 var Motor = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -1704,7 +1705,7 @@ var Motor = (() => {
   function validarPeticionSiOSi(franja, veces) {
     if (!Number.isInteger(veces) || veces < 1) return "las veces por semana deben ser un n\xFAmero entero de 1 en adelante";
     const max = franja === "comida" || franja === "cena" ? 2 : 7;
-    return veces > max ? `en ${franja === "comida" || franja === "cena" ? "comidas y cenas" : "esta franja"} se puede pedir como mucho ${max} ${max === 1 ? "vez" : "veces"} por semana` : void 0;
+    return veces > max ? `en ${franja === "comida" || franja === "cena" ? "comidas y cenas" : "esta franja"} se puede pedir como mucho ${max} veces por semana` : void 0;
   }
   var AJUSTE_MAX = 0.2;
   var FRANJAS_CON_LIMITE_VARIEDAD = ["comida", "cena"];
