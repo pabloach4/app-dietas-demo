@@ -2984,6 +2984,8 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
   var PALABRAS_VACIAS = /* @__PURE__ */ new Set(["un", "una", "uno", "unos", "unas", "de", "del", "la", "el", "los", "las", "en", "al", "a", "me", "he", "comido", "tomado", "bebido", "con", "y", "mas"]);
   var NUMEROS = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, media: 0.5, medio: 0.5 };
   var TAMANOS_PIZZA = ["familiar", "grande", "individual", "pequena", "mediana", "xl"];
+  var FORMATOS = /* @__PURE__ */ new Set(["lata", "latas", "botella", "botellin", "vaso", "jarra", "litro", "pack"]);
+  var CONTENEDORES_SIN_DATO = ["botella", "botellin", "vaso", "jarra", "litro"];
   function cantidadDe(tokens2) {
     let cantidad = 1;
     const resto = [];
@@ -3024,6 +3026,7 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
       const candidatas = tabla.filter((f2) => !cadena || f2.cadena === cadena.c);
       let mejor = [];
       let mejorPuntos = 0;
+      let otras = [];
       for (const f2 of candidatas) {
         let p = 0;
         for (const a2 of [f2.plato, ...f2.sinonimos].map(normalizarTexto2)) {
@@ -3037,17 +3040,47 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
           mejor = [{ f: f2, puntos: p }];
         } else if (p === mejorPuntos) mejor.push({ f: f2, puntos: p });
       }
+      if (mejor.length === 0 && !delTrozo.has("pizza")) {
+        const marca = utiles.filter((t) => t.length >= 4 && !(cadena && t === cadena.alias) && !FORMATOS.has(t));
+        const familia = marca.length ? candidatas.filter((f2) => f2.estado === "oficial" && (() => {
+          const ts = new Set([f2.plato, ...f2.sinonimos].flatMap((a2) => normalizarTexto2(a2).split(" ")));
+          return marca.every((m) => ts.has(m) || ts.has(m.replace(/s$/, "")));
+        })()) : [];
+        if (familia.length) {
+          const elegida = familia.find((f2) => !/zero|sin/.test(normalizarTexto2(f2.plato))) ?? familia[0];
+          mejor = [{ f: elegida, puntos: 1 }];
+          otras = familia.filter((f2) => f2 !== elegida).map((f2) => f2.plato);
+        }
+      }
       if (mejor.length === 1) {
         const f2 = mejor[0].f;
         const r = rangoKcal(f2);
+        const contenedor = utiles.find((t) => CONTENEDORES_SIN_DATO.includes(t));
+        if (contenedor && f2.estado === "oficial") {
+          sinReconocer.push(`${trozo} (solo tengo ${f2.tamano || "un formato"}: dime las calor\xEDas o cu\xE1ntas latas son)`);
+          continue;
+        }
+        const tamPedido = utiles.find((t) => TAMANOS_PIZZA.includes(t));
+        if (tamPedido === "individual" && f2.estado === "estimacion") {
+          sinReconocer.push(`${trozo} (la pizza individual no tiene datos: dime los gramos o las calor\xEDas)`);
+          continue;
+        }
+        const comoMinimo = f2.estado === "estimacion" && tamPedido !== void 0 && tamPedido !== "mediana";
+        const supuesto = f2.estado === "oficial" && f2.tamano && !normalizarTexto2(f2.tamano).split(" ").some((t) => t.length > 3 && delTrozo.has(t));
+        const notas = [];
+        if (comoMinimo) notas.push(`\xAB${tamPedido}\xBB no tiene dato propio: la cifra es como m\xEDnimo la de una mediana (${f2.pesoMin} g, sin inventar el peso de la ${tamPedido}). Dime cu\xE1ntas porciones o cu\xE1nto pesaba y aj\xFAstalo.`);
+        else if (f2.estado === "estimacion") notas.push(`Peso estimado (${f2.pesoMin}-${f2.pesoMax} g): la cifra es un rango. Si sabes cu\xE1nto pesaba o cu\xE1nto comiste, aj\xFAstalo.`);
+        if (supuesto) notas.push(`He supuesto ${f2.tamano}.`);
         lineas.push({
           nombre: `${f2.plato}${f2.tamano ? ` (${f2.tamano})` : ""}`,
           cadena: f2.cadena,
           cantidad,
           kcalMin: Math.round(r.min * cantidad),
-          kcalMax: Math.round(r.max * cantidad),
+          kcalMax: comoMinimo ? Math.round(r.min * cantidad) : Math.round(r.max * cantidad),
           estado: f2.estado,
-          ...f2.estado === "estimacion" ? { nota: `Peso estimado (${f2.pesoMin}-${f2.pesoMax} g): la cifra es un rango. Si sabes cu\xE1nto pesaba o cu\xE1nto comiste, aj\xFAstalo.` } : {}
+          ...comoMinimo ? { comoMinimo: true } : {},
+          ...notas.length ? { nota: notas.join(" ") } : {},
+          ...otras.length ? { opciones: otras } : {}
         });
         continue;
       }
@@ -3062,15 +3095,17 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
         if (pizzas.length) {
           const media = pizzas.reduce((s, f2) => s + f2.kcal100, 0) / pizzas.length;
           const pmin = Math.min(...pizzas.map((f2) => f2.pesoMin)), pmax = Math.max(...pizzas.map((f2) => f2.pesoMax));
-          const tamNota = tam && tam !== "mediana" ? ` De \xAB${tam}\xBB no hay dato propio: se usa el rango de la mediana (${pmin}-${pmax} g) como aproximaci\xF3n sin validar; si sabes el peso, aj\xFAstalo.` : "";
+          const comoMinimo = tam !== void 0 && tam !== "mediana";
+          const tamNota = comoMinimo ? ` \xAB${tam}\xBB no tiene dato propio: la cifra es como m\xEDnimo la de una mediana (${pmin} g), sin inventar el peso de la ${tam}. Dime cu\xE1ntas porciones o cu\xE1nto pesaba y aj\xFAstalo.` : "";
           lineas.push({
             nombre: `Pizza de ${cadena.c} (sin elegir variedad)`,
             cadena: cadena.c,
             cantidad,
             kcalMin: Math.round(media * pmin / 100 * cantidad),
-            kcalMax: Math.round(media * pmax / 100 * cantidad),
+            kcalMax: Math.round(media * (comoMinimo ? pmin : pmax) / 100 * cantidad),
             estado: "estimacion",
-            nota: `Densidad media de sus pizzas y peso estimado (${pmin}-${pmax} g): un rango.${tamNota} Elige la variedad para afinar.`,
+            ...comoMinimo ? { comoMinimo: true } : {},
+            nota: comoMinimo ? `Densidad media de sus pizzas.${tamNota} Elige la variedad para afinar.` : `Densidad media de sus pizzas y peso estimado (${pmin}-${pmax} g): un rango. Elige la variedad para afinar.`,
             opciones: pizzas.map((f2) => f2.plato)
           });
           continue;
@@ -3078,7 +3113,8 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
       }
       sinReconocer.push(trozo);
     }
-    return { lineas, total: { min: lineas.reduce((s, l) => s + l.kcalMin, 0), max: lineas.reduce((s, l) => s + l.kcalMax, 0) }, sinReconocer };
+    const total = { min: lineas.reduce((s, l) => s + l.kcalMin, 0), max: lineas.reduce((s, l) => s + l.kcalMax, 0), ...lineas.some((l) => l.comoMinimo) ? { comoMinimo: true } : {} };
+    return { lineas, total, sinReconocer };
   }
 
   // src/motor/comer-fuera-datos.ts

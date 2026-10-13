@@ -2725,8 +2725,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const t = totales();
       const lineas = items.map((it, k) => `
         <li class="item-compra fuera-linea" data-k="${k}">
-          <div style="flex:1;min-width:0"><strong>${escaparHtml(it.linea.nombre)}</strong> · ${rangoTxt(it.unidadMin * it.cantidad, it.unidadMax * it.cantidad)} <span class="etq-ejemplo">${it.linea.estado === 'oficial' ? 'OFICIAL' : 'ESTIMADA'}</span>
-            ${it.linea.nota ? `<details><summary>Por qué ${it.unidadMin === it.unidadMax ? 'esta cifra' : 'un rango'}</summary><p class="una-linea">${escaparHtml(it.linea.nota)}</p></details>` : ''}
+          <div style="flex:1;min-width:0"><strong>${escaparHtml(it.linea.nombre)}</strong> · ${it.linea.comoMinimo ? `como mínimo ${miles(it.unidadMin * it.cantidad)} kcal` : rangoTxt(it.unidadMin * it.cantidad, it.unidadMax * it.cantidad)} <span class="etq-ejemplo">${it.linea.comoMinimo ? 'COMO MÍNIMO' : it.linea.estado === 'oficial' ? 'OFICIAL' : 'ESTIMADA'}</span>${it.linea.nota && it.linea.estado === 'oficial' ? `<br><span class="una-linea">${escaparHtml(it.linea.nota)}</span>` : ''}
+            ${it.linea.nota && it.linea.estado !== 'oficial' ? `<details${it.linea.comoMinimo ? ' open' : ''}><summary>Por qué ${it.linea.comoMinimo ? 'solo un mínimo' : 'un rango'}</summary><p class="una-linea">${escaparHtml(it.linea.nota)}</p></details>` : ''}
             ${it.linea.opciones ? `<label class="una-linea" for="fuera-var-${k}">¿Cuál? (para afinar)</label><select id="fuera-var-${k}" class="fuera-variedad" data-k="${k}" style="font-size:16px"><option value="">Sin elegir</option>${it.linea.opciones.map((o) => `<option>${escaparHtml(o)}</option>`).join('')}</select>` : ''}
           </div>
           <div class="fuera-cantidad" style="display:flex;align-items:center;gap:0.3rem">
@@ -2737,10 +2737,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         </li>`).join('');
       desglose.innerHTML = `
         ${items.length ? `<ul class="resumen-lista">${lineas}</ul>
-        <p><strong>Total: ${rangoTxt(t.min, t.max)}</strong>${t.min === t.max ? '' : ` · para ajustar el día se usa el punto medio (${miles((t.min + t.max) / 2)} kcal)`}</p>` : ''}
+        <p><strong>Total: ${items.some((i) => i.linea.comoMinimo) ? `como mínimo ${miles(t.min)} kcal` : rangoTxt(t.min, t.max)}</strong>${t.min === t.max ? '' : ` · para ajustar el día se usa el punto medio (${miles((t.min + t.max) / 2)} kcal)`}${items.some((i) => i.linea.comoMinimo) ? ' · para ajustar el día se usa ese mínimo' : ''}</p>` : ''}
         ${sinReconocer.length ? `<p class="una-linea" id="fuera-no-reconocido">No he reconocido: ${sinReconocer.map(escaparHtml).join('; ')}. Si sabes sus calorías, súmalas tú en el campo de abajo.</p>` : ''}
         ${!items.length && !sinReconocer.length ? '<p class="una-linea">No he reconocido nada: escribe las calorías tú.</p>' : ''}`;
-      if (items.length) campoKcal.value = String(Math.round((t.min + t.max) / 20) * 10);
+      if (items.length) campoKcal.value = String(items.some((i) => i.linea.comoMinimo) ? Math.round(t.min / 10) * 10 : Math.round((t.min + t.max) / 20) * 10);
       desglose.querySelectorAll('.fuera-menos, .fuera-mas').forEach((b) => b.addEventListener('click', () => {
         const it = items[Number(b.dataset.k)];
         it.cantidad = Math.max(0.5, Math.min(20, it.cantidad + (b.classList.contains('fuera-mas') ? 0.5 : -0.5)));
