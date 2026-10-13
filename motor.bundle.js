@@ -835,9 +835,11 @@ var Motor = (() => {
     return Array.from(s.normalize("NFD")).filter((c) => c.codePointAt(0) < MARCA_DIACRITICA_MIN || c.codePointAt(0) > MARCA_DIACRITICA_MAX).join("").toLowerCase();
   }
   function stem(palabra) {
-    if (palabra.endsWith("es") && palabra.length > 4) return palabra.slice(0, -2);
-    if (palabra.endsWith("s") && palabra.length > 3) return palabra.slice(0, -1);
-    return palabra;
+    let s = palabra;
+    if (s.endsWith("es") && s.length > 4) s = s.slice(0, -2);
+    else if (s.endsWith("s") && s.length > 3) s = s.slice(0, -1);
+    if (s.endsWith("e") && s.length > 4) s = s.slice(0, -1);
+    return s;
   }
   function tokens(texto) {
     return normalizar(texto).split(/[^a-z0-9]+/).filter(Boolean).map(stem);
@@ -3093,12 +3095,12 @@ var Motor = (() => {
       duro: `D\xEDa duro: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), entre 60 y 179 min.`,
       suave: `D\xEDa suave: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), menos de 60 min.`,
       fuerza: "D\xEDa de fuerza: solo hay fuerza, que no cuenta como carga; reparte igual que un d\xEDa de descanso, pero se etiqueta para que se vea que la sesi\xF3n est\xE1 registrada.",
-      descanso: "D\xEDa de descanso: no hay ning\xFAn entreno ese d\xEDa."
+      descanso: "D\xEDa de descanso: no hay entreno de carga ni de fuerza ese d\xEDa (caminar r\xE1pido o similar no cuenta como carga)."
     };
     return {
       resumen: base[dia.tipo] ?? `D\xEDa ${dia.tipo}.`,
       detalle: [
-        `El tipo de d\xEDa decide el rango recomendado de hidrato: ${rango} (datos/objetivos-por-dia.csv).`,
+        `El tipo de d\xEDa decide el rango recomendado de hidrato: ${rango}.`,
         `Hoy el plan da ${f(dia.hidratoGKg, 1)} g/kg.`
       ]
     };
@@ -3165,7 +3167,7 @@ var Motor = (() => {
       `Grasa (${f(franja.grasa, 1)} g): reparto proporcional al peso de la franja (${f(d.pesoBase)} de ${f(d.sumaPesoBase)}).`,
       ...d.grasaTopeAplicado ? ["La grasa se limit\xF3 a 15 g porque es una toma de menos de 2 h antes de un entreno de carga (comodidad digestiva); el exceso pas\xF3 a otras comidas."] : [],
       ...d.grasaExcesoRecibido > 0 ? [`Recibe ${f(d.grasaExcesoRecibido, 1)} g de grasa que otra toma no pudo llevar por el tope pre-entreno.`] : [],
-      "Par\xE1metros provisionales: los pesos por franja (25/5/35/5/30) y los factores pre/post est\xE1n pendientes de revisi\xF3n de Pablo (docs/reparto-comidas.md).",
+      "Par\xE1metros provisionales: los pesos por franja (25/5/35/5/30) y los factores pre/post est\xE1n pendientes de revisi\xF3n de Pablo.",
       "Es el objetivo de la comida, no lo que lleva una receta: una receta de ejemplo puede tener otros macros; solo se ajusta su raci\xF3n para acercarse a las kcal."
     ];
     return {
@@ -3179,9 +3181,9 @@ var Motor = (() => {
     return {
       resumen: `La raci\xF3n (${f(datos.racion * 100)} %) es cu\xE1nto crecen o bajan solo la base (arroz, pasta, patata, pan, legumbre), la prote\xEDna y el aceite de la receta para acercarla a las kcal objetivo de esta comida: no baja de 80 % y ning\xFAn ingrediente pasa de su raci\xF3n normal. Verdura, cebolla, condimentos, fruta y l\xE1cteos se quedan en sus gramos.`,
       detalle: [
-        `Objetivo de la comida ${f(datos.kcalObjetivo)} kcal \xF7 kcal de la receta base ${f(datos.kcalReceta)} = ${f(ideal * 100)} %.`,
+        `Objetivo de la comida ${f(datos.kcalObjetivo)} kcal \xF7 kcal de la receta base ${f(datos.kcalReceta)} \u2248 ${f(ideal * 100)} %.`,
         dentro ? `Est\xE1 dentro de 80-120 %, as\xED que se usa tal cual: ${f(datos.kcalResultante)} kcal.` : ideal > 1.2 ? datos.kcalResultante >= datos.kcalObjetivo * 0.97 ? `Pasa de 120 %, pero el plato escalado sigue dentro de los topes del m\xE9todo, as\xED que se sube hasta ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: llega al objetivo.` : `Queda fuera de 80-120 % y no se puede subir m\xE1s: se queda en ${f(datos.racion * 100)} % (pasar de ah\xED har\xEDa que un ingrediente pasara de su raci\xF3n normal) y la receta aporta ${f(datos.kcalResultante)} kcal: por debajo del objetivo (no llega a ${f(datos.kcalObjetivo)}). Faltan ${f(datos.kcalObjetivo - datos.kcalResultante)} kcal. No cabe en una raci\xF3n normal y no se infla nada: puedes repartir lo que falta en otra toma del d\xEDa, cerrar con un postre (fruta o yogur) o cambiar el plato.` : `Queda fuera de 80-120 %, as\xED que se limita a ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: por encima del objetivo (supera los ${f(datos.kcalObjetivo)} aunque es la raci\xF3n m\xEDnima).`,
-        datos.protegidos && datos.protegidos.length ? `Entre los \xABprotegidos\xBB (fruta, yogur, caf\xE9, condimentos, ajo), que el m\xE9todo nunca reescala, aqu\xED ${datos.protegidos.join(", ")} mantiene${datos.protegidos.length > 1 ? "n" : ""} sus gramos base. Como no hay composici\xF3n nutricional fiable de la receta de ejemplo, ${f(datos.kcalResultante)} kcal es una cifra aproximada: no se asegura que la raci\xF3n alcance exactamente las kcal ni los macros del objetivo.` : "De los \xABprotegidos\xBB (fruta, yogur, caf\xE9, condimentos, ajo), que el m\xE9todo nunca reescala, en esta receta ninguno es de los \xABprotegidos\xBB; aun as\xED solo crecen la base, la prote\xEDna y el aceite, y las kcal son aproximadas.",
+        datos.protegidos && datos.protegidos.length ? `Entre los \xABprotegidos\xBB (los que no se reescalan: todo lo que no es base, prote\xEDna ni aceite, como fruta, verdura, l\xE1cteos o condimentos), aqu\xED ${datos.protegidos.join(", ")} mantiene${datos.protegidos.length > 1 ? "n" : ""} sus gramos base. Como no hay composici\xF3n nutricional fiable de la receta de ejemplo, ${f(datos.kcalResultante)} kcal es una cifra aproximada: no se asegura que la raci\xF3n alcance exactamente las kcal ni los macros del objetivo.` : "En esta receta ninguno es de los \xABprotegidos\xBB (los que no se reescalan: todo lo que no es base, prote\xEDna ni aceite); solo crecen la base, la prote\xEDna y el aceite, y las kcal son aproximadas.",
         "La receta es de EJEMPLO, no una receta real."
       ]
     };
@@ -3193,7 +3195,7 @@ var Motor = (() => {
         `D\xEDas incluidos: ${ctx.dias}. Los d\xEDas sin marcar no entran ni en la lista ni en el coste.`,
         "Redondeo: carne y pescado de 50 en 50 g; el resto de 25 en 25 g; huevos en unidades de 50 g.",
         "Marcar \xABya en casa\xBB tacha el ingrediente pero no resta de lo que pide la dieta.",
-        "El coste usa precios de EJEMPLO (datos/precios.csv) por kg o por unidad, sin ninguna tienda real; lo que no tiene precio queda fuera del total" + (ctx.sinPrecio ? ` (ahora ${ctx.sinPrecio} ingredientes).` : "."),
+        "El coste usa precios de EJEMPLO por kg o por unidad, sin ninguna tienda real; lo que no tiene precio queda fuera del total" + (ctx.sinPrecio ? ` (ahora ${ctx.sinPrecio} ingredientes).` : "."),
         ctx.huecos ? `Hay ${ctx.huecos} comidas sin receta de ejemplo: la lista es parcial y no incluye sus ingredientes.` : "Todas las comidas de los d\xEDas elegidos tienen receta de ejemplo."
       ]
     };

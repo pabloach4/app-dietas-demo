@@ -2211,7 +2211,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       costeHtml = `
         <div class="coste-estimado">
           <p style="font-size:0.8rem;color:#7a1f18;font-weight:600;margin:0 0 0.4rem">
-            ⚠️ Coste de EJEMPLO (datos/precios.csv), pendiente de validar por Pablo — no son precios reales ni una oferta.
+            ⚠️ Coste de EJEMPLO, pendiente de validar por Pablo — no son precios reales ni una oferta.
           </p>
           <p style="margin:0 0 0.4rem"><strong>≈ ${euros(estimacion.total)} €</strong> en total, con los días elegidos</p>
           <ul class="resumen-lista">${filasSeccionCoste}</ul>
@@ -2502,9 +2502,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
           <thead><tr><th></th><th>Tu objetivo</th><th>Receta de ejemplo</th></tr></thead>
           <tbody>
             <tr class="dc-cuadre-kcal"><th>kcal</th><td><strong>~${f.kcalAprox}</strong></td><td><strong>~${asignada.kcalResultante}</strong></td></tr>
-            ${fila('P', 'p', `${f.proteina} g`, `${asignada.receta.proteina} g base`)}
-            ${fila('G', 'g', `${f.grasa} g`, `${asignada.receta.grasa} g base`)}
-            ${fila('H', 'h', `${f.hidrato} g`, `${asignada.receta.hidrato} g base`)}
+            ${fila('P', 'p', `${f.proteina} g`, `${nf(asignada.receta.proteina)} g base`)}
+            ${fila('G', 'g', `${f.grasa} g`, `${nf(asignada.receta.grasa)} g base`)}
+            ${fila('H', 'h', `${f.hidrato} g`, `${nf(asignada.receta.hidrato)} g base`)}
           </tbody>
         </table>
         ${asignada.ajusteDia ? `<p class="dc-nota">⚖️ ${escaparHtml(asignada.ajusteDia.motivo)}</p>` : ''}
@@ -2540,7 +2540,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <details class="dc-notas"><summary>¿Por qué estas cifras?</summary>
         <p class="dc-nota">${NOMBRE_DIA_LARGO[dia]} (${d.tipo}) · ${NOMBRE[franja] ?? franja}${hora ? ` a las ${hora}` : ''}.</p>
         ${cuerpoPorque(Motor.explicarComida(f0, { tipoDia: d.tipo, pesoRef: planActual.proteina.pesoReferencia, proteinaDia: d.proteinaG, hidratoDia: d.hidratoG, grasaDia: d.grasaG }))}
-        ${asignada ? cuerpoPorque(Motor.explicarRacion({ kcalReceta: asignada.receta.kcal, kcalObjetivo: f0.kcalAprox, racion: asignada.racionAjustada, kcalResultante: asignada.kcalResultante, protegidos: asignada.protegidosSinEscalar })) : ''}
+        ${asignada ? cuerpoPorque(Motor.explicarRacion({ kcalReceta: asignada.receta.kcal, kcalObjetivo: f0.kcalAprox, racion: asignada.racionAjustada, kcalResultante: asignada.kcalResultante, protegidos: Motor.ingredientesDeLaRacion(asignada.receta, asignada.racionAjustada, Motor.noSeReescala).filter((i) => i.protegido).map((i) => i.nombre) })) : ''}
       </details>`;
 
     document.getElementById('dc-cuerpo').innerHTML = receta + contexto
