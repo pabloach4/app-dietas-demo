@@ -99,6 +99,7 @@ var Motor = (() => {
     esIngredienteProtegido: () => esIngredienteProtegido,
     esLunes: () => esLunes,
     escaparTextoIcs: () => escaparTextoIcs,
+    estadoDeLaPreparada: () => estadoDeLaPreparada,
     estimarCoste: () => estimarCoste,
     etiquetasContextoDia: () => etiquetasContextoDia,
     evaluarCompatibilidad: () => evaluarCompatibilidad,
@@ -128,6 +129,7 @@ var Motor = (() => {
     grupoDeFranja: () => grupoDeFranja,
     horaDeGuardado: () => horaDeGuardado,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
+    inicioDeLaSiguiente: () => inicioDeLaSiguiente,
     itemDesdeGramos: () => itemDesdeGramos,
     leerEvitados: () => leerEvitados,
     limiteFibraG: () => limiteFibraG,
@@ -2666,6 +2668,15 @@ var Motor = (() => {
     if (!termina) return void 0;
     const quedan = Math.round((aUTC2(termina) - aUTC2(hoy)) / MS_DIA2);
     return quedan >= 0 && quedan <= DIAS_AVISO_FIN ? { termina, quedan } : void 0;
+  }
+  function inicioDeLaSiguiente(inicio, semanas) {
+    const fin = finDeLaDieta(inicio, semanas);
+    return fin ? deUTC2(aUTC2(fin) + MS_DIA2) : void 0;
+  }
+  function estadoDeLaPreparada(hoy, inicio, semanas) {
+    const fin = finDeLaDieta(inicio, semanas);
+    if (!fin || !esFechaValida(hoy)) return void 0;
+    return hoy < inicio ? "pendiente" : hoy <= fin ? "activa" : "caducada";
   }
 
   // src/motor/compra-periodo.ts

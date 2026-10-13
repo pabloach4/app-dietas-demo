@@ -668,6 +668,32 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   let proxima = { abierta: false, sobras: [], semanas: 1, resultado: null, dieta: null };
   let dietaSiguienteFn = null;
   function guardarPeriodoDieta() { try { localStorage.setItem(CLAVE_PERIODO, JSON.stringify(periodoDieta)); } catch { falloAlmacenamiento(); } }
+  // #164: la dieta siguiente preparada (solo las recetas por comida: la ración se recalcula con el perfil de cada momento).
+  // Empieza el día después de acabar la actual; hasta entonces no cambia nada de lo que se ve.
+  const CLAVE_SIGUIENTE = 'app-dietas-siguiente';
+  let siguiente = null; // { inicio, semanas, recetas: [{ dia, franja, receta }] }
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_SIGUIENTE) || 'null');
+    if (g && Motor.esFechaValida(g.inicio ?? '') && Array.isArray(g.recetas) && g.recetas.every((x) => x && typeof x.dia === 'string' && typeof x.franja === 'string' && typeof x.receta === 'string')) {
+      siguiente = { inicio: g.inicio, semanas: Motor.semanasValidas(g.semanas), recetas: g.recetas };
+    }
+  } catch { /* sin almacenamiento o dato corrupto: no hay dieta siguiente */ }
+  function guardarSiguiente() {
+    try { if (siguiente) localStorage.setItem(CLAVE_SIGUIENTE, JSON.stringify(siguiente)); else localStorage.removeItem(CLAVE_SIGUIENTE); } catch { falloAlmacenamiento(); }
+  }
+  // Al llegar la fecha, la siguiente pasa a ser la dieta actual (mismo inicio y semanas, una sola fecha) y se olvida al acabar.
+  function estadoSiguienteHoy() {
+    if (!siguiente) return undefined;
+    const est = Motor.estadoDeLaPreparada(Motor.fechaLocalISO(new Date()), siguiente.inicio, siguiente.semanas);
+    if (est === 'caducada') { siguiente = null; guardarSiguiente(); return undefined; }
+    if (est === 'activa' && periodoDieta.inicio !== siguiente.inicio) {
+      periodoDieta = { inicio: siguiente.inicio, semanas: siguiente.semanas };
+      guardarPeriodoDieta();
+      calInicio = Motor.lunesDelInicio(siguiente.inicio);
+      try { localStorage.setItem(CLAVE_CALENDARIO, JSON.stringify({ inicio: calInicio, competiciones })); } catch { falloAlmacenamiento(); }
+    }
+    return est;
+  }
   function sincronizarInicioDieta() {
     if (periodoDieta.inicio && Motor.lunesDelInicio(periodoDieta.inicio) !== calInicio) { periodoDieta.inicio = ''; guardarPeriodoDieta(); }
   }
@@ -793,7 +819,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const avisoFinHtml = finAviso ? `
       <div class="hoy-bloque" id="aviso-fin-dieta" role="status">
         <p style="margin:0 0 0.4rem"><strong>Tu dieta termina ${finAviso.quedan === 0 ? 'hoy' : `el ${fechaLegible(finAviso.termina, false)}`}.</strong> Prepara ya la siguiente compra.</p>
-        <button type="button" class="btn-secundario" id="aviso-fin-compra">Ver la compra</button>
+        <button type="button" class="btn-secundario" id="aviso-fin-compra">Generar próxima lista de la compra</button>
       </div>` : '';
     cont.innerHTML = `
       <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)}</p>
@@ -805,7 +831,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ${cardCompeticionHtml(dia)}
       ${mas('numeros', 'Tus números de hoy', numeros)}`;
     const btnFin = document.getElementById('aviso-fin-compra');
-    if (btnFin) btnFin.addEventListener('click', () => mostrarPanel('compra'));
+    if (btnFin) btnFin.addEventListener('click', () => { proxima.abierta = true; renderizarListaCompra(); mostrarPanel('compra'); });
   }
   setInterval(() => { if (panelActual === 'hoy' && !document.getElementById('resultado').hidden) pintarHoy(); }, 60000);
 
@@ -2137,6 +2163,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
             ${r.sinUso.length ? `<p class="una-linea">Esta dieta no usa: ${r.sinUso.map((s) => escaparHtml(s.ingrediente)).join(', ')}.</p>` : ''}
             <details class="plegable"><summary>Platos de la próxima dieta</summary><ul class="resumen-lista" id="prox-platos">${r.platos.map(([d, n]) => `<li><strong>${d}</strong> · ${n.map(escaparHtml).join(' · ')}</li>`).join('')}</ul>${r.huecos ? `<p class="una-linea">${r.huecos} comida${r.huecos === 1 ? '' : 's'} sin plato que encaje.</p>` : ''}</details>
             <ul class="resumen-lista" id="prox-lista">${r.lista.map((i) => `<li class="item-compra"><span><strong>${i.comprar}</strong> — ${escaparHtml(i.ingrediente)}${i.sobra ? ` <small class="dieta-dato">(tienes ${gramosCorto(i.sobra)} g)</small>` : ''}</span></li>`).join('')}</ul>` : ''}
+          ${r ? (siguiente ? `<p class="una-linea" id="prox-guardada">Guardada: tu próxima dieta empieza el ${fechaLegible(siguiente.inicio)}${estadoSiguienteHoy() === 'activa' ? ' (ya está en marcha)' : ''}. Hasta entonces sigues viendo la actual. <button type="button" class="btn-texto" id="prox-quitar-guardada">Quitar</button></p>`
+            : periodoDieta.inicio ? `<button type="button" class="btn-secundario" id="prox-guardar" style="margin-top:0.6rem">Guardar como mi próxima dieta</button><p class="una-linea">Empezará el ${fechaLegible(Motor.inicioDeLaSiguiente(periodoDieta.inicio, periodoDieta.semanas))}, el día después de acabar la actual.</p>`
+            : '<p class="una-linea">Para guardarla, di arriba en «Empiezo el» cuándo empieza tu dieta actual: la próxima empezará el día después de acabar.</p>') : ''}
         </div>`;
       }
       const gramosTxt = (g) => `${String(Math.round(g * 10) / 10).replace('.', ',')} g`;
@@ -2292,6 +2321,19 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         regenerar();
         renderizarListaCompra();
       }));
+      const repintarPlan = () => { if (vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); else renderizarListaCompra(); };
+      const guardar = document.getElementById('prox-guardar');
+      if (guardar) guardar.addEventListener('click', () => {
+        if (!proxima.dieta || !periodoDieta.inicio) return;
+        siguiente = {
+          inicio: Motor.inicioDeLaSiguiente(periodoDieta.inicio, periodoDieta.semanas), semanas: proxima.semanas,
+          recetas: proxima.dieta.asignaciones.map((a) => ({ dia: a.dia, franja: a.franja, receta: a.receta })),
+        };
+        guardarSiguiente();
+        repintarPlan();
+      });
+      const quitarG = document.getElementById('prox-quitar-guardada');
+      if (quitarG) quitarG.addEventListener('click', () => { siguiente = null; guardarSiguiente(); repintarPlan(); });
       document.getElementById('prox-sem').addEventListener('change', (ev) => { proxima.semanas = Motor.semanasValidas(ev.target.value); regenerar(); renderizarListaCompra(); });
       document.getElementById('prox-generar').addEventListener('click', () => {
         if (!generarProxima) return;
@@ -2764,6 +2806,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   function mostrarResultado(semana, plan, respuestas, franjasBloque7) {
     // Issue #18: se guarda el estado para poder mover una sesión de día sin volver al formulario.
     // Issue #124: con una competición cerca se ajusta la semana; el plan base se conserva (plan.planBase) para poder volver a calcular sin acumular cambios.
+    const estadoSiguiente = estadoSiguienteHoy(); // #164: puede cambiar el inicio de la dieta y el lunes del calendario, por eso va antes
     const planBase = plan.planBase ?? plan;
     const compSem = calInicio && competiciones.length ? Motor.aplicarCompeticion(planBase, semana.perfil, competiciones, calInicio, Motor.fechaLocalISO(new Date())) : null;
     plan = compSem && compSem.activa ? { ...compSem.plan, planBase } : planBase;
@@ -2826,7 +2869,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
     const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
-    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: [...semanaFija].map(([k, v]) => ({ dia: k[0], franja: k.slice(2), receta: v })) };
+    const fijasPropias = [...semanaFija].map(([k, v]) => ({ dia: k[0], franja: k.slice(2), receta: v }));
+    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias };
     const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador);
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
@@ -2856,7 +2900,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     dietaSiguienteFn = () => {
       const porId = new Map(RECETAS_EJEMPLO.map((r) => [r.id, r]));
       const evitar = [...new Set(asignacionSemana.asignaciones.flatMap((a) => { const r = Motor.recetaDeId(porId, a.receta); return r ? (r.platos ?? [r.id]) : [a.receta]; }))];
-      const base = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { ...opcionesAsignador, evitar });
+      const base = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { ...opcionesAsignador, fijadas: fijasPropias, evitar });
       const rc = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(base.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
       return { ...base, asignaciones: Motor.cuadrarDias(base.asignaciones, slotsSemana, rc, { noMover: enCompeticion }).asignaciones };
     };
