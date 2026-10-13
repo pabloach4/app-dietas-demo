@@ -1383,6 +1383,18 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     }
     return { r, nuevas: (franjasActuales ?? []).map((f) => ({ ...f, hora: porFranja.has(f.franja) ? porFranja.get(f.franja).minuto / 60 : f.hora })) };
   }
+  // #155 B: líquido de recuperación solo con pesaje (ACSM 2016, p. 556); sin kg perdidos no hay cifra.
+  document.addEventListener('input', (ev) => {
+    if (!ev.target || ev.target.id !== 'liq-kg') return;
+    const res = document.getElementById('liq-res');
+    const v = ev.target.value.trim();
+    if (v === '') { res.textContent = ''; return; }
+    const kg = Number(v.replace(',', '.'));
+    const l = Motor.liquidoRecuperacion(kg);
+    const f = (x) => String(x).replace('.', ',');
+    res.textContent = l ? `Entre ${f(l[0])} y ${f(l[1])} litros, poco a poco en las horas siguientes y con sodio (en la comida o en la bebida). Orientativo.`
+      : `Escribe un valor entre 0,1 y ${Motor.MAX_KG_PERDIDOS_CREIBLE} kg; si has perdido más, revisa el pesaje o consulta, y no se da cifra.`;
+  });
   function lineaCompeticionHtml(x) {
     const hm = Motor.aHoraTexto;
     const rango = (r, u) => (r[0] === r[1] ? `${r[0]} ${u}` : `${r[0]}–${r[1]} ${u}`);
@@ -1426,6 +1438,11 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <p class="subt" style="font-size:0.8rem;margin:0 0 0.5rem">${escaparHtml(Motor.NOTA_PAUTA)} Las tomas de antes, entre pruebas y después cuentan dentro del total del día.</p>
         <ul class="dia-resumen-lista">${lineaCompeticionHtml(x)}</ul>
         <details class="plegable"><summary>Combustible de carrera (aparte del total del día)</summary><ul class="dia-resumen-lista">${combustibleHtml(x)}</ul></details>
+        <details class="plegable"><summary>Líquido de recuperación (si te pesas antes y después)</summary>
+          <p class="una-linea">No hace falta pesarse. Si lo haces, escribe cuántos kg has perdido en la prueba y te decimos cuánto beber.</p>
+          <div class="campo"><label for="liq-kg">Kg perdidos en la prueba</label><input id="liq-kg" type="number" inputmode="decimal" min="0" max="5" step="0.1" style="font-size:16px;width:7rem"></div>
+          <p class="una-linea" id="liq-res" role="status" aria-live="polite"></p>
+        </details>
         <details class="plegable"><summary>Tu día normal / tu día de competición</summary>
           <p style="font-size:0.85rem;margin:0.3rem 0"><strong>Tu día normal:</strong> ${escaparHtml(normal)}</p>
           <p style="font-size:0.85rem;margin:0.3rem 0"><strong>Tu día de competición:</strong> ${escaparHtml(comp)}</p>

@@ -33,7 +33,9 @@ var Motor = (() => {
     ETIQUETA_FASE: () => ETIQUETA_FASE,
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
+    LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
     MAX_BAJADA_COMIDA: () => MAX_BAJADA_COMIDA,
+    MAX_KG_PERDIDOS_CREIBLE: () => MAX_KG_PERDIDOS_CREIBLE,
     MAX_SUBIDA_COMIDA: () => MAX_SUBIDA_COMIDA,
     MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
@@ -142,6 +144,7 @@ var Motor = (() => {
     limiteFibraG: () => limiteFibraG,
     limpiarNotaSesion: () => limpiarNotaSesion,
     lineasIcs: () => lineasIcs,
+    liquidoRecuperacion: () => liquidoRecuperacion,
     listaManualDesdeJson: () => listaManualDesdeJson,
     lunesDeLaSemana: () => lunesDeLaSemana,
     lunesDelInicio: () => lunesDelInicio,
@@ -274,6 +277,7 @@ var Motor = (() => {
   var SUELO_PROTEINA_G_KG = 1.6;
   var OSCILACION_CORDURA = 300;
   var OSCILACION_MAX_POR_DEFECTO = 500;
+  var UMBRAL_DIA_MUY_ALTO_KCAL = 1e3;
   var SUELO_KCAL = { hombre: 1500, mujer: 1200 };
   function redondear(x, decimales = 0) {
     const f2 = 10 ** decimales;
@@ -290,7 +294,7 @@ var Motor = (() => {
   }
   function limitarOscilacion(valores, max) {
     const media = suma(valores) / valores.length;
-    return valores.map((v) => media + Math.max(-max, Math.min(max, v - media)));
+    return valores.map((v) => media + Math.max(-max, v - media));
   }
   function tipoDia(minutosCarga, tieneFuerza) {
     if (minutosCarga >= 180) return { tipo: "carga_alta", rango: [6, 10] };
@@ -385,6 +389,19 @@ var Motor = (() => {
       }
     });
     const kcalMedia = suma(kcalDias) / 7;
+    if (max === null && sesiones.length > 0) {
+      kcalDias.forEach((k, i) => {
+        const sobre = k - kcalMedia;
+        if (sobre <= UMBRAL_DIA_MUY_ALTO_KCAL) return;
+        const delDia = sesiones.filter((s) => s.dia === DIAS[i] && porDia[i].kcalEntreno > 0);
+        const nombres = delDia.map((s) => `${ACTIVIDADES[s.actividad].nombre} ${s.minutos}'`).join(" + ");
+        if (delDia.length) {
+          aviso("dia_muy_alto", `${DIAS[i]}: ${k} kcal, unas ${Math.round(sobre / 10) * 10} m\xE1s que la media de la semana. Lo explica el entreno de ese d\xEDa (${nombres}); es normal en una sesi\xF3n larga.`);
+        } else {
+          aviso("revisar_con_pablo", `${DIAS[i]}: ${k} kcal, unas ${Math.round(sobre / 10) * 10} m\xE1s que la media de la semana y ning\xFAn entreno lo explica. Revisar con Pablo antes de seguir.`);
+        }
+      });
+    }
     const pesoRef = pesoReferenciaProteina(p.peso, p.altura, p.sexo);
     const enDeficit = objetivo === "perder_grasa" || objetivo === "recomposicion";
     const protGKg = Math.max(
@@ -1353,6 +1370,8 @@ var Motor = (() => {
         "kamut",
         "galleta",
         "tostada",
+        "malta",
+        "gluten",
         "biscote",
         "picatoste",
         "pizza",
@@ -1408,7 +1427,10 @@ var Motor = (() => {
         "suero de leche",
         "prote\xEDna de suero",
         "whey",
-        "case\xEDna"
+        "case\xEDna",
+        "lactoglobulina",
+        "lactoalb\xFAmina",
+        "caseinato"
       ]
     },
     {
@@ -4531,10 +4553,10 @@ r43,aceite de oliva,10`;
       titulo: "Despu\xE9s: recuperaci\xF3n",
       // #155 B: hidratos 1,0–1,2 g/kg/h (Burke 2011, Tabla II, en docs/1-evidencia-competicion-14-tipos-v3.md); si hay que recuperar rápido
       // (compites mañana), durante las 4 primeras horas. Proteína 0,25 g/kg, la misma cifra que ya usa la app entre pruebas. El líquido
-      // (L por kg perdido) está pendiente de contrastar con el texto de ACSM 2016: no se da cifra hasta entonces.
+      // (1,25-1,5 L por kg perdido, ACSM 2016 p. 556) solo se da con pesaje: ver liquidoRecuperacion.
       hidratoG: opciones.compiteAlDiaSiguiente ? [redondear3(peso * 4 * 1), redondear3(peso * 4 * 1.2)] : [redondear3(peso * 1), redondear3(peso * 1.2)],
       proteinaG: [redondear3(peso * 0.25), redondear3(peso * 0.25)],
-      detalle: (opciones.compiteAlDiaSiguiente ? "Compites ma\xF1ana: hidratos en las 4 primeras horas (1,0\u20131,2 g/kg cada hora, repartidos en comidas y tomas) y la primera comida principal como recuperaci\xF3n." : "La primera comida principal es la de recuperaci\xF3n: con hidratos y prote\xEDna de verdad (cantidades a la derecha).") + " Bebe con la comida y despu\xE9s; la cantidad exacta de l\xEDquido est\xE1 pendiente de validar."
+      detalle: (opciones.compiteAlDiaSiguiente ? "Compites ma\xF1ana: hidratos en las 4 primeras horas (1,0\u20131,2 g/kg cada hora, repartidos en comidas y tomas) y la primera comida principal como recuperaci\xF3n." : "La primera comida principal es la de recuperaci\xF3n: con hidratos y prote\xEDna de verdad (cantidades a la derecha).") + " Bebe con la comida y despu\xE9s. Si te pesas antes y despu\xE9s de la prueba, abajo te decimos cu\xE1nto l\xEDquido (poco a poco y con sodio); sin pesaje no se da cifra."
     });
     linea.sort((a2, b) => a2.minuto - b.minuto);
     return { fecha, nombre: c.nombre, pruebas, linea, combustible, avisos, nota: NOTA_PAUTA };
@@ -4615,6 +4637,12 @@ r43,aceite de oliva,10`;
     }
     salidas.sort((a2, b) => a2.minuto - b.minuto);
     return { tomas: salidas, cambios, avisos };
+  }
+  var LIQUIDO_RECUPERACION_L_POR_KG = [1.25, 1.5];
+  var MAX_KG_PERDIDOS_CREIBLE = 5;
+  function liquidoRecuperacion(kgPerdidos) {
+    if (!Number.isFinite(kgPerdidos) || kgPerdidos <= 0 || kgPerdidos > MAX_KG_PERDIDOS_CREIBLE) return void 0;
+    return [redondear1(kgPerdidos * LIQUIDO_RECUPERACION_L_POR_KG[0]), redondear1(kgPerdidos * LIQUIDO_RECUPERACION_L_POR_KG[1])];
   }
 
   // src/motor/catalogo-amplio.ts
