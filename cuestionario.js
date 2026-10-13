@@ -654,6 +654,33 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   document.querySelectorAll('.subvista .sub-plan').forEach((b) => b.addEventListener('click', () => mostrarPanel('semana')));
   document.querySelectorAll('.subvista .sub-calendario').forEach((b) => b.addEventListener('click', () => mostrarPanel('calendario')));
 
+  // #163 (partes 1-2): cuánto dura la dieta y desde qué día. Una sola fecha para el cliente: el lunes del
+  // calendario (calInicio) se calcula a partir del inicio de la dieta; si se cambia ese lunes a mano, el inicio se borra.
+  const CLAVE_PERIODO = 'app-dietas-periodo';
+  // Tabla de conservación de #165: vacía hasta que Pablo la valide (sin tabla, todo va como fresco, cada semana).
+  const CONSERVACION_ACTIVA = new Map();
+  let periodoDieta = { inicio: '', semanas: Motor.SEMANAS_POR_DEFECTO };
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_PERIODO) || 'null');
+    if (g) periodoDieta = { inicio: Motor.esFechaValida(g.inicio ?? '') ? g.inicio : '', semanas: Motor.semanasValidas(g.semanas) };
+  } catch { /* sin almacenamiento o dato corrupto: 1 semana y sin fecha */ }
+  function guardarPeriodoDieta() { try { localStorage.setItem(CLAVE_PERIODO, JSON.stringify(periodoDieta)); } catch { falloAlmacenamiento(); } }
+  function sincronizarInicioDieta() {
+    if (periodoDieta.inicio && Motor.lunesDelInicio(periodoDieta.inicio) !== calInicio) { periodoDieta.inicio = ''; guardarPeriodoDieta(); }
+  }
+  function periodoDietaHtml() {
+    const fin = periodoDieta.inicio ? Motor.finDeLaDieta(periodoDieta.inicio, periodoDieta.semanas) : undefined;
+    const hoy = periodoDieta.inicio ? Motor.semanaDeLaDieta(Motor.fechaLocalISO(new Date()), periodoDieta.inicio, periodoDieta.semanas) : undefined;
+    return `
+      <div class="periodo-dieta" style="display:flex;flex-wrap:wrap;gap:0.6rem;align-items:flex-end;margin:0 0 0.8rem">
+        <div class="campo" style="margin:0"><label for="periodo-semanas">Esta dieta dura</label>
+          <select id="periodo-semanas">${[1, 2, 3, 4].map((n) => `<option value="${n}"${n === periodoDieta.semanas ? ' selected' : ''}>${n} semana${n === 1 ? '' : 's'}</option>`).join('')}</select></div>
+        <div class="campo" style="margin:0"><label for="periodo-inicio">Empiezo el</label>
+          <input id="periodo-inicio" type="date" value="${periodoDieta.inicio}"></div>
+      </div>
+      ${fin ? `<p class="una-linea" id="periodo-fin">Termina el ${fechaLegible(fin)}${hoy ? ` · hoy es la semana ${hoy.semana} de ${hoy.de}` : ''}.</p>` : ''}`;
+  }
+
   // --- Issue #73: «Hoy» (siguiente comida y sesión según el reloj de este dispositivo) y resumen de «Perfil».
   // No hay conexión con calendarios ni con la actividad real: solo el día de la semana y la hora del dispositivo.
   function pintarHoy() {
@@ -759,14 +786,23 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const numeros = `${dHoy ? `<p class="hoy-tipo">Tipo de día: <span class="dia-tipo">${escaparHtml(dHoy.tipo)}</span></p>
       <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`;
+    const finAviso = periodoDieta.inicio ? Motor.avisoFinDeLaDieta(iso, periodoDieta.inicio, periodoDieta.semanas) : undefined;
+    const avisoFinHtml = finAviso ? `
+      <div class="hoy-bloque" id="aviso-fin-dieta" role="status">
+        <p style="margin:0 0 0.4rem"><strong>Tu dieta termina ${finAviso.quedan === 0 ? 'hoy' : `el ${fechaLegible(finAviso.termina, false)}`}.</strong> Prepara ya la siguiente compra.</p>
+        <button type="button" class="btn-secundario" id="aviso-fin-compra">Ver la compra</button>
+      </div>` : '';
     cont.innerHTML = `
       <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)}</p>
+      ${avisoFinHtml}
       ${previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${bloqueComida}
       ${bloqueFuera}
       ${bloqueEntreno}
       ${cardCompeticionHtml(dia)}
       ${mas('numeros', 'Tus números de hoy', numeros)}`;
+    const btnFin = document.getElementById('aviso-fin-compra');
+    if (btnFin) btnFin.addEventListener('click', () => mostrarPanel('compra'));
   }
   setInterval(() => { if (panelActual === 'hoy' && !document.getElementById('resultado').hidden) pintarHoy(); }, 60000);
 
@@ -1565,6 +1601,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       categorias: Array.from(document.querySelectorAll('.cal-exp-cat')).filter((c) => c.checked).map((c) => c.value),
       conDetalle: document.getElementById('cal-exp-detalle').checked,
       sesiones, comidas, competiciones, extrasCompeticion: extrasIcsCompeticion(),
+      ...(periodoDieta.inicio ? { finDieta: Motor.finDeLaDieta(periodoDieta.inicio, periodoDieta.semanas) } : {}),
     };
   }
 
@@ -1714,6 +1751,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       error.hidden = false;
       return; // no se aplica ni se corrige en silencio
     } else { calInicio = valor; error.hidden = true; }
+    sincronizarInicioDieta();
     guardarCalendarioLocal();
     pintarCalendario();
   });
@@ -1721,6 +1759,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const hoy = new Date();
     const iso = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
     calInicio = Motor.lunesDeLaSemana(iso); // se elige con un clic explícito, nunca al cargar
+    sincronizarInicioDieta();
     document.getElementById('cal-inicio-error').hidden = true;
     document.getElementById('cal-inicio').value = calInicio;
     guardarCalendarioLocal();
@@ -1750,6 +1789,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (!window.confirm('¿Borrar todas las competiciones anotadas y la fecha de inicio elegida? No se puede deshacer.')) return;
     competiciones = [];
     calInicio = '';
+    sincronizarInicioDieta();
     salirDeEdicionCompeticion();
     try { localStorage.removeItem(CLAVE_CALENDARIO); } catch { falloAlmacenamiento(); /* nada que borrar */ }
     pintarCalendario();
@@ -2051,7 +2091,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     } else if (!asignaciones.length) {
       cuerpo = '<p style="color:var(--gris)">No se ha podido asignar ninguna receta de ejemplo a ninguna franja de los días elegidos.</p>';
     } else {
-      const listaBase = Motor.generarListaCompra(asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada })), catalogoPlan(asignaciones), { esProtegido: Motor.noSeReescala });
+      const listaBase = Motor.compraDelPeriodo(asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada })), catalogoPlan(asignaciones), { semanas: periodoDieta.semanas, conservacion: CONSERVACION_ACTIVA, esProtegido: Motor.noSeReescala });
+      const agrupado = periodoDieta.semanas > 1 && CONSERVACION_ACTIVA.size > 0;
       // Issue #76: una marca solo cuenta como cubierta si la cantidad de la dieta no cambió desde que se marcó.
       const evaluacion = Motor.evaluarMarcas(listaBase, Object.fromEntries(marcadosEnCasa));
       const aRevisar = new Map(evaluacion.aRevisar.map((m) => [m.ingrediente, m]));
@@ -2059,27 +2100,32 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       listaConEstado = lista;
       const gramosTxt = (g) => `${String(Math.round(g * 10) / 10).replace('.', ',')} g`;
       const dietaTxt = (item) => (item.comprar === `${item.gramosTotales} g` ? '' : ` <small class="dieta-dato">(dieta: ${gramosTxt(item.gramosTotales)})</small>`);
-      const porSeccion = new Map();
-      lista.forEach((item) => {
-        if (!porSeccion.has(item.seccion)) porSeccion.set(item.seccion, []);
-        porSeccion.get(item.seccion).push(item);
-      });
-      const secciones = Array.from(porSeccion.keys()).sort();
-      cuerpo = secciones.map((sec) => `
-        <h3 style="font-size:0.85rem;text-transform:uppercase;color:var(--gris);margin:1rem 0 0.4rem">${NOMBRE_SECCION[sec] ?? sec}</h3>
-        <ul class="resumen-lista">
-          ${porSeccion.get(sec).map((item) => `
+      const itemLi = (item) => `
             <li class="item-compra${aRevisar.has(item.ingrediente) ? ' a-revisar' : ''}">
               <label>
                 <input type="checkbox" class="marca-en-casa" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}" ${item.yaEnCasa ? 'checked' : ''} aria-label="Comprado o ya en casa: ${escaparHtml(item.ingrediente)}">
-                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${dietaTxt(item)}</span>
+                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · puedes comprarlo y congelar lo que no uses' : ''}</small>` : ''}</span>
               </label>
               ${aRevisar.has(item.ingrediente) ? `<div class="aviso-cantidad" role="status">Lo marcaste cuando hacían falta ${gramosTxt(aRevisar.get(item.ingrediente).marcado)} y ahora hacen falta ${gramosTxt(aRevisar.get(item.ingrediente).ahora)}: no se da por cubierto.
                 <button type="button" class="btn-texto marca-confirmar" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}">Sigue cubierto</button></div>` : ''}
-            </li>
-          `).join('')}
-        </ul>
-      `).join('');
+            </li>`;
+      const cabeceraSec = (t) => `<h3 style="font-size:0.85rem;text-transform:uppercase;color:var(--gris);margin:1rem 0 0.4rem">${t}</h3>`;
+      if (agrupado) {
+        const grupos = [['despensa', `🥫 Lo que no se va a poner malo · para las ${periodoDieta.semanas} semanas`], ['fresco', '🥬 Fresco']];
+        cuerpo = grupos.map(([g, titulo]) => {
+          const delGrupo = lista.filter((i) => i.grupo === g).sort((a, b) => a.seccion.localeCompare(b.seccion) || a.ingrediente.localeCompare(b.ingrediente));
+          return delGrupo.length ? `${cabeceraSec(titulo)}<ul class="resumen-lista">${delGrupo.map(itemLi).join('')}</ul>` : '';
+        }).join('');
+      } else {
+        const porSeccion = new Map();
+        lista.forEach((item) => {
+          if (!porSeccion.has(item.seccion)) porSeccion.set(item.seccion, []);
+          porSeccion.get(item.seccion).push(item);
+        });
+        const secciones = Array.from(porSeccion.keys()).sort();
+        cuerpo = secciones.map((sec) => `${cabeceraSec(NOMBRE_SECCION[sec] ?? sec)}<ul class="resumen-lista">${porSeccion.get(sec).map(itemLi).join('')}</ul>`).join('');
+        if (periodoDieta.semanas > 1) cuerpo = '<p class="una-linea">Por ahora todo se compra cada semana: todavía no está validado qué aguanta sin ponerse malo.</p>' + cuerpo;
+      }
 
       const estimacion = Motor.estimarCoste(lista, PRECIOS_EJEMPLO);
       porqueCompra = porqueHtml('compra', Motor.explicarCompra({ dias: diasElegidos.length, huecos: huecos.length, sinPrecio: estimacion.sinPrecio.length }), '¿Por qué estas cantidades y este coste?');
@@ -2143,6 +2189,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <h2>Lista de la compra</h2>
       <p class="una-linea">Hecha con las recetas de EJEMPLO de tu semana, no definitivas.</p>
       <details class="saber-mas"><summary>Saber más</summary><p>Marca lo que ya has comprado o tienes en casa (el pan olvidado en el congelador también cuenta). Si después cambia la cantidad que hace falta (otra receta, otros días), te avisamos en lugar de darlo por cubierto. «Dieta» es lo que pide el plan; «comprar» está redondeado hacia arriba.</p></details>
+      ${periodoDietaHtml()}
       <p style="font-size:0.85rem;color:var(--gris);margin:0 0 0.4rem">¿Qué días seguirás el plan esta semana?</p>
       ${diasHtml}
       ${porqueCompra}
@@ -2185,6 +2232,21 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       }
     });
 
+    document.getElementById('periodo-semanas').addEventListener('change', (ev) => {
+      periodoDieta.semanas = Motor.semanasValidas(ev.target.value);
+      guardarPeriodoDieta();
+      renderizarListaCompra();
+    });
+    document.getElementById('periodo-inicio').addEventListener('change', (ev) => {
+      periodoDieta.inicio = Motor.esFechaValida(ev.target.value) ? ev.target.value : '';
+      guardarPeriodoDieta();
+      if (periodoDieta.inicio) {
+        calInicio = Motor.lunesDelInicio(periodoDieta.inicio);
+        guardarCalendarioLocal(); // repinta la semana con las fechas nuevas
+        pintarCalendario();
+      }
+      renderizarListaCompra();
+    });
     document.querySelectorAll('#lista-compra .dia-compra-check').forEach((chk) => {
       chk.addEventListener('change', () => {
         if (chk.checked) diasIncluidosCompra.add(chk.value); else diasIncluidosCompra.delete(chk.value);
@@ -2956,8 +3018,15 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     renderizarZonaDeshacer();
 
     // Issue #21: mensaje en español llano primero, el código técnico se queda visible pero en pequeño.
-    document.getElementById('r-avisos').innerHTML = (plan.avisos.length || avisosReparto.length)
+    // Issue #169: lo escrito en «Otros alimentos a evitar» que la app no sabe filtrar se dice aquí; no se calla.
+    const avisosAlergias = (restriccionesActuales ? Motor.leerEvitados(restriccionesActuales, RECETAS_EJEMPLO) : [])
+      .filter((l) => l.deAlergia && (l.lectura === 'no_comprobable' || l.lectura === 'sin_coincidencias'))
+      .map((l) => (l.lectura === 'no_comprobable'
+        ? `⚠️ «${escaparHtml(l.texto)}»: con los ingredientes de una receta no se puede saber si lo lleva. Revísalo con Pablo antes de seguir el plan.`
+        : `⚠️ No he encontrado «${escaparHtml(l.texto)}» en ninguna receta. Si es una alergia que afecta a más alimentos, la app no lo sabe: revísalo con Pablo.`));
+    document.getElementById('r-avisos').innerHTML = (plan.avisos.length || avisosReparto.length || avisosAlergias.length)
       ? [
+        ...avisosAlergias.map((a) => `<li>${a}<br><small style="opacity:.55">alergias</small></li>`),
         ...plan.avisos.map((a) => `<li>${MENSAJE_LLANO[a.codigo] ?? a.texto}<br><small style="opacity:.55">${a.codigo}: ${a.texto}</small></li>`),
         ...avisosReparto.map((a) => `<li>${escaparHtml(a)}<br><small style="opacity:.55">reparto</small></li>`),
       ].join('')
@@ -2965,8 +3034,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('r-notas').innerHTML = plan.notas.length
       ? plan.notas.map((n) => `<li>${n}</li>`).join('') : '<li>Ninguna.</li>';
     // Issue #119: avisos y notas van plegados (con su recuento) para no saturar la pantalla; si algún aviso exige revisar con Pablo, se abre solo.
-    document.querySelector('#tarjeta-avisos summary').textContent = `Avisos del plan (${plan.avisos.length + avisosReparto.length})`;
-    document.querySelector('#tarjeta-avisos details').open = plan.avisos.some((a) => a.codigo === 'revisar_con_pablo');
+    document.querySelector('#tarjeta-avisos summary').textContent = `Avisos del plan (${plan.avisos.length + avisosReparto.length + avisosAlergias.length})`;
+    document.querySelector('#tarjeta-avisos details').open = avisosAlergias.length > 0 || plan.avisos.some((a) => a.codigo === 'revisar_con_pablo');
     document.querySelector('#tarjeta-notas summary').textContent = `Notas del plan (${plan.notas.length})`;
 
     // Texto legible en vez de volcar el JSON (issue #13): además de verse mal, desbordaba en móvil.

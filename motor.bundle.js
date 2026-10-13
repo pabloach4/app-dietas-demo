@@ -24,6 +24,7 @@ var Motor = (() => {
     ACTIVIDAD_POR_TIPO: () => ACTIVIDAD_POR_TIPO,
     AVISO_DESCARGA: () => AVISO_DESCARGA,
     DIAS: () => DIAS,
+    DIAS_AVISO_FIN: () => DIAS_AVISO_FIN,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
     ETIQUETA_FASE: () => ETIQUETA_FASE,
@@ -42,6 +43,9 @@ var Motor = (() => {
     RECETAS_CATALOGO_INGREDIENTES_CSV: () => RECETAS_CATALOGO_INGREDIENTES_CSV,
     RECETAS_EJEMPLO_CSV: () => RECETAS_EJEMPLO_CSV,
     RECETAS_EJEMPLO_INGREDIENTES_CSV: () => RECETAS_EJEMPLO_INGREDIENTES_CSV,
+    SEMANAS_MAX: () => SEMANAS_MAX,
+    SEMANAS_MIN: () => SEMANAS_MIN,
+    SEMANAS_POR_DEFECTO: () => SEMANAS_POR_DEFECTO,
     TEXTO_NIVEL: () => TEXTO_NIVEL,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
@@ -56,6 +60,7 @@ var Motor = (() => {
     aplicarSustituciones: () => aplicarSustituciones,
     asignarRecetas: () => asignarRecetas,
     avisoClasificacionSesion: () => avisoClasificacionSesion,
+    avisoFinDeLaDieta: () => avisoFinDeLaDieta,
     avisosVolumen: () => avisosVolumen,
     bandaPesoServido: () => bandaPesoServido,
     borrarCompeticion: () => borrarCompeticion,
@@ -64,6 +69,7 @@ var Motor = (() => {
     calcularNiveles: () => calcularNiveles,
     cambiarHoraSesion: () => cambiarHoraSesion,
     cargaDeHidratos: () => cargaDeHidratos,
+    categoriasDeTexto: () => categoriasDeTexto,
     claveSlot: () => claveSlot,
     coherenciaKcalMacros: () => coherenciaKcalMacros,
     coincideAlimento: () => coincideAlimento,
@@ -71,7 +77,9 @@ var Motor = (() => {
     competicionesDelDia: () => competicionesDelDia,
     competicionesDesdeJson: () => competicionesDesdeJson,
     componerComida: () => componerComida,
+    compraDelPeriodo: () => compraDelPeriodo,
     conflictosComidaEntreno: () => conflictosComidaEntreno,
+    conservacionDesdeCsv: () => conservacionDesdeCsv,
     construirEventos: () => construirEventos,
     contextoDiaPorDefecto: () => contextoDiaPorDefecto,
     copiarAlPortapapeles: () => copiarAlPortapapeles,
@@ -110,6 +118,7 @@ var Motor = (() => {
     fechaLocalISO: () => fechaLocalISO,
     filtrarCatalogo: () => filtrarCatalogo,
     filtrarPorDias: () => filtrarPorDias,
+    finDeLaDieta: () => finDeLaDieta,
     finUltimaPruebaH: () => finUltimaPruebaH,
     formatearListaPendiente: () => formatearListaPendiente,
     gastoDePrueba: () => gastoDePrueba,
@@ -118,11 +127,13 @@ var Motor = (() => {
     grupoDeFranja: () => grupoDeFranja,
     horaDeGuardado: () => horaDeGuardado,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
+    leerEvitados: () => leerEvitados,
     limiteFibraG: () => limiteFibraG,
     limpiarNotaSesion: () => limpiarNotaSesion,
     lineasIcs: () => lineasIcs,
     listaManualDesdeJson: () => listaManualDesdeJson,
     lunesDeLaSemana: () => lunesDeLaSemana,
+    lunesDelInicio: () => lunesDelInicio,
     marcarYaEnCasa: () => marcarYaEnCasa,
     moverSesion: () => moverSesion,
     noSeReescala: () => noSeReescala,
@@ -143,6 +154,8 @@ var Motor = (() => {
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
     rolIngrediente: () => rolIngrediente,
+    semanaDeLaDieta: () => semanaDeLaDieta,
+    semanasValidas: () => semanasValidas,
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
     usosVariedadSemana: () => usosVariedadSemana,
@@ -1284,6 +1297,194 @@ var Motor = (() => {
     return avisos;
   }
 
+  // src/motor/alergenos.ts
+  var CATEGORIAS_ALERGENO = [
+    {
+      clave: "gluten",
+      rotulo: "gluten",
+      etiquetas: ["gluten"],
+      aptitud: "sinGluten",
+      nombres: ["gluten", "trigo", "cereales con gluten", "celiaqu\xEDa", "celiaco", "celiaca"],
+      alimentos: [
+        "trigo",
+        "pan",
+        "pasta",
+        "espagueti",
+        "macarr\xF3n",
+        "fideo",
+        "tallar\xEDn",
+        "lasa\xF1a",
+        "canel\xF3n",
+        "ravioli",
+        "tortellini",
+        "\xF1oqui",
+        "cusc\xFAs",
+        "bulgur",
+        "seit\xE1n",
+        "harina",
+        "s\xE9mola",
+        "avena",
+        "cebada",
+        "centeno",
+        "espelta",
+        "kamut",
+        "galleta",
+        "tostada",
+        "biscote",
+        "picatoste",
+        "pizza",
+        "empanada",
+        "empanadilla",
+        "rebozado",
+        "bizcocho",
+        "magdalena",
+        "croissant",
+        "boller\xEDa",
+        "hojaldre",
+        "crepe",
+        "wrap",
+        "noodle",
+        "cereales",
+        "muesli",
+        "granola",
+        "cerveza",
+        "salsa de soja"
+      ]
+    },
+    {
+      clave: "lacteos",
+      rotulo: "l\xE1cteos",
+      etiquetas: ["l\xE1cteos", "leche"],
+      aptitud: "sinLactosa",
+      nombres: ["l\xE1cteos", "productos l\xE1cteos", "lactosa", "case\xEDna", "prote\xEDna de la leche", "prote\xEDna de leche de vaca", "aplv"],
+      nombresSoloAlergia: ["leche"],
+      alimentos: [
+        "leche",
+        "yogur",
+        "queso",
+        "nata",
+        "mantequilla",
+        "k\xE9fir",
+        "cuajada",
+        "reques\xF3n",
+        "mozzarella",
+        "cottage",
+        "parmesano",
+        "ricotta",
+        "mascarpone",
+        "burrata",
+        "feta",
+        "emmental",
+        "cheddar",
+        "skyr",
+        "helado",
+        "batido",
+        "natillas",
+        "flan",
+        "bechamel",
+        "suero de leche",
+        "prote\xEDna de suero",
+        "whey",
+        "case\xEDna"
+      ]
+    },
+    {
+      clave: "huevo",
+      rotulo: "huevo",
+      etiquetas: ["huevo", "huevos"],
+      nombres: ["huevo", "ovoalb\xFAmina", "prote\xEDna de huevo"],
+      alimentos: ["huevo", "clara", "yema", "tortilla francesa", "tortilla de patata", "tortilla espa\xF1ola", "mayonesa", "alioli", "merengue", "revuelto"]
+    },
+    {
+      clave: "pescado",
+      rotulo: "pescado",
+      etiquetas: ["pescado"],
+      nombres: ["pescado"],
+      alimentos: [
+        "pescado",
+        "at\xFAn",
+        "bonito",
+        "bacalao",
+        "merluza",
+        "pescadilla",
+        "salm\xF3n",
+        "lubina",
+        "dorada",
+        "sardina",
+        "caballa",
+        "boquer\xF3n",
+        "anchoa",
+        "lenguado",
+        "rape",
+        "trucha",
+        "emperador",
+        "pez espada",
+        "gallo",
+        "rodaballo",
+        "panga",
+        "perca",
+        "mero",
+        "besugo",
+        "jurel",
+        "melva",
+        "arenque",
+        "abadejo",
+        "flet\xE1n",
+        "tilapia",
+        "salmonete",
+        "caz\xF3n",
+        "anguila",
+        "surimi",
+        "gulas",
+        "caviar",
+        "huevas"
+      ]
+    },
+    {
+      clave: "crustaceos",
+      rotulo: "crust\xE1ceos",
+      etiquetas: ["crust\xE1ceos"],
+      nombres: ["crust\xE1ceos"],
+      alimentos: ["gamba", "langostino", "cigala", "bogavante", "langosta", "cangrejo", "n\xE9cora", "centollo", "buey de mar", "percebe", "camar\xF3n", "quisquilla", "carabinero"]
+    },
+    {
+      clave: "moluscos",
+      rotulo: "moluscos",
+      etiquetas: ["moluscos"],
+      nombres: ["moluscos", "cefal\xF3podos"],
+      alimentos: ["mejill\xF3n", "almeja", "berberecho", "calamar", "sepia", "pulpo", "chipir\xF3n", "choco", "pota", "ostra", "vieira", "zamburi\xF1a", "navaja", "caracol", "coquina", "chirla"]
+    },
+    { clave: "marisco", rotulo: "marisco", etiquetas: ["marisco"], nombres: ["marisco"], alimentos: ["marisco"], incluye: ["crustaceos", "moluscos"] },
+    {
+      clave: "frutos_cascara",
+      rotulo: "frutos de c\xE1scara",
+      etiquetas: ["frutos de c\xE1scara"],
+      nombres: ["frutos de c\xE1scara", "frutos secos de \xE1rbol"],
+      alimentos: ["almendra", "nuez", "avellana", "anacardo", "pistacho", "pi\xF1\xF3n", "pacana", "macadamia", "casta\xF1a", "pralin\xE9", "mazap\xE1n", "turr\xF3n"]
+    },
+    { clave: "cacahuete", rotulo: "cacahuete", etiquetas: ["cacahuete", "cacahuetes"], nombres: ["cacahuete", "man\xED"], alimentos: ["cacahuete", "man\xED"] },
+    { clave: "frutos_secos", rotulo: "frutos secos", etiquetas: ["frutos secos"], nombres: ["frutos secos"], alimentos: ["frutos secos"], incluye: ["frutos_cascara", "cacahuete"] },
+    {
+      clave: "soja",
+      rotulo: "soja",
+      etiquetas: ["soja"],
+      nombres: ["soja", "soya"],
+      alimentos: ["soja", "tofu", "tempeh", "edamame", "miso", "tamari", "natto"]
+    },
+    { clave: "sesamo", rotulo: "s\xE9samo", etiquetas: ["s\xE9samo"], nombres: ["s\xE9samo", "ajonjol\xED"], alimentos: ["s\xE9samo", "ajonjol\xED", "tahini", "tah\xEDn", "hummus", "gomasio"] },
+    { clave: "mostaza", rotulo: "mostaza", etiquetas: ["mostaza"], nombres: ["mostaza"], alimentos: ["mostaza"] },
+    { clave: "apio", rotulo: "apio", etiquetas: ["apio"], nombres: ["apio"], alimentos: ["apio", "apionabo"] },
+    { clave: "altramuces", rotulo: "altramuces", etiquetas: ["altramuces"], nombres: ["altramuces", "lupino"], alimentos: ["altramuz", "lupino"] },
+    {
+      clave: "sulfitos",
+      rotulo: "sulfitos",
+      etiquetas: ["sulfitos"],
+      noComprobable: true,
+      nombres: ["sulfitos", "di\xF3xido de azufre"],
+      alimentos: []
+    }
+  ];
+
   // src/motor/filtro-alergias.ts
   function normalizar3(s) {
     return Array.from(s.normalize("NFD")).filter((c) => c.codePointAt(0) < 768 || c.codePointAt(0) > 879).join("").toLowerCase();
@@ -1301,7 +1502,55 @@ var Motor = (() => {
   function coincideAlimento(a2, b) {
     const x = raizAlimento(a2);
     const y = raizAlimento(b);
-    return !!x && !!y && (x.includes(y) || y.includes(x));
+    return contienePalabras(x, y) || contienePalabras(y, x);
+  }
+  var indiceCategorias;
+  function categoriasListas() {
+    indiceCategorias ??= new Map(CATEGORIAS_ALERGENO.map((cat) => [cat.clave, {
+      cat,
+      nombres: cat.nombres.map(raizAlimento),
+      soloAlergia: (cat.nombresSoloAlergia ?? []).map(raizAlimento),
+      etiquetas: cat.etiquetas.map(raizAlimento),
+      alimentos: cat.alimentos.map(raizAlimento)
+    }]));
+    return indiceCategorias;
+  }
+  function contienePalabras(texto, buscado) {
+    return !!buscado && ` ${texto} `.includes(` ${buscado} `);
+  }
+  var ARTICULOS = /* @__PURE__ */ new Set(["el", "la", "lo", "los", "las", "un", "una", "al", "del", "de", "todo", "toda"]);
+  function categoriasDeTexto(texto, esAlergia) {
+    const raiz = raizAlimento(texto);
+    if (!raiz) return [];
+    const palabras = raiz.split(" ");
+    while (palabras.length > 1 && ARTICULOS.has(palabras[0])) palabras.shift();
+    const exacta = palabras.join(" ");
+    const listas = categoriasListas();
+    const encontradas = /* @__PURE__ */ new Map();
+    const anadir = (c) => {
+      if (encontradas.has(c.cat.clave)) return;
+      encontradas.set(c.cat.clave, c.cat);
+      for (const clave of c.cat.incluye ?? []) {
+        const hija = listas.get(clave);
+        if (hija) anadir(hija);
+      }
+    };
+    for (const c of listas.values()) {
+      const nombra = esAlergia ? [...c.nombres, ...c.soloAlergia].some((n) => contienePalabras(raiz, n)) : c.nombres.includes(exacta);
+      if (nombra) anadir(c);
+    }
+    return [...encontradas.values()];
+  }
+  function choqueConCategoria(receta, cat, esAlergia) {
+    const c = categoriasListas().get(cat.clave);
+    if ((receta.alergenos ?? []).some((a2) => c.etiquetas.includes(raizAlimento(a2)))) return `lleva ${cat.rotulo}`;
+    const ingrediente = receta.ingredientes.find((ing) => {
+      const nombre = raizAlimento(ing.nombre);
+      return c.alimentos.some((a2) => contienePalabras(nombre, a2));
+    });
+    if (ingrediente) return `lleva "${ingrediente.nombre}" (${cat.rotulo})`;
+    if (esAlergia && cat.aptitud && receta.aptitudes && receta.aptitudes[cat.aptitud] !== "si") return `no consta como apta sin ${cat.rotulo} (pendiente de ficha)`;
+    return void 0;
   }
   var LACTEOS = ["leche", "yogur", "queso", "nata", "mantequilla", "kefir", "cuajada"];
   var CARNE_PESCADO = [
@@ -1374,26 +1623,52 @@ var Motor = (() => {
         if (ingrediente) return { compatible: false, motivo: { tipo: "no_vegetariano", detalle: `lleva "${ingrediente}" (carne o pescado)` } };
       }
     }
+    const deAlergia = new Set((ap.deAlergia ?? []).map(raizAlimento));
     for (const evitado of ap.evitados) {
-      if (!raizAlimento(evitado)) continue;
+      const raiz = raizAlimento(evitado);
+      if (!raiz) continue;
       const ingrediente = receta.ingredientes.find((ing) => coincideAlimento(ing.nombre, evitado));
       if (ingrediente) {
         return { compatible: false, motivo: { tipo: "evitado", detalle: `lleva "${ingrediente.nombre}" (en la lista de alimentos evitados: "${evitado}")` } };
+      }
+      const esAlergia = deAlergia.has(raiz);
+      for (const cat of categoriasDeTexto(evitado, esAlergia)) {
+        const choque = choqueConCategoria(receta, cat, esAlergia);
+        if (choque) return { compatible: false, motivo: { tipo: "evitado", detalle: `${choque} (en la lista de alimentos evitados: "${evitado}")` } };
       }
     }
     return { compatible: true };
   }
   function partirTexto(texto) {
-    return (texto ?? "").split(/[,;]| y /i).map((s) => s.trim()).filter(Boolean);
+    return (texto ?? "").split(/[,;\n]| y | e | o | ni /i).map((s) => s.trim()).filter(Boolean);
   }
   function alergiasPreferenciasDesdeTexto(alergias, evitanTexto) {
+    const deAlergia = partirTexto(alergias.otros);
     return {
       celiaquia: alergias.celiaquia,
       lactosa: alergias.lactosa,
       vegetariano: alergias.vegetariano,
       vegano: alergias.vegano,
-      evitados: [...partirTexto(alergias.otros), ...partirTexto(evitanTexto)]
+      evitados: [...deAlergia, ...partirTexto(evitanTexto)],
+      deAlergia
     };
+  }
+  function leerEvitados(ap, recetas) {
+    const deAlergia = new Set((ap.deAlergia ?? []).map(raizAlimento));
+    const vistos = /* @__PURE__ */ new Set();
+    const lecturas = [];
+    for (const texto of ap.evitados) {
+      const raiz = raizAlimento(texto);
+      if (!raiz || vistos.has(raiz)) continue;
+      vistos.add(raiz);
+      const esAlergia = deAlergia.has(raiz);
+      const categorias = categoriasDeTexto(texto, esAlergia);
+      const solo = { celiaquia: false, lactosa: false, vegetariano: false, vegano: false, evitados: [texto], deAlergia: esAlergia ? [texto] : [] };
+      const recetasExcluidas = recetas.filter((r) => !evaluarCompatibilidad(r, solo).compatible).length;
+      const lectura = categorias.some((c) => c.noComprobable) ? "no_comprobable" : categorias.length ? "categoria" : recetasExcluidas ? "alimento" : "sin_coincidencias";
+      lecturas.push({ texto, deAlergia: esAlergia, lectura, categorias: categorias.map((c) => c.rotulo), recetasExcluidas });
+    }
+    return lecturas;
   }
 
   // src/motor/asignador-recetas.ts
@@ -1462,7 +1737,13 @@ var Motor = (() => {
     }
     const principales = platos.filter((p) => p.tipoPlato !== "postre");
     const franjas = (principales.length ? principales : platos)[0].franjas.filter((f2) => (principales.length ? principales : platos).every((p) => p.franjas.includes(f2)));
+    const aptitud = (clave) => {
+      const valores = platos.map((p) => p.aptitudes?.[clave] ?? "pendiente_ficha");
+      return valores.includes("no") ? "no" : valores.every((v) => v === "si") ? "si" : "pendiente_ficha";
+    };
     return {
+      ...platos.some((p) => p.alergenos) ? { alergenos: [...new Set(platos.flatMap((p) => p.alergenos ?? []))] } : {},
+      ...platos.some((p) => p.aptitudes) ? { aptitudes: { vegetariano: aptitud("vegetariano"), vegano: aptitud("vegano"), sinLactosa: aptitud("sinLactosa"), sinGluten: aptitud("sinGluten") } } : {},
       id: platos.map((p) => p.id).join("+"),
       nombre: platos.map((p) => `${ROTULO_PLATO[p.tipoPlato ?? ""] ?? "Plato"}: ${p.nombre}`).join(" \xB7 "),
       franjas,
@@ -1760,7 +2041,7 @@ var Motor = (() => {
         continue;
       }
       if (ap && recetas.length) {
-        const choque = evaluarCompatibilidad({ ...recetas[0], ingredientes: [{ nombre: alimento, gramos: 100 }] }, ap);
+        const choque = evaluarCompatibilidad({ ...recetas[0], alergenos: void 0, aptitudes: void 0, ingredientes: [{ nombre: alimento, gramos: 100 }] }, ap);
         if (!choque.compatible) {
           const t = choque.motivo?.tipo;
           const causa = t === "evitado" ? "est\xE1 en tu lista negra o en tus alergias, y eso manda siempre" : t === "celiaquia_sin_confirmar" ? "con celiaqu\xEDa no se da por segura ninguna receta de ejemplo" : `choca con lo que has indicado (${t === "lactosa" ? "lactosa" : t === "no_vegano" ? "vegano" : "vegetariano"})`;
@@ -1929,6 +2210,8 @@ var Motor = (() => {
     return `${Math.ceil(gramos / paso) * paso} g`;
   }
   function generarListaCompra(asignaciones, recetas, opciones = {}) {
+    const semanas = opciones.semanas ?? 1;
+    if (!Number.isInteger(semanas) || semanas < 1) throw new Error(`Semanas inv\xE1lidas en la lista de la compra: ${semanas}`);
     const porId = new Map(recetas.map((r) => [r.id, r]));
     const totales = /* @__PURE__ */ new Map();
     for (const { recetaId, veces, racion = 1 } of asignaciones) {
@@ -1942,7 +2225,7 @@ var Motor = (() => {
       }
       for (const ing of receta.ingredientes) {
         const factor = opciones.esProtegido?.(ing.nombre) ? 1 : racion;
-        totales.set(ing.nombre, (totales.get(ing.nombre) ?? 0) + ing.gramos * veces * factor);
+        totales.set(ing.nombre, (totales.get(ing.nombre) ?? 0) + ing.gramos * veces * factor * semanas);
       }
     }
     return Array.from(totales.entries()).map(([ingrediente, gramosTotales]) => ({
@@ -2322,6 +2605,101 @@ var Motor = (() => {
     return `${String(fecha.getFullYear()).padStart(4, "0")}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
   }
 
+  // src/motor/periodo-dieta.ts
+  var SEMANAS_MIN = 1;
+  var SEMANAS_MAX = 4;
+  var SEMANAS_POR_DEFECTO = 1;
+  var MS_DIA2 = 864e5;
+  function aUTC2(f2) {
+    const [y, m, d] = f2.split("-").map(Number);
+    return Date.UTC(y, m - 1, d);
+  }
+  function deUTC2(t) {
+    const c = new Date(t);
+    return `${String(c.getUTCFullYear()).padStart(4, "0")}-${String(c.getUTCMonth() + 1).padStart(2, "0")}-${String(c.getUTCDate()).padStart(2, "0")}`;
+  }
+  function semanasValidas(valor) {
+    const n = typeof valor === "string" ? Number(valor) : valor;
+    return typeof n === "number" && Number.isInteger(n) && n >= SEMANAS_MIN && n <= SEMANAS_MAX ? n : SEMANAS_POR_DEFECTO;
+  }
+  function finDeLaDieta(inicio, semanas) {
+    if (!esFechaValida(inicio)) return void 0;
+    return deUTC2(aUTC2(inicio) + (7 * semanasValidas(semanas) - 1) * MS_DIA2);
+  }
+  function semanaDeLaDieta(hoy, inicio, semanas) {
+    if (!esFechaValida(hoy) || !esFechaValida(inicio)) return void 0;
+    const de = semanasValidas(semanas);
+    const dias = Math.round((aUTC2(hoy) - aUTC2(inicio)) / MS_DIA2);
+    if (dias < 0 || dias >= 7 * de) return void 0;
+    return { semana: Math.floor(dias / 7) + 1, de };
+  }
+  function lunesDelInicio(inicio) {
+    return esFechaValida(inicio) ? lunesDeLaSemana(inicio) : void 0;
+  }
+  var DIAS_AVISO_FIN = 3;
+  function avisoFinDeLaDieta(hoy, inicio, semanas) {
+    if (!esFechaValida(hoy)) return void 0;
+    const termina = finDeLaDieta(inicio, semanas);
+    if (!termina) return void 0;
+    const quedan = Math.round((aUTC2(termina) - aUTC2(hoy)) / MS_DIA2);
+    return quedan >= 0 && quedan <= DIAS_AVISO_FIN ? { termina, quedan } : void 0;
+  }
+
+  // src/motor/compra-periodo.ts
+  function conservacionDesdeCsv(texto) {
+    const tabla = /* @__PURE__ */ new Map();
+    const filas = [];
+    let fila = [], celda = "", entreComillas = false;
+    for (let i = 0; i < texto.length; i++) {
+      const c = texto[i];
+      if (entreComillas) {
+        if (c === '"' && texto[i + 1] === '"') {
+          celda += '"';
+          i++;
+        } else if (c === '"') entreComillas = false;
+        else celda += c;
+      } else if (c === '"') entreComillas = true;
+      else if (c === ",") {
+        fila.push(celda);
+        celda = "";
+      } else if (c === "\n" || c === "\r") {
+        if (c === "\r" && texto[i + 1] === "\n") i++;
+        fila.push(celda);
+        celda = "";
+        if (fila.some((x) => x !== "")) filas.push(fila);
+        fila = [];
+      } else celda += c;
+    }
+    fila.push(celda);
+    if (fila.some((x) => x !== "")) filas.push(fila);
+    for (const [ingrediente, tipo, congelable] of filas.slice(1)) {
+      const t = (tipo ?? "").trim();
+      if (!ingrediente || t !== "despensa" && t !== "fresco") continue;
+      tabla.set(ingrediente.trim(), { tipo: t, congelable: t === "fresco" && (congelable ?? "").trim() === "si" });
+    }
+    return tabla;
+  }
+  function compraDelPeriodo(asignaciones, recetas, opciones) {
+    const { semanas, conservacion = /* @__PURE__ */ new Map() } = opciones;
+    const base = { esProtegido: opciones.esProtegido };
+    const unaSemana = generarListaCompra(asignaciones, recetas, base);
+    const periodo = semanas > 1 ? new Map(generarListaCompra(asignaciones, recetas, { ...base, semanas }).map((i) => [i.ingrediente, i])) : void 0;
+    return unaSemana.map((item) => {
+      const c = conservacion.get(item.ingrediente);
+      if (c?.tipo === "despensa" && periodo) {
+        const p = periodo.get(item.ingrediente);
+        return { ...p, grupo: "despensa", congelable: false };
+      }
+      if (c?.tipo === "despensa") return { ...item, grupo: "despensa", congelable: false };
+      return {
+        ...item,
+        grupo: "fresco",
+        congelable: c?.congelable === true,
+        ...periodo && c ? { comprarPeriodo: periodo.get(item.ingrediente).comprar } : {}
+      };
+    });
+  }
+
   // src/motor/ics.ts
   var ZONAS_ICS = [
     { id: "Europe/Madrid", nombre: "Pen\xEDnsula y Baleares (Europe/Madrid)" },
@@ -2408,6 +2786,9 @@ var Motor = (() => {
       for (const x of op.extrasCompeticion ?? []) {
         eventos.push({ uid: `${x.uid}@${DOMINIO_UID}`, categoria: "competiciones", titulo: x.titulo, fecha: x.fecha, hora: x.hora, ...op.conDetalle && x.detalle ? { detalle: x.detalle } : {} });
       }
+    }
+    if (quiere.has("comidas") && op.finDieta && op.finDieta >= op.inicio) {
+      eventos.push({ uid: `fin-dieta-${op.finDieta}@${DOMINIO_UID}`, categoria: "comidas", titulo: "Termina tu dieta: prepara la siguiente compra", fecha: op.finDieta });
     }
     eventos.sort((a2, b) => a2.fecha.localeCompare(b.fecha) || (a2.hora ?? "").localeCompare(b.hora ?? "") || a2.uid.localeCompare(b.uid));
     return { eventos, omitidos };
@@ -3411,7 +3792,7 @@ r43,aceite de oliva,10`;
   var AVISO_DESCARGA = "Si bajas el entreno esta semana, actualiza tus sesiones y el plan se ajusta.";
   var UMBRAL_CARGA_COMPLETA_MIN = 150;
   var KCAL_POR_G_HIDRATO = 4;
-  var MS_DIA2 = 864e5;
+  var MS_DIA3 = 864e5;
   var PRIORIDAD = { descarga: 0, previa: 1, recuperacion: 2, carga: 3, vispera: 4, competicion: 5 };
   var ACTIVIDAD_POR_TIPO = {
     carrera_10k: [["correr", 1]],
@@ -3458,8 +3839,8 @@ r43,aceite de oliva,10`;
     }
     return fin;
   }
-  var aUTC2 = (f2) => Date.UTC(Number(f2.slice(0, 4)), Number(f2.slice(5, 7)) - 1, Number(f2.slice(8, 10)));
-  var diasEntre = (a2, b) => Math.round((aUTC2(b) - aUTC2(a2)) / MS_DIA2);
+  var aUTC3 = (f2) => Date.UTC(Number(f2.slice(0, 4)), Number(f2.slice(5, 7)) - 1, Number(f2.slice(8, 10)));
+  var diasEntre = (a2, b) => Math.round((aUTC3(b) - aUTC3(a2)) / MS_DIA3);
   var NOMBRE_DIA_SEMANA = ["domingo", "lunes", "martes", "mi\xE9rcoles", "jueves", "viernes", "s\xE1bado"];
   function perfilDeEsfuerzo(c) {
     if (!c.pruebas?.length) return { duracionMax: DURACION_PROPUESTA_MIN[c.tipo ?? "otra"], variasMismoDia: false };
@@ -3607,7 +3988,7 @@ r43,aceite de oliva,10`;
     if (hoy !== void 0 && futuras.length) {
       const c = futuras[0];
       const faltan = Math.max(0, diasEntre(hoy, c.fecha));
-      const diaSemana = NOMBRE_DIA_SEMANA[new Date(aUTC2(c.fecha)).getUTCDay()];
+      const diaSemana = NOMBRE_DIA_SEMANA[new Date(aUTC3(c.fecha)).getUTCDay()];
       avisos.push(faltan === 0 ? `Compites hoy: ${c.nombre}.` : `Compites el ${diaSemana}: faltan ${faltan} ${faltan === 1 ? "d\xEDa" : "d\xEDas"} (${c.nombre}).`);
     }
     const pesoCerca = competiciones.some((c) => c.tipo === "categoria_peso" && DIAS.some((dia) => {
