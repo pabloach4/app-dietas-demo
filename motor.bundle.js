@@ -4800,7 +4800,23 @@ R111,Mel\xF3n,comida;cena,85,2.1,0.5,20.4,EJEMPLO,postre,2.2,,,,si,si,si,pendien
 R112,Sand\xEDa,comida;cena,90,1.8,0.5,22.6,EJEMPLO,postre,1.2,,,,si,si,si,pendiente_ficha,si,2,nuevo,Servir fr\xEDa.,normal
 R113,Naranja con almendras,comida;cena,181,5.1,7.7,26.7,EJEMPLO,postre,6.7,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,3,nuevo,Naranja pelada con almendras.,normal
 R114,Kiwi con yogur griego,comida;cena,147,14.1,1.1,22.1,EJEMPLO,postre,3.6,,,l\xE1cteos,si,no,no,pendiente_ficha,si,3,nuevo,Kiwi troceado con el yogur.,normal
-R115,Compota de manzana sin az\xFAcar,comida;cena,106,0.6,0.4,28.4,EJEMPLO,postre,5.3,,,,si,si,si,pendiente_ficha,si,20,nuevo,Cocer la manzana pelada con canela y triturar.,normal`;
+R115,Compota de manzana sin az\xFAcar,comida;cena,106,0.6,0.4,28.4,EJEMPLO,postre,5.3,,,,si,si,si,pendiente_ficha,si,20,nuevo,Cocer la manzana pelada con canela y triturar.,normal
+R116,Tostada blanca con huevo y yogur,desayuno;media_manana;merienda,322,16.3,14.4,31.0,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.35,huevo,pan,gluten;huevo;l\xE1cteos,si,no,no,no,si,10,nuevo,Tostar el pan; cocinar bien el huevo con el aceite. Servir el yogur aparte.,normal
+R117,Arroz con leche y canela,desayuno;media_manana;merienda,278,9.5,4.2,50.2,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,0.81,,cereal,l\xE1cteos,si,no,no,pendiente_ficha,si,10,nuevo,Pesar arroz seco y cocerlo en leche a fuego suave hasta que est\xE9 hecho; a\xF1adir miel y canela.,normal
+R118,Yogur con pl\xE1tano y miel,desayuno;media_manana;merienda,206,7.6,6.7,31.3,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.58,,,l\xE1cteos,si,no,no,pendiente_ficha,si,10,nuevo,Trocear el pl\xE1tano sin piel y mezclar con el yogur y la miel.,normal
+R119,Bocadillo de pollo asado y yogur,desayuno;media_manana;merienda,318,25.2,7.8,35.5,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.62,pechuga de pollo asada,pan,gluten;l\xE1cteos,no,no,no,no,si,10,nuevo,"Pesar el pollo ya asado, rellenar el pan y servir el yogur aparte.",normal
+R120,Pan blanco con mozzarella y aceite,desayuno;media_manana;merienda,306,14.2,13.9,30.6,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.62,mozzarella,pan,gluten;l\xE1cteos,no,no,no,no,si,10,nuevo,Tostar el pan y a\xF1adir mozzarella y aceite; calentar si se desea.,normal
+R121,Tortilla de claras con pan blanco,desayuno;media_manana;merienda,324,23.7,10.9,30.8,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.62,claras de huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,si,10,nuevo,Cuajar bien las claras y el huevo con el aceite; servir con el pan.,normal
+R122,Tostada de pavo asado con leche,desayuno;media_manana;merienda,308,25.3,6.0,36.9,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.62,pechuga de pavo asada,pan,gluten;l\xE1cteos,no,no,no,no,si,10,nuevo,"Pesar el pavo ya asado y servir sobre pan tostado, con la leche aparte.",normal
+R123,Tostada de huevo duro y at\xFAn,desayuno;media_manana;merienda,272,19.4,7.7,30.2,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.62,huevo cocido,pan,gluten;huevo;pescado,no,no,pendiente_ficha,no,si,10,nuevo,Pesar huevo ya cocido y at\xFAn escurrido. Trocear y colocar sobre el pan.,normal
+R124,Arroz con pollo y calabac\xEDn,comida;cena,574,40.4,14.7,66.4,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.84,pechuga de pollo,cereal,,no,no,si,pendiente_ficha,si,20,nuevo,Pesar arroz seco y pollo/calabac\xEDn crudos. Cocer el arroz; cocinar el pollo por completo y saltear calabac\xEDn con aceite.,normal
+R125,Arroz con pavo y calabaza,comida;cena,577,42.2,12.8,70.7,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.54,pechuga de pavo,cereal,,no,no,si,pendiente_ficha,si,20,nuevo,Pesar arroz seco y pavo/calabaza crudos. Cocer arroz y asar pavo por completo con calabaza y aceite.,normal
+R126,Arroz con bacalao y zanahoria,comida;cena,544,38.1,11.8,67.8,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,2.16,bacalao fresco,cereal,pescado,no,no,si,pendiente_ficha,si,20,nuevo,"Pesar arroz seco, bacalao fresco y zanahoria crudos. Cocer arroz y zanahoria; cocinar el pescado con aceite.",normal
+R127,Pasta blanca con pollo y calabac\xEDn,comida;cena,501,42.3,15.0,46.7,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,2.52,pechuga de pollo,cereal,gluten,no,no,si,no,si,20,nuevo,Pesar pasta seca y pollo/calabac\xEDn crudos. Cocer pasta; cocinar pollo completamente y calabac\xEDn con aceite.,normal
+R128,Arroz con tortilla y calabac\xEDn,comida;cena,548,21.7,20.2,67.3,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.84,huevo,cereal,huevo,si,no,si,pendiente_ficha,si,20,nuevo,"Pesar arroz seco y huevo/calabac\xEDn crudos. Cocer arroz, cuajar tortilla y cocinar calabac\xEDn con aceite.",normal
+R129,Arroz con salm\xF3n y calabaza,comida;cena,674,37.3,25.8,70.5,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.54,salm\xF3n,cereal,pescado,no,no,si,pendiente_ficha,si,20,nuevo,Pesar arroz seco y salm\xF3n/calabaza crudos. Cocer arroz y hornear salm\xF3n y calabaza con aceite.,normal
+R130,Arroz con ternera y champi\xF1\xF3n,comida;cena,592,32.2,20.8,66.6,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.84,ternera picada,cereal,,no,no,si,pendiente_ficha,si,20,nuevo,Pesar arroz seco y ternera/champi\xF1\xF3n crudos. Cocer arroz; saltear ternera y champi\xF1\xF3n con aceite.,normal
+R131,Arroz con at\xFAn y calabac\xEDn,comida;cena,480,26.1,11.7,66.4,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.84,at\xFAn en lata,cereal,pescado,no,no,pendiente_ficha,pendiente_ficha,si,20,nuevo,"Pesar arroz seco, at\xFAn escurrido y calabac\xEDn crudo. Cocer arroz y cocinar calabac\xEDn con aceite; a\xF1adir at\xFAn al final.",normal`;
   var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
 R01,garbanzo cocido,140,base,173757,peso cocido,
 R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
@@ -5026,7 +5042,7 @@ R42,espinacas,60,verdura,168462,peso crudo,
 R42,aceite de oliva,5,grasa,171413,peso a\xF1adido,
 R43,lechuga hoja verde,80,verdura,169249,crudo,
 R43,huevo cocido,60,proteina,173424,crudo,
-R43,pechuga de pollo asada,90,proteina,171477,crudo,
+R43,pechuga de pollo asada,90,proteina,171477,cocido,
 R43,tomate,80,verdura,170457,crudo,
 R43,aceite de oliva,8,grasa,171413,crudo,
 R44,lechuga romana,80,verdura,169247,crudo,
@@ -5248,7 +5264,7 @@ R88,calabac\xEDn,100,verdura,169291,crudo,
 R88,pimiento rojo,60,verdura,170108,crudo,
 R88,aceite de oliva,10,grasa,171413,crudo,
 R89,tortilla de trigo,100,base,167535,crudo,
-R89,pechuga de pollo asada,150,proteina,171477,crudo,
+R89,pechuga de pollo asada,150,proteina,171477,cocido,
 R89,pimiento rojo,80,verdura,170108,crudo,
 R89,lechuga hoja verde,30,verdura,169249,crudo,
 R89,aguacate,50,grasa,171705,crudo,
@@ -5278,7 +5294,7 @@ R96,zanahoria,100,verdura,170393,crudo,
 R97,pl\xE1tano,100,fruta_lacteo,173944,crudo,
 R97,almendra,20,grasa,170567,crudo,
 R98,pan blanco,60,base,174924,crudo,
-R98,pechuga de pavo asada,40,proteina,171496,crudo,
+R98,pechuga de pavo asada,40,proteina,171496,cocido,
 R98,tomate,40,verdura,170457,crudo,
 R99,pan blanco,50,base,174924,crudo,
 R99,at\xFAn en lata,40,proteina,173709,crudo,
@@ -5320,7 +5336,66 @@ R113,almendra,15,grasa,170567,crudo,
 R114,kiwi,120,fruta_lacteo,168153,crudo,
 R114,yogur griego,125,fruta_lacteo,170894,crudo,
 R115,manzana,200,fruta_lacteo,171688,crudo,
-R115,canela,1,condimento,171320,crudo,`;
+R115,canela,1,condimento,171320,crudo,
+R116,pan blanco,50,base,174924,tal cual,
+R116,huevo,60,proteina,171287,crudo,
+R116,aceite de oliva,3,grasa,171413,peso a\xF1adido,
+R116,yogur natural,125,fruta_lacteo,171284,tal cual,
+R117,arroz,40,base,169756,peso seco,
+R117,leche semidesnatada,200,fruta_lacteo,171267,tal cual,
+R117,miel,10,condimento,169640,peso a\xF1adido,
+R117,canela,0.5,condimento,171320,peso a\xF1adido,
+R118,yogur natural,200,fruta_lacteo,171284,tal cual,
+R118,pl\xE1tano,60,fruta_lacteo,173944,peso comestible,
+R118,miel,10,condimento,169640,peso a\xF1adido,
+R119,pan blanco,60,base,174924,tal cual,
+R119,pechuga de pollo asada,50,proteina,171477,cocido,
+R119,yogur natural,125,fruta_lacteo,171284,tal cual,
+R120,pan blanco,60,base,174924,tal cual,
+R120,mozzarella,40,proteina,170845,tal cual,
+R120,aceite de oliva,3,grasa,171413,peso a\xF1adido,
+R121,pan blanco,60,base,174924,tal cual,
+R121,claras de huevo,100,proteina,172183,crudo,
+R121,huevo,60,proteina,171287,crudo,
+R121,aceite de oliva,3,grasa,171413,peso a\xF1adido,
+R122,pan blanco,60,base,174924,tal cual,
+R122,pechuga de pavo asada,50,proteina,171496,cocido,
+R122,leche semidesnatada,150,fruta_lacteo,171267,tal cual,
+R123,pan blanco,60,base,174924,tal cual,
+R123,huevo cocido,50,proteina,173424,cocido,
+R123,at\xFAn en lata,40,proteina,173709,peso escurrido,
+R124,arroz,80,base,169756,peso seco,
+R124,pechuga de pollo,150,proteina,171077,crudo,
+R124,calabac\xEDn,80,verdura,169291,crudo,
+R124,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R125,arroz,80,base,169756,peso seco,
+R125,pechuga de pavo,150,proteina,171098,crudo,
+R125,calabaza,100,verdura,168448,crudo,
+R125,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R126,arroz,80,base,169756,peso seco,
+R126,bacalao fresco,180,proteina,171955,crudo,
+R126,zanahoria,40,verdura,170393,crudo,
+R126,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R127,pasta,60,base,168927,peso seco,
+R127,pechuga de pollo,150,proteina,171077,crudo,
+R127,calabac\xEDn,60,verdura,169291,crudo,
+R127,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R128,arroz,80,base,169756,peso seco,
+R128,huevo,120,proteina,171287,crudo,
+R128,calabac\xEDn,80,verdura,169291,crudo,
+R128,aceite de oliva,8,grasa,171413,peso a\xF1adido,
+R129,arroz,80,base,169756,peso seco,
+R129,salm\xF3n,150,proteina,175167,crudo,
+R129,calabaza,100,verdura,168448,crudo,
+R129,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R130,arroz,80,base,169756,peso seco,
+R130,ternera picada,120,proteina,174030,crudo,
+R130,champi\xF1\xF3n,80,verdura,169251,crudo,
+R130,aceite de oliva,8,grasa,171413,peso a\xF1adido,
+R131,arroz,80,base,169756,peso seco,
+R131,at\xFAn en lata,100,proteina,173709,peso escurrido,
+R131,calabac\xEDn,80,verdura,169291,crudo,
+R131,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
 
   // src/motor/coherencia-nutricional.ts
   var TOLERANCIA_RELATIVA = 0.1;
