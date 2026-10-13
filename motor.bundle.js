@@ -89,6 +89,7 @@ var Motor = (() => {
     definirRolIngrediente: () => definirRolIngrediente,
     definirTablaLimites: () => definirTablaLimites,
     densidadKcalG: () => densidadKcalG,
+    descontarSobras: () => descontarSobras,
     deshacer: () => deshacer,
     diaDeLaFecha: () => diaDeLaFecha,
     editarCompeticion: () => editarCompeticion,
@@ -127,6 +128,7 @@ var Motor = (() => {
     grupoDeFranja: () => grupoDeFranja,
     horaDeGuardado: () => horaDeGuardado,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
+    itemDesdeGramos: () => itemDesdeGramos,
     leerEvitados: () => leerEvitados,
     limiteFibraG: () => limiteFibraG,
     limpiarNotaSesion: () => limpiarNotaSesion,
@@ -138,6 +140,7 @@ var Motor = (() => {
     moverSesion: () => moverSesion,
     noSeReescala: () => noSeReescala,
     normalizarBusqueda: () => normalizarBusqueda,
+    normalizarSobras: () => normalizarSobras,
     ordenarCompeticiones: () => ordenarCompeticiones,
     parsearParametrosCSV: () => parsearParametrosCSV,
     parsearPrecios: () => parsearPrecios,
@@ -465,17 +468,8 @@ var Motor = (() => {
   }
 
   // src/motor/perfil-cuestionario.ts
-  var PALABRAS_DERIVAR = [
-    "fodmap",
-    "sii",
-    "diabetes",
-    "embarazo",
-    "embarazada",
-    "tca",
-    "trastorno de la conducta alimentaria",
-    "trastorno alimentario",
-    "condicion clinica"
-  ];
+  var EDAD_MINIMA = 18;
+  var SIN_CONDICION = /* @__PURE__ */ new Set(["no", "nada", "ninguna", "ninguno", "ningun", "no tengo", "no tengo nada", "no tengo ninguna", "ninguna condicion", "n a", "na"]);
   var MAPA_DEPORTES = {
     "correr suave": "correr_suave",
     correr: "correr",
@@ -493,8 +487,14 @@ var Motor = (() => {
   function normalizarTexto(s) {
     return Array.from(s.normalize("NFD")).filter((c) => c.codePointAt(0) < 768 || c.codePointAt(0) > 879).join("").toLowerCase().trim();
   }
-  function contiene(textos, clave) {
-    return textos.some((t) => normalizarTexto(t).includes(clave));
+  function declaraCondicion(salud) {
+    return (salud ?? []).some((t) => {
+      const texto = normalizarTexto(String(t)).replace(/[^a-z0-9]+/g, " ").trim();
+      return texto !== "" && !SIN_CONDICION.has(texto);
+    });
+  }
+  function esPositivo(v) {
+    return typeof v === "number" && Number.isFinite(v) && v > 0;
   }
   function objetivoDesde(texto) {
     const t = normalizarTexto(texto ?? "");
@@ -523,18 +523,29 @@ var Motor = (() => {
     return clave ? { clave } : { opciones: Object.keys(ACTIVIDADES) };
   }
   function perfilDesdeCuestionario(r) {
-    if (PALABRAS_DERIVAR.some((p) => contiene(r.salud ?? [], p))) {
+    if (declaraCondicion(r.salud)) {
       return {
         estado: "derivar",
         mensaje: "Esto lo tiene que valorar Pablo en consulta; la app no genera protocolo cl\xEDnico autom\xE1tico."
       };
     }
-    if (r.peso == null) return { estado: "incompleto", falta: "peso", mensaje: "Falta el peso." };
-    if (r.altura == null) return { estado: "incompleto", falta: "altura", mensaje: "Falta la talla." };
-    if (r.edad == null) return { estado: "incompleto", falta: "edad", mensaje: "Falta la edad." };
-    if (r.sexo == null) return { estado: "incompleto", falta: "sexo", mensaje: "Falta el sexo." };
+    const vacio = (v) => v == null || typeof v === "number" && Number.isNaN(v);
+    if (!esPositivo(r.peso)) return { estado: "incompleto", falta: "peso", mensaje: vacio(r.peso) ? "Falta el peso." : "El peso tiene que ser un n\xFAmero mayor que 0, en kilos." };
+    if (!esPositivo(r.altura)) return { estado: "incompleto", falta: "altura", mensaje: vacio(r.altura) ? "Falta la talla." : "La altura tiene que ser un n\xFAmero mayor que 0, en cent\xEDmetros." };
+    if (r.altura < 3) return { estado: "incompleto", falta: "altura", mensaje: "La altura va en cent\xEDmetros (por ejemplo, 175), no en metros." };
+    if (!esPositivo(r.edad)) return { estado: "incompleto", falta: "edad", mensaje: vacio(r.edad) ? "Falta la edad." : "La edad tiene que ser un n\xFAmero mayor que 0." };
+    if (r.sexo !== "hombre" && r.sexo !== "mujer") return { estado: "incompleto", falta: "sexo", mensaje: "Falta el sexo." };
+    if (r.grasa != null && !(esPositivo(r.grasa) && r.grasa < 100)) {
+      return { estado: "incompleto", falta: "grasa", mensaje: "El % graso tiene que ser un n\xFAmero entre 0 y 100. Si no lo sabes, d\xE9jalo sin marcar." };
+    }
+    if (r.edad < EDAD_MINIMA) {
+      return { estado: "derivar", mensaje: `La app es para mayores de ${EDAD_MINIMA} a\xF1os. Si eres menor, tu plan lo tiene que hacer Pablo contigo en consulta.` };
+    }
     const sesiones = [];
     for (const s of r.sesiones ?? []) {
+      if (!Number.isFinite(s.minutos) || s.minutos < 0) {
+        return { estado: "incompleto", falta: "sesiones", mensaje: `Revisa los minutos de \xAB${s.deporte}\xBB: tienen que ser un n\xFAmero, no pueden quedar vac\xEDos ni en negativo.` };
+      }
       const resuelto = resolverActividad(s);
       if ("opciones" in resuelto) {
         return {
@@ -1921,6 +1932,7 @@ var Motor = (() => {
       estadosSiOSi.push({ ...base, colocadas: elegidos.length, ...causa ? { causa } : {} });
     }
     const idsDe = (r) => r.platos ?? [r.id];
+    const evitarIds = new Set(opciones.evitar ?? []);
     const usosDe = (r) => Math.max(...idsDe(r).map((id) => usos.get(id) ?? 0));
     const cola = [...slots];
     for (let iSlot = 0; iSlot < cola.length; iSlot++) {
@@ -1931,7 +1943,7 @@ var Motor = (() => {
       const diaVale = (r) => !(r.usoDia === "carga" && !slot.cargaAlta);
       const vale = (r) => franjaVale(r) && diaVale(r) && !fibraExcede(slot, r) && (!ap || evaluarCompatibilidad(r, ap).compatible);
       const esUnico = (r) => !r.tipoPlato || r.tipoPlato === "unico" || r.tipoPlato === "postre" && slot.franja !== "comida" && slot.franja !== "cena";
-      const intentar = (lista, filtrar) => {
+      const intentarBase = (lista, filtrar) => {
         const candidatas = filtrar ? lista.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista;
         if (!candidatas.length) {
           return { motivo: slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
@@ -1964,6 +1976,13 @@ var Motor = (() => {
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
         return { elegido: mejor };
+      };
+      const intentar = (lista, filtrar) => {
+        if (evitarIds.size) {
+          const nuevas = intentarBase(lista.filter((r) => !idsDe(r).some((id) => evitarIds.has(id))), filtrar);
+          if (nuevas.elegido && alcanza(nuevas.elegido)) return nuevas;
+        }
+        return intentarBase(lista, filtrar);
       };
       const alcanza = (e) => !!e && e.desviacion <= slot.kcalObjetivo * 0.1;
       const clave = (desv, dist) => desv > slot.kcalObjetivo * 0.1 ? 1e9 + desv : dist * 1e5 + desv;
@@ -2314,6 +2333,10 @@ var Motor = (() => {
       manuales.push({ id, nombre, cantidad: String(cantidad ?? ""), unidad: typeof unidad === "string" ? unidad : "", yaEnCasa: !!yaEnCasa });
     }
     return { marcas, manuales };
+  }
+  function itemDesdeGramos(ingrediente, gramos) {
+    const g = Math.round(gramos * 100) / 100;
+    return { ingrediente, gramosTotales: g, seccion: clasificar(ingrediente), comprar: redondearCompra(ingrediente, g) };
   }
 
   // src/motor/estimador-coste.ts
@@ -2698,6 +2721,39 @@ var Motor = (() => {
         ...periodo && c ? { comprarPeriodo: periodo.get(item.ingrediente).comprar } : {}
       };
     });
+  }
+
+  // src/motor/sobras.ts
+  function normalizarSobras(sobras) {
+    const m = /* @__PURE__ */ new Map();
+    for (const s of sobras) {
+      if (!s || typeof s.ingrediente !== "string" || !s.ingrediente) continue;
+      const g = Number(s.gramos);
+      if (!Number.isFinite(g) || g <= 0) continue;
+      m.set(s.ingrediente, (m.get(s.ingrediente) ?? 0) + g);
+    }
+    return Array.from(m, ([ingrediente, gramos]) => ({ ingrediente, gramos: Math.round(gramos * 100) / 100 }));
+  }
+  function descontarSobras(lista, sobras) {
+    const por = new Map(normalizarSobras(sobras).map((s) => [s.ingrediente, s.gramos]));
+    const nombres = new Set(lista.map((i) => i.ingrediente));
+    const cubiertos = [];
+    const resultado = [];
+    for (const item of lista) {
+      const tengo = por.get(item.ingrediente);
+      if (!tengo) {
+        resultado.push(item);
+        continue;
+      }
+      const falta = Math.round((item.gramosTotales - tengo) * 100) / 100;
+      if (falta <= 0) {
+        cubiertos.push(item.ingrediente);
+        continue;
+      }
+      resultado.push({ ...itemDesdeGramos(item.ingrediente, falta), sobra: tengo });
+    }
+    const sinUso = Array.from(por).filter(([n]) => !nombres.has(n)).map(([ingrediente, gramos]) => ({ ingrediente, gramos }));
+    return { lista: resultado, cubiertos, sinUso };
   }
 
   // src/motor/ics.ts

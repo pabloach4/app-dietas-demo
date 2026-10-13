@@ -664,6 +664,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const g = JSON.parse(localStorage.getItem(CLAVE_PERIODO) || 'null');
     if (g) periodoDieta = { inicio: Motor.esFechaValida(g.inicio ?? '') ? g.inicio : '', semanas: Motor.semanasValidas(g.semanas) };
   } catch { /* sin almacenamiento o dato corrupto: 1 semana y sin fecha */ }
+  // #164: «Generar próxima lista de la compra» con las sobras de la dieta anterior (solo durante la sesión).
+  let proxima = { abierta: false, sobras: [], semanas: 1, resultado: null, dieta: null };
+  let dietaSiguienteFn = null;
   function guardarPeriodoDieta() { try { localStorage.setItem(CLAVE_PERIODO, JSON.stringify(periodoDieta)); } catch { falloAlmacenamiento(); } }
   function sincronizarInicioDieta() {
     if (periodoDieta.inicio && Motor.lunesDelInicio(periodoDieta.inicio) !== calInicio) { periodoDieta.inicio = ''; guardarPeriodoDieta(); }
@@ -2085,6 +2088,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     let cuerpo;
     let costeHtml = '';
     let listaConEstado = [];
+    let proximaHtml = '';
+    let generarProxima = null;
     let porqueCompra = '';
     if (!diasElegidos.length) {
       cuerpo = '<p style="color:var(--gris)">Ningún día marcado: elige al menos uno para ver la lista de la compra.</p>';
@@ -2098,6 +2103,42 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const aRevisar = new Map(evaluacion.aRevisar.map((m) => [m.ingrediente, m]));
       const lista = Motor.marcarYaEnCasa(listaBase, evaluacion.cubiertos);
       listaConEstado = lista;
+      generarProxima = (semanas) => {
+        if (!proxima.dieta && dietaSiguienteFn) proxima.dieta = dietaSiguienteFn();
+        const sig = proxima.dieta || { asignaciones, huecos: [] };
+        const delasDias = Motor.filtrarPorDias(sig.asignaciones, diasElegidos);
+        const base = Motor.compraDelPeriodo(delasDias.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada })), catalogoPlan(delasDias), { semanas, conservacion: CONSERVACION_ACTIVA, esProtegido: Motor.noSeReescala });
+        const porId = new Map(RECETAS_EJEMPLO.map((r) => [r.id, r]));
+        const platos = DIAS.map((d) => [d, delasDias.filter((a) => a.dia === d).map((a) => (Motor.recetaDeId(porId, a.receta) || { nombre: a.receta }).nombre)]).filter(([, n]) => n.length);
+        return { ...Motor.descontarSobras(base, proxima.sobras), semanas, platos, huecos: sig.huecos.length };
+      };
+      // #164: la próxima lista de la compra, con las sobras de la dieta anterior descontadas.
+      const nombresLista = lista.map((i) => i.ingrediente).sort((a, b) => a.localeCompare(b, 'es'));
+      const gramosCorto = (g) => String(Math.round(g * 10) / 10).replace('.', ',');
+      if (!proxima.abierta) {
+        proximaHtml = '<button type="button" class="btn-secundario" id="prox-abrir" style="margin:0 0 0.8rem">Generar próxima lista de la compra</button>';
+      } else {
+        const r = proxima.resultado;
+        proximaHtml = `
+        <div class="tarjeta-interna" id="prox" style="border:1px solid var(--borde);border-radius:12px;padding:0.8rem;margin:0 0 1rem">
+          <h3 style="margin:0 0 0.2rem">¿Te ha sobrado comida de la anterior?</h3>
+          <p class="una-linea">La vida está muy cara para tirar comida. Di qué te sobró y cuánto (orientativo); si no sobró nada, pasa al siguiente paso.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:flex-end;margin:0.6rem 0">
+            <div class="campo" style="margin:0"><label for="prox-ing">Alimento</label><select id="prox-ing" style="font-size:16px">${nombresLista.map((n) => `<option>${escaparHtml(n)}</option>`).join('')}</select></div>
+            <div class="campo" style="margin:0"><label for="prox-g">Gramos</label><input id="prox-g" type="number" inputmode="decimal" min="1" max="5000" step="1" style="font-size:16px;width:6rem"></div>
+            <button type="button" class="btn-texto" id="prox-add">+ Añadir</button>
+          </div>
+          ${proxima.sobras.length ? `<ul class="resumen-lista">${proxima.sobras.map((s, i) => `<li class="item-compra"><span><strong>${gramosCorto(s.gramos)} g</strong> — ${escaparHtml(s.ingrediente)}</span><button type="button" class="quitar-manual prox-quitar" data-i="${i}" aria-label="Quitar ${escaparHtml(s.ingrediente)}">✕</button></li>`).join('')}</ul>` : '<p class="una-linea">Nada apuntado todavía.</p>'}
+          <div class="campo" style="margin:0.6rem 0"><label for="prox-sem">La próxima dieta la haré</label><select id="prox-sem" style="font-size:16px">${[1, 2, 3, 4].map((n) => `<option value="${n}"${n === proxima.semanas ? ' selected' : ''}>${n} semana${n === 1 ? '' : 's'}</option>`).join('')}</select></div>
+          <p class="una-linea">La próxima dieta procura no repetir los platos de esta. Todavía no se guarda ni sustituye a la actual: es para preparar la compra.</p>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap"><button type="button" class="btn-secundario" id="prox-generar">Preparar la lista</button><button type="button" class="btn-texto" id="prox-cerrar">Cerrar</button></div>
+          ${r ? `<h3 style="margin:1rem 0 0.2rem" id="prox-titulo">Próxima lista de la compra · ${r.semanas} semana${r.semanas === 1 ? '' : 's'}</h3>
+            ${r.cubiertos.length ? `<p class="una-linea">Con tus sobras ya tienes de sobra: ${r.cubiertos.map(escaparHtml).join(', ')}.</p>` : ''}
+            ${r.sinUso.length ? `<p class="una-linea">Esta dieta no usa: ${r.sinUso.map((s) => escaparHtml(s.ingrediente)).join(', ')}.</p>` : ''}
+            <details class="plegable"><summary>Platos de la próxima dieta</summary><ul class="resumen-lista" id="prox-platos">${r.platos.map(([d, n]) => `<li><strong>${d}</strong> · ${n.map(escaparHtml).join(' · ')}</li>`).join('')}</ul>${r.huecos ? `<p class="una-linea">${r.huecos} comida${r.huecos === 1 ? '' : 's'} sin plato que encaje.</p>` : ''}</details>
+            <ul class="resumen-lista" id="prox-lista">${r.lista.map((i) => `<li class="item-compra"><span><strong>${i.comprar}</strong> — ${escaparHtml(i.ingrediente)}${i.sobra ? ` <small class="dieta-dato">(tienes ${gramosCorto(i.sobra)} g)</small>` : ''}</span></li>`).join('')}</ul>` : ''}
+        </div>`;
+      }
       const gramosTxt = (g) => `${String(Math.round(g * 10) / 10).replace('.', ',')} g`;
       const dietaTxt = (item) => (item.comprar === `${item.gramosTotales} g` ? '' : ` <small class="dieta-dato">(dieta: ${gramosTxt(item.gramosTotales)})</small>`);
       const itemLi = (item) => `
@@ -2190,6 +2231,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <p class="una-linea">Hecha con las recetas de EJEMPLO de tu semana, no definitivas.</p>
       <details class="saber-mas"><summary>Saber más</summary><p>Marca lo que ya has comprado o tienes en casa (el pan olvidado en el congelador también cuenta). Si después cambia la cantidad que hace falta (otra receta, otros días), te avisamos en lugar de darlo por cubierto. «Dieta» es lo que pide el plan; «comprar» está redondeado hacia arriba.</p></details>
       ${periodoDietaHtml()}
+      ${proximaHtml}
       <p style="font-size:0.85rem;color:var(--gris);margin:0 0 0.4rem">¿Qué días seguirás el plan esta semana?</p>
       ${diasHtml}
       ${porqueCompra}
@@ -2232,6 +2274,32 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       }
     });
 
+    const abrirProx = document.getElementById('prox-abrir');
+    if (abrirProx) abrirProx.addEventListener('click', () => { proxima.abierta = true; renderizarListaCompra(); document.getElementById('prox-ing')?.focus(); });
+    if (document.getElementById('prox')) {
+      const regenerar = () => { if (proxima.resultado && generarProxima) proxima.resultado = generarProxima(proxima.semanas); };
+      document.getElementById('prox-cerrar').addEventListener('click', () => { proxima = { abierta: false, sobras: [], semanas: 1, resultado: null, dieta: null }; renderizarListaCompra(); });
+      document.getElementById('prox-add').addEventListener('click', () => {
+        const ing = document.getElementById('prox-ing').value;
+        const g = Number(document.getElementById('prox-g').value);
+        if (!ing || !Number.isFinite(g) || g <= 0 || g > 5000) return;
+        proxima.sobras = Motor.normalizarSobras([...proxima.sobras, { ingrediente: ing, gramos: g }]);
+        regenerar();
+        renderizarListaCompra();
+      });
+      document.querySelectorAll('#prox .prox-quitar').forEach((b) => b.addEventListener('click', () => {
+        proxima.sobras = proxima.sobras.filter((_, i) => i !== Number(b.dataset.i));
+        regenerar();
+        renderizarListaCompra();
+      }));
+      document.getElementById('prox-sem').addEventListener('change', (ev) => { proxima.semanas = Motor.semanasValidas(ev.target.value); regenerar(); renderizarListaCompra(); });
+      document.getElementById('prox-generar').addEventListener('click', () => {
+        if (!generarProxima) return;
+        proxima.resultado = generarProxima(proxima.semanas);
+        renderizarListaCompra();
+        document.getElementById('prox-titulo')?.scrollIntoView({ block: 'nearest' });
+      });
+    }
     document.getElementById('periodo-semanas').addEventListener('change', (ev) => {
       periodoDieta.semanas = Motor.semanasValidas(ev.target.value);
       guardarPeriodoDieta();
@@ -2758,7 +2826,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
     const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
-    const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: [...semanaFija].map(([k, v]) => ({ dia: k[0], franja: k.slice(2), receta: v })) });
+    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: [...semanaFija].map(([k, v]) => ({ dia: k[0], franja: k.slice(2), receta: v })) };
+    const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador);
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
     // Issue #145: lo que no cabe en una comida con cantidades normales se reparte entre las otras comidas del día (sin inflar nada).
@@ -2783,6 +2852,15 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     }
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     const asignacionSemana = { ...aplicadas.resultado, asignaciones: cuadrado.asignaciones, avisos: [...aplicadas.resultado.avisos, ...cuadrado.avisos] };
+    // #164: la dieta siguiente = la misma semana, procurando no repetir los platos de la actual (mismo cuadre del día).
+    dietaSiguienteFn = () => {
+      const porId = new Map(RECETAS_EJEMPLO.map((r) => [r.id, r]));
+      const evitar = [...new Set(asignacionSemana.asignaciones.flatMap((a) => { const r = Motor.recetaDeId(porId, a.receta); return r ? (r.platos ?? [r.id]) : [a.receta]; }))];
+      const base = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { ...opcionesAsignador, evitar });
+      const rc = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(base.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
+      return { ...base, asignaciones: Motor.cuadrarDias(base.asignaciones, slotsSemana, rc, { noMover: enCompeticion }).asignaciones };
+    };
+    proxima.dieta = null; // el plan se ha recalculado: la dieta siguiente preparada antes ya no vale
     if (aplicadas.invalidadas.length) {
       aplicadas.invalidadas.forEach((i) => { delete sustituciones[i.clave]; });
       avisoSustituciones = [...avisoSustituciones, ...aplicadas.invalidadas];
@@ -3035,7 +3113,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ? plan.notas.map((n) => `<li>${n}</li>`).join('') : '<li>Ninguna.</li>';
     // Issue #119: avisos y notas van plegados (con su recuento) para no saturar la pantalla; si algún aviso exige revisar con Pablo, se abre solo.
     document.querySelector('#tarjeta-avisos summary').textContent = `Avisos del plan (${plan.avisos.length + avisosReparto.length + avisosAlergias.length})`;
-    document.querySelector('#tarjeta-avisos details').open = avisosAlergias.length > 0 || plan.avisos.some((a) => a.codigo === 'revisar_con_pablo');
+    document.querySelector('#tarjeta-avisos details').open = avisosAlergias.length > 0 || plan.avisos.some((a) => ['revisar_con_pablo', 'disponibilidad_baja', 'menor'].includes(a.codigo)); // los que piden hablar con Pablo no pueden quedar plegados (#168)
     document.querySelector('#tarjeta-notas summary').textContent = `Notas del plan (${plan.notas.length})`;
 
     // Texto legible en vez de volcar el JSON (issue #13): además de verse mal, desbordaba en móvil.
@@ -3137,7 +3215,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (resultado.estado === 'incompleto') {
       document.getElementById('incompleto').hidden = false;
       document.getElementById('incompleto').textContent = resultado.mensaje;
-      mostrarPaso(1); // el dato que falta siempre está en el paso 1
+      mostrarPaso(resultado.falta === 'sesiones' ? 3 : 1); // los datos básicos están en el paso 1; las sesiones, en el 3
       return;
     }
     if (resultado.estado === 'elegir_deporte') {
