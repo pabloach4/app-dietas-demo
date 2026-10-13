@@ -24,6 +24,8 @@ var Motor = (() => {
     ACTIVIDADES: () => ACTIVIDADES,
     ACTIVIDAD_POR_TIPO: () => ACTIVIDAD_POR_TIPO,
     AVISO_DESCARGA: () => AVISO_DESCARGA,
+    COMER_FUERA_CSV: () => COMER_FUERA_CSV,
+    CONSERVACION_CSV: () => CONSERVACION_CSV,
     DIAS: () => DIAS,
     DIAS_AVISO_FIN: () => DIAS_AVISO_FIN,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
@@ -75,10 +77,13 @@ var Motor = (() => {
     coherenciaKcalMacros: () => coherenciaKcalMacros,
     coincideAlimento: () => coincideAlimento,
     combinarConRecetas: () => combinarConRecetas,
+    comerFueraDesdeCsv: () => comerFueraDesdeCsv,
     competicionesDelDia: () => competicionesDelDia,
     competicionesDesdeJson: () => competicionesDesdeJson,
     componerComida: () => componerComida,
     compraDelPeriodo: () => compraDelPeriodo,
+    comprobarComerFueraCsv: () => comprobarComerFueraCsv,
+    comprobarConservacionCsv: () => comprobarConservacionCsv,
     conflictosComidaEntreno: () => conflictosComidaEntreno,
     conservacionDesdeCsv: () => conservacionDesdeCsv,
     construirEventos: () => construirEventos,
@@ -101,6 +106,7 @@ var Motor = (() => {
     esLunes: () => esLunes,
     escaparTextoIcs: () => escaparTextoIcs,
     estadoDeLaPreparada: () => estadoDeLaPreparada,
+    estimarComidaFuera: () => estimarComidaFuera,
     estimarCoste: () => estimarCoste,
     etiquetasContextoDia: () => etiquetasContextoDia,
     evaluarCompatibilidad: () => evaluarCompatibilidad,
@@ -144,6 +150,7 @@ var Motor = (() => {
     noSeReescala: () => noSeReescala,
     normalizarBusqueda: () => normalizarBusqueda,
     normalizarSobras: () => normalizarSobras,
+    normalizarTexto: () => normalizarTexto2,
     ordenarCompeticiones: () => ordenarCompeticiones,
     parsearParametrosCSV: () => parsearParametrosCSV,
     parsearPrecios: () => parsearPrecios,
@@ -2298,6 +2305,24 @@ var Motor = (() => {
       return [...cabecera, "", "No hay nada pendiente: todo est\xE1 marcado como ya en casa (o no hay ingredientes)."].join("\n");
     }
     const lineas = [...cabecera];
+    if (entrada.semanas && entrada.semanas > 1 && pendientes.some((i) => i.grupo)) {
+      const n = entrada.semanas;
+      const grupos = [
+        ["despensa", `LO QUE NO SE VA A PONER MALO (para las ${n} semanas)`, (i) => `${i.comprar} \u2014 ${i.ingrediente}`],
+        ["fresco", "FRESCO (esta semana; entre par\xE9ntesis, para todo el periodo)", (i) => `${i.comprar} \u2014 ${i.ingrediente}${i.comprarPeriodo ? ` (${n} semanas: ${i.comprarPeriodo})` : ""}`]
+      ];
+      for (const [g, titulo, linea] of grupos) {
+        const delGrupo = pendientes.filter((i) => i.grupo === g);
+        if (!delGrupo.length) continue;
+        lineas.push("", titulo);
+        for (const i of delGrupo) lineas.push(`- ${linea(i)}`);
+      }
+      if (manuales.length) {
+        lineas.push("", "A\xD1ADIDOS A MANO");
+        for (const m of manuales) lineas.push(`- ${[m.cantidad, m.unidad].filter(Boolean).join(" ")} \u2014 ${m.nombre}`.replace("-  \u2014", "-"));
+      }
+      return lineas.join("\n");
+    }
     const orden = Object.keys(TITULO_SECCION);
     for (const sec of orden) {
       const delSec = pendientes.filter((i) => i.seccion === sec);
@@ -2682,9 +2707,8 @@ var Motor = (() => {
     return hoy < inicio ? "pendiente" : hoy <= fin ? "activa" : "caducada";
   }
 
-  // src/motor/compra-periodo.ts
-  function conservacionDesdeCsv(texto) {
-    const tabla = /* @__PURE__ */ new Map();
+  // src/motor/csv-simple.ts
+  function filasCsv(texto) {
     const filas = [];
     let fila = [], celda = "", entreComillas = false;
     for (let i = 0; i < texto.length; i++) {
@@ -2709,12 +2733,45 @@ var Motor = (() => {
     }
     fila.push(celda);
     if (fila.some((x) => x !== "")) filas.push(fila);
-    for (const [ingrediente, tipo, congelable] of filas.slice(1)) {
-      const t = (tipo ?? "").trim();
-      if (!ingrediente || t !== "despensa" && t !== "fresco") continue;
-      tabla.set(ingrediente.trim(), { tipo: t, congelable: t === "fresco" && (congelable ?? "").trim() === "si" });
+    return filas;
+  }
+  function registros(texto) {
+    const [cab = [], ...resto] = filasCsv(texto);
+    const nombres = cab.map((x) => x.trim());
+    return resto.map((f2) => Object.fromEntries(nombres.map((n, i) => [n, (f2[i] ?? "").trim()])));
+  }
+
+  // src/motor/compra-periodo.ts
+  function conservacionDesdeCsv(texto) {
+    const tabla = /* @__PURE__ */ new Map();
+    for (const r of registros(texto)) {
+      const lugar = r.lugar ?? r.tipo ?? "";
+      const tipo = lugar === "despensa" ? "despensa" : lugar === "nevera" || lugar === "fresco" ? "fresco" : void 0;
+      if (!r.ingrediente || !tipo) continue;
+      tabla.set(r.ingrediente, { tipo, congelable: tipo === "fresco" && r.congelable === "si" });
     }
     return tabla;
+  }
+  function comprobarConservacionCsv(texto, ingredientesCatalogo) {
+    const fallos = [];
+    const filas = registros(texto);
+    const vistos = /* @__PURE__ */ new Set();
+    for (const r of filas) {
+      const n = r.ingrediente;
+      if (!n) {
+        fallos.push("fila sin ingrediente");
+        continue;
+      }
+      if (vistos.has(n)) fallos.push(`${n}: fila duplicada`);
+      vistos.add(n);
+      if (r.lugar !== "despensa" && r.lugar !== "nevera") fallos.push(`${n}: lugar \xAB${r.lugar}\xBB no permitido (despensa o nevera)`);
+      if (r.congelable !== "si" && r.congelable !== "no") fallos.push(`${n}: congelable \xAB${r.congelable}\xBB no permitido (si o no)`);
+      if (!/^https?:\/\//.test(r.fuente_url ?? "")) fallos.push(`${n}: sin fuente_url`);
+    }
+    const catalogo = new Set(ingredientesCatalogo);
+    for (const n of catalogo) if (!vistos.has(n)) fallos.push(`${n}: falta en la tabla`);
+    for (const n of vistos) if (!catalogo.has(n)) fallos.push(`${n}: sobra, no est\xE1 en ninguna receta`);
+    return fallos;
   }
   function compraDelPeriodo(asignaciones, recetas, opciones) {
     const { semanas, conservacion = /* @__PURE__ */ new Map() } = opciones;
@@ -2736,6 +2793,301 @@ var Motor = (() => {
       };
     });
   }
+
+  // src/motor/conservacion-datos.ts
+  var CONSERVACION_CSV = `ingrediente,lugar,congelable,nota,fuente_url,validado_pablo
+aceite de oliva,despensa,no,Envase cerrado; alejar de luz y calor; seguir etiqueta. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+aceituna negra,despensa,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Se supone conserva estable cerrada; tras abrir, nevera seg\xFAn etiqueta. Congelar solo fuera del envase y en porciones si la etiqueta lo permite.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+aguacate,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+ajo,despensa,si,"Entero sin cocinar: lugar fresco, seco y ventilado. Cortado o cocinado: nevera. No garantiza semanas. Congelar limpio y preparado para cocinar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://hgic.clemson.edu/factsheet/food-storage-pantry/,no
+alcachofa,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+almendra,despensa,no,Secos y bien cerrados; pueden enranciarse; revisar etiqueta y estado. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+alubia blanca cocida,despensa,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Se supone conserva estable cerrada; tras abrir, nevera seg\xFAn etiqueta. Congelar solo fuera del envase y en porciones si la etiqueta lo permite.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+alubia blanca seca,despensa,no,Seco; guardar cerrado en lugar fresco y seco. Una vez cocinado requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+alubia roja cocida,despensa,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Se supone conserva estable cerrada; tras abrir, nevera seg\xFAn etiqueta. Congelar solo fuera del envase y en porciones si la etiqueta lo permite.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+arroz,despensa,no,Seco; guardar cerrado en lugar fresco y seco. Una vez cocinado requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+at\xFAn en lata,despensa,no,Solo conserva intacta sin abrir; una vez abierta guardar en fr\xEDo seg\xFAn etiqueta. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+at\xFAn fresco,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+bacalao fresco,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+berenjena,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+boniato,despensa,si,"Entero sin cocinar: lugar fresco, seco y ventilado. Cortado o cocinado: nevera. No garantiza semanas. Congelar solo cocinado y enfriado.",https://nchfp.uga.edu/how/freeze/vegetable/freezing-sweet-potatoes/;https://hgic.clemson.edu/factsheet/food-storage-pantry/,no
+br\xF3coli,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+caballa,nevera,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Fresca: nevera; en lata estable cerrada: despensa. El lugar depende del formato de compra; abierta, nevera seg\xFAn etiqueta. Congelable solo fresca apta, en porciones.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+cacao puro en polvo,despensa,no,Producto comercial sin mezclas perecederas; cerrado en lugar fresco y seco. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://ohioline.osu.edu/factsheet/HYG-5401,no
+calabac\xEDn,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+calabaza,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+calamar,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+canela,despensa,no,Especia seca; envase cerrado sin humedad ni calor. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+cebolla,despensa,si,"Entero sin cocinar: lugar fresco, seco y ventilado. Cortado o cocinado: nevera. No garantiza semanas. Congelar limpia y troceada para cocinar.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://nchfp.uga.edu/how/freeze/vegetable/freezing-onions/;https://hgic.clemson.edu/factsheet/food-storage-pantry/,no
+champi\xF1\xF3n,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+claras de huevo,nevera,no,Nevera seg\xFAn etiqueta. No sugerir congelaci\xF3n de huevos o claras por criterio conservador de Pablo; no se afirma imposibilidad t\xE9cnica.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf,no
+coliflor,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+comino,despensa,no,Especia seca; envase cerrado sin humedad ni calor. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+conejo,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+copos de avena,despensa,no,Seco; guardar cerrado en lugar fresco y seco. Una vez cocinado requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+crema de cacahuete,despensa,no,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Se supone tarro comercial estable; manda la etiqueta, tambi\xE9n tras abrir. No se propone congelaci\xF3n.",https://hgic.clemson.edu/factsheet/food-storage-pantry/,si
+cusc\xFAs,despensa,no,Seco; guardar cerrado en lugar fresco y seco. Una vez cocinado requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+espinacas,nevera,si,Congelar preparadas/escaldadas para cocinar; no se conserva la textura de hoja cruda de ensalada.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad,no
+esp\xE1rrago,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+fresas,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+garbanzo cocido,despensa,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Se supone conserva estable cerrada; tras abrir, nevera seg\xFAn etiqueta. Congelar solo fuera del envase y en porciones si la etiqueta lo permite.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+guisantes,nevera,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Frescos: nevera; comprados congelados: congelador. No romper cadena de fr\xEDo. Si frescos, preparar/escaldar seg\xFAn producto antes de congelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+huevo,nevera,no,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Siempre nevera. No sugerir congelaci\xF3n, por criterio de Pablo; no congelar con c\xE1scara.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+huevo cocido,nevera,no,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Huevo cocido: nevera; no sugerir congelar huevos, por criterio de Pablo.",https://www.fao.org/fileadmin/user_upload/rlc/come-sano/t_es.pdf,si
+hummus,nevera,si,Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Seguir etiqueta de la marca/formato: nunca sustituir su lugar de conservaci\xF3n por esta orientaci\xF3n. Se interpreta hummus refrigerado; congelar porciones cerradas; puede cambiar textura; verificar etiqueta.,https://www.hellofresh.com.au/stories/freezing-and-storage/can-you-freeze-hummus;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+jud\xEDa verde,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+kiwi,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+leche semidesnatada,despensa,no,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Se supone UHT cerrada; abierta, nevera seg\xFAn etiqueta. No se propone congelar el envase cerrado.",https://www.tetrapak.com/es-es/insights/food-categories/dairy/uht-faq,si
+lechuga hoja verde,nevera,no,Para consumo crudo: congelar empeora mucho la textura; comprar fresco en tandas.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad,no
+lechuga romana,nevera,no,Para consumo crudo: congelar empeora mucho la textura; comprar fresco en tandas.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad,no
+lenteja cocida,despensa,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Se supone conserva estable cerrada; tras abrir, nevera seg\xFAn etiqueta. Congelar solo fuera del envase y en porciones si la etiqueta lo permite.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+lenteja seca,despensa,no,Seco; guardar cerrado en lugar fresco y seco. Una vez cocinado requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+lomo de cerdo,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+lubina,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+mandarina,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+manzana,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+mejill\xF3n,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+mel\xF3n,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+merluza,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+miel,despensa,no,Producto comercial sin mezclas perecederas; cerrado en lugar fresco y seco. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://ohioline.osu.edu/factsheet/HYG-5401,no
+mozzarella,nevera,no,Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Nevera seg\xFAn etiqueta. No se propone congelaci\xF3n para consumo fresco por p\xE9rdida de textura; no es prohibici\xF3n sanitaria.,https://nchfp.uga.edu/how/freeze/dairy-products/freezing-cheese/;https://www.hogarmania.com/cocina/actualidad/congelar-yogur_1_1155642.html,si
+naranja,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+nueces,despensa,no,Secos y bien cerrados; pueden enranciarse; revisar etiqueta y estado. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+pan blanco,despensa,si,"A temperatura ambiente para consumo cercano; no garantiza varias semanas. Si el usuario elige congelar, hacerlo en porciones. No sugerir nevera para prolongar la textura.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://hgic.clemson.edu/factsheet/food-storage-pantry/,no
+pan integral,despensa,si,"A temperatura ambiente para consumo cercano; no garantiza varias semanas. Si el usuario elige congelar, hacerlo en porciones. No sugerir nevera para prolongar la textura.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://hgic.clemson.edu/factsheet/food-storage-pantry/,no
+pasta,despensa,no,Seco; guardar cerrado en lugar fresco y seco. Una vez cocinado requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+patata,despensa,no,"Entero sin cocinar: lugar fresco, seco y ventilado; patata lejos de luz. Cortado o cocinado: nevera. No garantiza semanas. No se propone congelaci\xF3n cruda por p\xE9rdida de calidad.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://hgic.clemson.edu/factsheet/food-storage-pantry/,no
+pechuga de pavo,nevera,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Nevera al comprar, por criterio de Pablo. El usuario decide si congela: Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+pechuga de pavo asada,nevera,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Nevera al comprar, por criterio de Pablo. El usuario decide si congela: Ya cocinado; enfriar en nevera y congelar en raciones el mismo d\xEDa. No equivale a fiambre estable.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+pechuga de pollo,nevera,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Nevera al comprar, por criterio de Pablo. El usuario decide si congela: Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+pechuga de pollo asada,nevera,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Nevera al comprar, por criterio de Pablo. El usuario decide si congela: Ya cocinado; enfriar en nevera y congelar en raciones el mismo d\xEDa. No equivale a fiambre estable.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+pepino,nevera,no,Para consumo crudo: congelar empeora mucho la textura; comprar fresco en tandas.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad,no
+pera,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+perejil,nevera,si,Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Fresco: nevera; seco comercial: despensa seg\xFAn etiqueta. Congelar solo el fresco lavado y seco para cocinar.,https://nchfp.uga.edu/how/freeze/vegetable/freezing-fresh-herbs,si
+piment\xF3n,despensa,no,Especia seca; envase cerrado sin humedad ni calor. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+pimiento rojo,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+pimiento verde,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+pi\xF1a,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+pl\xE1tano,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+puerro,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+queso cottage,nevera,no,Queso fresco: propuesta conservadora por p\xE9rdida de textura al congelar; mozzarella debe confirmar fresca o baja humedad.,https://nchfp.uga.edu/how/freeze/dairy-products/freezing-cheese/;https://www.hogarmania.com/cocina/actualidad/congelar-yogur_1_1155642.html,no
+remolacha cocida,despensa,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Se supone conserva estable cerrada; tras abrir, nevera seg\xFAn etiqueta. Congelar solo fuera del envase y en porciones si la etiqueta lo permite.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,si
+repollo,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+r\xFAcula,nevera,no,Para consumo crudo: congelar empeora mucho la textura; comprar fresco en tandas.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad,no
+salm\xF3n,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+sand\xEDa,nevera,si,"Congelar parte comestible preparada en porciones; cambia textura: usar en batidos/pur\xE9s/cocina, no prometer fruta fresca al descongelar.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+sardina en lata,despensa,no,Solo conserva intacta sin abrir; una vez abierta guardar en fr\xEDo seg\xFAn etiqueta. No se propone congelaci\xF3n para esta presentaci\xF3n.,https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+sepia,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+tempeh,nevera,si,Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Seguir etiqueta de la marca/formato: nunca sustituir su lugar de conservaci\xF3n por esta orientaci\xF3n. Se interpreta tempeh refrigerado; congelar en porciones; revisar etiqueta de la marca concreta.,https://www.protempeh.com/faq,si
+ternera magra (solomillo de aguja),nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+ternera picada,nevera,si,Se interpreta producto fresco; mantener fr\xEDo y congelar pronto en raciones. Si ya ven\xEDa descongelado seguir etiqueta.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+tofu firme,nevera,si,Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Seguir etiqueta de la marca/formato: nunca sustituir su lugar de conservaci\xF3n por esta orientaci\xF3n. Refrigerado; se puede congelar pero cambia color y se vuelve m\xE1s firme; revisar marca y etiqueta.,https://www.taifun-tofu.de/en/magazine/how-to-use-plain-tofu-properly,si
+tomate,nevera,no,No se propone congelar para ensalada; s\xED puede prepararse para salsa o uso cocinado. Un \xFAnico flag pierde esta distinci\xF3n.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad,no
+tomate triturado,despensa,si,"Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Se supone conserva estable cerrada; tras abrir, nevera seg\xFAn etiqueta. Congelar solo fuera del envase y en porciones si la etiqueta lo permite.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad,si
+tortilla de trigo,nevera,si,Criterio de compra indicado por Pablo; no validaci\xF3n de duraci\xF3n ni de todas las preparaciones. Seguir etiqueta de la marca/formato: nunca sustituir su lugar de conservaci\xF3n por esta orientaci\xF3n. Wrap listo para rellenar; congelable. Sin marca/envase no se presume estable semanas; presentaci\xF3n comercial puede ser despensa.,https://www.missionfoods.com/faq/,si
+yogur griego,nevera,no,"No recomendado para conservar textura de yogur al natural; t\xE9cnicamente congelable para batidos/cocina, no prohibici\xF3n sanitaria.",https://ask.fsis.usda.gov/article/How-long-can-you-keep-dairy-products-like-yogurt-milk-and-cheese-in-the-refrigerator;https://www.hogarmania.com/cocina/actualidad/congelar-yogur_1_1155642.html,no
+yogur natural,nevera,no,"No recomendado para conservar textura de yogur al natural; t\xE9cnicamente congelable para batidos/cocina, no prohibici\xF3n sanitaria.",https://ask.fsis.usda.gov/article/How-long-can-you-keep-dairy-products-like-yogurt-milk-and-cheese-in-the-refrigerator;https://www.hogarmania.com/cocina/actualidad/congelar-yogur_1_1155642.html,no
+zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+`;
+
+  // src/motor/comer-fuera.ts
+  function normalizarTexto2(s) {
+    return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/coca[\s-]*cola/g, "cocacola").replace(/mc[\s-]*donald'?s?/g, "mcdonalds").replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  var num = (s) => {
+    const n = Number((s ?? "").replace(",", "."));
+    return s !== void 0 && s.trim() !== "" && Number.isFinite(n) ? n : void 0;
+  };
+  function comerFueraDesdeCsv(texto) {
+    return registros(texto).filter((r) => r.cadena && r.plato && (r.estado === "oficial" || r.estado === "estimacion")).map((r) => ({
+      cadena: r.cadena,
+      plato: r.plato,
+      tamano: r.tamano,
+      sinonimos: (r.sinonimos ?? "").split(";").map((x) => x.trim()).filter(Boolean),
+      kcalUnidad: num(r.kcal_unidad),
+      kcal100: num(r.kcal_100),
+      peso: num(r.peso_g_o_ml),
+      pesoMin: num(r.peso_min_g),
+      pesoMax: num(r.peso_max_g),
+      estado: r.estado,
+      fuenteUrl: r.fuente_url,
+      fecha: r.fecha_consulta
+    }));
+  }
+  function comprobarComerFueraCsv(texto) {
+    const fallos = [];
+    const cab = (texto.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
+    for (const c of ["cadena", "plato", "tamano", "sinonimos", "kcal_unidad", "kcal_100", "peso_g_o_ml", "peso_min_g", "peso_max_g", "estado", "fuente_url", "fecha_consulta"]) {
+      if (!cab.includes(c)) fallos.push(`falta la columna ${c}`);
+    }
+    if (fallos.length) return fallos;
+    const claves = /* @__PURE__ */ new Set();
+    const aliasPorCadena = /* @__PURE__ */ new Map();
+    for (const r of registros(texto)) {
+      const id = `${r.cadena} \xB7 ${r.plato} \xB7 ${r.tamano}`;
+      if (!r.cadena || !r.plato) {
+        fallos.push(`fila sin cadena o plato (${id})`);
+        continue;
+      }
+      if (claves.has(id)) fallos.push(`${id}: fila duplicada`);
+      claves.add(id);
+      if (r.estado !== "oficial" && r.estado !== "estimacion") fallos.push(`${id}: estado \xAB${r.estado}\xBB no permitido (oficial o estimacion)`);
+      if (!/^https:\/\//.test(r.fuente_url)) fallos.push(`${id}: sin fuente_url https`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(r.fecha_consulta)) fallos.push(`${id}: fecha_consulta no es AAAA-MM-DD`);
+      const campos = [
+        ["kcal_unidad", num(r.kcal_unidad), 0, 3e3],
+        ["kcal_100", num(r.kcal_100), 0, 900],
+        ["peso_g_o_ml", num(r.peso_g_o_ml), 1, 3e3],
+        ["peso_min_g", num(r.peso_min_g), 1, 3e3],
+        ["peso_max_g", num(r.peso_max_g), 1, 3e3]
+      ];
+      for (const [nombre, v, min, max] of campos) {
+        if (r[nombre] !== "" && (v === void 0 || v < min || v > max)) fallos.push(`${id}: ${nombre} \xAB${r[nombre]}\xBB fuera de rango (${min}-${max})`);
+      }
+      const [ku, k100, peso, pmin, pmax] = campos.map((c) => c[1]);
+      if (pmin !== void 0 && pmax !== void 0 && pmin >= pmax) fallos.push(`${id}: peso_min_g no es menor que peso_max_g`);
+      const sePuedeCalcular = ku !== void 0 || k100 !== void 0 && (peso !== void 0 || pmin !== void 0 && pmax !== void 0);
+      if (!sePuedeCalcular) fallos.push(`${id}: no hay forma de calcular las kcal (kcal_unidad, o kcal_100 con peso o con rango de peso)`);
+      if (r.estado === "oficial" && ku === void 0 && !(k100 !== void 0 && peso !== void 0)) fallos.push(`${id}: una fila oficial necesita kcal_unidad o kcal_100 con peso oficial`);
+      if (r.estado === "estimacion" && pmin === void 0 && ku === void 0 && peso === void 0) fallos.push(`${id}: una estimaci\xF3n necesita un rango de peso`);
+      for (const a2 of [r.plato, ...(r.sinonimos ?? "").split(";")].map(normalizarTexto2).filter(Boolean)) {
+        const k = `${normalizarTexto2(r.cadena)}|${normalizarTexto2(r.tamano)}|${a2}`;
+        const otro = aliasPorCadena.get(k);
+        if (otro && otro !== id) fallos.push(`${id}: el nombre \xAB${a2}\xBB ya lo usa ${otro}`);
+        aliasPorCadena.set(k, id);
+      }
+    }
+    return fallos;
+  }
+  var PALABRAS_VACIAS = /* @__PURE__ */ new Set(["un", "una", "uno", "unos", "unas", "de", "del", "la", "el", "los", "las", "en", "al", "a", "me", "he", "comido", "tomado", "bebido", "con", "y", "mas"]);
+  var NUMEROS = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, media: 0.5, medio: 0.5 };
+  var TAMANOS_PIZZA = ["familiar", "grande", "individual", "pequena", "mediana", "xl"];
+  function cantidadDe(tokens2) {
+    let cantidad = 1;
+    const resto = [];
+    for (const t of tokens2) {
+      if (/^\d+([.,]\d+)?x?$/.test(t)) {
+        cantidad = Number(t.replace(",", ".").replace("x", ""));
+        continue;
+      }
+      if (t in NUMEROS) {
+        cantidad = NUMEROS[t];
+        continue;
+      }
+      resto.push(t);
+    }
+    return { cantidad, resto };
+  }
+  function rangoKcal(f2) {
+    if (f2.kcalUnidad !== void 0) return { min: f2.kcalUnidad, max: f2.kcalUnidad };
+    if (f2.kcal100 === void 0) return void 0;
+    if (f2.peso !== void 0) {
+      const k = Math.round(f2.kcal100 * f2.peso / 100);
+      return { min: k, max: k };
+    }
+    if (f2.pesoMin !== void 0 && f2.pesoMax !== void 0) return { min: Math.round(f2.kcal100 * f2.pesoMin / 100), max: Math.round(f2.kcal100 * f2.pesoMax / 100) };
+    return void 0;
+  }
+  function estimarComidaFuera(texto, tabla) {
+    const trozos = texto.split(/[,;+]/).flatMap((p) => normalizarTexto2(p).split(/\b(?:con|y|mas)\b/)).map((t) => t.trim()).filter(Boolean);
+    const cadenas = [...new Set(tabla.map((f2) => f2.cadena))].map((c) => ({ c, alias: normalizarTexto2(c).split(" ")[0] }));
+    const lineas = [];
+    const sinReconocer = [];
+    for (const trozo of trozos) {
+      const toks = trozo.split(" ").filter(Boolean);
+      const { cantidad, resto } = cantidadDe(toks.filter((t) => !PALABRAS_VACIAS.has(t) || t in NUMEROS || t === "con"));
+      const utiles = resto.filter((t) => !PALABRAS_VACIAS.has(t));
+      const cadena = cadenas.find((x) => utiles.includes(x.alias));
+      const delTrozo = new Set(utiles.map((t) => t.replace(/s$/, "")).concat(utiles));
+      const candidatas = tabla.filter((f2) => !cadena || f2.cadena === cadena.c);
+      let mejor = [];
+      let mejorPuntos = 0;
+      for (const f2 of candidatas) {
+        let p = 0;
+        for (const a2 of [f2.plato, ...f2.sinonimos].map(normalizarTexto2)) {
+          const ts = a2.split(" ").filter(Boolean);
+          if (ts.length && ts.every((t) => delTrozo.has(t) || delTrozo.has(t.replace(/s$/, "")))) p = Math.max(p, ts.length);
+        }
+        if (p === 0) continue;
+        for (const t of normalizarTexto2(f2.tamano).split(" ")) if (t.length > 3 && delTrozo.has(t)) p += 0.5;
+        if (p > mejorPuntos) {
+          mejorPuntos = p;
+          mejor = [{ f: f2, puntos: p }];
+        } else if (p === mejorPuntos) mejor.push({ f: f2, puntos: p });
+      }
+      if (mejor.length === 1) {
+        const f2 = mejor[0].f;
+        const r = rangoKcal(f2);
+        lineas.push({
+          nombre: `${f2.plato}${f2.tamano ? ` (${f2.tamano})` : ""}`,
+          cadena: f2.cadena,
+          cantidad,
+          kcalMin: Math.round(r.min * cantidad),
+          kcalMax: Math.round(r.max * cantidad),
+          estado: f2.estado,
+          ...f2.estado === "estimacion" ? { nota: `Peso estimado (${f2.pesoMin}-${f2.pesoMax} g): la cifra es un rango. Si sabes cu\xE1nto pesaba o cu\xE1nto comiste, aj\xFAstalo.` } : {}
+        });
+        continue;
+      }
+      const quierePizza = delTrozo.has("pizza") && cadena !== void 0;
+      if (quierePizza) {
+        const pizzas = candidatas.filter((f2) => f2.estado === "estimacion" && f2.pesoMin !== void 0 && f2.kcal100 !== void 0);
+        const tam = utiles.find((t) => TAMANOS_PIZZA.includes(t));
+        if (tam === "individual") {
+          sinReconocer.push(`${trozo} (la pizza individual de Telepizza no tiene datos: dime los gramos o las calor\xEDas)`);
+          continue;
+        }
+        if (pizzas.length) {
+          const media = pizzas.reduce((s, f2) => s + f2.kcal100, 0) / pizzas.length;
+          const pmin = Math.min(...pizzas.map((f2) => f2.pesoMin)), pmax = Math.max(...pizzas.map((f2) => f2.pesoMax));
+          const tamNota = tam && tam !== "mediana" ? ` De \xAB${tam}\xBB no hay dato propio: se usa el rango de la mediana (${pmin}-${pmax} g) como aproximaci\xF3n sin validar; si sabes el peso, aj\xFAstalo.` : "";
+          lineas.push({
+            nombre: `Pizza de ${cadena.c} (sin elegir variedad)`,
+            cadena: cadena.c,
+            cantidad,
+            kcalMin: Math.round(media * pmin / 100 * cantidad),
+            kcalMax: Math.round(media * pmax / 100 * cantidad),
+            estado: "estimacion",
+            nota: `Densidad media de sus pizzas y peso estimado (${pmin}-${pmax} g): un rango.${tamNota} Elige la variedad para afinar.`,
+            opciones: pizzas.map((f2) => f2.plato)
+          });
+          continue;
+        }
+      }
+      sinReconocer.push(trozo);
+    }
+    return { lineas, total: { min: lineas.reduce((s, l) => s + l.kcalMin, 0), max: lineas.reduce((s, l) => s + l.kcalMax, 0) }, sinReconocer };
+  }
+
+  // src/motor/comer-fuera-datos.ts
+  var COMER_FUERA_CSV = `cadena,plato,tamano,sinonimos,kcal_unidad,kcal_100,peso_g_o_ml,peso_min_g,peso_max_g,estado,fuente_url,fecha_consulta
+Telepizza,4 quesos,mediana masa cl\xE1sica,4 quesos;pizza 4 quesos,,224,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Bacon crispy,mediana masa cl\xE1sica,bacon crispy;pizza bacon crispy,,232,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Barbacoa,mediana masa cl\xE1sica,barbacoa;pizza barbacoa,,213,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Barbacoa cr\xE8me,mediana masa cl\xE1sica,barbacoa creme;pizza barbacoa creme,,211,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Burger,mediana masa cl\xE1sica,burger;pizza burger,,243,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Carbonara (cebolla),mediana masa cl\xE1sica,carbonara (cebolla);pizza carbonara (cebolla),,211,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Carbonara (extra de fundido para pizza),mediana masa cl\xE1sica,carbonara (extra de fundido para pizza);pizza carbonara (extra de fundido para pizza),,228,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,De la huerta,mediana masa cl\xE1sica,de la huerta;pizza de la huerta,,165,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Delicheese,mediana masa cl\xE1sica,delicheese;pizza delicheese,,222,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Especial de la casa (cebolla),mediana masa cl\xE1sica,especial de la casa (cebolla);pizza especial de la casa (cebolla),,183,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Especial de la casa (champi\xF1\xF3n),mediana masa cl\xE1sica,especial de la casa (champinon);pizza especial de la casa (champinon),,179,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Formaggio,mediana masa cl\xE1sica,formaggio;pizza formaggio,,241,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Hawaiana,mediana masa cl\xE1sica,hawaiana;pizza hawaiana,,197,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Kebab,mediana masa cl\xE1sica,kebab;pizza kebab,,210,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,La Furiosa,mediana masa cl\xE1sica,la furiosa;pizza la furiosa,,226,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Telepizza,Pepe Pepperoni,mediana masa cl\xE1sica,pepe pepperoni;pizza pepe pepperoni,,258,,500,700,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-13
+Coca-Cola Espa\xF1a,Coca-Cola sabor original,lata 330 ml,cocacola;coca cola;cola,139,42,330,,,oficial,https://www.coca-cola.com/es/es/brands/coca-cola/coca-cola-sabor-original;https://www.coca-cola.com/es/es/about-us/faq/cuanto-azucar-hay-en-una-lata-de-cocacola;https://www.coca-cola.com/es/es/legal/bases-promocionales-verano-2025,2026-10-13
+Coca-Cola Espa\xF1a,Coca-Cola Zero Az\xFAcar,lata 330 ml,cocacola zero;coca cola zero,,0.2,330,,,oficial,https://www.coca-cola.com/es/es/brands/coca-cola/coca-cola-zero;https://www.coca-cola.com/es/es/offerings/portfolio-zero,2026-10-13
+Coca-Cola Espa\xF1a,Coca-Cola Sin Cafe\xEDna,lata 330 ml,coca cola sin cafeina,,44,330,,,oficial,https://www.coca-cola.com/es/es/brands/coca-cola/coca-cola-sin-cafeina;https://www.coca-cola.com/es/es/legal/bases-promocionales-verano-2025,2026-10-13
+Coca-Cola Espa\xF1a,Fanta Naranja,lata 330 ml,fanta naranja,,18,330,,,oficial,https://www.coca-cola.com/es/es/brands/fanta;https://www.coca-cola.com/es/es/legal/bases-promocionales-verano-2025,2026-10-13
+Coca-Cola Espa\xF1a,Fanta Lim\xF3n,lata 330 ml,fanta limon,,19,330,,,oficial,https://www.coca-cola.com/es/es/brands/fanta;https://www.coca-cola.com/es/es/legal/bases-promocionales-verano-2025,2026-10-13
+Coca-Cola Espa\xF1a,Fanta Naranja Zero Az\xFAcares A\xF1adidos,lata 330 ml,fanta naranja zero,,3,330,,,oficial,https://www.coca-cola.com/es/es/brands/fanta;https://www.coca-cola.com/es/es/offerings/portfolio-zero,2026-10-13
+Coca-Cola Espa\xF1a,Fanta Lim\xF3n Zero Az\xFAcares A\xF1adidos,lata 330 ml,fanta limon zero,,2,330,,,oficial,https://www.coca-cola.com/es/es/brands/fanta;https://www.coca-cola.com/es/es/offerings/portfolio-zero,2026-10-13
+Coca-Cola Espa\xF1a,Sprite,lata 330 ml,sprite;refresco lima limon,,19,330,,,oficial,https://www.coca-cola.com/es/es/brands/sprite;https://www.coca-cola.com/es/es/legal/bases-promocionales-sprite-verano-2026,2026-10-13
+Coca-Cola Espa\xF1a,Sprite Zero Az\xFAcar,lata 330 ml,sprite zero,,1,330,,,oficial,https://www.coca-cola.com/es/es/brands/sprite;https://www.coca-cola.com/es/es/legal/bases-promocionales-sprite-verano-2026,2026-10-13
+Coca-Cola Espa\xF1a,Aquarius Zero Az\xFAcar,lata 330 ml,aquarius zero limon,,1,330,,,oficial,https://www.coca-cola.com/es/es/brands/descubre-aquarius/productos;https://www.coca-cola.com/es/es/offerings/portfolio-zero,2026-10-13
+`;
 
   // src/motor/sobras.ts
   function normalizarSobras(sobras) {

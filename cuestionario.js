@@ -657,8 +657,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   // #163 (partes 1-2): cuánto dura la dieta y desde qué día. Una sola fecha para el cliente: el lunes del
   // calendario (calInicio) se calcula a partir del inicio de la dieta; si se cambia ese lunes a mano, el inicio se borra.
   const CLAVE_PERIODO = 'app-dietas-periodo';
-  // Tabla de conservación de #165: vacía hasta que Pablo la valide (sin tabla, todo va como fresco, cada semana).
-  const CONSERVACION_ACTIVA = new Map();
+  // Tabla de conservación de #165 (datos/conservacion.csv, convenciones de compra de Pablo del 13/10): orienta, no garantiza cuánto dura.
+  const CONSERVACION_ACTIVA = Motor.conservacionDesdeCsv(Motor.CONSERVACION_CSV);
+  const TABLA_COMER_FUERA = Motor.comerFueraDesdeCsv(Motor.COMER_FUERA_CSV); // #161: datos/comer-fuera.csv (Instinct, #160)
   let periodoDieta = { inicio: '', semanas: Motor.SEMANAS_POR_DEFECTO };
   try {
     const g = JSON.parse(localStorage.getItem(CLAVE_PERIODO) || 'null');
@@ -2174,7 +2175,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
             <li class="item-compra${aRevisar.has(item.ingrediente) ? ' a-revisar' : ''}">
               <label>
                 <input type="checkbox" class="marca-en-casa" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}" ${item.yaEnCasa ? 'checked' : ''} aria-label="Comprado o ya en casa: ${escaparHtml(item.ingrediente)}">
-                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · puedes comprarlo y congelar lo que no uses' : ''}</small>` : ''}</span>
+                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · si quieres, se puede congelar' : ''}</small>` : ''}</span>
               </label>
               ${aRevisar.has(item.ingrediente) ? `<div class="aviso-cantidad" role="status">Lo marcaste cuando hacían falta ${gramosTxt(aRevisar.get(item.ingrediente).marcado)} y ahora hacen falta ${gramosTxt(aRevisar.get(item.ingrediente).ahora)}: no se da por cubierto.
                 <button type="button" class="btn-texto marca-confirmar" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}">Sigue cubierto</button></div>` : ''}
@@ -2278,7 +2279,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // Issue #42: mismo estado que se acaba de pintar (días, cantidades por ración asignada, marcas de
     // "ya en casa", extras manuales). Se construye al pulsar, no antes, para no quedarse desfasado.
     const textoCompra = () => Motor.formatearListaPendiente({
-      dias: diasElegidos, items: listaConEstado, manuales: articulosManuales, huecos: huecos.length,
+      dias: diasElegidos, items: listaConEstado, manuales: articulosManuales, huecos: huecos.length, semanas: periodoDieta.semanas > 1 && CONSERVACION_ACTIVA.size > 0 ? periodoDieta.semanas : 1,
     });
     const estadoCompra = document.getElementById('estado-compra');
     document.getElementById('btn-descargar-compra').addEventListener('click', () => {
@@ -2679,7 +2680,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const previa = comidasFuera.find((x) => x.fecha === iso && x.franja === franja);
     document.getElementById('dc-titulo').textContent = `Comida fuera · ${nombreSlot(`${dia}|${franja}`)}`;
     document.getElementById('dc-cuerpo').innerHTML = `
-      <div class="campo"><label for="fuera-texto">¿Qué has comido?</label><input id="fuera-texto" type="text" maxlength="80" autocomplete="off" placeholder="Ej.: hamburguesa de pollo con patatas"></div>
+      <div class="campo"><label for="fuera-texto">¿Qué has comido?</label><input id="fuera-texto" type="text" maxlength="120" autocomplete="off" placeholder="Ej.: una pizza de Telepizza con una Coca-Cola de lata"></div>
+      <button type="button" class="btn-secundario" id="fuera-calcular" style="margin:0 0 0.6rem">Calcular las calorías</button>
+      <div id="fuera-desglose" aria-live="polite"></div>
       <div class="campo"><label for="fuera-kcal">Calorías aproximadas, si las sabes</label><input id="fuera-kcal" type="number" inputmode="numeric" min="0" max="5000" step="10" placeholder="Ej.: 850"></div>
       <p class="una-linea">Tu plan preveía ~${f.kcalAprox} kcal para esta comida. Si apuntas las calorías, el resto del día se ajusta solo.</p>
       <p class="error-inline" id="fuera-error" role="alert" hidden></p>
@@ -2691,6 +2694,61 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const campoTexto = document.getElementById('fuera-texto');
     const campoKcal = document.getElementById('fuera-kcal');
     if (previa) { campoTexto.value = previa.texto; if (previa.kcal !== undefined) campoKcal.value = previa.kcal; }
+    // #161: desglose de calorías desde lo escrito, con la tabla de Instinct. Nunca se calla: o hay desglose, o dice qué no reconoce.
+    const desglose = document.getElementById('fuera-desglose');
+    let items = []; // { linea, unidadMin, unidadMax, cantidad }
+    let sinReconocer = [];
+    let calculado = false;
+    let textoCalculado = '';
+    const miles = (n) => Math.round(n).toLocaleString('es-ES');
+    const rangoTxt = (a, b) => (Math.round(a) === Math.round(b) ? `${miles(a)} kcal` : `${miles(a)}–${miles(b)} kcal`);
+    const totales = () => ({ min: items.reduce((s, i) => s + i.unidadMin * i.cantidad, 0), max: items.reduce((s, i) => s + i.unidadMax * i.cantidad, 0) });
+    const pintarDesglose = () => {
+      if (!calculado) { desglose.innerHTML = ''; return; }
+      const t = totales();
+      const lineas = items.map((it, k) => `
+        <li class="item-compra fuera-linea" data-k="${k}">
+          <div style="flex:1;min-width:0"><strong>${escaparHtml(it.linea.nombre)}</strong> · ${rangoTxt(it.unidadMin * it.cantidad, it.unidadMax * it.cantidad)} <span class="etq-ejemplo">${it.linea.estado === 'oficial' ? 'OFICIAL' : 'ESTIMADA'}</span>
+            ${it.linea.nota ? `<details><summary>Por qué ${it.unidadMin === it.unidadMax ? 'esta cifra' : 'un rango'}</summary><p class="una-linea">${escaparHtml(it.linea.nota)}</p></details>` : ''}
+            ${it.linea.opciones ? `<label class="una-linea" for="fuera-var-${k}">¿Cuál? (para afinar)</label><select id="fuera-var-${k}" class="fuera-variedad" data-k="${k}" style="font-size:16px"><option value="">Sin elegir</option>${it.linea.opciones.map((o) => `<option>${escaparHtml(o)}</option>`).join('')}</select>` : ''}
+          </div>
+          <div class="fuera-cantidad" style="display:flex;align-items:center;gap:0.3rem">
+            <button type="button" class="btn-texto fuera-menos" data-k="${k}" aria-label="Menos cantidad de ${escaparHtml(it.linea.nombre)}">−</button>
+            <span aria-live="polite">${String(it.cantidad).replace('.', ',')}</span>
+            <button type="button" class="btn-texto fuera-mas" data-k="${k}" aria-label="Más cantidad de ${escaparHtml(it.linea.nombre)}">+</button>
+          </div>
+        </li>`).join('');
+      desglose.innerHTML = `
+        ${items.length ? `<ul class="resumen-lista">${lineas}</ul>
+        <p><strong>Total: ${rangoTxt(t.min, t.max)}</strong>${t.min === t.max ? '' : ` · para ajustar el día se usa el punto medio (${miles((t.min + t.max) / 2)} kcal)`}</p>` : ''}
+        ${sinReconocer.length ? `<p class="una-linea" id="fuera-no-reconocido">No he reconocido: ${sinReconocer.map(escaparHtml).join('; ')}. Si sabes sus calorías, súmalas tú en el campo de abajo.</p>` : ''}
+        ${!items.length && !sinReconocer.length ? '<p class="una-linea">No he reconocido nada: escribe las calorías tú.</p>' : ''}`;
+      if (items.length) campoKcal.value = String(Math.round((t.min + t.max) / 20) * 10);
+      desglose.querySelectorAll('.fuera-menos, .fuera-mas').forEach((b) => b.addEventListener('click', () => {
+        const it = items[Number(b.dataset.k)];
+        it.cantidad = Math.max(0.5, Math.min(20, it.cantidad + (b.classList.contains('fuera-mas') ? 0.5 : -0.5)));
+        pintarDesglose();
+      }));
+      desglose.querySelectorAll('.fuera-variedad').forEach((s) => s.addEventListener('change', () => {
+        const it = items[Number(s.dataset.k)];
+        if (!s.value) return;
+        const afinada = Motor.estimarComidaFuera(`pizza ${s.value} ${it.linea.cadena}`, TABLA_COMER_FUERA).lineas[0];
+        if (afinada) items[Number(s.dataset.k)] = { linea: afinada, unidadMin: afinada.kcalMin / afinada.cantidad, unidadMax: afinada.kcalMax / afinada.cantidad, cantidad: it.cantidad };
+        pintarDesglose();
+      }));
+    };
+    const calcular = () => {
+      const r = Motor.estimarComidaFuera(campoTexto.value, TABLA_COMER_FUERA);
+      items = r.lineas.map((l) => ({ linea: l, unidadMin: l.kcalMin / l.cantidad, unidadMax: l.kcalMax / l.cantidad, cantidad: l.cantidad }));
+      sinReconocer = r.sinReconocer;
+      calculado = true;
+      textoCalculado = campoTexto.value;
+      pintarDesglose();
+      return r;
+    };
+    document.getElementById('fuera-calcular').addEventListener('click', () => { if (campoTexto.value.trim()) calcular(); });
+    let pausa = null;
+    campoTexto.addEventListener('input', () => { clearTimeout(pausa); pausa = setTimeout(() => { if (campoTexto.value.trim().length > 3) calcular(); }, 600); });
     const dlg = document.getElementById('detalle-comida');
     const terminar = () => {
       try { localStorage.setItem(CLAVE_HECHAS, JSON.stringify(comidasHechas)); localStorage.setItem(CLAVE_FUERA, JSON.stringify(comidasFuera)); } catch { falloAlmacenamiento(); }
@@ -2701,9 +2759,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const avisar = (texto, campo) => { const e = document.getElementById('fuera-error'); e.textContent = texto; e.hidden = false; campo.focus(); };
     [campoTexto, campoKcal].forEach((c) => c.addEventListener('input', () => { document.getElementById('fuera-error').hidden = true; }));
     document.getElementById('fuera-guardar').addEventListener('click', () => {
-      const texto = campoTexto.value.trim().slice(0, 80);
+      const texto = campoTexto.value.trim().slice(0, 120);
       const kcal = campoKcal.value.trim() === '' ? undefined : Number(campoKcal.value);
       if (!texto) { avisar('Escribe qué has comido, aunque sea por encima.', campoTexto); return; }
+      if (campoKcal.value.trim() === '' && textoCalculado !== campoTexto.value) {
+        // Sin calorías apuntadas: se calculan del texto y se enseña el desglose antes de guardar (nunca se queda igual en silencio).
+        calcular();
+        return;
+      }
       if (kcal !== undefined && !(Number.isFinite(kcal) && kcal >= 0 && kcal <= 5000)) { avisar('Las calorías tienen que ser un número entre 0 y 5000; si no las sabes, déjalo vacío.', campoKcal); return; }
       comidasFuera = comidasFuera.filter((x) => !(x.fecha === iso && x.franja === franja))
         .concat({ fecha: iso, franja, texto, ...(kcal !== undefined ? { kcal: Math.round(kcal) } : {}) }).slice(-30);
