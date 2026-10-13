@@ -4816,7 +4816,21 @@ R127,Pasta blanca con pollo y calabac\xEDn,comida;cena,501,42.3,15.0,46.7,EJEMPL
 R128,Arroz con tortilla y calabac\xEDn,comida;cena,548,21.7,20.2,67.3,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.84,huevo,cereal,huevo,si,no,si,pendiente_ficha,si,20,nuevo,"Pesar arroz seco y huevo/calabac\xEDn crudos. Cocer arroz, cuajar tortilla y cocinar calabac\xEDn con aceite.",normal
 R129,Arroz con salm\xF3n y calabaza,comida;cena,674,37.3,25.8,70.5,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.54,salm\xF3n,cereal,pescado,no,no,si,pendiente_ficha,si,20,nuevo,Pesar arroz seco y salm\xF3n/calabaza crudos. Cocer arroz y hornear salm\xF3n y calabaza con aceite.,normal
 R130,Arroz con ternera y champi\xF1\xF3n,comida;cena,592,32.2,20.8,66.6,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.84,ternera picada,cereal,,no,no,si,pendiente_ficha,si,20,nuevo,Pesar arroz seco y ternera/champi\xF1\xF3n crudos. Cocer arroz; saltear ternera y champi\xF1\xF3n con aceite.,normal
-R131,Arroz con at\xFAn y calabac\xEDn,comida;cena,480,26.1,11.7,66.4,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.84,at\xFAn en lata,cereal,pescado,no,no,pendiente_ficha,pendiente_ficha,si,20,nuevo,"Pesar arroz seco, at\xFAn escurrido y calabac\xEDn crudo. Cocer arroz y cocinar calabac\xEDn con aceite; a\xF1adir at\xFAn al final.",normal`;
+R131,Arroz con at\xFAn y calabac\xEDn,comida;cena,480,26.1,11.7,66.4,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.84,at\xFAn en lata,cereal,pescado,no,no,pendiente_ficha,pendiente_ficha,si,20,nuevo,"Pesar arroz seco, at\xFAn escurrido y calabac\xEDn crudo. Cocer arroz y cocinar calabac\xEDn con aceite; a\xF1adir at\xFAn al final.",normal
+R132,"Avena con pl\xE1tano, huevo y almendra",desayuno;media_manana;merienda,384,16.0,13.6,52.5,EJEMPLO | fibraAlta,unico,7.89,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,Cocer la avena en agua. Cocinar el huevo por completo aparte; servir con fruta lavada y frutos secos. Pesar avena seca y huevo crudo; fruta en porci\xF3n comestible.,normal
+R133,"Avena con manzana, huevo y nueces",desayuno;media_manana;merienda,355,14.6,15.0,42.7,EJEMPLO | fibraAlta,unico,7.11,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,Cocer la avena en agua. Cocinar el huevo por completo aparte; servir con fruta lavada y frutos secos. Pesar avena seca y huevo crudo; fruta en porci\xF3n comestible.,normal
+R134,"Avena con pera, huevo y almendra",desayuno;media_manana;merienda,352,15.3,13.4,44.9,EJEMPLO | fibraAlta,unico,8.39,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,Cocer la avena en agua. Cocinar el huevo por completo aparte; servir con fruta lavada y frutos secos. Pesar avena seca y huevo crudo; fruta en porci\xF3n comestible.,normal
+R135,"Avena con fresas, huevo y nueces",desayuno;media_manana;merienda,335,15.0,15.1,36.6,EJEMPLO | fibraAlta,unico,6.71,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,Cocer la avena en agua. Cocinar el huevo por completo aparte; servir con fruta lavada y frutos secos. Pesar avena seca y huevo crudo; fruta en porci\xF3n comestible.,normal
+R136,"Tortilla con arroz, naranja y almendra",desayuno;media_manana;merienda,337,13.4,11.1,46.3,EJEMPLO | fibraAlta,unico,4.17,huevo,cereal,frutos de c\xE1scara;huevo,si,no,si,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en agua. Cuajar bien el huevo en sart\xE9n antiadherente; servir con fruta y frutos secos. Huevo pesado crudo y fruta en porci\xF3n comestible.,normal
+R137,"Arroz con huevo, pi\xF1a y nueces",desayuno;media_manana;merienda,347,12.5,12.6,46.9,EJEMPLO | fibra base \u22643g,unico,2.59,huevo,cereal,frutos de c\xE1scara;huevo,si,no,si,pendiente_ficha,si,15,nuevo,Cocer arroz pesado seco en agua. Cuajar bien el huevo en sart\xE9n antiadherente; servir con fruta y frutos secos. Huevo pesado crudo y fruta en porci\xF3n comestible.,normal
+R138,"Arroz con huevo, kiwi y almendra",desayuno;media_manana;merienda,351,13.6,11.5,49.2,EJEMPLO | fibraAlta,unico,4.77,huevo,cereal,frutos de c\xE1scara;huevo,si,no,si,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en agua. Cuajar bien el huevo en sart\xE9n antiadherente; servir con fruta y frutos secos. Huevo pesado crudo y fruta en porci\xF3n comestible.,normal
+R139,"Arroz con huevo, mandarina y nueces",desayuno;media_manana;merienda,350,12.7,12.8,47.1,EJEMPLO | fibra base \u22643g,unico,2.99,huevo,cereal,frutos de c\xE1scara;huevo,si,no,si,pendiente_ficha,si,15,nuevo,Cocer arroz pesado seco en agua. Cuajar bien el huevo en sart\xE9n antiadherente; servir con fruta y frutos secos. Huevo pesado crudo y fruta en porci\xF3n comestible.,normal
+R140,Arroz con huevo y pimientos,comida;cena,524,21.1,20.2,62.9,EJEMPLO | fibraAlta,unico,3.01,huevo,cereal,huevo,si,no,si,pendiente_ficha,no,30,nuevo,Cocer arroz seco; cocinar completamente huevo y pimientos crudos con aceite.,normal
+R141,"Arroz con claras, huevo y calabaza",comida;cena,523,26.8,16.5,65.1,EJEMPLO | fibra base \u22643g,unico,1.51,huevo,cereal,huevo,si,no,si,pendiente_ficha,si,30,nuevo,"Cocer arroz seco. Asar calabaza y cuajar huevo y claras por completo con aceite; pesar huevo, claras y calabaza crudos.",normal
+R142,Patata con tortilla y calabac\xEDn,comida;cena,473,21.6,22.0,48.3,EJEMPLO | fibraAlta,unico,6.45,huevo,patata,huevo,si,no,si,pendiente_ficha,no,30,nuevo,Lavar y cocer patata con piel (ficha con piel). Cocinar huevo y calabac\xEDn con aceite; pesos crudos.,normal
+R143,Boniato con huevo y espinacas,comida;cena,481,21.5,21.9,50.8,EJEMPLO | fibraAlta,unico,9.10,huevo,patata,huevo,si,no,si,pendiente_ficha,no,30,nuevo,Cocer boniato y espinacas; cocinar completamente huevo con aceite. Pesar ingredientes crudos seg\xFAn ficha.,normal
+R144,Lentejas con huevo y zanahoria,comida;cena,463,28.6,22.2,38.6,EJEMPLO | fibraAlta,unico,13.86,huevo,legumbre,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Pesar lentejas ya cocidas, huevo y zanahoria crudos. Cocinar zanahoria y huevo completamente, a\xF1adir lentejas y aceite.",normal
+R145,Garbanzos con huevo y calabac\xEDn,comida;cena,544,29.7,24.5,53.2,EJEMPLO | fibraAlta,unico,14.68,huevo,legumbre,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Pesar garbanzos ya cocidos, huevo y calabac\xEDn crudos. Saltear calabac\xEDn, cocinar huevo por completo y a\xF1adir garbanzos y aceite.",normal`;
   var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
 R01,garbanzo cocido,140,base,173757,peso cocido,
 R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
@@ -5395,7 +5409,64 @@ R130,aceite de oliva,8,grasa,171413,peso a\xF1adido,
 R131,arroz,80,base,169756,peso seco,
 R131,at\xFAn en lata,100,proteina,173709,peso escurrido,
 R131,calabac\xEDn,80,verdura,169291,crudo,
-R131,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
+R131,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R132,copos de avena,40,base,173904,peso seco,
+R132,huevo,60,proteina,171287,crudo,
+R132,pl\xE1tano,100,fruta_lacteo,173944,peso comestible,
+R132,almendra,10,grasa,170567,tal cual,
+R133,copos de avena,40,base,173904,peso seco,
+R133,huevo,60,proteina,171287,crudo,
+R133,manzana,100,fruta_lacteo,171688,peso comestible,
+R133,nueces,10,grasa,170187,tal cual,
+R134,copos de avena,40,base,173904,peso seco,
+R134,huevo,60,proteina,171287,crudo,
+R134,pera,100,fruta_lacteo,169118,peso comestible,
+R134,almendra,10,grasa,170567,tal cual,
+R135,copos de avena,40,base,173904,peso seco,
+R135,huevo,60,proteina,171287,crudo,
+R135,fresas,100,fruta_lacteo,167762,peso comestible,
+R135,nueces,10,grasa,170187,tal cual,
+R136,arroz,40,base,169756,peso seco,
+R136,huevo,60,proteina,171287,crudo,
+R136,naranja,100,fruta_lacteo,169097,peso comestible,
+R136,almendra,10,grasa,170567,tal cual,
+R137,arroz,40,base,169756,peso seco,
+R137,huevo,60,proteina,171287,crudo,
+R137,pi\xF1a,100,fruta_lacteo,169124,peso comestible,
+R137,nueces,10,grasa,170187,tal cual,
+R138,arroz,40,base,169756,peso seco,
+R138,huevo,60,proteina,171287,crudo,
+R138,kiwi,100,fruta_lacteo,168153,peso comestible,
+R138,almendra,10,grasa,170567,tal cual,
+R139,arroz,40,base,169756,peso seco,
+R139,huevo,60,proteina,171287,crudo,
+R139,mandarina,100,fruta_lacteo,169105,peso comestible,
+R139,nueces,10,grasa,170187,tal cual,
+R140,arroz,70,base,169756,peso seco,
+R140,huevo,120,proteina,171287,crudo,
+R140,pimiento rojo,100,verdura,170108,crudo,
+R140,aceite de oliva,8,grasa,171413,peso a\xF1adido,
+R141,arroz,70,base,169756,peso seco,
+R141,huevo,60,proteina,171287,crudo,
+R141,claras de huevo,120,proteina,172183,crudo,
+R141,calabaza,120,verdura,168448,crudo,
+R141,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R142,patata,250,base,170026,crudo con piel,
+R142,huevo,120,proteina,171287,crudo,
+R142,calabac\xEDn,120,verdura,169291,crudo,
+R142,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R143,boniato,230,base,168482,crudo,
+R143,huevo,120,proteina,171287,crudo,
+R143,espinacas,100,verdura,168462,crudo,
+R143,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R144,lenteja cocida,140,base,172421,cocido,
+R144,huevo,120,proteina,171287,crudo,
+R144,zanahoria,100,verdura,170393,crudo,
+R144,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R145,garbanzo cocido,180,base,173757,cocido,
+R145,huevo,100,proteina,171287,crudo,
+R145,calabac\xEDn,100,verdura,169291,crudo,
+R145,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
 
   // src/motor/coherencia-nutricional.ts
   var TOLERANCIA_RELATIVA = 0.1;
