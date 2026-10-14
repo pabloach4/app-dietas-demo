@@ -509,6 +509,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         sesiones: franjaADia(d.dia, franjasDelDia(d.dia), sesionesConActividad),
         sesionesTodas: sesionesTodasDelDia(d.dia, sesionesConActividad),
         franjas: franjasDelDia(d.dia),
+        ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
       });
       reparto.franjas.forEach((f) => {
         const rol = f.rol !== 'normal' ? ` (${f.rol.replace(/_/g, ' ')})` : '';
@@ -3051,6 +3052,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         sesiones: franjaADia(d.dia, franjasDelDia(d.dia), sesionesConActividad),
         sesionesTodas: sesionesTodasDelDia(d.dia, sesionesConActividad),
         franjas: franjasDelDia(d.dia),
+        ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
       });
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       reparto.franjas.forEach((f) => {
@@ -3216,7 +3218,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <button type="button" class="contexto-toggle" aria-expanded="${contextoAbierto}" aria-controls="panel-contexto-${d.dia}">${contextoAbierto ? 'Ocultar contexto del día ▴' : 'Contexto del día (turno, táper...) ▾'}</button>
         <div class="contexto-dia" id="panel-contexto-${d.dia}" ${contextoAbierto ? '' : 'hidden'}>
           <p style="font-size:0.8rem;color:var(--gris);margin:0 0 0.5rem">
-            Solo para anotarlo: todavía no cambia las kcal ni elige receta por esto.
+            Solo para anotarlo: todavía no cambia las kcal ni elige receta por esto (salvo la toma ligera de abajo).
           </p>
           <label class="check"><input type="checkbox" class="ctx-campo" data-dia="${d.dia}" data-campo="turno" ${contexto.turno ? 'checked' : ''}> 🕐 Guardia o turno</label>
           <label class="check"><input type="checkbox" class="ctx-campo" data-dia="${d.dia}" data-campo="comidaFuera" ${contexto.comidaFuera ? 'checked' : ''}> 🍽️ Como fuera de casa</label>
@@ -3229,6 +3231,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
               <option value="poco" ${contexto.tiempoCocina === 'poco' ? 'selected' : ''}>Poco, prefiero platos rápidos</option>
               <option value="normal" ${contexto.tiempoCocina === 'normal' ? 'selected' : ''}>Normal</option>
               <option value="mucho" ${contexto.tiempoCocina === 'mucho' ? 'selected' : ''}>Me gusta cocinar</option>
+            </select>
+          </div>
+          <div class="campo" style="margin-top:0.4rem">
+            <label>Toma ligera antes de una sesión temprana</label>
+            <select class="ctx-toma-ligera" data-dia="${d.dia}">
+              <option value="" ${!contexto.tomaLigera ? 'selected' : ''}>Solo sugerida: no se reserva nada</option>
+              <option value="pautada" ${contexto.tomaLigera === 'pautada' ? 'selected' : ''}>Pautada: cuenta como una comida y se resta un poco de cada comida</option>
+              <option value="imprevista" ${contexto.tomaLigera === 'imprevista' ? 'selected' : ''}>Imprevista: se resta de la cena y cuenta como merienda</option>
             </select>
           </div>
         </div>
@@ -3300,6 +3310,13 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       chk.addEventListener('change', () => {
         const contexto = contextoPorDia.get(chk.dataset.dia);
         contexto[chk.dataset.campo] = chk.checked;
+        mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
+      });
+    });
+    document.querySelectorAll('#r-dias .ctx-toma-ligera').forEach((sel) => {
+      sel.addEventListener('change', () => {
+        const c = contextoPorDia.get(sel.dataset.dia);
+        if (sel.value) c.tomaLigera = sel.value; else delete c.tomaLigera;
         mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
       });
     });

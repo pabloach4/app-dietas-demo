@@ -798,7 +798,7 @@ var Motor = (() => {
             mejorPre = f2.franja;
             gapPre = antes;
           }
-          if (despues >= 0 && despues < gapPost) {
+          if (despues >= 0 && despues < gapPost && !(f2.franja === "desayuno" && despues > v.POST_hasta_h_despues)) {
             mejorPost = f2.franja;
             gapPost = despues;
           }
@@ -835,7 +835,7 @@ var Motor = (() => {
       return !e.franjas.some((f2) => PRINCIPALES.includes(f2.franja) && s.inicio - f2.hora >= p.ventana.PRE_hasta_h_antes && s.inicio - f2.hora <= p.ventana.PRE_desde_h_antes);
     });
     const horaDesayuno = e.franjas.find((f2) => f2.franja === "desayuno")?.hora;
-    const desayunoForzadoPost = primeraHora !== void 0 && horaDesayuno !== void 0 && horaDesayuno >= primeraHora.fin;
+    const desayunoForzadoPost = primeraHora !== void 0 && horaDesayuno !== void 0 && horaDesayuno >= primeraHora.fin && horaDesayuno - primeraHora.fin <= p.ventana.POST_hasta_h_despues;
     if (primeraHora) {
       const peso = e.peso ?? e.pesoRef;
       const gMin = redondear(p.bordePrimeraHora.hidrato_rapido_g_kg_min * peso, 1);
@@ -931,6 +931,47 @@ var Motor = (() => {
         }
       };
     });
+    let tomaLigera;
+    if (primeraHora && e.tomaLigera && salida.length) {
+      const peso = e.peso ?? e.pesoRef;
+      const gMin = p.bordePrimeraHora.hidrato_rapido_g_kg_min * peso, gMax = p.bordePrimeraHora.hidrato_rapido_g_kg_max * peso;
+      let pendiente = redondear((gMin + gMax) / 2, 1);
+      const total = pendiente;
+      const restado = /* @__PURE__ */ new Map();
+      const quitar = (s, g) => {
+        const q = Math.min(g, s.hidrato);
+        s.hidrato = redondear(s.hidrato - q);
+        s.kcalAprox = redondear(4 * s.proteina + 4 * s.hidrato + 9 * s.grasa);
+        restado.set(s.franja, (restado.get(s.franja) ?? 0) + q);
+        return q;
+      };
+      if (e.tomaLigera === "pautada") {
+        const sumaH = salida.reduce((s, x) => s + x.hidrato, 0);
+        if (sumaH > 0) for (const s of salida) pendiente -= quitar(s, total * s.hidrato / sumaH);
+      } else {
+        const porHora = [...salida].sort((a2, b) => e.franjas.find((x) => x.franja === b.franja).hora - e.franjas.find((x) => x.franja === a2.franja).hora);
+        const orden = [...porHora.filter((s) => s.franja === "cena"), ...porHora.filter((s) => s.franja !== "cena")];
+        for (const s of orden) {
+          if (pendiente <= 0.05) break;
+          pendiente -= quitar(s, pendiente);
+        }
+      }
+      const reservado = redondear([...restado.values()].reduce((s, v) => s + v, 0), 1);
+      if (reservado > 0) {
+        tomaLigera = {
+          modo: e.tomaLigera,
+          hidrato: reservado,
+          kcalAprox: redondear(4 * reservado),
+          cuentaComo: e.tomaLigera === "imprevista" ? "merienda" : "comida_extra",
+          restadoDe: [...restado].filter(([, g]) => g > 0).map(([franja, hidrato]) => ({ franja, hidrato: redondear(hidrato, 1) }))
+        };
+        const donde = tomaLigera.restadoDe.map((r) => `${NOMBRE_FRANJA[r.franja]?.toLowerCase() ?? r.franja} \u2212${r.hidrato} g`).join(", ");
+        const ya = avisos.findIndex((a2) => a2.startsWith("Sesi\xF3n antes de las"));
+        const texto = e.tomaLigera === "pautada" ? `Toma ligera pautada antes del entreno (${reservado} g de hidrato r\xE1pido, ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes): cuenta como una comida y se resta un poco de cada comida del d\xEDa (${donde}). El total del d\xEDa no cambia.` : `Toma ligera imprevista antes del entreno (${reservado} g de hidrato r\xE1pido): cuenta como una merienda y se resta de la cena (${donde}). El total del d\xEDa no cambia.`;
+        if (ya >= 0) avisos[ya] = texto;
+        else avisos.push(texto);
+      }
+    }
     const conflictos = [];
     for (const f2 of e.franjas) {
       for (const ses of e.sesionesTodas ?? sesionesCarga) {
@@ -942,7 +983,7 @@ var Motor = (() => {
         `${NOMBRE_FRANJA[c.franja] ?? c.franja} (${hhmm(c.hora)}) cae dentro de una sesi\xF3n de ${hhmm(c.inicio)} a ${hhmm(c.fin)}: revisa el horario. No se ha movido nada ni se da este horario por viable.`
       );
     }
-    return { franjas: salida, avisos, conflictos };
+    return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {} };
   }
 
   // src/motor/validador-plato.ts
@@ -3428,6 +3469,9 @@ Ejemplo acotado de bar,Caf\xE9 con leche desnatada sin az\xFAcar (50/50),taza 12
 Ejemplo acotado de bar,Croissant de mantequilla sin relleno (referencia USDA),peque\xF1o-grande 42-67 g ya horneado; no mini ni relleno,croissant;un croissant;cruasan;croissant de mantequilla,,406,,42,67,estimacion,https://foodstruct.com/food/croissant;https://www.prospre.io/ingredients/butter-croissant-276065,2026-10-14
 Ejemplo acotado de bar,Pincho de tortilla con cebolla (ejemplo Tortiburguer),unidad 120 \xB110 g de producto ya cocido; no tortilla casera universal,pincho de tortilla;pincho tortilla;tortilla de patatas,,148.3,,110,130,estimacion,https://hnosmesones.com/fichas-tecnicas/FT-6755.pdf,2026-10-14
 Ejemplo acotado de bar,Refresco de cola Coca-Cola original en vaso sin hielo,vaso mediano 150-250 ml de l\xEDquido; no Zero ni hielo,refresco de cola en vaso;cola en vaso;vaso de cola;vaso de cocacola,,42,,150,250,estimacion,https://www.coca-cola.com/es/es/brands/coca-cola/coca-cola-sabor-original;https://blog.fumisan.es/cuantos-mililitros-tiene-un-vaso-guia-de-capacidad-segun-el-tipo/,2026-10-14
+Ejemplo acotado de bar,Tercio de cerveza Mahou Cinco Estrellas,botella 330 ml de peso fijo; ejemplo Mahou 49 kcal/100 ml,tercio;un tercio;tercio de cerveza,,49,330,,,estimacion,https://www.somosnexho.com/mahou-sanmiguel/productos/mahou-5-estrellas,2026-10-14
+Ejemplo acotado de bar,Tostada con tomate y aceite (ejemplo receta Dietfarma),pieza fija 105 g: pan60g + tomate40g + aceite5g; 196.6 kcal/100 g calculada de la receta (206.44 kcal),tostada con tomate y aceite;pan con tomate;una tostada con tomate;tostada,,196.6,105,,,estimacion,https://www.dietfarma.com/receta/tostada-con-aceite-y-tomate,2026-10-14
+Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g: pan120g + jam\xF3n80g; sin aceite ni queso; densidad por ingredientes FEN,bocadillo de jamon;bocata de jamon;bocadillo de jamon serrano;un bocadillo de jamon,,262.6,200,,,estimacion,https://fen.org.es/MercadoAlimentosFEN/pdfs/panblanco.pdf;https://fen.org.es/MercadoAlimentosFEN/pdfs/jamonserrano.pdf,2026-10-14
 `;
 
   // src/motor/sobras.ts
