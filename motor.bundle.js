@@ -2712,6 +2712,8 @@ var Motor = (() => {
     const tipo = (datos.tipo ?? "").trim() || "otra";
     if (!TIPOS_COMPETICION.includes(tipo)) return { ok: false, error: "Elige un tipo de competici\xF3n de la lista." };
     const usaGeles = (datos.usaGeles ?? "").trim() || "no_se";
+    const problemasIntestinales = (datos.problemasIntestinales ?? "").trim() || "no_se";
+    if (!OPCIONES_GELES.includes(problemasIntestinales)) return { ok: false, error: "Indica si has tenido problemas intestinales compitiendo: s\xED, no o no lo s\xE9." };
     if (!OPCIONES_GELES.includes(usaGeles)) return { ok: false, error: "Indica si tomas geles: s\xED, no o no lo s\xE9." };
     let fechaFin = (datos.fechaFin ?? "").trim();
     const t0 = aUTC(datos.fecha);
@@ -2722,7 +2724,7 @@ var Motor = (() => {
       if ((t1 - t0) / MS_DIA >= MAX_DIAS_COMPETICION) return { ok: false, error: `Una competici\xF3n no puede durar m\xE1s de ${MAX_DIAS_COMPETICION} d\xEDas.` };
       if (t1 === t0) fechaFin = "";
     }
-    const comunes = { fecha: datos.fecha, tipo, usaGeles, ...fechaFin ? { fechaFin } : {} };
+    const comunes = { fecha: datos.fecha, tipo, usaGeles, problemasIntestinales, ...fechaFin ? { fechaFin } : {} };
     const pruebasEntrada = datos.pruebas ?? [];
     if (pruebasEntrada.length) {
       const tFin = fechaFin ? aUTC(fechaFin) : t0;
@@ -2782,7 +2784,7 @@ var Motor = (() => {
     const resultado = [];
     for (const x of valor) {
       if (!x || typeof x !== "object") continue;
-      const { id, nombre, fecha, hora, fechaFin, tipo, pruebas, usaGeles } = x;
+      const { id, nombre, fecha, hora, fechaFin, tipo, pruebas, usaGeles, problemasIntestinales } = x;
       if (typeof id !== "string" || typeof nombre !== "string" || typeof fecha !== "string") continue;
       const texto = (v2) => typeof v2 === "string" ? v2 : void 0;
       const v = validarCompeticion({
@@ -2792,6 +2794,7 @@ var Motor = (() => {
         fechaFin: texto(fechaFin),
         tipo: texto(tipo),
         usaGeles: texto(usaGeles),
+        problemasIntestinales: texto(problemasIntestinales),
         pruebas: Array.isArray(pruebas) ? pruebas.filter((p) => !!p && typeof p === "object").map((p) => ({
           hora: texto(p.hora) ?? "",
           duracionMin: Number(p.duracionMin),
@@ -4563,6 +4566,7 @@ r43,aceite de oliva,10`;
       let pausa = false;
       let minGKg = 0;
       let sinFibra = false;
+      let fibraIntestino = false;
       let minPrueba = 0;
       let kcalPrueba = 0;
       const nombresAct = /* @__PURE__ */ new Set();
@@ -4591,6 +4595,10 @@ r43,aceite de oliva,10`;
         if (fase === void 0 || PRIORIDAD[f2] > PRIORIDAD[fase]) {
           fase = f2;
           nombre = c.nombre;
+        }
+        if (c.problemasIntestinales === "si" && fin === c.fecha && (offset === -2 || offset === -1)) {
+          sinFibra = true;
+          fibraIntestino = true;
         }
         if (offset >= -3) pausa = true;
         if (carga && offset < 0 && carga.diasPrevios.includes(-offset)) {
@@ -4642,7 +4650,8 @@ r43,aceite de oliva,10`;
           motivos.push(`hidratos ya por encima del m\xEDnimo de ${minGKg} g/kg (${Math.ceil(minGKg * perfil.peso)} g)`);
         }
       }
-      if (sinFibra) motivos.push("v\xEDspera con poca fibra: sin legumbre, integrales ni verdura cruda");
+      if (sinFibra && fibraIntestino && fase !== "vispera") motivos.push("has tenido problemas intestinales compitiendo: poca fibra desde 2 d\xEDas antes (sin legumbre, integrales ni verdura cruda)");
+      else if (sinFibra) motivos.push("v\xEDspera con poca fibra: sin legumbre, integrales ni verdura cruda");
       if (fase === "descarga" && !avisoDescargaDado) {
         motivos.push(AVISO_DESCARGA);
         avisoDescargaDado = true;

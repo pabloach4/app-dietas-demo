@@ -1706,6 +1706,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         document.getElementById('cal-comp-fin').value = c.fechaFin ?? '';
         selTipoComp.value = c.tipo ?? 'otra';
         document.getElementById('cal-comp-geles').value = c.usaGeles ?? 'no_se';
+        document.getElementById('cal-comp-intestino').value = c.problemasIntestinales ?? 'no_se';
         cajaPruebas.innerHTML = '';
         (c.pruebas?.length ? c.pruebas : [{ hora: c.hora ?? '' }]).forEach((p) => { anadirFilaPrueba(p); if (p.duracionMin) cajaPruebas.lastChild.querySelector('.p-dur').dataset.tocada = '1'; });
         actualizarTipoComp();
@@ -1921,6 +1922,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       fechaFin: document.getElementById('cal-comp-fin').value,
       tipo: selTipoComp.value,
       usaGeles: document.getElementById('cal-comp-geles').value,
+      problemasIntestinales: document.getElementById('cal-comp-intestino').value,
       pruebas: recogerPruebas(),
     };
     const r = editandoCompId ? Motor.editarCompeticion(competiciones, editandoCompId, datos) : Motor.anadirCompeticion(competiciones, datos);
@@ -3040,7 +3042,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       });
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, cargaAlta: d.tipo === 'carga_alta', ...(nivelesVolumen()[Motor.grupoDeFranja(f.franja)] !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, nivelesVolumen()[Motor.grupoDeFranja(f.franja)]) } : {}), ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase === 'vispera' && cd.sinFibraAlta)) ? cd.fase : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()) });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, cargaAlta: d.tipo === 'carga_alta', ...(nivelesVolumen()[Motor.grupoDeFranja(f.franja)] !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, nivelesVolumen()[Motor.grupoDeFranja(f.franja)]) } : {}), ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()) });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,
