@@ -4923,7 +4923,9 @@ r43,aceite de oliva,10`;
     const dias = [];
     const nuevosDias = [];
     let avisoDescargaDado = false;
-    const mlg = perfil.grasa !== void 0 ? perfil.peso * (1 - perfil.grasa / 100) : void 0;
+    const mlgEstimada = perfil.grasa === void 0;
+    const grasaParaMlg = perfil.grasa ?? base.detalle.ajuste.grasaPct;
+    const mlg = grasaParaMlg !== void 0 ? perfil.peso * (1 - grasaParaMlg / 100) : void 0;
     for (const d of base.dias) {
       const fecha = fechaDelDia(inicio, d.dia);
       let fase;
@@ -5033,7 +5035,7 @@ r43,aceite de oliva,10`;
         hidratoG: hidratoFinal,
         hidratoGKg: redondear(hidrato / perfil.peso, 1),
         ...gastoPrueba ? { tipo: tipoDia2, gasto: Math.round(gastoDia), kcalEntreno: Math.round(kcalEntrenoDia), minutosCarga: minutosCargaDia, hidratoRecomendadoGKg: rangoDia } : {},
-        ...mlg && d.disponibilidad !== void 0 ? { disponibilidad: redondear((kcalFinal - kcalEntrenoDia) / mlg, 1) } : {}
+        ...mlg ? { disponibilidad: redondear((kcalFinal - kcalEntrenoDia) / mlg, 1), ...mlgEstimada ? { disponibilidadEstimada: true } : {} } : {}
       } : { ...d, fase });
       dias.push({
         dia: d.dia,
@@ -5070,7 +5072,11 @@ r43,aceite de oliva,10`;
       const pct = Math.round(x.grasaG * 9 / x.kcal * 1e3) / 10;
       return { codigo: "grasa_baja", texto: `${x.dia}: grasa por debajo del 20 % de las kcal (${String(pct).replace(".", ",")} %)${cd?.hidratoMinGKg ? `: en carga o competici\xF3n mandan los hidratos (m\xEDnimo ${cd.hidratoMinGKg} g/kg), as\xED que no se sube la grasa` : ""} (ACSM 2016).` };
     });
-    const plan = { ...base, dias: nuevosDias, kcalMedia, avisos: [...base.avisos.filter((a2) => a2.codigo !== "grasa_baja"), ...avisosGrasa], notas: [...base.notas, `Semana con competici\xF3n: ${NOTA_PAUTA_ORIENTATIVA}`] };
+    const avisosDisponibilidad = nuevosDias.filter((x) => x.fase === "competicion" && x.disponibilidad !== void 0 && x.disponibilidad < 30).map((x) => ({
+      codigo: x.disponibilidadEstimada ? "disponibilidad_baja_competicion_estimada" : "disponibilidad_baja_competicion",
+      texto: `${x.dia}: d\xEDa de competici\xF3n con una disponibilidad energ\xE9tica ${x.disponibilidadEstimada ? "ESTIMADA " : ""}de ${x.disponibilidad} kcal/kg de masa libre de grasa (<30)${x.disponibilidadEstimada ? ", calculada con un % graso estimado, no medido: es orientativa" : ""}. Con lo que gasta la prueba, las kcal del d\xEDa se quedan cortas: com\xE9ntalo con Pablo y planifica la comida y la recuperaci\xF3n (IOC 2023).`
+    }));
+    const plan = { ...base, dias: nuevosDias, kcalMedia, avisos: [...base.avisos.filter((a2) => a2.codigo !== "grasa_baja"), ...avisosGrasa, ...avisosDisponibilidad], notas: [...base.notas, `Semana con competici\xF3n: ${NOTA_PAUTA_ORIENTATIVA}`] };
     return { activa, plan, base, dias, avisos, notas: [NOTA_PAUTA_ORIENTATIVA] };
   }
 

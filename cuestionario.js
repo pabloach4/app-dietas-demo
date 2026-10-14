@@ -130,6 +130,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     grasa_baja: '🧈 La grasa de ese día se queda corta.',
     disponibilidad_baja: '🚨 Muy pocas calorías libres para lo que gastas entrenando: esto hay que hablarlo con Pablo antes de seguir.',
     disponibilidad_baja_estimada: '⚠️ Con tu % graso estimado (no medido), las calorías libres para lo que entrenas salen bajas: es una estimación, pero conviene comentarlo con Pablo.',
+    disponibilidad_baja_competicion: '🚨 El día de la prueba, con lo que gasta, las calorías libres salen muy bajas: hay que hablarlo con Pablo antes.',
+    disponibilidad_baja_competicion_estimada: '⚠️ El día de la prueba, con tu % graso estimado, las calorías libres salen bajas: es una estimación, pero conviene comentarlo con Pablo.',
     kcal_bajas: '📉 La media de calorías de la semana es baja para llevarla sin que te la supervisen.',
     revisar_con_pablo: '🚩 Con estos datos, la dieta bajaría del mínimo seguro. Esto lo tiene que revisar Pablo contigo antes de seguir.',
   };
@@ -3394,7 +3396,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ? plan.notas.map((n) => `<li>${n}</li>`).join('') : '<li>Ninguna.</li>';
     // Issue #119: avisos y notas van plegados (con su recuento) para no saturar la pantalla; si algún aviso exige revisar con Pablo, se abre solo.
     document.querySelector('#tarjeta-avisos summary').textContent = `Avisos del plan (${plan.avisos.length + avisosReparto.length + avisosAlergias.length})`;
-    document.querySelector('#tarjeta-avisos details').open = avisosAlergias.length > 0 || plan.avisos.some((a) => ['revisar_con_pablo', 'disponibilidad_baja', 'disponibilidad_baja_estimada', 'menor'].includes(a.codigo)); // los que piden hablar con Pablo no pueden quedar plegados (#168)
+    document.querySelector('#tarjeta-avisos details').open = avisosAlergias.length > 0 || plan.avisos.some((a) => ['revisar_con_pablo', 'disponibilidad_baja', 'disponibilidad_baja_estimada', 'disponibilidad_baja_competicion', 'disponibilidad_baja_competicion_estimada', 'menor'].includes(a.codigo)); // los que piden hablar con Pablo no pueden quedar plegados (#168)
     document.querySelector('#tarjeta-notas summary').textContent = `Notas del plan (${plan.notas.length})`;
 
     // Texto legible en vez de volcar el JSON (issue #13): además de verse mal, desbordaba en móvil.
