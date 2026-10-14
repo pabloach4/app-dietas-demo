@@ -4,14 +4,15 @@
 <meta name="robots" content="noindex,nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F0F0F4">
+<meta name="theme-color" content="#F0F0F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1115" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:,">
 <title>Cuestionario · Demo de la app de dietas</title>
 <style>
   :root {
     --verde: #2f9e59; --verde-suave: #eaf6ec; --texto: #1c1c1e; --gris: #6b6b70;
     --borde: #e3e3e6; --fondo: #f7f7f8; --tarjeta: #ffffff; --aviso: #fff3cd; --aviso-borde: #ffe69c;
-    --nota: #eaf1ff; --nota-borde: #cddcf6; --derivar: #fdeceb; --derivar-borde: #f3b8b1;
+    --nota: #eaf1ff; --nota-borde: #cddcf6; --derivar: var(--derivar); --derivar-borde: var(--derivar-borde);
     --radio: 14px; --gutter: 16px;
   }
   * { box-sizing: border-box; }
@@ -43,7 +44,7 @@
   .dias-compra { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; }
   .dia-compra-chip {
     display: flex; align-items: center; gap: 0.3rem; border: 1px solid var(--borde); border-radius: 999px;
-    padding: 0.4rem 0.7rem; font-size: 0.85rem; background: #fff; cursor: pointer;
+    padding: 0.4rem 0.7rem; font-size: 0.85rem; background: var(--tarjeta); cursor: pointer;
   }
   .dia-compra-chip:has(input:checked) { background: var(--verde-suave); border-color: var(--verde); font-weight: 600; }
   .dia-compra-chip input { width: 1rem; height: 1rem; margin: 0; }
@@ -54,12 +55,12 @@
   .item-compra input[type="checkbox"] { width: 1.1rem; height: 1.1rem; flex: none; }
   .item-compra .tachado { text-decoration: line-through; opacity: 0.6; }
   .item-compra .quitar-manual {
-    background: none; border: none; color: #b3271e; font-size: 1rem; padding: 0.2rem 0.4rem; width: auto; flex: none;
+    background: none; border: none; color: var(--peligro); font-size: 1rem; padding: 0.2rem 0.4rem; width: auto; flex: none;
   }
   .manual-form { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.8rem 0; }
   .manual-form input {
     flex: 1 1 100px; min-width: 0; padding: 0.6rem 0.7rem; border: 1px solid var(--borde); border-radius: 10px;
-    font-size: 0.9rem; background: #fff; color: var(--texto);
+    font-size: 0.9rem; background: var(--tarjeta); color: var(--texto);
   }
   .manual-form button { flex: 0 0 auto; }
 
@@ -74,7 +75,7 @@
   .campo label { display: block; font-size: 0.9rem; color: var(--gris); margin-bottom: 0.3rem; }
   .campo input[type="text"], .campo input[type="number"], .campo input[type="time"], .campo input[type="date"], .campo select {
     width: 100%; padding: 0.7rem 0.8rem; border: 1px solid var(--borde); border-radius: 10px;
-    font-size: 1rem; background: #fff; color: var(--texto); -webkit-appearance: none; appearance: none;
+    font-size: 1rem; background: var(--tarjeta); color: var(--texto); -webkit-appearance: none; appearance: none;
   }
   .fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
   .check { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; font-size: 0.95rem; }
@@ -82,11 +83,11 @@
   small.ayuda { display: block; color: var(--gris); font-size: 0.85rem; margin: -0.5rem 0 0.7rem; }
 
   .sesion-card, .franja-card {
-    border: 1px solid var(--borde); border-radius: 12px; padding: 0.8rem; margin-bottom: 0.7rem; background: #fbfbfc;
+    border: 1px solid var(--borde); border-radius: 12px; padding: 0.8rem; margin-bottom: 0.7rem; background: var(--tarjeta-suave);
   }
   .sesion-card .fila2, .franja-card .fila2 { margin-bottom: 0.6rem; }
   .sesion-card .quitar {
-    background: none; border: none; color: #b3271e; font-size: 0.9rem; padding: 0.3rem 0; width: auto;
+    background: none; border: none; color: var(--peligro); font-size: 0.9rem; padding: 0.3rem 0; width: auto;
   }
   .franja-card .cabecera { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
   .franja-card .cabecera .check { padding: 0; font-weight: 600; }
@@ -98,13 +99,13 @@
   }
   .btn-secundario {
     display: block; width: 100%; padding: 0.95rem; border: 1px solid var(--borde); border-radius: 12px;
-    background: #fff; color: var(--texto); font-size: 1rem;
+    background: var(--tarjeta); color: var(--texto); font-size: 1rem;
   }
   .btn-texto { background: none; border: none; color: var(--verde); font-weight: 600; padding: 0.6rem 0; width: auto; }
   #add-sesion { width: 100%; border: 1px dashed var(--borde); border-radius: 10px; background: none; padding: 0.7rem; color: var(--verde); font-weight: 600; }
 
   nav.barra {
-    position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.96);
+    position: fixed; left: 0; right: 0; bottom: 0; background: var(--barra-fondo);
     border-top: 1px solid var(--borde); padding: 0.7rem var(--gutter) calc(0.7rem + env(safe-area-inset-bottom));
     display: flex; gap: 0.6rem; max-width: 560px; margin: 0 auto;
   }
@@ -115,16 +116,16 @@
   .paso { display: none; }
   .paso.activo { display: block; }
 
-  #incompleto { background: var(--derivar); border: 1px solid var(--derivar-borde); border-radius: var(--radio); padding: 1rem; font-weight: 600; color: #7a1f18; margin-bottom: 1rem; }
-  #derivar { background: var(--derivar); border: 1px solid var(--derivar-borde); border-radius: var(--radio); padding: 1.2rem; font-weight: 600; color: #7a1f18; margin-bottom: 1rem; text-align: center; }
+  #incompleto { background: var(--derivar); border: 1px solid var(--derivar-borde); border-radius: var(--radio); padding: 1rem; font-weight: 600; color: var(--peligro); margin-bottom: 1rem; }
+  #derivar { background: var(--derivar); border: 1px solid var(--derivar-borde); border-radius: var(--radio); padding: 1.2rem; font-weight: 600; color: var(--peligro); margin-bottom: 1rem; text-align: center; }
   #elegir-deporte { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: var(--radio); padding: 1rem; margin-bottom: 1rem; }
   #elegir-deporte select { margin: 0.6rem 0; }
 
   /* Issue #15: una columna (no grid multicolumna) para que cada tarjeta pueda desplegar su reparto por
      franjas sin descuadrar la altura de las tarjetas vecinas. */
   .dias-grid { display: flex; flex-direction: column; gap: 0.6rem; }
-  .dia-card { border: 1px solid var(--borde); border-radius: 12px; padding: 0.8rem; background: #fbfbfc; }
-  .dia-card.con-entreno { background: var(--verde-suave); border-color: #bfe3cb; }
+  .dia-card { border: 1px solid var(--borde); border-radius: 12px; padding: 0.8rem; background: var(--tarjeta-suave); }
+  .dia-card.con-entreno { background: var(--verde-suave); border-color: var(--acento-borde); }
   .dia-cabecera { display: flex; align-items: baseline; justify-content: space-between; }
   .dia-card .dia-nombre { font-weight: 700; font-size: 1rem; }
   .dia-card .dia-tipo { font-size: 0.78rem; color: var(--gris); }
@@ -132,14 +133,14 @@
   .dia-card .dia-macros { font-size: 0.78rem; color: var(--gris); margin-top: 0.3rem; }
   .dia-toggle {
     display: block; width: 100%; margin-top: 0.6rem; padding: 0.5rem; border: none; border-radius: 8px;
-    background: #eef1ee; color: var(--verde); font-size: 0.85rem; font-weight: 600; text-align: center;
+    background: var(--tarjeta-suave); color: var(--verde); font-size: 0.85rem; font-weight: 600; text-align: center;
   }
   .dia-franjas { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
   /* Issue #37: contexto de vida real por día (turno, táper...). Solo anotación, no cambia el cálculo. */
   .contexto-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
   .contexto-badge {
     font-size: 0.72rem; font-weight: 600; color: var(--verde); background: var(--verde-suave);
-    border: 1px solid #bfe3cb; border-radius: 999px; padding: 0.2rem 0.55rem;
+    border: 1px solid var(--acento-borde); border-radius: 999px; padding: 0.2rem 0.55rem;
   }
   .contexto-toggle, .horario-toggle {
     display: block; width: 100%; margin-top: 0.5rem; padding: 0.5rem; border: 1px dashed var(--borde); border-radius: 8px;
@@ -157,13 +158,13 @@
   .dia-sesiones { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
   .sesion-mover {
     display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-    background: #fff; border: 1px solid var(--borde); border-radius: 8px; padding: 0.5rem 0.7rem; font-size: 0.85rem;
+    background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 8px; padding: 0.5rem 0.7rem; font-size: 0.85rem;
   }
   .sesion-mover label { display: flex; align-items: center; gap: 0.4rem; color: var(--gris); font-size: 0.8rem; white-space: nowrap; }
   .sesion-mover select { padding: 0.4rem; border-radius: 8px; border: 1px solid var(--borde); font-size: 0.9rem; }
 
   .resumen-top { display: flex; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.3rem; }
-  .stat { flex: 1 0 auto; min-width: 7.5rem; background: #fbfbfc; border: 1px solid var(--borde); border-radius: 12px; padding: 0.7rem 0.9rem; }
+  .stat { flex: 1 0 auto; min-width: 7.5rem; background: var(--tarjeta-suave); border: 1px solid var(--borde); border-radius: 12px; padding: 0.7rem 0.9rem; }
   .stat .n { font-size: 1.15rem; font-weight: 700; }
   .stat .l { font-size: 0.75rem; color: var(--gris); }
 
@@ -172,15 +173,15 @@
   .notas li { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: 10px; padding: 0.7rem; margin-bottom: 0.5rem; font-size: 0.9rem; }
   .resumen-lista li { font-size: 0.88rem; color: var(--gris); margin-bottom: 0.4rem; }
 
-  .franja-reparto-card { border: 1px solid var(--borde); border-radius: 10px; padding: 0.6rem 0.8rem; background: #fff; }
-  .franja-reparto-card.destacada { background: var(--verde-suave); border-color: #bfe3cb; }
+  .franja-reparto-card { border: 1px solid var(--borde); border-radius: 10px; padding: 0.6rem 0.8rem; background: var(--tarjeta); }
+  .franja-reparto-card.destacada { background: var(--verde-suave); border-color: var(--acento-borde); }
   .franja-reparto-cabecera { display: flex; align-items: center; justify-content: space-between; }
   .franja-reparto-card .nombre { font-weight: 600; text-transform: capitalize; }
   .franja-reparto-card .rol { font-size: 0.75rem; color: var(--verde); font-weight: 600; }
   .franja-reparto-card .macros { text-align: right; font-size: 0.82rem; color: var(--gris); }
   /* Issue #35: receta de ejemplo asignada a la franja (o aviso de hueco), debajo de sus kcal/macros objetivo. */
   .receta-franja { margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed var(--borde); font-size: 0.8rem; color: var(--texto); }
-  .receta-franja.hueco { color: #7a1f18; }
+  .receta-franja.hueco { color: var(--peligro); }
 
   @media (min-width: 560px) {
     .env, header.top, nav.barra { max-width: 560px; }
@@ -210,7 +211,7 @@
     .solo-impresion { display: block; margin-bottom: 1rem; }
     .solo-impresion h1 { font-size: 1.2rem; margin: 0 0 0.3rem; }
     .solo-impresion p { margin: 0; color: #333; }
-    body { background: #fff; padding-bottom: 0; }
+    body { background: var(--tarjeta); padding-bottom: 0; }
     .env { max-width: none; }
     .tarjeta, .dia-card { border: 1px solid #ccc; break-inside: avoid; }
     .dia-franjas[hidden] { display: flex !important; } /* desplegado siempre al imprimir (#15 en papel) */
@@ -218,12 +219,12 @@
   }
 
   /* Issue #43: acabado de app — navegación por secciones, foco visible, respuesta al pulsar. */
-  :focus-visible { outline: 3px solid #1b6e3e; outline-offset: 2px; border-radius: 6px; }
+  :focus-visible { outline: 3px solid var(--acento-fuerte); outline-offset: 2px; border-radius: 6px; }
   button, .dia-compra-chip, .check { -webkit-tap-highlight-color: transparent; }
   button { transition: background-color .15s ease, transform .08s ease, border-color .15s ease, box-shadow .15s ease; }
   button:active:not(:disabled) { transform: scale(0.98); }
   .btn-secundario:hover, .ejemplos button:hover { border-color: var(--verde); }
-  .btn-principal:hover { background: #288a4d; }
+  .btn-principal:hover { background: var(--acento-oscuro); }
   .tarjeta { box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
   .btn-principal, .btn-secundario, .ejemplos button, .dia-toggle, .contexto-toggle, #btn-deshacer { min-height: 44px; }
   .dia-compra-chip, .check { min-height: 44px; }
@@ -241,11 +242,11 @@
 
   .tabs-app {
     position: sticky; top: 0; z-index: 5; display: flex; gap: 0.4rem; margin: 0 calc(var(--gutter) * -1) 1rem;
-    padding: 0.6rem var(--gutter); background: rgba(247,247,248,0.96); border-bottom: 1px solid var(--borde);
+    padding: 0.6rem var(--gutter); background: var(--fondo-translucido); border-bottom: 1px solid var(--borde);
     backdrop-filter: blur(6px);
   }
   .tabs-app button {
-    flex: 1 1 auto; padding: 0.6rem 0.3rem; border: 1px solid var(--borde); border-radius: 999px; background: #fff;
+    flex: 1 1 auto; padding: 0.6rem 0.3rem; border: 1px solid var(--borde); border-radius: 999px; background: var(--tarjeta);
     color: var(--texto); font-size: 0.88rem; font-weight: 600; min-width: 0; min-height: 44px;
     white-space: nowrap; overflow-wrap: normal; word-break: keep-all; /* nunca partir una palabra (#49) */
   }
@@ -255,30 +256,30 @@
   .panel-app[hidden] { display: none !important; }
   /* Issue #74: catálogo de recetas de ejemplo */
   .buscador { position: relative; }
-  .buscador input { width: 100%; padding: 0.7rem 2.6rem 0.7rem 0.8rem; border: 1px solid var(--borde); border-radius: 10px; font-size: 1rem; background: #fff; color: var(--texto); }
+  .buscador input { width: 100%; padding: 0.7rem 2.6rem 0.7rem 0.8rem; border: 1px solid var(--borde); border-radius: 10px; font-size: 1rem; background: var(--tarjeta); color: var(--texto); }
   .buscador button { position: absolute; right: 0; top: 0; width: 44px; height: 100%; background: none; border: none; font-size: 1rem; color: var(--gris); }
   .rec-restricciones { font-size: 0.85rem; background: var(--nota); border: 1px solid var(--nota-borde); border-radius: 10px; padding: 0.6rem 0.8rem; margin: 0 0 1rem; }
   .rec-grid { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; grid-template-columns: 1fr; gap: 0.7rem; }
   @media (min-width: 700px) { .rec-grid { grid-template-columns: 1fr 1fr; } }
-  .rec-card { border: 1px solid var(--borde); border-radius: 12px; background: #fff; overflow: hidden; display: flex; flex-direction: column; }
-  .rec-img { background: var(--verde-suave); color: #1b6e3e; text-align: center; padding: 0.9rem 0.5rem; font-size: 0.8rem; }
+  .rec-card { border: 1px solid var(--borde); border-radius: 12px; background: var(--tarjeta); overflow: hidden; display: flex; flex-direction: column; }
+  .rec-img { background: var(--verde-suave); color: var(--acento-fuerte); text-align: center; padding: 0.9rem 0.5rem; font-size: 0.8rem; }
   .rec-img span { display: block; font-size: 1.6rem; }
   .rec-cuerpo { padding: 0.7rem 0.8rem; display: flex; flex-direction: column; gap: 0.3rem; flex: 1; }
   .rec-nombre { font-weight: 700; overflow-wrap: normal; }
   .rec-etiqueta { align-self: flex-start; font-size: 0.7rem; font-weight: 700; background: var(--aviso); border: 1px solid var(--aviso-borde); border-radius: 999px; padding: 0.1rem 0.5rem; }
   .rec-dato { font-size: 0.82rem; color: var(--gris); }
-  .rec-incompat { font-size: 0.82rem; color: #7a1f18; font-weight: 600; }
+  .rec-incompat { font-size: 0.82rem; color: var(--peligro); font-weight: 600; }
   .rec-acciones { display: flex; gap: 0.4rem; margin-top: 0.3rem; }
-  .rec-acciones button { flex: 1; min-height: 44px; border: 1px solid var(--borde); border-radius: 10px; background: #fff; font-weight: 600; color: var(--texto); }
+  .rec-acciones button { flex: 1; min-height: 44px; border: 1px solid var(--borde); border-radius: 10px; background: var(--tarjeta); font-weight: 600; color: var(--texto); }
   .rec-acciones .rec-fav { flex: 0 0 auto; padding: 0 0.8rem; }
-  .rec-acciones .rec-fav[aria-pressed="true"] { background: #fdeceb; border-color: #f3b8b1; color: #b3271e; }
+  .rec-acciones .rec-fav[aria-pressed="true"] { background: var(--derivar); border-color: var(--derivar-borde); color: var(--peligro); }
   /* Issue #75: cambiar la receta de una comida */
   .dc-acciones { margin-top: 1rem; }
   .alt-lista { list-style: none; margin: 0.6rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
-  .alt-card { border: 1px solid var(--borde); border-radius: 12px; padding: 0.7rem 0.8rem; background: #fff; }
+  .alt-card { border: 1px solid var(--borde); border-radius: 12px; padding: 0.7rem 0.8rem; background: var(--tarjeta); }
   .alt-card .titulo { font-weight: 700; overflow-wrap: normal; }
   .alt-card .dato { font-size: 0.85rem; color: var(--gris); margin: 0.15rem 0; }
-  .alt-card .aviso { font-size: 0.82rem; color: #7a1f18; margin: 0.15rem 0; }
+  .alt-card .aviso { font-size: 0.82rem; color: var(--peligro); margin: 0.15rem 0; }
   .alt-acciones { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
   .alt-acciones button { min-height: 44px; flex: 1 1 8rem; }
   .cambio-zona { border: 1px solid var(--borde); border-radius: 10px; background: var(--verde-suave); padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; font-size: 0.88rem; }
@@ -288,41 +289,41 @@
   .item-compra .quitar-manual { min-width: 44px; min-height: 44px; }
   .item-compra label { min-height: 44px; }
   .dieta-dato { color: var(--gris); font-weight: 400; }
-  .item-compra.a-revisar { flex-wrap: wrap; border-left: 3px solid #b45309; padding-left: 0.5rem; }
-  .aviso-cantidad { flex: 1 1 100%; font-size: 0.8rem; color: #7a1f18; margin: 0.1rem 0 0.3rem 1.6rem; }
+  .item-compra.a-revisar { flex-wrap: wrap; border-left: 3px solid var(--ambar-fuerte); padding-left: 0.5rem; }
+  .aviso-cantidad { flex: 1 1 100%; font-size: 0.8rem; color: var(--peligro); margin: 0.1rem 0 0.3rem 1.6rem; }
   .subvista { display: flex; gap: 0.4rem; margin: 0 0 1rem; }
-  .subvista button { flex: 1; min-height: 44px; border: 1px solid var(--borde); border-radius: 10px; background: #fff; font-weight: 600; color: var(--texto); }
-  .subvista button[aria-pressed="true"] { background: var(--verde-suave); border-color: var(--verde); color: #1b6e3e; }
+  .subvista button { flex: 1; min-height: 44px; border: 1px solid var(--borde); border-radius: 10px; background: var(--tarjeta); font-weight: 600; color: var(--texto); }
+  .subvista button[aria-pressed="true"] { background: var(--verde-suave); border-color: var(--verde); color: var(--acento-fuerte); }
   /* Hoy: lo siguiente que toca */
   .hoy-fecha { font-size: 0.85rem; color: var(--gris); margin: 0 0 0.6rem; }
-  .hoy-bloque { border: 1px solid var(--borde); border-radius: 12px; padding: 0.7rem 0.8rem; margin-top: 0.6rem; background: #fbfbfc; }
-  .hoy-bloque.destacado { background: var(--verde-suave); border-color: #bfe3cb; }
+  .hoy-bloque { border: 1px solid var(--borde); border-radius: 12px; padding: 0.7rem 0.8rem; margin-top: 0.6rem; background: var(--tarjeta-suave); }
+  .hoy-bloque.destacado { background: var(--verde-suave); border-color: var(--acento-borde); }
   .hoy-bloque h3 { margin: 0 0 0.3rem; font-size: 0.78rem; }
   .hoy-bloque .titulo { font-weight: 700; }
   .hoy-nota { font-size: 0.8rem; color: var(--gris); margin: 0.6rem 0 0; }
 
   .dias-chips { display: flex; gap: 0.35rem; margin: 0 0 0.8rem; }
   .dias-chips button {
-    flex: 1 1 0; min-width: 0; min-height: 44px; border: 1px solid var(--borde); border-radius: 10px; background: #fff;
+    flex: 1 1 0; min-width: 0; min-height: 44px; border: 1px solid var(--borde); border-radius: 10px; background: var(--tarjeta);
     font-weight: 700; color: var(--texto);
   }
-  .dias-chips button[aria-pressed="true"] { background: var(--verde-suave); border-color: var(--verde); color: #1b6e3e; }
+  .dias-chips button[aria-pressed="true"] { background: var(--verde-suave); border-color: var(--verde); color: var(--acento-fuerte); }
   .dias-chips button.hoy::after { content: "•"; display: block; line-height: 0.4; color: var(--verde); }
   .dia-resumen-titulo { font-size: 1.05rem; font-weight: 700; margin: 0; }
   .dia-resumen-kcal { font-size: 1.6rem; font-weight: 800; margin: 0.2rem 0; }
   .dia-resumen-lista { list-style: none; padding: 0; margin: 0.6rem 0 0; display: flex; flex-direction: column; gap: 0.4rem; }
-  .dia-resumen-lista li { border: 1px solid var(--borde); border-radius: 10px; padding: 0.55rem 0.7rem; font-size: 0.88rem; background: #fff; }
-  .dia-resumen-lista li.entreno { background: var(--verde-suave); border-color: #bfe3cb; }
-  .dia-resumen-lista li.hueco { color: #7a1f18; }
-  .error-inline { color: #7a1f18; font-weight: 600; font-size: 0.88rem; margin: 0.4rem 0; }
+  .dia-resumen-lista li { border: 1px solid var(--borde); border-radius: 10px; padding: 0.55rem 0.7rem; font-size: 0.88rem; background: var(--tarjeta); }
+  .dia-resumen-lista li.entreno { background: var(--verde-suave); border-color: var(--acento-borde); }
+  .dia-resumen-lista li.hueco { color: var(--peligro); }
+  .error-inline { color: var(--peligro); font-weight: 600; font-size: 0.88rem; margin: 0.4rem 0; }
   .dias-chips button small { display: block; font-weight: 400; font-size: 0.68rem; color: var(--gris); }
-  .dias-chips button .marca-comp { color: #b45309; }
-  .comp-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; border: 1px solid var(--borde); border-radius: 10px; padding: 0.55rem 0.7rem; background: #fff; }
+  .dias-chips button .marca-comp { color: var(--ambar-fuerte); }
+  .comp-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; border: 1px solid var(--borde); border-radius: 10px; padding: 0.55rem 0.7rem; background: var(--tarjeta); }
   .comp-item .acciones { display: flex; gap: 0.3rem; }
   .comp-item .acciones button { min-height: 44px; }
   /* Issue #47: «¿Por qué?» desplegables junto a cada cifra. */
   details.porque { margin-top: 0.4rem; font-size: 0.85rem; }
-  details.porque > summary { cursor: pointer; color: #1b6e3e; font-weight: 600; min-height: 44px; display: flex; align-items: center; list-style: none; }
+  details.porque > summary { cursor: pointer; color: var(--acento-fuerte); font-weight: 600; min-height: 44px; display: flex; align-items: center; list-style: none; }
   details.porque > summary::-webkit-details-marker { display: none; }
   details.porque > summary::before { content: "ⓘ"; margin-right: 0.4rem; }
   details.porque .porque-resumen { margin: 0 0 0.4rem; color: var(--texto); }
@@ -333,7 +334,7 @@
   /* Issue #51: detalle de una comida (ingredientes, elaboración de ejemplo, por qué toca ahora). */
   .ver-comida, .hor-ir {
     display: inline-flex; align-items: center; min-height: 44px; margin-top: 0.3rem; padding: 0 0.2rem;
-    background: none; border: none; color: #1b6e3e; font-weight: 600; font-size: 0.85rem; text-decoration: underline;
+    background: none; border: none; color: var(--acento-fuerte); font-weight: 600; font-size: 0.85rem; text-decoration: underline;
   }
   dialog#detalle-comida {
     width: min(560px, calc(100% - 1.5rem)); max-height: 88vh; padding: 0; border: 1px solid var(--borde);
@@ -349,9 +350,9 @@
   :root { --macro-p: #1d5fb8; --macro-g: #a86400; --macro-h: #2f7d4a; }
   .chip { display: inline-block; min-width: 1.6rem; text-align: center; font-weight: 700; font-size: 0.78rem; padding: 0.1rem 0.4rem; border-radius: 999px; color: #fff; }
   .chip-p { background: var(--macro-p); } .chip-g { background: var(--macro-g); } .chip-h { background: var(--macro-h); }
-  .etq-ejemplo { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--aviso); color: #7a5a00; vertical-align: middle; }
-  .etq-fase { display: inline-block; font-weight: 700; padding: 0.05rem 0.45rem; border-radius: 999px; background: #fff3d6; color: #6b4a00; font-size: 0.75rem; }
-  .etq-pedido { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 0.05rem 0.4rem; border-radius: 999px; background: #e7f3ea; color: #1f5c33; vertical-align: middle; white-space: normal; }
+  .etq-ejemplo { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--aviso); color: var(--texto-aviso); vertical-align: middle; }
+  .etq-fase { display: inline-block; font-weight: 700; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--aviso); color: var(--texto-aviso); font-size: 0.75rem; }
+  .etq-pedido { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--acento-suave); color: var(--acento-fuerte); vertical-align: middle; white-space: normal; }
   .receta-dato { font-size: 0.82rem; color: var(--gris); margin-top: 0.1rem; }
   .franja-reparto-card .macros strong { font-size: 1.1rem; color: var(--texto); }
   #dc-cuerpo h3 { font-size: 0.95rem; margin: 1.1rem 0 0.4rem; padding-bottom: 0.2rem; border-bottom: 2px solid var(--verde-suave); }
@@ -360,7 +361,7 @@
   .dc-ings-cab { display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gris); padding: 0 0.7rem; }
   .dc-ings-cab span:nth-child(2), .dc-ings-cab span:nth-child(3) { text-align: right; }
   .dc-ings { list-style: none; margin: 0.25rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
-  .dc-ing { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 0.1rem 0.6rem; padding: 0.45rem 0.7rem; border-radius: 8px; background: #f4f6f4; }
+  .dc-ing { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 0.1rem 0.6rem; padding: 0.45rem 0.7rem; border-radius: 8px; background: var(--tarjeta-suave); }
   .dc-ing-nombre { font-weight: 600; overflow-wrap: normal; word-break: normal; }
   .dc-ing-nota { font-weight: 400; color: var(--gris); }
   .dc-ing-gramos { font-weight: 800; font-size: 1.02rem; text-align: right; white-space: nowrap; }
@@ -381,12 +382,12 @@
   .ln-fila .btn-secundario { flex: none; width: auto; } /* si no, el botón se lleva todo el ancho y el campo se queda en 26 px: no se ve lo que escribes */
   .ln-chips { list-style: none; margin: 0.6rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .ln-chips li { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.3rem 0.2rem 0.7rem; border-radius: 999px; background: var(--derivar); border: 1px solid var(--derivar-borde); font-size: 0.88rem; }
-  .ln-chips button { border: 0; background: transparent; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0.15rem 0.4rem; color: #7a1f18; }
-  .dc-aviso { font-size: 0.82rem; color: #7a1f18; margin: 0.4rem 0; }
+  .ln-chips button { border: 0; background: transparent; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0.15rem 0.4rem; color: var(--peligro); }
+  .dc-aviso { font-size: 0.82rem; color: var(--peligro); margin: 0.4rem 0; }
   .dc-pie { padding: 0 1rem 1rem; }
   fieldset.exp-campos { border: none; padding: 0; margin: 0 0 0.8rem; }
   fieldset.exp-campos legend { font-size: 0.9rem; color: var(--gris); padding: 0; margin-bottom: 0.2rem; }
-  .exp-preview-lista { list-style: none; padding: 0; margin: 0.5rem 0 0; max-height: 18rem; overflow-y: auto; border: 1px solid var(--borde); border-radius: 10px; background: #fff; }
+  .exp-preview-lista { list-style: none; padding: 0; margin: 0.5rem 0 0; max-height: 18rem; overflow-y: auto; border: 1px solid var(--borde); border-radius: 10px; background: var(--tarjeta); }
   .exp-preview-lista li { padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--borde); font-size: 0.85rem; }
   .exp-preview-lista li:last-child { border-bottom: none; }
   details.como-importar { margin-top: 0.8rem; font-size: 0.88rem; }
@@ -405,8 +406,8 @@
     header.top { max-width: 760px; }
     .dias-grid { display: grid; grid-template-columns: 1fr 1fr; }
   }
-  .revision-precargado { border: 2px solid #b45309; background: #fffbeb; border-radius: 8px; padding: 0.7rem 0.8rem; margin-bottom: 1rem; }
-  .revision-precargado.error { border-color: #b91c1c; background: #fef2f2; }
+  .revision-precargado { border: 2px solid var(--ambar-fuerte); background: var(--aviso); border-radius: 8px; padding: 0.7rem 0.8rem; margin-bottom: 1rem; }
+  .revision-precargado.error { border-color: var(--peligro); background: var(--derivar); }
   .revision-precargado p { margin: 0 0 0.5rem; }
 
   /* ===== Tema visual (issue #151, parte 1). Referencia de Pablo: investigacion/referencia-visual/GUIA-ESTILO.md.
@@ -468,7 +469,7 @@
   .btn-principal:hover { background: var(--acento-oscuro); }
   .btn-principal:disabled { opacity: 0.5; box-shadow: none; }
   .btn-secundario { min-height: 48px; padding: 0.75rem 1rem; border: 0; border-radius: 14px; background: var(--acento-suave); color: var(--acento-fuerte); font-weight: 600; }
-  .btn-secundario:hover { background: #D8EEEC; }
+  .btn-secundario:hover { background: var(--acento-hover); }
   .btn-secundario[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--acento); }
   #add-sesion { border: 0; border-radius: 14px; min-height: 48px; background: var(--acento-suave); }
   #btn-deshacer { border: 0; border-radius: 14px; }
@@ -529,7 +530,7 @@
   .tabs-app {
     position: fixed; top: auto; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%);
     width: min(430px, calc(100% - 24px)); margin: 0; padding: 6px; gap: 2px; z-index: 30;
-    background: rgba(255, 255, 255, .84); border: 1px solid rgba(255, 255, 255, .7); border-radius: 30px;
+    background: var(--flota-fondo); border: 1px solid var(--flota-borde); border-radius: 30px;
     -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6); box-shadow: var(--sombra-flotante);
   }
   .tabs-app button {
@@ -551,7 +552,7 @@
   nav.barra {
     left: 50%; right: auto; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%);
     width: min(536px, calc(100% - 24px)); max-width: none; margin: 0; padding: 8px; gap: 8px; z-index: 30;
-    background: rgba(255, 255, 255, .84); border: 1px solid rgba(255, 255, 255, .7); border-radius: 24px;
+    background: var(--flota-fondo); border: 1px solid var(--flota-borde); border-radius: 24px;
     -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6); box-shadow: var(--sombra-flotante);
   }
   nav.barra .btn-secundario { flex: 0 0 6rem; background: transparent; color: var(--texto); }
@@ -655,7 +656,7 @@
   .fila-texto { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
   .fila-texto strong { font-size: 0.94rem; font-weight: 600; }
   .fila-sub { font-size: 0.8rem; color: var(--gris); }
-  .fila-aviso { font-size: 0.8rem; font-weight: 600; color: #7a1f18; }
+  .fila-aviso { font-size: 0.8rem; font-weight: 600; color: var(--peligro); }
   .fila .error-inline { margin: 0.15rem 0 0; font-size: 0.8rem; }
   /* «Ver detalle» en una fila es la flecha de la derecha, pero se pulsa la fila entera (su nombre accesible no cambia). */
   .fila .ver-comida {
@@ -880,7 +881,7 @@
   .hoy-valorar-pie .btn-texto { width: auto; min-height: 44px; padding: 0 0.3rem; font-size: 0.95rem; }
   /* Días previos a la competición: aviso corto arriba del todo, en ámbar para que no se confunda con la comida. */
   .hoy-bloque.hoy-previa { background: var(--aviso); }
-  .hoy-previa h3 { margin-bottom: 0.3rem; font-size: 0.82rem; color: #8A4A06; }
+  .hoy-previa h3 { margin-bottom: 0.3rem; font-size: 0.82rem; color: var(--texto-aviso); }
   .hoy-previa .titulo { font-size: 0.98rem; font-weight: 600; line-height: 1.35; }
   /* Semana: lo secundario de cada día (porqué, contexto, horario) espera en «Más opciones de este día». */
   details.dia-mas { margin: 0.3rem 0 0; }
@@ -926,6 +927,35 @@
 <style>
   body.sin-consentimiento .ejemplos, body.sin-consentimiento #ejemplos-titulo, body.sin-consentimiento #progreso, body.sin-consentimiento #paso-nombre,
   body.sin-consentimiento .env:not(#consentimiento), body.sin-consentimiento #barra-pasos, body.sin-consentimiento .subt, body.sin-consentimiento details.plegable { display: none !important; }
+
+  /* ===== Modo oscuro (#208, parte 1). Las variables del tema ya mandan en todo el CSS; aquí solo se redefinen. Lo que sigue a las variables
+     de "light" (peligro, tintes, barras translúcidas) son los antiguos colores fijos, ahora con nombre. Contraste AA comprobado por la prueba de navegador. ===== */
+  :root {
+    --peligro: #A3231A; --ambar-fuerte: #9A4A06; --texto-aviso: #6B4A00; --acento-hover: #D8EEEC;
+    --fondo-translucido: rgba(240, 240, 244, .94); --barra-fondo: rgba(255, 255, 255, .96); --flota-fondo: rgba(255, 255, 255, .84); --flota-borde: rgba(255, 255, 255, .7);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --fondo: #0F1115; --tarjeta: #1A1D23; --tarjeta-suave: #232730; --pista: #2B303A;
+      --texto: #ECEEF2; --gris: #A9AFBB; --gris-claro: #8A91A0; --borde: #2E333D;
+      --acento: #2FC4B7; --acento-oscuro: #26B0A4; --acento-fuerte: #62DDD1; --acento-suave: #173632; --acento-borde: #24564F; --acento-hover: #1F4742;
+      --acento-cta: #0B8279;
+      --verde: var(--acento); --verde-suave: var(--acento-suave);
+      --ambar: #F2A65A; --ambar-fuerte: #F5B26F; --texto-aviso: #F3D49A; --aviso: #3A2D18; --aviso-borde: #5A4522;
+      --nota: #1B2536; --nota-borde: #2C3C57; --derivar: #3C1F1D; --derivar-borde: #6E3029; --peligro: #FF9C93;
+      --macro-p: #7DB0F5; --macro-g: #E8AA52; --macro-h: #62C487;
+      --fondo-translucido: rgba(15, 17, 21, .92); --barra-fondo: rgba(26, 29, 35, .94); --flota-fondo: rgba(26, 29, 35, .86); --flota-borde: rgba(255, 255, 255, .08);
+      --sombra: 0 1px 2px rgba(0, 0, 0, .5), 0 0 1px rgba(0, 0, 0, .4);
+      --sombra-flotante: 0 14px 34px -10px rgba(0, 0, 0, .7), 0 2px 6px rgba(0, 0, 0, .4);
+    }
+    dialog, dialog#detalle-comida { color: var(--texto); background: var(--tarjeta); }
+    dialog#detalle-comida::backdrop, dialog#detalle-comida[open]::backdrop { background: rgba(0, 0, 0, .62); }
+    input, select, textarea { color-scheme: dark; }
+    .btn-principal, .tabs-app button[aria-selected="true"] { color: #fff; }
+    .tabs-app button[aria-selected="true"] { background: var(--acento-cta); border-color: var(--acento-cta); }
+    .chip { color: #0F1115; }
+  }
 </style>
 
 <div class="env">
@@ -1214,7 +1244,7 @@
         <label class="check"><input type="checkbox" id="rec-favoritas"> Solo mis favoritas</label>
         <p class="subt" id="rec-estado" role="status" aria-live="polite" style="margin:0.6rem 0"></p>
         <ul class="rec-grid" id="rec-lista"></ul>
-        <button type="button" class="btn-texto" id="rec-borrar-favoritas" style="color:#b3271e">Borrar todas mis favoritas</button>
+        <button type="button" class="btn-texto" id="rec-borrar-favoritas" style="color:var(--peligro)">Borrar todas mis favoritas</button>
       </div>
     </section>
 
@@ -1228,7 +1258,7 @@
         <ul class="resumen-lista" id="perfil-datos"></ul>
         <details class="saber-mas"><summary>Qué se guarda y qué no</summary><p>Salud, alergias y preferencias <strong>no se guardan</strong> en este navegador: cada vez que vuelvas a abrir la app tendrás que revisarlos. Tu lista negra (alimentos que no quieres) sí se guarda.</p></details>
         <button type="button" class="btn-principal" id="empezar-de-nuevo">Editar perfil</button>
-        <button type="button" class="btn-texto" id="perfil-reiniciar" style="margin-top:0.4rem;color:#b3271e">Empezar de cero (borra el perfil guardado)</button>
+        <button type="button" class="btn-texto" id="perfil-reiniciar" style="margin-top:0.4rem;color:var(--peligro)">Empezar de cero (borra el perfil guardado)</button>
       </div>
     <div class="tarjeta" id="recetas-si-o-si">
       <h2>Mis recetas sí o sí</h2>
@@ -1291,7 +1321,7 @@
         <button type="button" class="btn-texto" id="cal-comp-cancelar" hidden>Cancelar edición</button>
       </form>
       <ul class="resumen-lista" id="cal-lista-comp" style="margin-top:1rem"></ul>
-      <button type="button" class="btn-texto" id="cal-borrar-todo" style="color:#b3271e">Borrar todas las anotaciones y la fecha elegida</button>
+      <button type="button" class="btn-texto" id="cal-borrar-todo" style="color:var(--peligro)">Borrar todas las anotaciones y la fecha elegida</button>
     </details>
     <div class="tarjeta">
       <h2>Para más adelante</h2>
@@ -1375,10 +1405,10 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=9f3a611"></script>
-<script src="fuentes.js?v=9f3a611"></script>
-<script src="motor.bundle.js?v=9f3a611"></script>
-<script src="cuestionario.js?v=9f3a611"></script>
-<script src="nube.js?v=9f3a611"></script>
+<script src="novedades.js?v=8a7b0e6"></script>
+<script src="fuentes.js?v=8a7b0e6"></script>
+<script src="motor.bundle.js?v=8a7b0e6"></script>
+<script src="cuestionario.js?v=8a7b0e6"></script>
+<script src="nube.js?v=8a7b0e6"></script>
 </body>
 </html>

@@ -644,7 +644,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const bruto = document.getElementById('cmp-extra-minutos').value.trim();
       const minutos = bruto === '' ? 45 : Number(bruto);
       if (!(minutos > 0)) {
-        salida.innerHTML = '<p style="color:#a00">La sesión extra necesita una duración mayor que 0 minutos. No se ha cambiado nada de tu plan.</p>';
+        salida.innerHTML = '<p style="color:var(--peligro)">La sesión extra necesita una duración mayor que 0 minutos. No se ha cambiado nada de tu plan.</p>';
         return;
       }
       sesionesB.push({ dia: cmpDia.value, deporte: cmpDeporte.value, minutos });
@@ -657,12 +657,12 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     };
     const resultadoB = Motor.perfilDesdeCuestionario(respuestasB);
     if (resultadoB.estado !== 'ok') {
-      document.getElementById('comparacion-resultado').innerHTML = `<p style="color:#a00">No se pudo calcular el escenario B (${resultadoB.estado}). Prueba con otro cambio.</p>`;
+      document.getElementById('comparacion-resultado').innerHTML = `<p style="color:var(--peligro)">No se pudo calcular el escenario B (${resultadoB.estado}). Prueba con otro cambio.</p>`;
       return;
     }
     let planB;
     try { planB = Motor.calcular(resultadoB.perfil); } catch (e) {
-      salida.innerHTML = `<p style="color:#a00">No se pudo calcular el escenario B: ${escaparHtml(e.message)}. Tu plan (A) no ha cambiado.</p>`;
+      salida.innerHTML = `<p style="color:var(--peligro)">No se pudo calcular el escenario B: ${escaparHtml(e.message)}. Tu plan (A) no ha cambiado.</p>`;
       return;
     }
     pintarComparacion(planA, planB, semanaActual.perfil, resultadoB.perfil);
@@ -1054,7 +1054,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const estado = e ? (e.causa ? `<br><span class="error-inline" style="margin:0">⚠️ No se ha forzado: ${escaparHtml(e.causa)}. Puedes probar otro día o quitarla.</span>` : `<br><span style="color:var(--gris)">✅ Colocada ${e.colocadas} de ${e.pedidas}.</span>`) : '';
       return `<li class="comp-item"><span><strong>${escaparHtml(r.nombre)}</strong> · ${NOMBRE_FRANJA_SOS[p.franja]}${estado}</span>
         <span class="acciones"><select class="sos-editar" data-i="${i}" aria-label="Veces por semana de ${escaparHtml(r.nombre)}">${opcionesVeces(p.franja, p.veces)}</select>
-        <button type="button" class="btn-texto sos-quitar" data-i="${i}" style="color:#b3271e" aria-label="Quitar ${escaparHtml(r.nombre)} de mis recetas sí o sí">Quitar</button></span></li>`;
+        <button type="button" class="btn-texto sos-quitar" data-i="${i}" style="color:var(--peligro)" aria-label="Quitar ${escaparHtml(r.nombre)} de mis recetas sí o sí">Quitar</button></span></li>`;
     }).join('');
     document.getElementById('sos-vacio').hidden = recetasSiOSi.length > 0;
   }
@@ -1082,7 +1082,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <div class="campo"><label for="sos-franja">Comida</label><select id="sos-franja">${r.franjas.map((f) => `<option value="${f}" ${f === franja ? 'selected' : ''}>${NOMBRE_FRANJA_SOS[f]}</option>`).join('')}</select></div>
       <div class="campo"><label for="sos-veces">Veces por semana</label><select id="sos-veces">${opcionesVeces(franja, ya ? ya.veces : 1)}</select></div>
       <button type="button" class="btn-principal" id="sos-guardar" data-id="${r.id}">${ya ? 'Guardar cambios' : 'La quiero sí o sí'}</button>
-      ${ya ? `<button type="button" class="btn-texto" id="sos-quitar-ficha" data-id="${r.id}" style="color:#b3271e">Quitar de mis «sí o sí»</button>` : ''}`;
+      ${ya ? `<button type="button" class="btn-texto" id="sos-quitar-ficha" data-id="${r.id}" style="color:var(--peligro)">Quitar de mis «sí o sí»</button>` : ''}`;
   }
   document.getElementById('dc-cuerpo').addEventListener('change', (ev) => {
     if (ev.target.id === 'sos-franja') document.getElementById('sos-veces').innerHTML = opcionesVeces(ev.target.value, 1);
@@ -1722,7 +1722,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
           <span><strong>${escaparHtml(c.nombre)}</strong><br><span style="color:var(--gris)">${escaparHtml(resumenCompeticion(c))}${dia ? ` · esta semana (${NOMBRE_DIA_LARGO[dia]})` : ''}</span></span>
           <span class="acciones">
             <button type="button" class="btn-texto" data-accion="editar" data-id="${c.id}" aria-label="Editar ${escaparHtml(c.nombre)}">Editar</button>
-            <button type="button" class="btn-texto" data-accion="borrar" data-id="${c.id}" aria-label="Borrar ${escaparHtml(c.nombre)}" style="color:#b3271e">Borrar</button>
+            <button type="button" class="btn-texto" data-accion="borrar" data-id="${c.id}" aria-label="Borrar ${escaparHtml(c.nombre)}" style="color:var(--peligro)">Borrar</button>
           </span>
         </li>`;
     }).join('') : '<li style="color:var(--gris)">Todavía no has anotado ninguna competición.</li>';
@@ -1875,7 +1875,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <div class="campo"><label>Hora de inicio</label><input class="p-hora" type="time" value="${p.hora ?? ''}"></div>
       <div class="campo"><label>Minutos</label><input class="p-dur" type="number" min="1" max="4320" step="1" inputmode="numeric" value="${p.duracionMin ?? Motor.DURACION_PROPUESTA_MIN[selTipoComp.value]}"></div>
       <div class="campo p-dia-caja" hidden><label>Día</label><select class="p-dia"></select></div>
-      <div class="campo"><button type="button" class="btn-texto p-quitar" style="color:#b3271e">Quitar prueba</button></div>`;
+      <div class="campo"><button type="button" class="btn-texto p-quitar" style="color:var(--peligro)">Quitar prueba</button></div>`;
     fila.querySelector('.p-quitar').addEventListener('click', () => fila.remove());
     fila.dataset.fecha = p.fecha ?? '';
     cajaPruebas.appendChild(fila);
@@ -2391,7 +2391,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ` : '';
       costeHtml = `
         <div class="coste-estimado">
-          <p style="font-size:0.8rem;color:#7a1f18;font-weight:600;margin:0 0 0.4rem">
+          <p style="font-size:0.8rem;color:var(--peligro);font-weight:600;margin:0 0 0.4rem">
             ⚠️ Coste de EJEMPLO, pendiente de validar por Pablo — no son precios reales ni una oferta.
           </p>
           <p style="margin:0 0 0.4rem"><strong>≈ ${euros(estimacion.total)} €</strong> en total, con los días elegidos</p>
@@ -2402,7 +2402,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     }
 
     const huecosHtml = huecos.length ? `
-      <p style="font-size:0.85rem;color:#7a1f18;margin-top:1rem">
+      <p style="font-size:0.85rem;color:var(--peligro);margin-top:1rem">
         ⚠️ ${huecos.length} franja${huecos.length === 1 ? '' : 's'} sin receta de ejemplo que encaje
         (normal con solo 5 recetas): ${huecos.slice(0, 3).map((h) => `${h.dia} ${h.franja}`).join(', ')}${huecos.length > 3 ? '…' : ''}.
         Esta lista es <strong>parcial</strong>: no incluye los ingredientes de esas comidas.
@@ -2430,7 +2430,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <button type="button" id="btn-anadir-manual" class="btn-texto">+ Añadir</button>
       </div>
       ${(marcadosEnCasa.size || articulosManuales.length) ? `
-        <button type="button" id="btn-borrar-lista-manual" class="btn-texto" style="color:#b3271e">
+        <button type="button" id="btn-borrar-lista-manual" class="btn-texto" style="color:var(--peligro)">
           Borrar marcas y añadidos a mano
         </button>
       ` : ''}
