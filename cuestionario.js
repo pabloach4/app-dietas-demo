@@ -77,6 +77,8 @@ No duplicar base de hidrato,,,,Nunca dos bases distintas en la misma comida (fac
 Hueco al chocar con un tope,,,,"NO se tapa con pan de guarnición ni inflando verdura/proteína/condimento: 1) repartir kcal entre las otras comidas cerca del entreno, 2) cerrar con postre (fruta/yogur), 3) cambiar el plato"
 Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se quedan en su cantidad aunque el plato se escale"
 `;
+  const MEDIDAS_CASERAS = Motor.medidasDesdeCsv(Motor.MEDIDAS_CASERAS_CSV); // #194: ayuda al lado de los gramos, nunca en su lugar
+  const medidaAlLado = (nombre, gramos) => { const m = Motor.medidaCasera(MEDIDAS_CASERAS, nombre, gramos); return m ? ` <small class="dc-medida">${m}</small>` : ''; };
   Motor.definirTablaLimites(Motor.conLimitesIngredientes(Motor.parsearTablaLimites(LIMITES_POR_ALIMENTO_CSV), Motor.limitesIngredientesDesdeCsv(Motor.LIMITES_INGREDIENTES_CSV))); // #171: mín/máx por ingrediente (Instinct, #193)
 
   // Catálogo de recetas de EJEMPLO (issue #16/#23/#30): igual que tests/asignador-recetas.test.ts.
@@ -2625,7 +2627,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         return `
         <li class="dc-ing">
           <span class="dc-ing-nombre">${escaparHtml(i.nombre)}${i.protegido ? ' <small class="dc-ing-nota">no se escala</small>' : ''}</span>
-          <span class="dc-ing-gramos">${String(i.gramosRacion).replace('.', ',')} g${c ? ` <small class="dc-cocido">≈ ${c.gramos} g cocido</small>` : ''}</span>
+          <span class="dc-ing-gramos">${String(i.gramosRacion).replace('.', ',')} g${medidaAlLado(i.nombre, i.gramosRacion)}${c ?` <small class="dc-cocido">≈ ${c.gramos} g cocido</small>` : ''}</span>
           <span class="dc-ing-compra">compra: ${enCompra ? escaparHtml(comprados.get(i.nombre) ?? '—') : 'día fuera de la compra'}</span>
         </li>`;
       }).join('');
