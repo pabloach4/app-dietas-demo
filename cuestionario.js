@@ -77,7 +77,7 @@ No duplicar base de hidrato,,,,Nunca dos bases distintas en la misma comida (fac
 Hueco al chocar con un tope,,,,"NO se tapa con pan de guarnición ni inflando verdura/proteína/condimento: 1) repartir kcal entre las otras comidas cerca del entreno, 2) cerrar con postre (fruta/yogur), 3) cambiar el plato"
 Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se quedan en su cantidad aunque el plato se escale"
 `;
-  Motor.definirTablaLimites(Motor.parsearTablaLimites(LIMITES_POR_ALIMENTO_CSV));
+  Motor.definirTablaLimites(Motor.conLimitesIngredientes(Motor.parsearTablaLimites(LIMITES_POR_ALIMENTO_CSV), Motor.limitesIngredientesDesdeCsv(Motor.LIMITES_INGREDIENTES_CSV))); // #171: mín/máx por ingrediente (Instinct, #193)
 
   // Catálogo de recetas de EJEMPLO (issue #16/#23/#30): igual que tests/asignador-recetas.test.ts.
   // Ninguna es una receta real de Pablo — solo para ver la forma de la lista de la compra.
