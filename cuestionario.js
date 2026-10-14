@@ -144,9 +144,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   // --- Consentimiento previo a las preguntas de salud (#172; texto aprobado por Pablo el 14/10 en docs/consentimiento.md) ---
   // Sin aceptar no se ve ninguna pregunta de salud. Se guarda solo en este navegador (fecha y versión del texto).
   const CLAVE_CONSENTIMIENTO = 'app-dietas-consentimiento';
+  const VERSION_CONSENTIMIENTO = '2026-10-14-ampliado'; // sube si cambia el texto de docs/consentimiento.md: quien aceptó otra versión vuelve a verlo
   {
     let aceptado = false;
-    try { const c = JSON.parse(localStorage.getItem(CLAVE_CONSENTIMIENTO) || 'null'); aceptado = Boolean(c && c.aceptado === true && typeof c.fecha === 'string'); } catch { /* sin almacenamiento: se vuelve a pedir */ }
+    try { const c = JSON.parse(localStorage.getItem(CLAVE_CONSENTIMIENTO) || 'null'); aceptado = Boolean(c && c.aceptado === true && typeof c.fecha === 'string' && c.version === VERSION_CONSENTIMIENTO); } catch { /* sin almacenamiento: se vuelve a pedir */ }
     const caja = document.getElementById('consentimiento');
     const casilla = document.getElementById('consentimiento-acepto');
     const boton = document.getElementById('consentimiento-continuar');
@@ -155,11 +156,18 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     casilla.addEventListener('change', () => { boton.disabled = !casilla.checked; });
     boton.addEventListener('click', () => {
       if (!casilla.checked) return;
-      try { localStorage.setItem(CLAVE_CONSENTIMIENTO, JSON.stringify({ aceptado: true, fecha: new Date().toISOString(), version: '2026-10-14' })); } catch { try { falloAlmacenamiento(); } catch { /* aún no definida: sigue la sesión */ } }
+      try { localStorage.setItem(CLAVE_CONSENTIMIENTO, JSON.stringify({ aceptado: true, fecha: new Date().toISOString(), version: VERSION_CONSENTIMIENTO })); } catch { try { falloAlmacenamiento(); } catch { /* aún no definida: sigue la sesión */ } }
       mostrar(false);
       window.scrollTo({ top: 0, behavior: 'auto' });
     });
   }
+
+  // #198: alergia al pescado → pregunta de seguimiento por marisco, moluscos y «¿a algo más?» (alérgenos distintos).
+  function mostrarSeguimientoPescado() {
+    document.getElementById('al-pescado-seguimiento').hidden = !(document.getElementById('al-pescado').checked || /pescad/i.test(document.getElementById('al-otros').value));
+  }
+  document.getElementById('al-pescado').addEventListener('change', mostrarSeguimientoPescado);
+  document.getElementById('al-otros').addEventListener('input', mostrarSeguimientoPescado);
 
   // --- Cribado de bajo peso y baja energía (#195): preguntas opcionales; si salta un disparador se guarda una alerta para Pablo ---
   // Sin correos ni avisos a nadie: la lista vive en este navegador (Perfil › Alertas para Pablo). A la persona solo se le dice, en neutro, que Pablo hablará con ella.
@@ -447,6 +455,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const alerg = ej.alergias ?? {};
     ['celiaquia', 'lactosa', 'vegetariano', 'vegano'].forEach((k) => { document.getElementById(`al-${k}`).checked = !!alerg[k]; });
     document.getElementById('al-otros').value = alerg.otros ?? '';
+    ['al-pescado', 'al-marisco', 'al-moluscos'].forEach((id) => { document.getElementById(id).checked = false; }); // #198: el pescado y su seguimiento no viajan entre ejemplos
+    document.getElementById('al-mas').value = '';
+    mostrarSeguimientoPescado();
     document.getElementById('pref-gustan').value = (ej.preferencias ?? {}).gustan ?? '';
     document.getElementById('pref-evitas').value = (ej.preferencias ?? {}).evitan ?? '';
     fusionarEnListaNegra(partirAlimentos((ej.preferencias ?? {}).evitan)); // la lista negra guardada no se pierde: se suma y deja el campo con toda la lista
@@ -2125,7 +2136,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         lactosa: document.getElementById('al-lactosa').checked,
         vegetariano: document.getElementById('al-vegetariano').checked,
         vegano: document.getElementById('al-vegano').checked,
-        otros: document.getElementById('al-otros').value,
+        otros: Motor.textoOtrasAlergias({ otros: document.getElementById('al-otros').value, pescado: document.getElementById('al-pescado').checked, marisco: document.getElementById('al-marisco').checked, moluscos: document.getElementById('al-moluscos').checked, mas: document.getElementById('al-mas').value }), // #198
       },
       preferencias: { gustan: document.getElementById('pref-gustan').value, evitan: document.getElementById('pref-evitas').value },
       vidaReal: { turnos: document.getElementById('turnos').checked, tiempoCocina: document.getElementById('tiempo-cocina').value },
@@ -3343,6 +3354,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       .map((l) => (l.lectura === 'no_comprobable'
         ? `⚠️ «${escaparHtml(l.texto)}»: con los ingredientes de una receta no se puede saber si lo lleva. Revísalo con Pablo antes de seguir el plan.`
         : `⚠️ No he encontrado «${escaparHtml(l.texto)}» en ninguna receta. Si es una alergia que afecta a más alimentos, la app no lo sabe: revísalo con Pablo.`));
+    const soloPescado = Motor.avisoSoloPescado(respuestas.alergias.otros ?? ''); // #198: pescado sin decir nada de marisco ni de moluscos
+    if (soloPescado) avisosAlergias.unshift(escaparHtml(soloPescado));
     avisosAlergiasHoy = avisosAlergias; // #189: también se ven al entrar en «Hoy»
     if (panelActual === 'hoy') pintarHoy();
     document.getElementById('r-avisos').innerHTML = (plan.avisos.length || avisosReparto.length || avisosAlergias.length)

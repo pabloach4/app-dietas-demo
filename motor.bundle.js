@@ -72,6 +72,7 @@ var Motor = (() => {
     avisoClasificacionSesion: () => avisoClasificacionSesion,
     avisoDietaTerminada: () => avisoDietaTerminada,
     avisoFinDeLaDieta: () => avisoFinDeLaDieta,
+    avisoSoloPescado: () => avisoSoloPescado,
     avisosVolumen: () => avisosVolumen,
     bandaPesoServido: () => bandaPesoServido,
     borrarCompeticion: () => borrarCompeticion,
@@ -182,6 +183,7 @@ var Motor = (() => {
     semanasValidas: () => semanasValidas,
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
+    textoOtrasAlergias: () => textoOtrasAlergias,
     usosVariedadSemana: () => usosVariedadSemana,
     validarCompeticion: () => validarCompeticion,
     validarHorarioDia: () => validarHorarioDia,
@@ -1837,6 +1839,16 @@ var Motor = (() => {
       lecturas.push({ texto, deAlergia: esAlergia, lectura, categorias: categorias.map((c) => c.rotulo), recetasExcluidas });
     }
     return lecturas;
+  }
+  function textoOtrasAlergias(c) {
+    return [c.otros, c.pescado ? "pescado" : "", c.marisco ? "crust\xE1ceos" : "", c.moluscos ? "moluscos" : "", c.mas].map((t) => (t ?? "").trim()).filter(Boolean).join(", ");
+  }
+  var RE_PESCADO = /\bpescad/;
+  var RE_MARISCO_O_MOLUSCO = /marisc|crust|molusc|cefalop|sepia|calamar|pulpo|chipiron|gamba|langostin|mejillon|almeja|berberech|cigala|bogavante|nécora|necora|ostra|vieira|navaja|centollo/;
+  function avisoSoloPescado(textoAlergias) {
+    const t = normalizar3(textoAlergias);
+    if (!RE_PESCADO.test(t) || RE_MARISCO_O_MOLUSCO.test(t)) return void 0;
+    return "Has indicado alergia al pescado: se ha quitado el pescado, pero la sepia, el calamar, el pulpo y el marisco no. Si tambi\xE9n te sientan mal, m\xE1rcalo en Alergias.";
   }
 
   // src/motor/asignador-recetas.ts
