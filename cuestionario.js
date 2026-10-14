@@ -141,6 +141,26 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     return h + m / 60;
   }
 
+  // --- Consentimiento previo a las preguntas de salud (#172; texto aprobado por Pablo el 14/10 en docs/consentimiento.md) ---
+  // Sin aceptar no se ve ninguna pregunta de salud. Se guarda solo en este navegador (fecha y versión del texto).
+  const CLAVE_CONSENTIMIENTO = 'app-dietas-consentimiento';
+  {
+    let aceptado = false;
+    try { const c = JSON.parse(localStorage.getItem(CLAVE_CONSENTIMIENTO) || 'null'); aceptado = Boolean(c && c.aceptado === true && typeof c.fecha === 'string'); } catch { /* sin almacenamiento: se vuelve a pedir */ }
+    const caja = document.getElementById('consentimiento');
+    const casilla = document.getElementById('consentimiento-acepto');
+    const boton = document.getElementById('consentimiento-continuar');
+    const mostrar = (pide) => { document.body.classList.toggle('sin-consentimiento', pide); caja.hidden = !pide; };
+    mostrar(!aceptado);
+    casilla.addEventListener('change', () => { boton.disabled = !casilla.checked; });
+    boton.addEventListener('click', () => {
+      if (!casilla.checked) return;
+      try { localStorage.setItem(CLAVE_CONSENTIMIENTO, JSON.stringify({ aceptado: true, fecha: new Date().toISOString(), version: '2026-10-14' })); } catch { try { falloAlmacenamiento(); } catch { /* aún no definida: sigue la sesión */ } }
+      mostrar(false);
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    });
+  }
+
   // --- Recorrido por pasos (issue #13) ---
   const PASOS = [1, 2, 3, 4];
   const NOMBRE_PASO = { 1: 'Paso 1 de 4 · Tus datos', 2: 'Paso 2 de 4 · Objetivo y vida diaria', 3: 'Paso 3 de 4 · Sesiones de la semana', 4: 'Paso 4 de 4 · Salud y algo más' };

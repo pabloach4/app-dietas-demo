@@ -910,6 +910,23 @@
   <div class="progreso" id="progreso"></div>
   <p class="paso-nombre" id="paso-nombre"></p>
 </header>
+<section class="env" id="consentimiento" aria-labelledby="consentimiento-titulo" hidden>
+  <div class="tarjeta">
+    <h2 id="consentimiento-titulo">Antes de empezar: tus datos de salud</h2>
+    <p>Para prepararte una alimentación a tu medida, necesito pedirte datos sobre tu salud: tu peso y altura, tu porcentaje de grasa si lo conoces, tu actividad y entrenamientos, y si tienes molestias digestivas o intestinales. También usaré tu peso y estatura para comprobar que tu plan no te deja por debajo de un nivel seguro.</p>
+    <p><strong>Para qué los uso:</strong> solo para calcular y ajustar tus menús, cantidades y lista de la compra, y para avisarte si algo pide hablar con un profesional. No los uso para publicidad ni los vendo ni los cedo con fines comerciales.</p>
+    <p><strong>Qué no hace esta app:</strong> no es un servicio médico, no diagnostica ni trata ninguna enfermedad y no sustituye el consejo de tu médico o dietista-nutricionista. Si indicas un problema de salud (molestias intestinales, diabetes, peso muy bajo...), la app no te dará una dieta clínica: te propondrá hablar conmigo, que soy quien lleva esos casos. Si tienes una enfermedad, estás embarazada, eres menor de 18 años o tomas medicación que afecte a tu alimentación, consulta primero con tu médico.</p>
+    <p><strong>Tu consentimiento:</strong> los datos de salud están especialmente protegidos. Solo los trataré si me das tu consentimiento expreso (art. 9.2.a RGPD). Es voluntario: si no lo das, no puedo generarte un plan personalizado, pero no pasa nada más.</p>
+    <p><strong>Tus derechos:</strong> puedes retirar el consentimiento cuando quieras (desde ajustes o escribiendo a nutriciondeportiva7777@gmail.com) y pedir que borre tus datos; también acceder, corregir, limitar su uso o llevártelos. Si crees que no los trato bien, puedes reclamar ante la AEPD (www.aepd.es).</p>
+    <p><strong>Responsable:</strong> Pablo Aragón Chaves, técnico superior en nutrición deportiva y dietética. Contacto de privacidad: nutriciondeportiva7777@gmail.com. Más información en la política de privacidad.</p>
+    <label class="check"><input type="checkbox" id="consentimiento-acepto"> Leo y acepto que Pablo Aragón Chaves trate mis datos de salud (peso, altura, % grasa, actividad y molestias digestivas) para generar mi plan de alimentación.</label>
+    <button type="button" class="btn-principal" id="consentimiento-continuar" disabled style="margin-top:0.8rem">Continuar</button>
+  </div>
+</section>
+<style>
+  body.sin-consentimiento .ejemplos, body.sin-consentimiento #ejemplos-titulo, body.sin-consentimiento #progreso, body.sin-consentimiento #paso-nombre,
+  body.sin-consentimiento .env:not(#consentimiento), body.sin-consentimiento #barra-pasos, body.sin-consentimiento .subt, body.sin-consentimiento details.plegable { display: none !important; }
+</style>
 
 <div class="env">
   <form id="form-cuestionario" novalidate>
@@ -1333,9 +1350,9 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=2494354"></script>
-<script src="fuentes.js?v=2494354"></script>
-<script src="motor.bundle.js?v=2494354"></script>
-<script src="cuestionario.js?v=2494354"></script>
+<script src="novedades.js?v=369f46b"></script>
+<script src="fuentes.js?v=369f46b"></script>
+<script src="motor.bundle.js?v=369f46b"></script>
+<script src="cuestionario.js?v=369f46b"></script>
 </body>
 </html>
