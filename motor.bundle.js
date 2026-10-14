@@ -3016,6 +3016,8 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
   var TAMANOS_PIZZA = ["familiar", "grande", "individual", "pequena", "mediana", "xl"];
   var FORMATOS = /* @__PURE__ */ new Set(["lata", "latas", "botella", "botellin", "vaso", "jarra", "litro", "pack"]);
   var CONTENEDORES_SIN_DATO = ["botella", "botellin", "vaso", "jarra", "litro"];
+  var esPizza = (f2) => normalizarTexto2(f2.tamano).split(" ").some((t) => t === "masa" || TAMANOS_PIZZA.includes(t));
+  var unidadPeso = (f2) => /\bml\b/.test(normalizarTexto2(f2.tamano)) ? "ml" : "g";
   function cantidadDe(tokens2) {
     let cantidad = 1;
     const resto = [];
@@ -3066,7 +3068,7 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
           if (ts.length && ts.every((t) => delTrozo.has(t) || delTrozo.has(t.replace(/s$/, "")))) p = Math.max(p, ts.length);
         }
         if (p === 0) continue;
-        if (f2.estado === "estimacion" && !cadena && !delTrozo.has("pizza")) continue;
+        if (f2.estado === "estimacion" && esPizza(f2) && !cadena && !delTrozo.has("pizza")) continue;
         for (const t of normalizarTexto2(f2.tamano).split(" ")) if (t.length > 3 && delTrozo.has(t)) p += 0.5;
         if (p > mejorPuntos) {
           mejorPuntos = p;
@@ -3099,15 +3101,15 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
           continue;
         }
         const tamPedido = utiles.find((t) => TAMANOS_PIZZA.includes(t));
-        if (tamPedido === "individual" && f2.estado === "estimacion") {
+        if (tamPedido === "individual" && f2.estado === "estimacion" && esPizza(f2)) {
           sinReconocer.push(`${trozo} (la pizza individual no tiene datos: dime los gramos o las calor\xEDas)`);
           continue;
         }
-        const comoMinimo = f2.estado === "estimacion" && tamPedido !== void 0 && tamPedido !== "mediana";
+        const comoMinimo = f2.estado === "estimacion" && esPizza(f2) && tamPedido !== void 0 && tamPedido !== "mediana";
         const supuesto = f2.estado === "oficial" && f2.tamano && !normalizarTexto2(f2.tamano).split(" ").some((t) => t.length > 3 && delTrozo.has(t));
         const notas = [];
         if (comoMinimo) notas.push(`\xAB${tamPedido}\xBB no tiene dato propio: la cifra es como m\xEDnimo la de una mediana (${f2.pesoMin} g, sin inventar el peso de la ${tamPedido}). Dime cu\xE1ntas porciones o cu\xE1nto pesaba y aj\xFAstalo.`);
-        else if (f2.estado === "estimacion") notas.push(`Peso estimado (${f2.pesoMin}-${f2.pesoMax} g): la cifra es un rango. Si sabes cu\xE1nto pesaba o cu\xE1nto comiste, aj\xFAstalo.`);
+        else if (f2.estado === "estimacion") notas.push(`${esPizza(f2) ? "Peso" : "Cantidad"} estimad${esPizza(f2) ? "o" : "a"} (${f2.pesoMin}-${f2.pesoMax} ${unidadPeso(f2)}): la cifra es un rango. Si sabes ${unidadPeso(f2) === "ml" ? "cu\xE1nto has tomado" : "cu\xE1nto pesaba o cu\xE1nto comiste"}, aj\xFAstalo.`);
         if (supuesto) notas.push(`He supuesto ${f2.tamano}.`);
         lineas.push({
           nombre: `${f2.plato}${f2.tamano ? ` (${f2.tamano})` : ""}`,
