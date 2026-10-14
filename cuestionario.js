@@ -1308,6 +1308,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const NOMBRE = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
 
     const estado = document.getElementById('rec-estado');
+    document.getElementById('rec-n-filtros').textContent = [franja, soloCompat, soloFav].filter(Boolean).length; // #208: contador en los filtros
     if (!visibles.length) {
       const partes = [];
       if (consulta.trim()) partes.push(`la búsqueda «${consulta.trim()}»`);
