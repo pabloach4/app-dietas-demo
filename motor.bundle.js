@@ -3019,14 +3019,14 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
     const conConector = [...new Set(tabla.flatMap((f2) => [f2.plato, ...f2.sinonimos].map(normalizarTexto2)).filter((a2) => /\b(?:con|y|mas)\b/.test(a2)))].sort((a2, b) => b.length - a2.length);
     const proteger = (n) => conConector.reduce((acc, a2) => acc.split(a2).join(a2.replace(/ /g, "_")), n);
     const trozos = texto.split(/[,;+]/).flatMap((p) => proteger(normalizarTexto2(p)).split(/\b(?:con|y|mas)\b/)).map((t) => t.trim().replace(/_/g, " ")).filter(Boolean);
-    const cadenas = [...new Set(tabla.map((f2) => f2.cadena))].map((c) => ({ c, alias: normalizarTexto2(c).split(" ")[0] }));
+    const cadenas = [...new Set(tabla.map((f2) => f2.cadena))].map((c) => ({ c, alias: normalizarTexto2(c).replace(/ espana$/, "") }));
     const lineas = [];
     const sinReconocer = [];
     for (const trozo of trozos) {
       const toks = trozo.split(" ").filter(Boolean);
       const { cantidad, resto } = cantidadDe(toks.filter((t) => !PALABRAS_VACIAS.has(t) || t in NUMEROS || t === "con"));
       const utiles = resto.filter((t) => !PALABRAS_VACIAS.has(t));
-      const cadena = cadenas.find((x) => utiles.includes(x.alias));
+      const cadena = cadenas.find((x) => ` ${utiles.join(" ")} `.includes(` ${x.alias} `));
       const delTrozo = new Set(utiles.map((t) => t.replace(/s$/, "")).concat(utiles));
       const candidatas = tabla.filter((f2) => !cadena || f2.cadena === cadena.c);
       let mejor = [];
@@ -3039,6 +3039,7 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
           if (ts.length && ts.every((t) => delTrozo.has(t) || delTrozo.has(t.replace(/s$/, "")))) p = Math.max(p, ts.length);
         }
         if (p === 0) continue;
+        if (f2.estado === "estimacion" && !cadena && !delTrozo.has("pizza")) continue;
         for (const t of normalizarTexto2(f2.tamano).split(" ")) if (t.length > 3 && delTrozo.has(t)) p += 0.5;
         if (p > mejorPuntos) {
           mejorPuntos = p;
@@ -3046,7 +3047,7 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
         } else if (p === mejorPuntos) mejor.push({ f: f2, puntos: p });
       }
       if (mejor.length === 0 && !delTrozo.has("pizza")) {
-        const marca = utiles.filter((t) => t.length >= 4 && !(cadena && t === cadena.alias) && !FORMATOS.has(t));
+        const marca = utiles.filter((t) => t.length >= 4 && !(cadena && cadena.alias.split(" ").includes(t)) && !FORMATOS.has(t));
         const familia = marca.length ? candidatas.filter((f2) => f2.estado === "oficial" && (() => {
           const ts = new Set([f2.plato, ...f2.sinonimos].flatMap((a2) => normalizarTexto2(a2).split(" ")));
           return marca.every((m) => ts.has(m) || ts.has(m.replace(/s$/, "")));

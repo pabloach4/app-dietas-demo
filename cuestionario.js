@@ -668,6 +668,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   // #164: «Generar próxima lista de la compra» con las sobras de la dieta anterior (solo durante la sesión).
   let proxima = { abierta: false, sobras: [], semanas: 1, resultado: null, dieta: null };
   let dietaSiguienteFn = null;
+  let avisosAlergiasHoy = []; // #189: avisos de alergias que la app no sabe filtrar, para enseñarlos en «Hoy»
   function guardarPeriodoDieta() { try { localStorage.setItem(CLAVE_PERIODO, JSON.stringify(periodoDieta)); } catch { falloAlmacenamiento(); } }
   // #164: la dieta siguiente preparada (solo las recetas por comida: la ración se recalcula con el perfil de cada momento).
   // Empieza el día después de acabar la actual; hasta entonces no cambia nada de lo que se ve.
@@ -816,6 +817,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const numeros = `${dHoy ? `<p class="hoy-tipo">Tipo de día: <span class="dia-tipo">${escaparHtml(dHoy.tipo)}</span></p>
       <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`;
+    const avisoAlergiaHtml = avisosAlergiasHoy.length ? `<div class="hoy-bloque" id="aviso-alergia-hoy" role="status"><p style="margin:0">${avisosAlergiasHoy[0]}${avisosAlergiasHoy.length > 1 ? ` (y ${avisosAlergiasHoy.length - 1} más en los avisos del plan)` : ''}</p></div>` : '';
     const finAviso = periodoDieta.inicio ? Motor.avisoFinDeLaDieta(iso, periodoDieta.inicio, periodoDieta.semanas) : undefined;
     const avisoFinHtml = finAviso ? `
       <div class="hoy-bloque" id="aviso-fin-dieta" role="status">
@@ -824,6 +826,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       </div>` : '';
     cont.innerHTML = `
       <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)}</p>
+      ${avisoAlergiaHtml}
       ${avisoFinHtml}
       ${previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${bloqueComida}
@@ -2717,6 +2720,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     let sinReconocer = [];
     let calculado = false;
     let textoCalculado = '';
+    let kcalAuto = ''; // la última cifra que puso el cálculo (si la persona la cambia a mano, ya no se toca)
     const miles = (n) => Math.round(n).toLocaleString('es-ES');
     const rangoTxt = (a, b) => (Math.round(a) === Math.round(b) ? `${miles(a)} kcal` : `${miles(a)}–${miles(b)} kcal`);
     const totales = () => ({ min: items.reduce((s, i) => s + i.unidadMin * i.cantidad, 0), max: items.reduce((s, i) => s + i.unidadMax * i.cantidad, 0) });
@@ -2740,7 +2744,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <p><strong>Total: ${items.some((i) => i.linea.comoMinimo) ? `como mínimo ${miles(t.min)} kcal` : rangoTxt(t.min, t.max)}</strong>${t.min === t.max ? '' : ` · para ajustar el día se usa el punto medio (${miles((t.min + t.max) / 2)} kcal)`}${items.some((i) => i.linea.comoMinimo) ? ' · para ajustar el día se usa ese mínimo' : ''}</p>` : ''}
         ${sinReconocer.length ? `<p class="una-linea" id="fuera-no-reconocido">No he reconocido: ${sinReconocer.map(escaparHtml).join('; ')}. Si sabes sus calorías, súmalas tú en el campo de abajo.</p>` : ''}
         ${!items.length && !sinReconocer.length ? '<p class="una-linea">No he reconocido nada: escribe las calorías tú.</p>' : ''}`;
-      if (items.length) campoKcal.value = String(items.some((i) => i.linea.comoMinimo) ? Math.round(t.min / 10) * 10 : Math.round((t.min + t.max) / 20) * 10);
+      if (!items.length && campoKcal.value === kcalAuto) { campoKcal.value = ''; kcalAuto = ''; } // nada reconocido: no queda la cifra del cálculo anterior (#189)
+      if (items.length) campoKcal.value = String(items.some((i) => i.linea.comoMinimo) ? Math.round(t.min / 10) * 10 : Math.round((t.min + t.max) / 20) * 10); if (items.length) kcalAuto = campoKcal.value;
       desglose.querySelectorAll('.fuera-menos, .fuera-mas').forEach((b) => b.addEventListener('click', () => {
         const it = items[Number(b.dataset.k)];
         it.cantidad = Math.max(0.5, Math.min(20, it.cantidad + (b.classList.contains('fuera-mas') ? 0.5 : -0.5)));
@@ -3226,6 +3231,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       .map((l) => (l.lectura === 'no_comprobable'
         ? `⚠️ «${escaparHtml(l.texto)}»: con los ingredientes de una receta no se puede saber si lo lleva. Revísalo con Pablo antes de seguir el plan.`
         : `⚠️ No he encontrado «${escaparHtml(l.texto)}» en ninguna receta. Si es una alergia que afecta a más alimentos, la app no lo sabe: revísalo con Pablo.`));
+    avisosAlergiasHoy = avisosAlergias; // #189: también se ven al entrar en «Hoy»
+    if (panelActual === 'hoy') pintarHoy();
     document.getElementById('r-avisos').innerHTML = (plan.avisos.length || avisosReparto.length || avisosAlergias.length)
       ? [
         ...avisosAlergias.map((a) => `<li>${a}<br><small style="opacity:.55">alergias</small></li>`),
