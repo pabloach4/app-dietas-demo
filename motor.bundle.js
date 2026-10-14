@@ -72,6 +72,7 @@ var Motor = (() => {
     avisoClasificacionSesion: () => avisoClasificacionSesion,
     avisoDietaTerminada: () => avisoDietaTerminada,
     avisoFinDeLaDieta: () => avisoFinDeLaDieta,
+    avisoMoluscoSuelto: () => avisoMoluscoSuelto,
     avisoSoloPescado: () => avisoSoloPescado,
     avisosVolumen: () => avisosVolumen,
     bandaPesoServido: () => bandaPesoServido,
@@ -423,7 +424,9 @@ var Motor = (() => {
     const grasaPorKcal = fraccionGrasa * kcalMedia / 9;
     const grasaMinima = 0.5 * pesoRef;
     const grasaG = Math.max(grasaPorKcal, grasaMinima);
-    const mlg = p.grasa !== void 0 ? p.peso * (1 - p.grasa / 100) : void 0;
+    const grasaParaMlg = p.grasa ?? grasaPct;
+    const mlg = p.peso * (1 - grasaParaMlg / 100);
+    const mlgEstimado = p.grasa === void 0;
     const dias = porDia.map((d, i) => {
       const kcal = kcalDias[i];
       const hidratoG = (kcal - 4 * protG - 9 * grasaG) / 4;
@@ -448,16 +451,18 @@ var Motor = (() => {
         hidratoG: redondear(hidratoG),
         hidratoGKg: redondear(hidratoG / p.peso, 1),
         hidratoRecomendadoGKg: rango,
-        ...mlg ? { disponibilidad: redondear((kcal - d.kcalEntreno) / mlg, 1) } : {}
+        disponibilidad: redondear((kcal - d.kcalEntreno) / mlg, 1),
+        ...mlgEstimado ? { disponibilidadEstimada: true } : {}
       };
     });
-    if (mlg) {
+    {
       const minima = Math.min(...dias.map((d) => d.disponibilidad ?? Infinity));
       if (minima < 30) {
-        aviso("disponibilidad_baja", `Disponibilidad energ\xE9tica m\xEDnima de ${minima} kcal/kg de masa libre de grasa (<30): riesgo de REDs (IOC 2023). Vigilar cansancio, rendimiento, sue\xF1o y regla.`);
+        if (mlgEstimado) aviso("disponibilidad_baja_estimada", `Disponibilidad energ\xE9tica m\xEDnima ESTIMADA de ${minima} kcal/kg de masa libre de grasa (<30), calculada con un % graso estimado, no medido: es orientativa. Puede que comas poco para lo que entrenas (IOC 2023); vigila cansancio, rendimiento, sue\xF1o y regla, y com\xE9ntalo con Pablo.`);
+        else aviso("disponibilidad_baja", `Disponibilidad energ\xE9tica m\xEDnima de ${minima} kcal/kg de masa libre de grasa (<30): riesgo de REDs (IOC 2023). Vigilar cansancio, rendimiento, sue\xF1o y regla.`);
       } else if (objetivo !== "perder_grasa" && minima < 45) {
         const para = { mantener: "mantener el peso o mejorar el rendimiento", ganar_musculo: "ganar m\xFAsculo", recomposicion: "la recomposici\xF3n", perder_grasa: "perder grasa" }[objetivo];
-        notas.push(`Disponibilidad energ\xE9tica m\xEDnima de ${minima} (<45): reducida para ${para} (IOC 2023).`);
+        notas.push(`Disponibilidad energ\xE9tica m\xEDnima ${mlgEstimado ? "ESTIMADA (con % graso estimado) " : ""}de ${minima} (<45): reducida para ${para} (IOC 2023).`);
       }
     }
     if (kcalMedia < (p.sexo === "hombre" ? 1500 : 1200)) {
@@ -1841,7 +1846,7 @@ var Motor = (() => {
     return lecturas;
   }
   function textoOtrasAlergias(c) {
-    return [c.otros, c.pescado ? "pescado" : "", c.marisco ? "crust\xE1ceos" : "", c.moluscos ? "moluscos" : "", c.mas].map((t) => (t ?? "").trim()).filter(Boolean).join(", ");
+    return [c.otros, c.pescado ? "pescado" : "", c.crustaceos ? "crust\xE1ceos" : "", c.moluscos ? "moluscos" : "", c.mas].map((t) => (t ?? "").trim()).filter(Boolean).join(", ");
   }
   var RE_PESCADO = /\bpescad/;
   var RE_MARISCO_O_MOLUSCO = /marisc|crust|molusc|cefalop|sepia|calamar|pulpo|chipiron|gamba|langostin|mejillon|almeja|berberech|cigala|bogavante|nécora|necora|ostra|vieira|navaja|centollo/;
@@ -1849,6 +1854,14 @@ var Motor = (() => {
     const t = normalizar3(textoAlergias);
     if (!RE_PESCADO.test(t) || RE_MARISCO_O_MOLUSCO.test(t)) return void 0;
     return "Has indicado alergia al pescado: se ha quitado el pescado, pero la sepia, el calamar, el pulpo y el marisco no. Si tambi\xE9n te sientan mal, m\xE1rcalo en Alergias.";
+  }
+  var MOLUSCOS_SUELTOS = ["calamar", "sepia", "pulpo", "chipiron", "mejillon", "almeja", "berberecho", "ostra", "vieira", "navaja"];
+  function avisoMoluscoSuelto(textoAlergias) {
+    const t = normalizar3(textoAlergias);
+    if (/molusc|cefalop|marisc/.test(t)) return void 0;
+    const dicho = MOLUSCOS_SUELTOS.find((m) => t.includes(m));
+    if (!dicho) return void 0;
+    return `Has indicado ${dicho}: no se han quitado los dem\xE1s moluscos (sepia, calamar, pulpo, mejillones, almejas\u2026). Si tambi\xE9n te sientan mal, m\xE1rcalo en Alergias.`;
   }
 
   // src/motor/asignador-recetas.ts

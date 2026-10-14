@@ -127,6 +127,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     hidrato_bajo: '🔋 Poco hidrato de carbono para lo que entrenas ese día: puede costar rendir y recuperarte.',
     grasa_baja: '🧈 La grasa de ese día se queda corta.',
     disponibilidad_baja: '🚨 Muy pocas calorías libres para lo que gastas entrenando: esto hay que hablarlo con Pablo antes de seguir.',
+    disponibilidad_baja_estimada: '⚠️ Con tu % graso estimado (no medido), las calorías libres para lo que entrenas salen bajas: es una estimación, pero conviene comentarlo con Pablo.',
     kcal_bajas: '📉 La media de calorías de la semana es baja para llevarla sin que te la supervisen.',
     revisar_con_pablo: '🚩 Con estos datos, la dieta bajaría del mínimo seguro. Esto lo tiene que revisar Pablo contigo antes de seguir.',
   };
@@ -455,7 +456,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const alerg = ej.alergias ?? {};
     ['celiaquia', 'lactosa', 'vegetariano', 'vegano'].forEach((k) => { document.getElementById(`al-${k}`).checked = !!alerg[k]; });
     document.getElementById('al-otros').value = alerg.otros ?? '';
-    ['al-pescado', 'al-marisco', 'al-moluscos'].forEach((id) => { document.getElementById(id).checked = false; }); // #198: el pescado y su seguimiento no viajan entre ejemplos
+    ['al-pescado', 'al-crustaceos', 'al-moluscos'].forEach((id) => { document.getElementById(id).checked = false; }); // #198: el pescado y su seguimiento no viajan entre ejemplos
     document.getElementById('al-mas').value = '';
     mostrarSeguimientoPescado();
     document.getElementById('pref-gustan').value = (ej.preferencias ?? {}).gustan ?? '';
@@ -2136,7 +2137,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         lactosa: document.getElementById('al-lactosa').checked,
         vegetariano: document.getElementById('al-vegetariano').checked,
         vegano: document.getElementById('al-vegano').checked,
-        otros: Motor.textoOtrasAlergias({ otros: document.getElementById('al-otros').value, pescado: document.getElementById('al-pescado').checked, marisco: document.getElementById('al-marisco').checked, moluscos: document.getElementById('al-moluscos').checked, mas: document.getElementById('al-mas').value }), // #198
+        otros: Motor.textoOtrasAlergias({ otros: document.getElementById('al-otros').value, pescado: document.getElementById('al-pescado').checked, crustaceos: document.getElementById('al-crustaceos').checked, moluscos: document.getElementById('al-moluscos').checked, mas: document.getElementById('al-mas').value }), // #198
       },
       preferencias: { gustan: document.getElementById('pref-gustan').value, evitan: document.getElementById('pref-evitas').value },
       vidaReal: { turnos: document.getElementById('turnos').checked, tiempoCocina: document.getElementById('tiempo-cocina').value },
@@ -3356,6 +3357,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         : `⚠️ No he encontrado «${escaparHtml(l.texto)}» en ninguna receta. Si es una alergia que afecta a más alimentos, la app no lo sabe: revísalo con Pablo.`));
     const soloPescado = Motor.avisoSoloPescado(respuestas.alergias.otros ?? ''); // #198: pescado sin decir nada de marisco ni de moluscos
     if (soloPescado) avisosAlergias.unshift(escaparHtml(soloPescado));
+    const moluscoSuelto = Motor.avisoMoluscoSuelto(respuestas.alergias.otros ?? '');
+    if (moluscoSuelto) avisosAlergias.unshift(escaparHtml(moluscoSuelto));
     avisosAlergiasHoy = avisosAlergias; // #189: también se ven al entrar en «Hoy»
     if (panelActual === 'hoy') pintarHoy();
     document.getElementById('r-avisos').innerHTML = (plan.avisos.length || avisosReparto.length || avisosAlergias.length)
@@ -3369,7 +3372,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ? plan.notas.map((n) => `<li>${n}</li>`).join('') : '<li>Ninguna.</li>';
     // Issue #119: avisos y notas van plegados (con su recuento) para no saturar la pantalla; si algún aviso exige revisar con Pablo, se abre solo.
     document.querySelector('#tarjeta-avisos summary').textContent = `Avisos del plan (${plan.avisos.length + avisosReparto.length + avisosAlergias.length})`;
-    document.querySelector('#tarjeta-avisos details').open = avisosAlergias.length > 0 || plan.avisos.some((a) => ['revisar_con_pablo', 'disponibilidad_baja', 'menor'].includes(a.codigo)); // los que piden hablar con Pablo no pueden quedar plegados (#168)
+    document.querySelector('#tarjeta-avisos details').open = avisosAlergias.length > 0 || plan.avisos.some((a) => ['revisar_con_pablo', 'disponibilidad_baja', 'disponibilidad_baja_estimada', 'menor'].includes(a.codigo)); // los que piden hablar con Pablo no pueden quedar plegados (#168)
     document.querySelector('#tarjeta-notas summary').textContent = `Notas del plan (${plan.notas.length})`;
 
     // Texto legible en vez de volcar el JSON (issue #13): además de verse mal, desbordaba en móvil.
