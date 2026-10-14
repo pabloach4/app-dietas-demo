@@ -3531,7 +3531,11 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
   function estimarComidaFuera(texto, tabla) {
     const genericos = nombresGenericos(tabla);
     const aliasesDe = (f2) => [f2.plato, ...f2.sinonimos, ...genericos.get(f2) ?? []];
-    const conConector = [...new Set(tabla.flatMap((f2) => aliasesDe(f2).map(normalizarTexto2)).filter((a2) => /\b(?:con|y|mas)\b/.test(a2)))].sort((a2, b) => b.length - a2.length);
+    const conPlural = (a2) => {
+      const [p, ...resto] = a2.split(" ");
+      return [a2, [`${p}s`, ...resto].join(" "), [`${p}es`, ...resto].join(" ")];
+    };
+    const conConector = [...new Set(tabla.flatMap((f2) => aliasesDe(f2).map(normalizarTexto2)).filter((a2) => /\b(?:con|y|mas)\b/.test(a2)).flatMap(conPlural))].sort((a2, b) => b.length - a2.length);
     const proteger = (n) => conConector.reduce((acc, a2) => acc.split(a2).join(a2.replace(/ /g, "_")), n);
     const trozos = texto.split(/[,;+]/).flatMap((p) => proteger(normalizarTexto2(p)).split(/\b(?:con|y|mas)\b/)).map((t) => t.trim().replace(/_/g, " ")).filter(Boolean);
     const cadenas = [...new Set(tabla.map((f2) => f2.cadena))].map((c) => ({ c, alias: normalizarTexto2(c).replace(/ espana$/, "") }));
@@ -3713,7 +3717,7 @@ Ejemplo acotado de bar,Cortado con leche semidesnatada sin az\xFAcar (75/25),33.
 Ejemplo acotado de bar,Caf\xE9 con leche semidesnatada sin az\xFAcar (50/50),taza 125-200 ml; 50% espresso y 50% leche Pascual semi,cafe con leche semidesnatada;cafe con leche semi,,27.5,,125,200,estimacion,https://lechepascual.es/productos/leches-clasicas/leche-semidesnatada-botella-sostenible/;https://whatyoueat.io/foods/171891;https://cafesabora.com/es/el-caf%C3%A9-con-leche-en-cafeter%C3%ADa-espa%C3%B1ola-qu%C3%A9-es-y-c%C3%B3mo-se-hace,2026-10-14
 Ejemplo acotado de bar,Caf\xE9 con leche desnatada sin az\xFAcar (50/50),taza 125-200 ml; 50% espresso y 50% leche Pascual desnatada,cafe con leche desnatada;cafe con leche desnatado,,21.5,,125,200,estimacion,https://lechepascual.es/productos/leches-clasicas/leche-desnatada-botella-sostenible/;https://whatyoueat.io/foods/171891;https://cafesabora.com/es/el-caf%C3%A9-con-leche-en-cafeter%C3%ADa-espa%C3%B1ola-qu%C3%A9-es-y-c%C3%B3mo-se-hace,2026-10-14
 Ejemplo acotado de bar,Croissant de mantequilla sin relleno (referencia USDA),peque\xF1o-grande 42-67 g ya horneado; no mini ni relleno,croissant;un croissant;cruasan;croissant de mantequilla,,406,,42,67,estimacion,https://foodstruct.com/food/croissant;https://www.prospre.io/ingredients/butter-croissant-276065,2026-10-14
-Ejemplo acotado de bar,Pincho de tortilla con cebolla (ejemplo Tortiburguer),unidad 120 \xB110 g de producto ya cocido; no tortilla casera universal,pincho de tortilla;pincho tortilla;tortilla de patatas,,148.3,,110,130,estimacion,https://hnosmesones.com/fichas-tecnicas/FT-6755.pdf,2026-10-14
+Ejemplo acotado de bar,Pincho de tortilla con cebolla (ejemplo Tortiburguer),unidad 120 \xB110 g de producto ya cocido; no tortilla casera universal,pincho de tortilla;pincho tortilla;tortilla de patatas;tortiburguer;tortiburger,,148.3,,110,130,estimacion,https://hnosmesones.com/fichas-tecnicas/FT-6755.pdf,2026-10-14
 Ejemplo acotado de bar,Refresco de cola Coca-Cola original en vaso sin hielo,vaso mediano 150-250 ml de l\xEDquido; no Zero ni hielo,refresco de cola en vaso;cola en vaso;vaso de cola;vaso de cocacola,,42,,150,250,estimacion,https://www.coca-cola.com/es/es/brands/coca-cola/coca-cola-sabor-original;https://blog.fumisan.es/cuantos-mililitros-tiene-un-vaso-guia-de-capacidad-segun-el-tipo/,2026-10-14
 Ejemplo acotado de bar,Tercio de cerveza Mahou Cinco Estrellas,botella 330 ml de peso fijo; ejemplo Mahou 49 kcal/100 ml,tercio;un tercio;tercio de cerveza,,49,330,,,estimacion,https://www.somosnexho.com/mahou-sanmiguel/productos/mahou-5-estrellas,2026-10-14
 Ejemplo acotado de bar,Tostada con tomate y aceite (ejemplo receta Dietfarma),pieza fija 105 g: pan60g + tomate40g + aceite5g; 196.6 kcal/100 g calculada de la receta (206.44 kcal),tostada con tomate y aceite;pan con tomate;una tostada con tomate;tostada,,196.6,105,,,estimacion,https://www.dietfarma.com/receta/tostada-con-aceite-y-tomate,2026-10-14
