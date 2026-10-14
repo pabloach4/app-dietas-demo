@@ -3140,7 +3140,7 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
   var TAMANOS_PIZZA = ["familiar", "grande", "individual", "pequena", "mediana", "xl"];
   var FORMATOS = /* @__PURE__ */ new Set(["lata", "latas", "botella", "botellin", "vaso", "jarra", "litro", "pack"]);
   var CONTENEDORES_SIN_DATO = ["botella", "botellin", "vaso", "jarra", "litro"];
-  var esPizza = (f2) => normalizarTexto2(f2.tamano).split(" ").some((t) => t === "masa" || TAMANOS_PIZZA.includes(t));
+  var esPizza = (f2) => normalizarTexto2(f2.tamano).split(" ").includes("masa");
   var unidadPeso = (f2) => /\bml\b/.test(normalizarTexto2(f2.tamano)) ? "ml" : "g";
   function cantidadDe(tokens2) {
     let cantidad = 1;
@@ -3172,10 +3172,7 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
       }
     }
     const out = /* @__PURE__ */ new Map();
-    for (const [a2, fs] of duenos) if (fs.size === 1) {
-      const f2 = [...fs][0];
-      out.set(f2, [...out.get(f2) ?? [], a2]);
-    }
+    for (const [a2, fs] of duenos) for (const f2 of fs) out.set(f2, [...out.get(f2) ?? [], a2]);
     return out;
   }
   function rangoKcal(f2) {
@@ -3215,7 +3212,8 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
         }
         if (p === 0) continue;
         if (f2.estado === "estimacion" && esPizza(f2) && !cadena && !delTrozo.has("pizza")) continue;
-        for (const t of normalizarTexto2(f2.tamano).split(" ")) if (t.length > 3 && delTrozo.has(t)) p += 0.5;
+        const deSuNombre = new Set(normalizarTexto2(f2.plato).split(" "));
+        for (const t of normalizarTexto2(f2.tamano).split(" ")) if (t.length > 3 && delTrozo.has(t) && !deSuNombre.has(t)) p += 0.5;
         if (p > mejorPuntos) {
           mejorPuntos = p;
           mejor = [{ f: f2, puntos: p }];
@@ -3232,6 +3230,10 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
           mejor = [{ f: elegida, puntos: 1 }];
           otras = familia.filter((f2) => f2 !== elegida).map((f2) => f2.plato);
         }
+      }
+      if (mejor.length > 1 && mejor.every((m) => m.f.estado === "estimacion" && !esPizza(m.f) && m.f.cadena === mejor[0].f.cadena)) {
+        otras = mejor.slice(1).map((m) => m.f.plato);
+        mejor = [mejor[0]];
       }
       if (mejor.length > 1 && mejor.every((m) => m.f.plato === mejor[0].f.plato && m.f.cadena === mejor[0].f.cadena)) {
         const pref = mejor.find((m) => /lata/.test(normalizarTexto2(m.f.tamano))) ?? mejor[0];
@@ -3258,7 +3260,7 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
         else if (f2.estado === "estimacion") notas.push(`${esPizza(f2) ? "Peso" : "Cantidad"} estimad${esPizza(f2) ? "o" : "a"} (${f2.pesoMin}-${f2.pesoMax} ${unidadPeso(f2)}): la cifra es un rango. Si sabes ${unidadPeso(f2) === "ml" ? "cu\xE1nto has tomado" : "cu\xE1nto pesaba o cu\xE1nto comiste"}, aj\xFAstalo.`);
         if (supuesto) notas.push(`He supuesto ${f2.tamano}.`);
         const nombreCompleto = [f2.plato, ...f2.sinonimos].some((a2) => normalizarTexto2(a2).split(" ").filter((t) => t && !PALABRAS_VACIAS.has(t)).every((t) => delTrozo.has(t) || delTrozo.has(t.replace(/s$/, ""))));
-        if (f2.estado === "estimacion" && !nombreCompleto) notas.push(`He usado \xAB${f2.plato}\xBB (${f2.tamano}), la \xFAnica cifra de ese tipo que tengo; si fue otra cosa, aj\xFAstalo.`);
+        if (f2.estado === "estimacion" && !nombreCompleto) notas.push(`He usado \xAB${f2.plato}\xBB (${f2.tamano}), la cifra de ese tipo m\xE1s general que tengo; si fue otra cosa, aj\xFAstalo.`);
         lineas.push({
           nombre: `${f2.plato}${f2.tamano ? ` (${f2.tamano})` : ""}`,
           cadena: f2.cadena,
@@ -3360,6 +3362,16 @@ Coca-Cola Espa\xF1a,Aquarius Lim\xF3n,botella 500 ml,aquarius limon botella,,18,
 Coca-Cola Espa\xF1a,Aquarius Naranja,botella 500 ml,aquarius naranja botella,,19,500,,,oficial,https://www.coca-cola.com/es/es/brands/descubre-aquarius/productos;https://fruteriacantomeu.com/products/aquarius-naranja-500ml,2026-10-14
 Ejemplo acotado de bar,Copa de vino tinto Ribeiro Gandarela,copa orientativa 125-150 ml,copa vino gandarela,,65,,125,150,estimacion,https://vinoribeiro.eu/vino-cosechero-tinto-075/;https://info.comandator.com/cuantas-copas-salen-de-una-botella-de-vino/,2026-10-14
 Ejemplo acotado de bar,Caf\xE9 con leche entera sin az\xFAcar mitad caf\xE9 mitad leche,taza orientativa 125-200 ml,cafe con leche entera mitad y mitad,,36.5,,125,200,estimacion,https://cafesabora.com/es/el-caf%C3%A9-con-leche-en-cafeter%C3%ADa-espa%C3%B1ola-qu%C3%A9-es-y-c%C3%B3mo-se-hace;https://lechepascual.es/productos/leches-clasicas/leche-entera-botella-sostenible/;https://whatyoueat.io/foods/171891,2026-10-14
+Ejemplo acotado de bar,Ca\xF1a de cerveza Mahou Cinco Estrellas,vaso peque\xF1o 200-250 ml; ejemplo Mahou 49 kcal/100 ml,una ca\xF1a;ca\xF1a;ca\xF1a de cerveza;cerveza de barril,,49,,200,250,estimacion,https://www.somosnexho.com/mahou-sanmiguel/productos/mahou-5-estrellas;https://boakandbailey.com/2007/05/how-to-order-a-beer-in-spain/,2026-10-14
+Ejemplo acotado de bar,Vino tinto de mesa (referencia USDA),copa 125-150 ml; densidad aproximada 1 g/ml; no vino dulce,copa de vino tinto;vino tinto;una copa de tinto,,85,,125,150,estimacion,https://whatyoueat.io/foods/173190-red-table-wine;https://info.comandator.com/cuantas-copas-salen-de-una-botella-de-vino/,2026-10-14
+Ejemplo acotado de bar,Vino blanco de mesa (referencia USDA),copa 125-150 ml; densidad aproximada 1 g/ml; no vino dulce,copa de vino blanco;vino blanco;una copa de blanco,,82,,125,150,estimacion,https://whatyoueat.io/foods/174837-white-table-wine;https://info.comandator.com/cuantas-copas-salen-de-una-botella-de-vino/,2026-10-14
+Ejemplo acotado de bar,Caf\xE9 solo espresso sin az\xFAcar,25-30 ml; aproximaci\xF3n 1 g/ml,cafe solo;un cafe solo;espresso,,9,,25,30,estimacion,https://whatyoueat.io/foods/171891;https://koficafe.com/blogs/p/guia-rapida-para-entender-el-cafe-solo/,2026-10-14
+Ejemplo acotado de bar,Cortado con leche semidesnatada sin az\xFAcar (75/25),33.3-40 ml; 75% espresso y 25% leche Pascual semi; no az\xFAcar,cortado;un cortado;cafe cortado,,18.25,,33.3,40,estimacion,https://www.cafesabora.com/es/caf%C3%A9-cortado-qu%C3%A9-es-y-c%C3%B3mo-se-prepara;https://lechepascual.es/productos/leches-clasicas/leche-semidesnatada-botella-sostenible/;https://whatyoueat.io/foods/171891;https://cafesabora.com/es/el-caf%C3%A9-con-leche-en-cafeter%C3%ADa-espa%C3%B1ola-qu%C3%A9-es-y-c%C3%B3mo-se-hace,2026-10-14
+Ejemplo acotado de bar,Caf\xE9 con leche semidesnatada sin az\xFAcar (50/50),taza 125-200 ml; 50% espresso y 50% leche Pascual semi,cafe con leche semidesnatada;cafe con leche semi,,27.5,,125,200,estimacion,https://lechepascual.es/productos/leches-clasicas/leche-semidesnatada-botella-sostenible/;https://whatyoueat.io/foods/171891;https://cafesabora.com/es/el-caf%C3%A9-con-leche-en-cafeter%C3%ADa-espa%C3%B1ola-qu%C3%A9-es-y-c%C3%B3mo-se-hace,2026-10-14
+Ejemplo acotado de bar,Caf\xE9 con leche desnatada sin az\xFAcar (50/50),taza 125-200 ml; 50% espresso y 50% leche Pascual desnatada,cafe con leche desnatada;cafe con leche desnatado,,21.5,,125,200,estimacion,https://lechepascual.es/productos/leches-clasicas/leche-desnatada-botella-sostenible/;https://whatyoueat.io/foods/171891;https://cafesabora.com/es/el-caf%C3%A9-con-leche-en-cafeter%C3%ADa-espa%C3%B1ola-qu%C3%A9-es-y-c%C3%B3mo-se-hace,2026-10-14
+Ejemplo acotado de bar,Croissant de mantequilla sin relleno (referencia USDA),peque\xF1o-grande 42-67 g ya horneado; no mini ni relleno,croissant;un croissant;cruasan;croissant de mantequilla,,406,,42,67,estimacion,https://foodstruct.com/food/croissant;https://www.prospre.io/ingredients/butter-croissant-276065,2026-10-14
+Ejemplo acotado de bar,Pincho de tortilla con cebolla (ejemplo Tortiburguer),unidad 120 \xB110 g de producto ya cocido; no tortilla casera universal,pincho de tortilla;pincho tortilla;tortilla de patatas,,148.3,,110,130,estimacion,https://hnosmesones.com/fichas-tecnicas/FT-6755.pdf,2026-10-14
+Ejemplo acotado de bar,Refresco de cola Coca-Cola original en vaso sin hielo,vaso mediano 150-250 ml de l\xEDquido; no Zero ni hielo,refresco de cola en vaso;cola en vaso;vaso de cola;vaso de cocacola,,42,,150,250,estimacion,https://www.coca-cola.com/es/es/brands/coca-cola/coca-cola-sabor-original;https://blog.fumisan.es/cuantos-mililitros-tiene-un-vaso-guia-de-capacidad-segun-el-tipo/,2026-10-14
 `;
 
   // src/motor/sobras.ts
@@ -4700,7 +4712,12 @@ r43,aceite de oliva,10`;
     const activa = dias.some((x) => x.fase !== void 0);
     if (!activa) return { activa: false, plan: base, base, dias, avisos, notas: [] };
     const kcalMedia = redondear(nuevosDias.reduce((s, x) => s + x.kcal, 0) / nuevosDias.length);
-    const plan = { ...base, dias: nuevosDias, kcalMedia, notas: [...base.notas, `Semana con competici\xF3n: ${NOTA_PAUTA_ORIENTATIVA}`] };
+    const avisosGrasa = nuevosDias.filter((x) => x.kcal > 0 && x.grasaG * 9 / x.kcal < 0.2).map((x) => {
+      const cd = dias.find((y) => y.dia === x.dia);
+      const pct = Math.round(x.grasaG * 9 / x.kcal * 1e3) / 10;
+      return { codigo: "grasa_baja", texto: `${x.dia}: grasa por debajo del 20 % de las kcal (${String(pct).replace(".", ",")} %)${cd?.hidratoMinGKg ? `: en carga o competici\xF3n mandan los hidratos (m\xEDnimo ${cd.hidratoMinGKg} g/kg), as\xED que no se sube la grasa` : ""} (ACSM 2016).` };
+    });
+    const plan = { ...base, dias: nuevosDias, kcalMedia, avisos: [...base.avisos.filter((a2) => a2.codigo !== "grasa_baja"), ...avisosGrasa], notas: [...base.notas, `Semana con competici\xF3n: ${NOTA_PAUTA_ORIENTATIVA}`] };
     return { activa, plan, base, dias, avisos, notas: [NOTA_PAUTA_ORIENTATIVA] };
   }
 

@@ -2857,7 +2857,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       desglose.querySelectorAll('.fuera-variedad').forEach((s) => s.addEventListener('change', () => {
         const it = items[Number(s.dataset.k)];
         if (!s.value) return;
-        const afinada = Motor.estimarComidaFuera(`pizza ${s.value} ${it.linea.cadena}`, TABLA_COMER_FUERA).lineas[0];
+        const afinada = Motor.estimarComidaFuera(`${/pizza/i.test(it.linea.nombre) ? 'pizza ' : ''}${s.value} ${it.linea.cadena}`, TABLA_COMER_FUERA).lineas[0];
         if (afinada) items[Number(s.dataset.k)] = { linea: afinada, unidadMin: afinada.kcalMin / afinada.cantidad, unidadMax: afinada.kcalMax / afinada.cantidad, cantidad: it.cantidad };
         pintarDesglose();
       }));
