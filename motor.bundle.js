@@ -52,6 +52,8 @@ var Motor = (() => {
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
     PREGUNTAS_CRIBADO: () => PREGUNTAS_CRIBADO,
+    RACION_MAX: () => RACION_MAX,
+    RACION_MIN: () => RACION_MIN,
     RECETAS_CATALOGO_CSV: () => RECETAS_CATALOGO_CSV,
     RECETAS_CATALOGO_INGREDIENTES_CSV: () => RECETAS_CATALOGO_INGREDIENTES_CSV,
     RECETAS_EJEMPLO_CSV: () => RECETAS_EJEMPLO_CSV,
@@ -60,6 +62,7 @@ var Motor = (() => {
     SEMANAS_MIN: () => SEMANAS_MIN,
     SEMANAS_POR_DEFECTO: () => SEMANAS_POR_DEFECTO,
     TEXTO_NIVEL: () => TEXTO_NIVEL,
+    TEXTO_PLAN_PABLO: () => TEXTO_PLAN_PABLO,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
     UMBRAL_FALTA_COMPETICION: () => UMBRAL_FALTA_COMPETICION,
@@ -127,10 +130,12 @@ var Motor = (() => {
     esFranjaConLimiteVariedad: () => esFranjaConLimiteVariedad,
     esIngredienteProtegido: () => esIngredienteProtegido,
     esLunes: () => esLunes,
+    esPlanPabloNuevo: () => esPlanPabloNuevo,
     escaparTextoIcs: () => escaparTextoIcs,
     estadoDeLaPreparada: () => estadoDeLaPreparada,
     estimarComidaFuera: () => estimarComidaFuera,
     estimarCoste: () => estimarCoste,
+    etiquetaPlanPablo: () => etiquetaPlanPablo,
     etiquetasContextoDia: () => etiquetasContextoDia,
     evaluarCompatibilidad: () => evaluarCompatibilidad,
     evaluarCribado: () => evaluarCribado,
@@ -151,6 +156,7 @@ var Motor = (() => {
     fechaDelDia: () => fechaDelDia,
     fechaLocalISO: () => fechaLocalISO,
     filaAlerta: () => filaAlerta,
+    filaPlanPablo: () => filaPlanPablo,
     filtrarCatalogo: () => filtrarCatalogo,
     filtrarPorDias: () => filtrarPorDias,
     finDeLaDieta: () => finDeLaDieta,
@@ -167,6 +173,7 @@ var Motor = (() => {
     inicioDeLaSiguiente: () => inicioDeLaSiguiente,
     instantaneaLocal: () => instantaneaLocal,
     itemDesdeGramos: () => itemDesdeGramos,
+    kcalConRacion: () => kcalConRacion,
     leerEvitados: () => leerEvitados,
     limiteFibraG: () => limiteFibraG,
     limitesIngredientesDesdeCsv: () => limitesIngredientesDesdeCsv,
@@ -194,6 +201,7 @@ var Motor = (() => {
     pesoCocido: () => pesoCocido,
     pesoServido: () => pesoServido,
     planDiaCompeticion: () => planDiaCompeticion,
+    planPabloAplicable: () => planPabloAplicable,
     plegarLineaIcs: () => plegarLineaIcs,
     racionRealistaMinima: () => racionRealistaMinima,
     raizAlimento: () => raizAlimento,
@@ -201,6 +209,8 @@ var Motor = (() => {
     recetasCompuestas: () => recetasCompuestas,
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
+    restriccionesComoApp: () => restriccionesComoApp,
+    revisarPlanPablo: () => revisarPlanPablo,
     revisarSiguienteGuardada: () => revisarSiguienteGuardada,
     rolIngrediente: () => rolIngrediente,
     semanaDeLaDieta: () => semanaDeLaDieta,
@@ -208,7 +218,9 @@ var Motor = (() => {
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
     textoOtrasAlergias: () => textoOtrasAlergias,
+    totalesPorDia: () => totalesPorDia,
     usosVariedadSemana: () => usosVariedadSemana,
+    validarCasilla: () => validarCasilla,
     validarCompeticion: () => validarCompeticion,
     validarHorarioDia: () => validarHorarioDia,
     validarPeticionSiOSi: () => validarPeticionSiOSi,
@@ -2406,6 +2418,15 @@ var Motor = (() => {
   function proteinaServida(r, factor) {
     const crece = r.ingredientes.some((i) => esPalanca(i.nombre) && rolIngrediente(i.nombre) === "proteina");
     return r.proteina * (crece ? factor : 1);
+  }
+  function kcalConRacion(receta, factor) {
+    const palancas = receta.ingredientes.filter((i) => esPalanca(i.nombre));
+    const hay = (rol) => palancas.some((i) => rolIngrediente(i.nombre) === rol);
+    const kcalPalancas = Math.min(
+      receta.kcal,
+      (hay("base") ? 4 * receta.hidrato : 0) + (hay("proteina") ? 4 * receta.proteina : 0) + 9 * palancas.filter((i) => rolIngrediente(i.nombre) === "grasa").reduce((t, i) => t + i.gramos, 0)
+    );
+    return Math.round(receta.kcal + kcalPalancas * (factor - 1));
   }
 
   // src/motor/lista-compra.ts
@@ -6357,5 +6378,62 @@ R184,nueces,10,grasa,170187,tal cual,`;
   function correoValido(c) {
     return /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(c.trim());
   }
+
+  // src/motor/plan-pablo.ts
+  function restriccionesComoApp(r) {
+    const a2 = r?.alergias ?? {};
+    const evitan = [r?.evitan, ...r?.listaNegra ?? []].filter((x) => typeof x === "string" && x.trim() !== "").join(", ");
+    return alergiasPreferenciasDesdeTexto({ celiaquia: !!a2.celiaquia, lactosa: !!a2.lactosa, vegetariano: !!a2.vegetariano, vegano: !!a2.vegano, otros: a2.otros }, evitan);
+  }
+  var RACION_MIN = 0.5;
+  var RACION_MAX = 2;
+  function validarCasilla(c, catalogo, ap) {
+    const porId = new Map(catalogo.map((r2) => [r2.id, r2]));
+    const r = recetaDeId(porId, c.receta);
+    if (!r) return { ok: false, existe: false, compatible: false, kcal: 0, avisos: [`la receta \xAB${c.receta}\xBB no est\xE1 en el cat\xE1logo`] };
+    const avisos = [];
+    const compat = evaluarCompatibilidad(r, ap);
+    if (!compat.compatible) avisos.push(`no encaja con las restricciones de la persona (${compat.motivo?.detalle ?? "alergia o lista negra"})`);
+    if (!r.franjas.includes(c.franja) && !(r.platos && r.platos.length)) avisos.push(`esta receta no est\xE1 pensada para ${c.franja.replace("_", " ")}`);
+    if (!Number.isFinite(c.racionAjustada) || c.racionAjustada < RACION_MIN || c.racionAjustada > RACION_MAX) {
+      avisos.push(`la raci\xF3n tiene que estar entre ${RACION_MIN * 100} % y ${RACION_MAX * 100} %`);
+    } else {
+      const { incumplimientos } = incumplimientosRacion(c.franja, r, c.racionAjustada);
+      for (const i of incumplimientos) avisos.push(`sale de su raci\xF3n normal: ${i}`);
+    }
+    const kcal = Number.isFinite(c.racionAjustada) ? kcalConRacion(r, c.racionAjustada) : 0;
+    return { ok: avisos.length === 0, existe: true, compatible: compat.compatible, ...compat.compatible ? {} : { motivoIncompatible: compat.motivo?.detalle ?? "alergia o lista negra" }, kcal, avisos };
+  }
+  function totalesPorDia(casillas, dias, kcalDe) {
+    return dias.map((d) => {
+      const servido = casillas.filter((c) => c.dia === d.dia).reduce((s, c) => s + kcalDe(c), 0);
+      return { dia: d.dia, objetivo: d.kcal, servido, diferencia: servido - d.kcal, pct: d.kcal > 0 ? Math.round((servido - d.kcal) / d.kcal * 1e3) / 10 : 0 };
+    });
+  }
+  function filaPlanPablo(base, casillas, catalogo) {
+    const ap = restriccionesComoApp(base.plan.restricciones);
+    const asignaciones = casillas.filter((c) => c.receta).map((c) => ({ dia: c.dia, franja: c.franja, receta: c.receta, racionAjustada: Math.round(c.racionAjustada * 100) / 100, kcalResultante: validarCasilla(c, catalogo, ap).kcal }));
+    const dias = base.plan.dias.map((d) => ({ ...d }));
+    return { inicio: base.inicio, semanas: base.semanas, origen: "pablo", plan: { ...base.plan, dias, asignaciones, huecos: 0 } };
+  }
+  function planPabloAplicable(planes, hoy) {
+    return planes.filter((p) => p && p.origen === "pablo" && p.plan && Array.isArray(p.plan.asignaciones) && estadoDeLaPreparada(hoy, p.inicio, p.semanas) === "activa").sort((a2, b) => String(b.creado).localeCompare(String(a2.creado)))[0];
+  }
+  function esPlanPabloNuevo(recibido, guardado) {
+    if (!recibido) return false;
+    return !guardado || String(recibido.creado) > String(guardado.creado);
+  }
+  function revisarPlanPablo(asignaciones, catalogo, ap) {
+    return revisarSiguienteGuardada(asignaciones.map((a2) => ({ dia: a2.dia, franja: a2.franja, receta: a2.receta })), catalogo, ap);
+  }
+  function etiquetaPlanPablo(enUso, deP) {
+    const clave = (x) => `${x.dia}|${x.franja}|${x.receta}`;
+    const uso = new Set(enUso.map(clave));
+    return deP.every((x) => uso.has(clave(x))) && enUso.length === deP.length ? "pablo" : "pablo_con_cambios";
+  }
+  var TEXTO_PLAN_PABLO = {
+    pablo: "Revisado por Pablo",
+    pablo_con_cambios: "Revisado por Pablo, con cambios tuyos"
+  };
   return __toCommonJS(motor_exports);
 })();

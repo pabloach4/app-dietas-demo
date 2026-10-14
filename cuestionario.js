@@ -790,6 +790,20 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   function guardarSiguiente() {
     try { if (siguiente) localStorage.setItem(CLAVE_SIGUIENTE, JSON.stringify(siguiente)); else localStorage.removeItem(CLAVE_SIGUIENTE); } catch { falloAlmacenamiento(); }
   }
+  // #207: plan revisado y publicado por Pablo (llega con la nube, web/nube.js, y se guarda aquí). Si vale hoy, se usa como semana fijada.
+  const CLAVE_PLAN_PABLO = 'app-dietas-plan-pablo';
+  let planPablo = null; // { creado, inicio, semanas, plan: { asignaciones: [{dia, franja, receta, racionAjustada}] } }
+  function leerPlanPablo() {
+    try {
+      const g = JSON.parse(localStorage.getItem(CLAVE_PLAN_PABLO) || 'null');
+      planPablo = g && typeof g === 'object' && g.plan && Array.isArray(g.plan.asignaciones) && Motor.esFechaValida(g.inicio || '') ? g : null;
+    } catch { planPablo = null; }
+  }
+  leerPlanPablo();
+  const planPabloVigente = () => (planPablo && Motor.estadoDeLaPreparada(Motor.fechaLocalISO(new Date()), planPablo.inicio, Motor.semanasValidas(planPablo.semanas)) === 'activa' ? planPablo : null);
+  let avisoPabloHoy = ''; // «Revisado por Pablo…» y lo que se quitó, para Hoy y Semana
+  window.addEventListener('app-dietas:plan-pablo', () => { leerPlanPablo(); if (semanaActual && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); });
+
   // Al llegar la fecha, la siguiente pasa a ser la dieta actual (mismo inicio y semanas, una sola fecha) y se olvida al acabar.
   function estadoSiguienteHoy() {
     if (!siguiente) return undefined;
@@ -925,6 +939,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`;
     const avisoAlergiaHtml = avisosAlergiasHoy.length ? `<div class="hoy-bloque" id="aviso-alergia-hoy" role="status"><p style="margin:0">${avisosAlergiasHoy[0]}${avisosAlergiasHoy.length > 1 ? ` (y ${avisosAlergiasHoy.length - 1} más en los avisos del plan)` : ''}</p></div>` : '';
+    const avisoPabloHtml = avisoPabloHoy ? `<div class="hoy-bloque" id="aviso-plan-pablo" role="status"><p style="margin:0">${avisoPabloHoy}</p></div>` : '';
     const avisoCribadoHtml = avisoCribadoHoy ? `<div class="hoy-bloque" id="aviso-cribado" role="status"><p style="margin:0">${escaparHtml(avisoCribadoHoy)}</p></div>` : '';
     const finAviso = periodoDieta.inicio ? Motor.avisoFinDeLaDieta(iso, periodoDieta.inicio, periodoDieta.semanas) : undefined;
     const avisoFinHtml = finAviso ? `
@@ -943,6 +958,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)}</p>
       ${avisoAlergiaHtml}
       ${avisoCribadoHtml}
+      ${avisoPabloHtml}
       ${avisoFinHtml}${avisoTerminadaHtml}
       ${previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${bloqueComida}
@@ -3086,7 +3102,16 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       }
     }
     const fijasPropias = [...semanaFija].map(([k, v]) => ({ dia: k[0], franja: k.slice(2), receta: v }));
-    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias };
+    // #207: el plan de Pablo, si vale hoy, es la semana fijada. Antes se vuelve a comprobar con las restricciones de ahora (como #189).
+    const pabloHoy = planPabloVigente();
+    let fijadasDePablo;
+    let quitadasPablo = [];
+    if (pabloHoy) {
+      const revP = Motor.revisarPlanPablo(pabloHoy.plan.asignaciones, RECETAS_EJEMPLO, alergiasPreferencias);
+      fijadasDePablo = revP.validas;
+      quitadasPablo = revP.quitadas;
+    }
+    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias) };
     const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador);
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
@@ -3103,6 +3128,16 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (fueraHoy.size) { // #173: la segunda pasada vive ahora en el motor, con tests
       const horaDe = (franja) => { const h = franjasDelDia(diaHoy).find((x) => x.franja === franja); return h && h.hora !== undefined ? h.hora : undefined; };
       cuadrado = Motor.cuadrarConComidaFuera(cuadrado, slotsSemana, recetasCuadre, { diaHoy, fuera: fueraHoy, horaDe, noMoverDia: enCompeticion });
+    }
+    // #207: «Revisado por Pablo» mientras el plan en uso coincide con lo que publicó; «con cambios tuyos» si la persona cambia platos.
+    {
+      const caja = document.getElementById('r-pablo');
+      if (pabloHoy) {
+        const etq = Motor.etiquetaPlanPablo(cuadrado.asignaciones, fijadasDePablo);
+        const quita = quitadasPablo.length ? ` Se han quitado ${quitadasPablo.length} plato${quitadasPablo.length === 1 ? '' : 's'} que ya no valen con tus restricciones (${[...new Set(quitadasPablo.map((q) => q.nombre))].slice(0, 3).map(escaparHtml).join(', ')}).` : '';
+        avisoPabloHoy = `<strong>${Motor.TEXTO_PLAN_PABLO[etq]}.</strong>${quita}`;
+      } else avisoPabloHoy = '';
+      if (caja) { caja.hidden = !avisoPabloHoy; caja.innerHTML = avisoPabloHoy; }
     }
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     const asignacionSemana = { ...aplicadas.resultado, asignaciones: cuadrado.asignaciones, avisos: [...aplicadas.resultado.avisos, ...cuadrado.avisos] };
@@ -3370,6 +3405,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       dias: plan.dias.map((d) => ({ dia: d.dia, tipo: d.tipo, kcal: d.kcal, proteinaG: d.proteinaG, grasaG: d.grasaG, hidratoG: d.hidratoG })),
       asignaciones: asignacionSemana.asignaciones.map((a) => ({ dia: a.dia, franja: a.franja, receta: a.receta, racionAjustada: a.racionAjustada, kcalResultante: a.kcalResultante })),
       huecos: asignacionSemana.huecos.length,
+      // #207: lo que Pablo necesita para editar con seguridad (NO las respuestas del cribado: esas viajan como alertas).
+      restricciones: { alergias: respuestas.alergias, evitan: respuestas.preferencias.evitan, gustan: respuestas.preferencias.gustan, listaNegra: [...listaNegra] },
     } }));
 
     // Issue #21: mensaje en español llano primero, el código técnico se queda visible pero en pequeño.

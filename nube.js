@@ -153,6 +153,20 @@
     pintar(null);
   }
 
+  // #207: lo que Pablo ha revisado y publicado para esta persona. Se guarda en este navegador y la app lo usa como semana fijada.
+  async function traerPlanDePablo() {
+    if (!sb) return;
+    const { data } = await sb.auth.getSession();
+    if (!data || !data.session) return;
+    const r = await sb.from('planes').select('id, inicio, semanas, plan, origen, creado').eq('origen', 'pablo').order('creado', { ascending: false }).limit(10);
+    if (r.error || !Array.isArray(r.data)) return;
+    const nuevo = Motor.planPabloAplicable(r.data, Motor.fechaLocalISO(new Date()));
+    if (!Motor.esPlanPabloNuevo(nuevo, leerJSON('app-dietas-plan-pablo'))) return;
+    try { localStorage.setItem('app-dietas-plan-pablo', JSON.stringify({ creado: nuevo.creado, inicio: nuevo.inicio, semanas: nuevo.semanas, plan: nuevo.plan })); } catch { return; }
+    window.dispatchEvent(new CustomEvent('app-dietas:plan-pablo'));
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') traerPlanDePablo(); });
+
   let temporizador = null;
   const subirEnUnRato = () => { clearTimeout(temporizador); temporizador = setTimeout(() => subir('auto'), 2500); };
   window.addEventListener('app-dietas:plan', (ev) => { ultimoPlan = ev.detail || null; subirEnUnRato(); });
@@ -162,7 +176,8 @@
     sb = window.supabase.createClient(URL_NUBE, CLAVE_PUBLICA, { auth: { persistSession: true, detectSessionInUrl: true } });
     const { data } = await sb.auth.getSession();
     pintar(data && data.session);
-    sb.auth.onAuthStateChange((evento, sesion) => { if (evento === 'SIGNED_IN') { pintar(sesion); subirEnUnRato(); } });
+    traerPlanDePablo();
+    sb.auth.onAuthStateChange((evento, sesion) => { if (evento === 'SIGNED_IN') { pintar(sesion); subirEnUnRato(); traerPlanDePablo(); } });
     if (data && data.session) subirEnUnRato();
   }).catch((e) => { cuerpo.innerHTML = `<p class="subt">La nube no está disponible ahora (${esc(e.message)}). La app funciona igual.</p>`; });
 })();
