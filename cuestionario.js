@@ -3098,15 +3098,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const hoyIso = Motor.fechaLocalISO(new Date());
     const diaHoy = LETRA_DIA_JS[new Date().getDay()];
     const fueraHoy = new Map(comidasFuera.filter((x) => x.fecha === hoyIso && x.kcal !== undefined && slotsSemana.some((s) => s.dia === diaHoy && s.franja === x.franja)).map((x) => [x.franja, x.kcal]));
-    if (fueraHoy.size) {
+    if (fueraHoy.size) { // #173: la segunda pasada vive ahora en el motor, con tests
       const horaDe = (franja) => { const h = franjasDelDia(diaHoy).find((x) => x.franja === franja); return h && h.hora !== undefined ? h.hora : undefined; };
-      const primeraFuera = Math.min(...[...fueraHoy.keys()].map((f) => horaDe(f) ?? -1));
-      const primera = cuadrado.asignaciones;
-      const entrada = primera.map((a) => (a.dia === diaHoy && fueraHoy.has(a.franja) ? { ...a, kcalResultante: fueraHoy.get(a.franja) } : a))
-        .concat([...fueraHoy].filter(([f]) => !primera.some((a) => a.dia === diaHoy && a.franja === f)).map(([f, kcal]) => ({ dia: diaHoy, franja: f, kcalResultante: kcal, soloFuera: true })));
-      const segunda = Motor.cuadrarDias(entrada, slotsSemana, recetasCuadre, { noMover: (dia, franja) => dia !== diaHoy || enCompeticion(dia) || fueraHoy.has(franja) || (horaDe(franja) ?? 24) <= primeraFuera });
-      // La comida hecha fuera conserva en el plan su receta y su ración de antes: lo apuntado solo cuenta para el cuadre del día.
-      cuadrado = { ...segunda, asignaciones: segunda.asignaciones.filter((a) => !a.soloFuera).map((a) => (a.dia === diaHoy && fueraHoy.has(a.franja) ? primera.find((b) => b.dia === a.dia && b.franja === a.franja) : a)) };
+      cuadrado = Motor.cuadrarConComidaFuera(cuadrado, slotsSemana, recetasCuadre, { diaHoy, fuera: fueraHoy, horaDe, noMoverDia: enCompeticion });
     }
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     const asignacionSemana = { ...aplicadas.resultado, asignaciones: cuadrado.asignaciones, avisos: [...aplicadas.resultado.avisos, ...cuadrado.avisos] };
@@ -3140,7 +3134,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         for (const a of asignacionSemana.asignaciones) kcalPorDia.set(a.dia, (kcalPorDia.get(a.dia) ?? 0) + a.kcalResultante);
         const filas = compSem.dias.filter((x) => x.fase).map((x) => {
           const falta = x.hidratoMinGKg && plan.dias.find((p) => p.dia === x.dia) ? plan.dias.find((p) => p.dia === x.dia).kcal - (kcalPorDia.get(x.dia) ?? 0) : 0;
-          const faltaTxt = falta > 0.08 * x.kcalDespues
+          const faltaTxt = Motor.faltaVisibleCompeticion(falta, x.kcalDespues)
             ? ` Con los topes de plato, las recetas de este día se quedan a ~${Math.round(falta)} kcal (≈ ${Math.round(falta / 4)} g de hidrato) del objetivo: si no te llega, añade una bebida deportiva o una toma extra (no se fuerza ningún plato).`
             : '';
           const cambio = x.kcalDespues !== x.kcalAntes || x.hidratoDespues !== x.hidratoAntes

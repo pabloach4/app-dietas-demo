@@ -62,6 +62,7 @@ var Motor = (() => {
     TEXTO_NIVEL: () => TEXTO_NIVEL,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
+    UMBRAL_FALTA_COMPETICION: () => UMBRAL_FALTA_COMPETICION,
     VERSION_CONSENTIMIENTO_NUBE: () => VERSION_CONSENTIMIENTO_NUBE,
     ZONAS_ICS: () => ZONAS_ICS,
     aHoraTexto: () => aHoraTexto,
@@ -111,6 +112,7 @@ var Motor = (() => {
     copiarAlPortapapeles: () => copiarAlPortapapeles,
     correoValido: () => correoValido,
     crearSemana: () => crearSemana,
+    cuadrarConComidaFuera: () => cuadrarConComidaFuera,
     cuadrarDias: () => cuadrarDias,
     definirParametrosReparto: () => definirParametrosReparto,
     definirRolIngrediente: () => definirRolIngrediente,
@@ -144,6 +146,7 @@ var Motor = (() => {
     explicarRacion: () => explicarRacion,
     explicarTipoDia: () => explicarTipoDia,
     factorCocido: () => factorCocido,
+    faltaVisibleCompeticion: () => faltaVisibleCompeticion,
     favoritasValidas: () => favoritasValidas,
     fechaDelDia: () => fechaDelDia,
     fechaLocalISO: () => fechaLocalISO,
@@ -6278,6 +6281,23 @@ R184,nueces,10,grasa,170187,tal cual,`;
     }
     return { asignaciones: salida, dias, avisos };
   }
+  function cuadrarConComidaFuera(primera, slots, recetas, o) {
+    if (!o.fuera.size) return primera;
+    const { diaHoy, fuera, horaDe } = o;
+    const primeraFuera = Math.min(...[...fuera.keys()].map((f2) => horaDe(f2) ?? -1));
+    const previas = primera.asignaciones;
+    const entrada = previas.map((a2) => a2.dia === diaHoy && fuera.has(a2.franja) ? { ...a2, kcalResultante: fuera.get(a2.franja) } : a2);
+    for (const [f2, kcal] of fuera) {
+      if (!previas.some((a2) => a2.dia === diaHoy && a2.franja === f2)) entrada.push({ dia: diaHoy, franja: f2, receta: "", racionAjustada: 1, kcalResultante: kcal, soloFuera: true });
+    }
+    const segunda = cuadrarDias(entrada, slots, recetas, {
+      noMover: (dia, franja) => dia !== diaHoy || !!o.noMoverDia?.(dia) || fuera.has(franja) || (horaDe(franja) ?? 24) <= primeraFuera
+    });
+    const asignaciones = segunda.asignaciones.filter((a2) => !a2.soloFuera).map((a2) => a2.dia === diaHoy && fuera.has(a2.franja) ? previas.find((b) => b.dia === a2.dia && b.franja === a2.franja) : a2);
+    return { ...segunda, asignaciones };
+  }
+  var UMBRAL_FALTA_COMPETICION = 0.08;
+  var faltaVisibleCompeticion = (falta, kcalDia) => falta > UMBRAL_FALTA_COMPETICION * kcalDia;
 
   // src/motor/nube-datos.ts
   var CLAVES_NUBE = [
