@@ -169,6 +169,7 @@ var Motor = (() => {
     recetasCompuestas: () => recetasCompuestas,
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
+    revisarSiguienteGuardada: () => revisarSiguienteGuardada,
     rolIngrediente: () => rolIngrediente,
     semanaDeLaDieta: () => semanaDeLaDieta,
     semanasValidas: () => semanasValidas,
@@ -2817,6 +2818,24 @@ var Motor = (() => {
         ...periodo && c ? { comprarPeriodo: periodo.get(item.ingrediente).comprar } : {}
       };
     });
+  }
+
+  // src/motor/siguiente-guardada.ts
+  function revisarSiguienteGuardada(guardados, catalogo, ap) {
+    const porId = new Map(catalogo.map((r) => [r.id, r]));
+    const validas = [];
+    const quitadas = [];
+    for (const g of guardados) {
+      const r = recetaDeId(porId, g.receta);
+      if (!r) {
+        quitadas.push({ ...g, nombre: g.receta, motivo: "la receta ya no est\xE1 en el cat\xE1logo" });
+        continue;
+      }
+      const c = evaluarCompatibilidad(r, ap);
+      if (c.compatible) validas.push(g);
+      else quitadas.push({ ...g, nombre: r.nombre, motivo: c.motivo?.detalle ?? "ya no encaja con tus restricciones" });
+    }
+    return { validas, quitadas };
   }
 
   // src/motor/conservacion-datos.ts

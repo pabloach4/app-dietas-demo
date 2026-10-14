@@ -677,7 +677,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   try {
     const g = JSON.parse(localStorage.getItem(CLAVE_SIGUIENTE) || 'null');
     if (g && Motor.esFechaValida(g.inicio ?? '') && Array.isArray(g.recetas) && g.recetas.every((x) => x && typeof x.dia === 'string' && typeof x.franja === 'string' && typeof x.receta === 'string')) {
-      siguiente = { inicio: g.inicio, semanas: Motor.semanasValidas(g.semanas), recetas: g.recetas };
+      siguiente = { inicio: g.inicio, semanas: Motor.semanasValidas(g.semanas), recetas: g.recetas, quitadas: Array.isArray(g.quitadas) ? g.quitadas.filter((q) => q && typeof q.nombre === 'string').slice(0, 40).map((q) => ({ nombre: String(q.nombre).slice(0, 80), motivo: String(q.motivo ?? '').slice(0, 120) })) : [] };
     }
   } catch { /* sin almacenamiento o dato corrupto: no hay dieta siguiente */ }
   function guardarSiguiente() {
@@ -2184,7 +2184,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
             ${r.sinUso.length ? `<p class="una-linea">Esta dieta no usa: ${r.sinUso.map((s) => escaparHtml(s.ingrediente)).join(', ')}.</p>` : ''}
             <details class="plegable"><summary>Platos de la próxima dieta</summary><ul class="resumen-lista" id="prox-platos">${r.platos.map(([d, n]) => `<li><strong>${d}</strong> · ${n.map(escaparHtml).join(' · ')}</li>`).join('')}</ul>${r.huecos ? `<p class="una-linea">${r.huecos} comida${r.huecos === 1 ? '' : 's'} sin plato que encaje.</p>` : ''}</details>
             <ul class="resumen-lista" id="prox-lista">${r.lista.map((i) => `<li class="item-compra"><span><strong>${i.comprar}</strong> — ${escaparHtml(i.ingrediente)}${i.sobra ? ` <small class="dieta-dato">(tienes ${gramosCorto(i.sobra)} g)</small>` : ''}</span></li>`).join('')}</ul>` : ''}
-          ${r ? (siguiente ? `<p class="una-linea" id="prox-guardada">Guardada: tu próxima dieta empieza el ${fechaLegible(siguiente.inicio)}${estadoSiguienteHoy() === 'activa' ? ' (ya está en marcha)' : ''}. Hasta entonces sigues viendo la actual. <button type="button" class="btn-texto" id="prox-quitar-guardada">Quitar</button></p>`
+          ${r ? (siguiente ? `<p class="una-linea" id="prox-guardada">Guardada: tu próxima dieta empieza el ${fechaLegible(siguiente.inicio)}${estadoSiguienteHoy() === 'activa' ? ' (ya está en marcha)' : ''}. Hasta entonces sigues viendo la actual. <button type="button" class="btn-texto" id="prox-quitar-guardada">Quitar</button></p>${(siguiente.quitadas ?? []).length ? `<p class="una-linea" id="prox-quitadas" role="status">⚠️ Desde que la guardaste han cambiado tus restricciones: se han quitado ${siguiente.quitadas.length} plato${siguiente.quitadas.length === 1 ? '' : 's'} que ya no valen (${[...new Set(siguiente.quitadas.map((q) => escaparHtml(q.nombre)))].slice(0, 4).join(', ')}). Al empezar esa dieta se elegirán otros.</p>` : ''}`
             : periodoDieta.inicio ? `<button type="button" class="btn-secundario" id="prox-guardar" style="margin-top:0.6rem">Guardar como mi próxima dieta</button><p class="una-linea">Empezará el ${fechaLegible(Motor.inicioDeLaSiguiente(periodoDieta.inicio, periodoDieta.semanas))}, el día después de acabar la actual.</p>`
             : '<p class="una-linea">Para guardarla, di arriba en «Empiezo el» cuándo empieza tu dieta actual: la próxima empezará el día después de acabar.</p>') : ''}
         </div>`;
@@ -2954,6 +2954,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
     const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
+    // #189: la próxima dieta guardada se vuelve a comprobar con las restricciones de ahora: lo que ya no vale se quita y se dice.
+    if (siguiente) {
+      const rev = Motor.revisarSiguienteGuardada(siguiente.recetas, RECETAS_EJEMPLO, alergiasPreferencias);
+      if (rev.quitadas.length) {
+        siguiente = { ...siguiente, recetas: rev.validas, quitadas: [...(siguiente.quitadas ?? []), ...rev.quitadas.map((q) => ({ nombre: q.nombre, motivo: q.motivo }))].slice(-40) };
+        guardarSiguiente();
+      }
+    }
     const fijasPropias = [...semanaFija].map(([k, v]) => ({ dia: k[0], franja: k.slice(2), receta: v }));
     const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias };
     const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador);
