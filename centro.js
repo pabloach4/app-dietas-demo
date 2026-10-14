@@ -29,6 +29,7 @@
   let personaAbierta = null;
 
   function cargarLibreria() {
+    if (window.supabase && window.supabase.createClient) return Promise.resolve(); // (la prueba de navegador pone uno simulado)
     return new Promise((ok, mal) => {
       const s = document.createElement('script');
       s.src = LIBRERIA; s.crossOrigin = 'anonymous';
@@ -57,7 +58,7 @@
       <p><code>insert into public.nutricionistas (user_id) select id from auth.users where email = '${esc(sesion.user.email)}';</code></p>
       <p class="subt">Después recarga esta página.</p>
       <button class="sec" id="cc-salir">Salir</button></div>`;
-    document.getElementById('cc-salir').addEventListener('click', async () => { await sb.auth.signOut(); pantallaEntrar(); });
+    document.getElementById('cc-salir').addEventListener('click', async () => { parar(); await sb.auth.signOut(); pantallaEntrar(); });
   }
 
   async function cargarDatos() {
@@ -220,7 +221,67 @@
     });
   }
 
+  // --- #213: alertas al momento (Supabase Realtime), título con el contador, notificaciones del navegador y respaldo cada 60 s ---
+  // Las reglas de acceso (RLS) mandan: la cuenta de Pablo solo recibe lo que puede leer. Sin Realtime activo (docs/supabase/003-tiempo-real.sql)
+  // funciona el respaldo: se recarga cada 60 s y también avisa de lo que no conocía.
+  let canal = null; let realtimeOk = false; let respaldo = null; let recargando = false; let temporizadorRecarga = null; let ocultarAviso = null;
+  const editando = () => Boolean(edicion) || Boolean(document.activeElement && document.activeElement.matches && document.activeElement.matches('textarea, input, select') && cuerpo.contains(document.activeElement));
+  function actualizarTitulo() { document.title = Motor.tituloCentro(Motor.alertasSinAtender(datos.alertas, datos.gestion)); }
+  function mostrarAviso(a) {
+    const caja = document.getElementById('cc-aviso');
+    const t = Motor.textoNotificacion(a, contactoDe(a.usuario));
+    caja.hidden = false;
+    caja.innerHTML = '<strong>🔔 ' + esc(t.titulo) + '</strong> · ' + esc(t.cuerpo) + ' <button class="sec" id="cc-aviso-ver">Ver</button>';
+    document.getElementById('cc-aviso-ver').addEventListener('click', () => { caja.hidden = true; edicion = null; personaAbierta = null; vista = 'alertas'; pintar(); window.scrollTo(0, 0); });
+    clearTimeout(ocultarAviso); ocultarAviso = setTimeout(() => { caja.hidden = true; }, 30000);
+  }
+  function notificar(a) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const t = Motor.textoNotificacion(a, contactoDe(a.usuario)); // solo «Nueva alerta · prioritaria» y el correo: nada de salud
+    const n = new Notification(t.titulo, { body: t.cuerpo, tag: 'alerta-' + a.id });
+    n.onclick = () => { window.focus(); edicion = null; personaAbierta = a.usuario; pintar(); n.close(); };
+  }
+  function anunciar(a) {
+    actualizarTitulo(); mostrarAviso(a); notificar(a);
+    if (!editando()) pintar(); // si Pablo está escribiendo una nota, no se le repinta debajo: ve el aviso y pulsa «Ver»
+  }
+  function alertaLlega(a) {
+    const r = Motor.mezclarAlerta(datos.alertas, a);
+    if (!r.esNueva) return;
+    datos.alertas = r.lista;
+    anunciar(a);
+  }
+  async function refrescar() {
+    if (recargando || !sb) return;
+    recargando = true;
+    try {
+      const antes = datos.alertas;
+      await cargarDatos();
+      const nuevas = Motor.alertasNuevas(antes, datos.alertas);
+      actualizarTitulo();
+      if (nuevas.length) { mostrarAviso(nuevas[0]); nuevas.forEach(notificar); }
+      if (!editando()) pintar();
+    } catch { /* sin red: se reintenta en el próximo ciclo */ } finally { recargando = false; }
+  }
+  const refrescarEnUnRato = () => { clearTimeout(temporizadorRecarga); temporizadorRecarga = setTimeout(refrescar, 1200); };
+  function suscribir() {
+    if (canal || !sb || typeof sb.channel !== 'function') return;
+    try {
+      canal = sb.channel('centro')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alertas' }, (p) => { if (p && p.new) alertaLlega(p.new); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'perfiles' }, refrescarEnUnRato)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'planes' }, refrescarEnUnRato)
+        .subscribe((estado) => { realtimeOk = estado === 'SUBSCRIBED'; });
+    } catch { realtimeOk = false; }
+    if (!respaldo) respaldo = setInterval(() => { if (!realtimeOk) refrescar(); }, Motor.RESPALDO_MS);
+  }
+  function parar() {
+    if (canal && sb) { try { sb.removeChannel(canal); } catch { /* ya cerrado */ } }
+    canal = null; realtimeOk = false; clearInterval(respaldo); respaldo = null; document.title = Motor.tituloCentro(0);
+  }
+
   function pintar() {
+    actualizarTitulo();
     if (edicion) cuerpo.innerHTML = pintarEditor();
     else if (personaAbierta) cuerpo.innerHTML = pintarFicha(personaAbierta);
     else {
@@ -228,11 +289,13 @@
       cuerpo.innerHTML = `<div class="pestanas" role="tablist">
           <button role="tab" aria-selected="${vista === 'alertas'}" data-v="alertas">Alertas${n ? ` (${n})` : ''}</button>
           <button role="tab" aria-selected="${vista === 'personas'}" data-v="personas">Personas</button>
-          <button class="sec" id="cc-recargar">Recargar</button><button class="sec" id="cc-salir">Salir</button></div>
+          ${'Notification' in window && Notification.permission === 'default' ? '<button class="sec" id="cc-notif">Avisarme con notificaciones</button>' : ''}<button class="sec" id="cc-recargar">Recargar</button><button class="sec" id="cc-salir">Salir</button></div>
         ${vista === 'alertas' ? pintarAlertas() : pintarPersonas()}`;
       cuerpo.querySelectorAll('[data-v]').forEach((b) => b.addEventListener('click', () => { vista = b.dataset.v; pintar(); }));
       document.getElementById('cc-recargar').addEventListener('click', () => iniciar());
-      document.getElementById('cc-salir').addEventListener('click', async () => { await sb.auth.signOut(); pantallaEntrar(); });
+      const notif = document.getElementById('cc-notif');
+      if (notif) notif.addEventListener('click', async () => { try { await Notification.requestPermission(); } catch { /* el navegador no lo permite */ } pintar(); });
+      document.getElementById('cc-salir').addEventListener('click', async () => { parar(); await sb.auth.signOut(); pantallaEntrar(); });
     }
     activarEditor();
     const revisar = document.getElementById('cc-revisar');
@@ -262,7 +325,7 @@
     if (n.error) { cuerpo.innerHTML = `<div class="tarjeta"><p>Error al comprobar la cuenta: ${esc(n.error.message)}</p></div>`; return; }
     if (!n.data.length) return pantallaNoNutricionista(sesion);
     cuerpo.innerHTML = '<p class="subt">Cargando datos…</p>';
-    try { await cargarDatos(); pintar(); } catch (e) { cuerpo.innerHTML = `<div class="tarjeta"><p>Error al cargar: ${esc(e.message)}</p></div>`; }
+    try { await cargarDatos(); pintar(); suscribir(); } catch (e) { cuerpo.innerHTML = `<div class="tarjeta"><p>Error al cargar: ${esc(e.message)}</p></div>`; }
   }
 
   cargarLibreria().then(() => {

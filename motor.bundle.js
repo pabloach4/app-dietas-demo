@@ -58,6 +58,7 @@ var Motor = (() => {
     RECETAS_CATALOGO_INGREDIENTES_CSV: () => RECETAS_CATALOGO_INGREDIENTES_CSV,
     RECETAS_EJEMPLO_CSV: () => RECETAS_EJEMPLO_CSV,
     RECETAS_EJEMPLO_INGREDIENTES_CSV: () => RECETAS_EJEMPLO_INGREDIENTES_CSV,
+    RESPALDO_MS: () => RESPALDO_MS,
     SEMANAS_MAX: () => SEMANAS_MAX,
     SEMANAS_MIN: () => SEMANAS_MIN,
     SEMANAS_POR_DEFECTO: () => SEMANAS_POR_DEFECTO,
@@ -73,7 +74,9 @@ var Motor = (() => {
     accionReintentoNube: () => accionReintentoNube,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
     alertaParaPablo: () => alertaParaPablo,
+    alertasNuevas: () => alertasNuevas,
     alertasPorSubir: () => alertasPorSubir,
+    alertasSinAtender: () => alertasSinAtender,
     alternarFavorita: () => alternarFavorita,
     alternativasParaSlot: () => alternativasParaSlot,
     anadirAlerta: () => anadirAlerta,
@@ -187,6 +190,7 @@ var Motor = (() => {
     marcarYaEnCasa: () => marcarYaEnCasa,
     medidaCasera: () => medidaCasera,
     medidasDesdeCsv: () => medidasDesdeCsv,
+    mezclarAlerta: () => mezclarAlerta,
     moverSesion: () => moverSesion,
     necesitaVentanaNube: () => necesitaVentanaNube,
     noSeReescala: () => noSeReescala,
@@ -219,7 +223,9 @@ var Motor = (() => {
     semanasValidas: () => semanasValidas,
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
+    textoNotificacion: () => textoNotificacion,
     textoOtrasAlergias: () => textoOtrasAlergias,
+    tituloCentro: () => tituloCentro,
     totalesPorDia: () => totalesPorDia,
     usosVariedadSemana: () => usosVariedadSemana,
     validarCasilla: () => validarCasilla,
@@ -6445,5 +6451,26 @@ R184,nueces,10,grasa,170187,tal cual,`;
     pablo: "Revisado por Pablo",
     pablo_con_cambios: "Revisado por Pablo, con cambios tuyos"
   };
+
+  // src/motor/centro-alertas.ts
+  function alertasSinAtender(alertas, gestion) {
+    const hablado = new Set(gestion.filter((g) => g.estado === "hablado").map((g) => g.alerta_id));
+    return alertas.filter((a2) => !hablado.has(a2.id)).length;
+  }
+  function tituloCentro(sinAtender) {
+    return `${sinAtender > 0 ? `(${sinAtender > 99 ? "99+" : sinAtender}) ` : ""}Centro de control`;
+  }
+  function textoNotificacion(a2, contacto) {
+    return { titulo: `Nueva alerta${a2.prioritaria ? " \xB7 prioritaria" : ""}`, cuerpo: contacto && contacto.trim() ? contacto.trim() : "Persona sin correo guardado" };
+  }
+  function mezclarAlerta(lista, nueva) {
+    if (lista.some((a2) => a2.id === nueva.id)) return { lista, esNueva: false };
+    return { lista: [nueva, ...lista].sort((a2, b) => String(b.creada ?? "").localeCompare(String(a2.creada ?? ""))), esNueva: true };
+  }
+  function alertasNuevas(conocidas, recibidas) {
+    const ya = new Set(conocidas.map((a2) => a2.id));
+    return recibidas.filter((a2) => !ya.has(a2.id));
+  }
+  var RESPALDO_MS = 6e4;
   return __toCommonJS(motor_exports);
 })();
