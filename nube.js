@@ -38,7 +38,7 @@
 
   const TEXTO_CONSENTIMIENTO = `<p><strong>Guardar en la nube para que Pablo te vea</strong></p>
     <p>Si lo activas, lo que metes en la app (tus respuestas, tu plan, tus comidas y los avisos) se guarda en un servidor de Supabase en Frankfurt (Unión Europea), que trabaja para Pablo como encargado del tratamiento. Pablo podrá verlo, escribirte y revisar tu plan. No hace falta contraseña ni enlace: el correo que escribas es el que usará Pablo para contactarte.</p>
-    <p>Puedes desconectarte cuando quieras y borrar todo lo guardado desde este mismo apartado. Si no lo activas, la app sigue funcionando igual, solo en este aparato.</p>
+    <p>Puedes desconectarte cuando quieras y borrar todo lo guardado desde Perfil › Que Pablo vea mis datos.</p>
     <p class="subt">Versión de prueba: todavía no metas datos reales de pacientes.</p>`;
 
   function pintar(sesion) {
@@ -85,12 +85,12 @@
 
   let subiendo = false;
   async function subir(motivo) {
-    if (!sb || subiendo) return;
+    if (!sb || subiendo) return false;
     const { data } = await sb.auth.getSession();
     const sesion = data && data.session;
-    if (!sesion) return;
+    if (!sesion) return false;
     const local = leerLocal();
-    if (!local.consentimiento || local.consentimiento.version !== Motor.VERSION_CONSENTIMIENTO_NUBE) return decir('Falta aceptar el consentimiento de la nube.');
+    if (!local.consentimiento || local.consentimiento.version !== Motor.VERSION_CONSENTIMIENTO_NUBE) { decir('Falta aceptar el consentimiento de la nube.'); return false; }
     subiendo = true;
     try {
       const uid = sesion.user.id;
@@ -134,8 +134,10 @@
       guardarLocal(local);
       estado = motivo === 'a mano' ? 'Subido.' : '';
       pintar(sesion);
+      return true;
     } catch (e) {
       decir(`No se ha podido subir (${e && e.message ? e.message : e}). Lo intento otra vez la próxima vez que cambies algo.`);
+      return false;
     } finally {
       subiendo = false;
     }
@@ -225,8 +227,8 @@
         const r = await sb.auth.signInAnonymously();
         if (r.error) throw r.error;
       }
-      await subir('ventana');
-      avisoPendiente(false);
+      const ok = await subir('ventana');
+      avisoPendiente(!ok);
     } catch (e) {
       avisoPendiente(true); // el correo queda en local y se reintenta al volver
     }
@@ -247,8 +249,21 @@
       continuar();
     })().catch(() => continuar());
   });
-  const reintentar = () => { if (pendiente || (leerLocal().contacto && sb)) subir('reintento').then(() => avisoPendiente(false)).catch(() => {}); };
+  let reintentando = false;
+  async function reintentar() {
+    if (!sb || reintentando) return;
+    const { data } = await sb.auth.getSession();
+    const local = leerLocal();
+    const accion = Motor.accionReintentoNube({ nubeOfrecida: true, haySesion: Boolean(data && data.session), contacto: local.contacto, consentimientoVersion: local.consentimiento && local.consentimiento.version });
+    if (accion === 'nada') { if (pendiente) avisoPendiente(false); return; }
+    reintentando = true;
+    try {
+      if (accion === 'entrar_y_subir') { const r = await sb.auth.signInAnonymously(); if (r.error) throw r.error; }
+      avisoPendiente(!(await subir('reintento')));
+    } catch { avisoPendiente(true); } finally { reintentando = false; }
+  }
   window.addEventListener('online', reintentar);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reintentar(); });
 
   let temporizador = null;
   const subirEnUnRato = () => { clearTimeout(temporizador); temporizador = setTimeout(() => subir('auto'), 2500); };
@@ -258,6 +273,7 @@
   cargarLibreria().then(async () => {
     sb = window.supabase.createClient(URL_NUBE, CLAVE_PUBLICA, { auth: { persistSession: true, detectSessionInUrl: true } });
     resolverListo();
+    reintentar();
     const { data } = await sb.auth.getSession();
     pintar(data && data.session);
     traerPlanDePablo();
