@@ -32,7 +32,7 @@
   .progreso { display: flex; gap: 6px; margin: 0.9rem 0 0.2rem; }
   .progreso .punto { flex: 1; height: 6px; border-radius: 3px; background: var(--borde); }
   .progreso .punto.hecho, .progreso .punto.actual { background: var(--verde); }
-  .paso-nombre { color: var(--gris); font-size: 0.85rem; margin: 0.3rem 0 1rem; }
+  .paso-nombre { color: var(--gris); font-size: 0.875rem; margin: 0.3rem 0 1rem; }
 
   .ejemplos { display: flex; gap: 0.5rem; flex-wrap: wrap; padding: 0.2rem 0 0.8rem; }
   .ejemplos button {
@@ -80,7 +80,7 @@
   .fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
   .check { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; font-size: 0.95rem; }
   .check input { width: 1.2rem; height: 1.2rem; flex: none; }
-  small.ayuda { display: block; color: var(--gris); font-size: 0.85rem; margin: -0.5rem 0 0.7rem; }
+  small.ayuda { display: block; color: var(--gris); font-size: 0.875rem; margin: -0.5rem 0 0.7rem; }
 
   .sesion-card, .franja-card {
     border: 1px solid var(--borde); border-radius: 12px; padding: 0.8rem; margin-bottom: 0.7rem; background: var(--tarjeta-suave);
@@ -897,17 +897,18 @@
 <header class="top">
   <h1 id="titulo-pantalla">Tu plan, paso a paso</h1>
   <button type="button" class="btn-texto novedades-aviso" id="novedades-aviso" hidden></button>
-  <p class="subt">Cuatro pasos y tienes tu semana de comidas. Tu último perfil se recuerda solo en este navegador.</p>
+  <p class="subt">Cuatro pasos y tienes tu semana. Tu perfil se recuerda solo en este navegador.</p>
   <p class="subt" id="aviso-guardado" hidden>Se ha precargado tu último perfil calculado. <button type="button" id="empezar-de-cero" class="btn-texto" style="padding:0">Empezar de cero</button><br><strong>No se guardan</strong> tu salud, alergias ni preferencias (tu lista negra sí): antes de calcular tendrás que revisarlos en el paso 4.</p>
   <p class="error-inline" id="aviso-almacenamiento" role="status" hidden>⚠️ Este navegador no deja guardar datos (modo privado, almacenamiento bloqueado o lleno). La app sigue funcionando, pero tu perfil, favoritas, cambios de receta y lista de la compra a mano <strong>no se conservarán al recargar</strong>.</p>
-  <p class="antetitulo" id="ejemplos-titulo">Probar con un ejemplo</p>
-  <div class="ejemplos" role="group" aria-labelledby="ejemplos-titulo">
+  <details class="plegable ejemplos-caja"><summary style="font-size:0.9rem;font-weight:600">Probar con un ejemplo</summary>
+  <div class="ejemplos" role="group" aria-label="Probar con un ejemplo">
     <button type="button" data-perfil="general">General</button>
     <button type="button" data-perfil="maraton">Maratón</button>
     <button type="button" data-perfil="hyrox">Hyrox</button>
     <button type="button" data-perfil="diabetes">Con diabetes</button>
   </div>
-  <details class="plegable" style="margin-bottom:0.6rem"><summary style="font-size:0.85rem;font-weight:600">¿Qué se borra al cargar un ejemplo?</summary><p class="subt" id="alcance-reset" style="font-size:0.8rem;margin:0 0 0.4rem">Al cargar un ejemplo o empezar de cero se restablecen el perfil, alergias, preferencias, horarios y contexto por día y «deshacer». No se borran tu lista de la compra hecha a mano, las competiciones anotadas ni tus recetas favoritas.</p><p class="subt" style="font-size:0.8rem;margin:0 0 0.4rem">Esto es una demo sin servidor, con las mismas preguntas que hará la app. <a href="index.html">Formulario técnico →</a></p></details>
+  <details class="plegable" style="margin-bottom:0.6rem"><summary style="font-size:0.9rem;font-weight:600">¿Qué se borra al cargar un ejemplo?</summary><p class="subt" id="alcance-reset" style="margin:0 0 0.4rem">Al cargar un ejemplo o empezar de cero se restablecen el perfil, alergias, preferencias, horarios y contexto por día y «deshacer». No se borran tu lista de la compra hecha a mano, las competiciones anotadas ni tus recetas favoritas.</p><p class="subt" style="font-size:0.8rem;margin:0 0 0.4rem">Esto es una demo sin servidor, con las mismas preguntas que hará la app. <a href="index.html">Formulario técnico →</a></p></details>
+  </details>
   <div class="progreso" id="progreso"></div>
   <p class="paso-nombre" id="paso-nombre"></p>
 </header>
@@ -927,6 +928,9 @@
 <style>
   body.sin-consentimiento .ejemplos, body.sin-consentimiento #ejemplos-titulo, body.sin-consentimiento #progreso, body.sin-consentimiento #paso-nombre,
   body.sin-consentimiento .env:not(#consentimiento), body.sin-consentimiento #barra-pasos, body.sin-consentimiento .subt, body.sin-consentimiento details.plegable { display: none !important; }
+
+  /* #208 parte 2: ningún texto del cuestionario por debajo de 14 px (los temas anteriores lo dejaban en 13,4 y 13,6). */
+  .campo label, .ejemplos button, small.ayuda, .paso-nombre { font-size: 0.9rem; }
 
   /* ===== Modo oscuro (#208, parte 1). Las variables del tema ya mandan en todo el CSS; aquí solo se redefinen. Lo que sigue a las variables
      de "light" (peligro, tintes, barras translúcidas) son los antiguos colores fijos, ahora con nombre. Contraste AA comprobado por la prueba de navegador. ===== */
@@ -1031,7 +1035,7 @@
           <label class="check"><input type="checkbox" id="revision-confirmada"> He revisado salud, alergias e intolerancias y alimentos a evitar, y están como corresponde</label>
         </div>
         <h2>4. Salud</h2>
-        <small class="ayuda">Si marcas algo aquí, no calculamos nada: te decimos que lo hables con Pablo en consulta.</small>
+        <details class="plegable"><summary style="font-size:0.9rem;font-weight:600">Saber más</summary><small class="ayuda">Si marcas algo aquí, no calculamos nada: te decimos que lo hables con Pablo en consulta.</small></details>
         <label class="check"><input type="checkbox" class="salud" value="FODMAP / SII"> FODMAP / síndrome del intestino irritable</label>
         <label class="check"><input type="checkbox" class="salud" value="diabetes"> Diabetes</label>
         <label class="check"><input type="checkbox" class="salud" value="embarazo"> Embarazo</label>
@@ -1041,7 +1045,7 @@
 
       <div class="tarjeta" id="tarjeta-cribado">
         <h2>Energía y bienestar (opcional)</h2>
-        <small class="ayuda">Unas preguntas para saber cómo vas de energía y de alimentación. Son opcionales, puedes saltártelas y no son un diagnóstico. Si alguna señal lo pide, Pablo hablará contigo.</small>
+        <details class="plegable"><summary style="font-size:0.9rem;font-weight:600">Saber más</summary><small class="ayuda">Unas preguntas para saber cómo vas de energía y de alimentación. Son opcionales, puedes saltártelas y no son un diagnóstico. Si alguna señal lo pide, Pablo hablará contigo.</small></details>
         <div id="cribado-preguntas"></div>
       </div>
 
@@ -1071,7 +1075,7 @@
 
       <div class="tarjeta">
         <h2>7. Tus comidas</h2>
-        <small class="ayuda">Desmarca las que no hagas (versión de 3-4 comidas); la hora coloca la toma antes/después del entreno.</small>
+        <details class="plegable"><summary style="font-size:0.9rem;font-weight:600">Saber más</summary><small class="ayuda">Desmarca las que no hagas (versión de 3-4 comidas); la hora coloca la toma antes/después del entreno.</small></details>
         <div id="franjas"></div>
         <p class="error-inline" id="franjas-error" role="alert" hidden>Activa al menos una comida para poder repartir el día. La app no impone cuántas: eliges tú.</p>
         <label class="check"><input type="checkbox" id="turnos"> Turnos o guardias</label>
@@ -1405,10 +1409,10 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=e023e6f"></script>
-<script src="fuentes.js?v=e023e6f"></script>
-<script src="motor.bundle.js?v=e023e6f"></script>
-<script src="cuestionario.js?v=e023e6f"></script>
-<script src="nube.js?v=e023e6f"></script>
+<script src="novedades.js?v=036d9cb"></script>
+<script src="fuentes.js?v=036d9cb"></script>
+<script src="motor.bundle.js?v=036d9cb"></script>
+<script src="cuestionario.js?v=036d9cb"></script>
+<script src="nube.js?v=036d9cb"></script>
 </body>
 </html>
