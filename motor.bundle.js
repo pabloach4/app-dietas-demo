@@ -2154,7 +2154,8 @@ var Motor = (() => {
             continue;
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
-          if (!mejor || clave(desviacion, dist) < clave(mejor.desviacion, mejor.dist ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist };
+          const falta = faltaProteina(r, factorRedondeado2);
+          if (!mejor || clave(desviacion, dist, falta) < clave(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
         return { elegido: mejor };
@@ -2167,7 +2168,8 @@ var Motor = (() => {
         return intentarBase(lista, filtrar);
       };
       const alcanza = (e) => !!e && e.desviacion <= slot.kcalObjetivo * 0.1;
-      const clave = (desv, dist) => desv > slot.kcalObjetivo * 0.1 ? 1e9 + desv : dist * 1e5 + desv;
+      const faltaProteina = (r, factor) => slot.proteinaObjetivoG === void 0 ? 0 : Math.max(0, slot.proteinaObjetivoG - proteinaServida(r, factor));
+      const clave = (desv, dist, falta = 0) => desv > slot.kcalObjetivo * 0.1 ? 1e9 + desv : dist * 1e5 + desv + 4 * falta;
       const fijada = fijadasPorSlot.get(claveSlotSiOSi(slot));
       const reservada = fijada ? void 0 : reservas.get(claveSlotSiOSi(slot));
       let res = fijada ? { elegido: fijada } : reservada ? { elegido: reservada } : intentar(recetas.filter((r) => esUnico(r) && !idsPedidos.has(r.id)), true);
@@ -2176,7 +2178,7 @@ var Motor = (() => {
         const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
         const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));
         const parejas = primeros.flatMap((p) => segundos.filter((s) => combinanBien(p, s)).map((s) => componerComida([p, s])));
-        const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave(b.elegido.desviacion, b.elegido.dist ?? 0) < clave(a2.elegido.desviacion, a2.elegido.dist ?? 0)) ? b : a2;
+        const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave(b.elegido.desviacion, b.elegido.dist ?? 0, b.elegido.falta ?? 0) < clave(a2.elegido.desviacion, a2.elegido.dist ?? 0, a2.elegido.falta ?? 0)) ? b : a2;
         if (parejas.length) {
           const r2 = intentar(parejas, false);
           res = mejorDe(res, r2);
@@ -2301,6 +2303,10 @@ var Motor = (() => {
       estados.push({ alimento, cubierto: true });
     }
     return estados;
+  }
+  function proteinaServida(r, factor) {
+    const crece = r.ingredientes.some((i) => esPalanca(i.nombre) && rolIngrediente(i.nombre) === "proteina");
+    return r.proteina * (crece ? factor : 1);
   }
 
   // src/motor/lista-compra.ts
