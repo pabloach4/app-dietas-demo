@@ -24,6 +24,7 @@ var Motor = (() => {
     ACTIVIDADES: () => ACTIVIDADES,
     ACTIVIDAD_POR_TIPO: () => ACTIVIDAD_POR_TIPO,
     AVISO_DESCARGA: () => AVISO_DESCARGA,
+    CLAVES_NUBE: () => CLAVES_NUBE,
     COMER_FUERA_CSV: () => COMER_FUERA_CSV,
     CONSERVACION_CSV: () => CONSERVACION_CSV,
     DIAS: () => DIAS,
@@ -35,6 +36,7 @@ var Motor = (() => {
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
     LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
     MAX_BAJADA_COMIDA: () => MAX_BAJADA_COMIDA,
+    MAX_INSTANTANEA: () => MAX_INSTANTANEA,
     MAX_KG_PERDIDOS_CREIBLE: () => MAX_KG_PERDIDOS_CREIBLE,
     MAX_SUBIDA_COMIDA: () => MAX_SUBIDA_COMIDA,
     MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
@@ -57,11 +59,13 @@ var Motor = (() => {
     TEXTO_NIVEL: () => TEXTO_NIVEL,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
+    VERSION_CONSENTIMIENTO_NUBE: () => VERSION_CONSENTIMIENTO_NUBE,
     ZONAS_ICS: () => ZONAS_ICS,
     aHoraTexto: () => aHoraTexto,
     aMinutos: () => aMinutos2,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
     alertaParaPablo: () => alertaParaPablo,
+    alertasPorSubir: () => alertasPorSubir,
     alternarFavorita: () => alternarFavorita,
     alternativasParaSlot: () => alternativasParaSlot,
     anadirAlerta: () => anadirAlerta,
@@ -99,6 +103,7 @@ var Motor = (() => {
     construirEventos: () => construirEventos,
     contextoDiaPorDefecto: () => contextoDiaPorDefecto,
     copiarAlPortapapeles: () => copiarAlPortapapeles,
+    correoValido: () => correoValido,
     crearSemana: () => crearSemana,
     cuadrarDias: () => cuadrarDias,
     definirParametrosReparto: () => definirParametrosReparto,
@@ -136,18 +141,22 @@ var Motor = (() => {
     favoritasValidas: () => favoritasValidas,
     fechaDelDia: () => fechaDelDia,
     fechaLocalISO: () => fechaLocalISO,
+    filaAlerta: () => filaAlerta,
     filtrarCatalogo: () => filtrarCatalogo,
     filtrarPorDias: () => filtrarPorDias,
     finDeLaDieta: () => finDeLaDieta,
     finUltimaPruebaH: () => finUltimaPruebaH,
+    firmaPlan: () => firmaPlan,
     formatearListaPendiente: () => formatearListaPendiente,
     gastoDePrueba: () => gastoDePrueba,
     generarIcs: () => generarIcs,
     generarListaCompra: () => generarListaCompra,
     grupoDeFranja: () => grupoDeFranja,
     horaDeGuardado: () => horaDeGuardado,
+    idAlerta: () => idAlerta,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
     inicioDeLaSiguiente: () => inicioDeLaSiguiente,
+    instantaneaLocal: () => instantaneaLocal,
     itemDesdeGramos: () => itemDesdeGramos,
     leerEvitados: () => leerEvitados,
     limiteFibraG: () => limiteFibraG,
@@ -163,6 +172,7 @@ var Motor = (() => {
     normalizarBusqueda: () => normalizarBusqueda,
     normalizarSobras: () => normalizarSobras,
     normalizarTexto: () => normalizarTexto2,
+    nubeOfrecida: () => nubeOfrecida,
     ordenarCompeticiones: () => ordenarCompeticiones,
     parsearParametrosCSV: () => parsearParametrosCSV,
     parsearPrecios: () => parsearPrecios,
@@ -939,10 +949,17 @@ var Motor = (() => {
   var ALIAS_EXTRA = {
     "ternera / cerdo": ["hamburguesa", "solomillo", "carne picada"],
     "pescado blanco": ["merluza", "bacalao", "lenguado", "rape", "dorada", "lubina"],
-    "pescado azul": ["salmon", "sardina", "caballa"],
+    "pescado azul": ["salmon", "sardina", "caballa", "atun fresco"],
     "cereal crudo": ["pasta"],
     "legumbre cocida": ["garbanzo cocido", "lenteja cocida", "alubia blanca cocida", "alubia roja cocida"],
-    "legumbre seca": ["lenteja seca", "alubia blanca seca"]
+    "legumbre seca": ["lenteja seca", "alubia blanca seca"],
+    // #171 (provisional, pendiente de la tabla de Instinct #193): ingredientes del catálogo que ninguna fila reconocía.
+    "fruto seco": ["almendra", "nuez", "nueces", "avellana", "anacardo", "pistacho", "cacahuete"],
+    "grasa": ["crema de cacahuete", "crema de almendra"],
+    "condimentos": ["perejil", "pimenton", "comino", "canela", "miel", "cacao", "pimienta", "oregano"],
+    "hoja de ensalada": ["lechuga hoja verde", "lechuga romana", "lechuga"],
+    "pan": ["tortilla de trigo"],
+    "queso fresco / requeson / cottage": ["mozzarella"]
   };
   var VERDURA_EXTRA = [
     "judia verde",
@@ -1088,6 +1105,14 @@ var Motor = (() => {
         esRacionRealista: seccionActual === "B"
       });
     }
+    const provisional = (categoria, nombres, r) => {
+      alimentos.push({ categoria: `${categoria} (provisional)`, keywords: nombres.map((n) => tokens(n)), ...r, esBaseDeGuarnicion: false, esRacionRealista: true });
+    };
+    provisional("Fruta fresca", ["platano", "naranja", "manzana", "pera", "fresa", "mandarina", "kiwi", "pina", "melon", "sandia", "uva", "melocoton", "albaricoque", "cereza", "mango"], { recomendado: 300, tope: 400 });
+    provisional("Tofu / tempeh", ["tofu", "tempeh", "seitan"], { minimo: 80, recomendado: 250, tope: 300 });
+    provisional("Hummus", ["hummus"], { tope: 100 });
+    const fruto = alimentos.find((a2) => normalizar(a2.categoria) === "fruto seco");
+    if (fruto && fruto.minimo === void 0) fruto.minimo = 10;
     const verdura = alimentos.find((a2) => normalizar(a2.categoria) === "verdura");
     if (verdura) verdura.keywords.push(...VERDURA_EXTRA.map((v) => tokens(v)));
     return { alimentos, pesoPlatoRecomendado, pesoPlatoTope, guarnicionMinima, protegidos };
@@ -1911,7 +1936,7 @@ var Motor = (() => {
     }));
   }
   function incumplimientosRacion(franja, receta, factorRedondeado, opciones = {}) {
-    const protegidos = receta.ingredientes.filter((i) => esIngredienteProtegido(i.nombre)).map((i) => i.nombre);
+    const protegidos = receta.ingredientes.filter((i) => esIngredienteProtegido(i.nombre) || ["fruta_lacteo", "condimento"].includes(rolIngrediente(i.nombre))).map((i) => i.nombre);
     return { protegidos, incumplimientos: validarPlatoGenerado(franja, gramosEscalados(receta, factorRedondeado), opciones).incumplimientos };
   }
   function filtrarPorDias(items, dias) {
@@ -5958,6 +5983,59 @@ R184,nueces,10,grasa,170187,tal cual,`;
       dias.push({ dia, objetivo: Math.round(objetivo), servidoAntes: Math.round(antes), servido: Math.round(servido), cuadrado, ...aviso ? { aviso } : {} });
     }
     return { asignaciones: salida, dias, avisos };
+  }
+
+  // src/motor/nube-datos.ts
+  var CLAVES_NUBE = [
+    "app-dietas-consentimiento",
+    "app-dietas-ultimo-perfil",
+    "app-dietas-periodo",
+    "app-dietas-siguiente",
+    "app-dietas-lista-negra",
+    "app-dietas-recetas-si-o-si",
+    "app-dietas-semana-fija",
+    "app-dietas-volumen",
+    "app-dietas-comidas-hechas",
+    "app-dietas-comidas-fuera",
+    "app-dietas-recetas-favoritas",
+    "app-dietas-calendario",
+    "app-dietas-sustituciones",
+    "app-dietas-lista-compra-manual",
+    "app-dietas-alertas-pablo"
+  ];
+  var VERSION_CONSENTIMIENTO_NUBE = "2026-10-14-nube";
+  var MAX_INSTANTANEA = 4e5;
+  function nubeOfrecida(search) {
+    return new URLSearchParams(search).get("nube") === "1";
+  }
+  function instantaneaLocal(leer) {
+    const datos = {};
+    for (const clave of CLAVES_NUBE) {
+      const crudo = leer(clave);
+      if (crudo === null || crudo === "") continue;
+      try {
+        datos[clave] = JSON.parse(crudo);
+      } catch {
+      }
+    }
+    return { datos, tamano: JSON.stringify(datos).length };
+  }
+  function firmaPlan(asignaciones) {
+    const texto = [...asignaciones].map((a2) => `${a2.dia}|${a2.franja}|${a2.receta}|${Math.round((a2.racionAjustada ?? 1) * 100)}`).sort().join(";");
+    let h = 5381;
+    for (let i = 0; i < texto.length; i++) h = (h * 33 ^ texto.charCodeAt(i)) >>> 0;
+    return `${asignaciones.length}-${h.toString(36)}`;
+  }
+  var idAlerta = (a2) => `${a2.fecha.slice(0, 10)}|${a2.firma}`;
+  function alertasPorSubir(alertas, subidas) {
+    const ya = new Set(subidas);
+    return alertas.filter((a2) => a2 && typeof a2.fecha === "string" && typeof a2.firma === "string" && !ya.has(idAlerta(a2)));
+  }
+  function filaAlerta(a2) {
+    return { tipo: "cribado", prioritaria: a2.prioritaria === true, datos: a2 };
+  }
+  function correoValido(c) {
+    return /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(c.trim());
   }
   return __toCommonJS(motor_exports);
 })();

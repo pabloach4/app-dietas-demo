@@ -3347,6 +3347,13 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     pintarCalendario();
     pintarListaCompra(asignacionSemana);
     renderizarZonaDeshacer();
+    // #199: aviso para web/nube.js (solo actúa si la persona activó «Que Pablo vea mis datos»): el plan que acaba de salir.
+    window.dispatchEvent(new CustomEvent('app-dietas:plan', { detail: {
+      kcalMedia: plan.kcalMedia,
+      dias: plan.dias.map((d) => ({ dia: d.dia, tipo: d.tipo, kcal: d.kcal, proteinaG: d.proteinaG, grasaG: d.grasaG, hidratoG: d.hidratoG })),
+      asignaciones: asignacionSemana.asignaciones.map((a) => ({ dia: a.dia, franja: a.franja, receta: a.receta, racionAjustada: a.racionAjustada, kcalResultante: a.kcalResultante })),
+      huecos: asignacionSemana.huecos.length,
+    } }));
 
     // Issue #21: mensaje en español llano primero, el código técnico se queda visible pero en pequeño.
     // Issue #169: lo escrito en «Otros alimentos a evitar» que la app no sabe filtrar se dice aquí; no se calla.
