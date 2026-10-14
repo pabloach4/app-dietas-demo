@@ -3200,6 +3200,8 @@ Coca-Cola Espa\xF1a,Fanta Lim\xF3n,botella 500 ml,fanta limon botella,,19,500,,,
 Coca-Cola Espa\xF1a,Sprite,botella 500 ml,sprite botella,,19,500,,,oficial,https://www.coca-cola.com/es/es/brands/sprite;https://www.cocacolaep.com/assets/legacy-assets/Spain/Informe-Sostenibilidad/Informe-Sostenibilidad-2023-CCEP.pdf,2026-10-14
 Coca-Cola Espa\xF1a,Aquarius Lim\xF3n,botella 500 ml,aquarius limon botella,,18,500,,,oficial,https://www.coca-cola.com/es/es/brands/descubre-aquarius/productos;https://bodegasoviedo.com/products/caja-24-unidades-aquarius-limon-botella-50cl,2026-10-14
 Coca-Cola Espa\xF1a,Aquarius Naranja,botella 500 ml,aquarius naranja botella,,19,500,,,oficial,https://www.coca-cola.com/es/es/brands/descubre-aquarius/productos;https://fruteriacantomeu.com/products/aquarius-naranja-500ml,2026-10-14
+Ejemplo acotado de bar,Copa de vino tinto Ribeiro Gandarela,copa orientativa 125-150 ml,copa vino gandarela,,65,,125,150,estimacion,https://vinoribeiro.eu/vino-cosechero-tinto-075/;https://info.comandator.com/cuantas-copas-salen-de-una-botella-de-vino/,2026-10-14
+Ejemplo acotado de bar,Caf\xE9 con leche entera sin az\xFAcar mitad caf\xE9 mitad leche,taza orientativa 125-200 ml,cafe con leche entera mitad y mitad,,36.5,,125,200,estimacion,https://cafesabora.com/es/el-caf%C3%A9-con-leche-en-cafeter%C3%ADa-espa%C3%B1ola-qu%C3%A9-es-y-c%C3%B3mo-se-hace;https://lechepascual.es/productos/leches-clasicas/leche-entera-botella-sostenible/;https://whatyoueat.io/foods/171891,2026-10-14
 `;
 
   // src/motor/sobras.ts

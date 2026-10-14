@@ -162,6 +162,17 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   });
   document.getElementById('btn-atras').addEventListener('click', () => { if (pasoActual > 1) mostrarPaso(pasoActual - 1); });
 
+  // #189 (QA #188, hallazgo 4): el mensaje de «falta algo / no vale» tiene que verse sin desplazarse, aunque la pantalla vuelva al primer paso.
+  function avisarIncompleto() {
+    // QA #188 (hallazgo 4): el mensaje sale fijo arriba de la pantalla, siempre a la vista, aunque el formulario vuelva al primer paso.
+    const e = document.getElementById('incompleto');
+    e.setAttribute('role', 'alert');
+    e.setAttribute('tabindex', '-1');
+    Object.assign(e.style, { position: 'fixed', top: 'max(0.75rem, env(safe-area-inset-top))', left: '0.75rem', right: '0.75rem', zIndex: '60', boxShadow: '0 6px 24px rgba(0,0,0,.25)', cursor: 'pointer', margin: '0' });
+    const cerrar = () => { e.hidden = true; e.removeEventListener('click', cerrar); document.removeEventListener('input', cerrar); };
+    e.addEventListener('click', cerrar);
+    document.addEventListener('input', cerrar); // en cuanto se corrige un dato, el mensaje se va
+  }
   function mostrarFormulario() {
     document.body.classList.remove('vista-resultado');
     document.getElementById('titulo-pantalla').textContent = 'Tu plan, paso a paso';
@@ -3335,6 +3346,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       document.getElementById('revision-precargado').classList.add('error');
       document.getElementById('incompleto').hidden = false;
       document.getElementById('incompleto').textContent = 'Antes de calcular, revisa salud, alergias e intolerancias y alimentos a evitar (no se guardaron) y marca la casilla de confirmación.';
+      avisarIncompleto();
       mostrarPaso(4);
       document.getElementById('revision-confirmada').focus();
       return;
@@ -3354,6 +3366,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (resultado.estado === 'incompleto') {
       document.getElementById('incompleto').hidden = false;
       document.getElementById('incompleto').textContent = resultado.mensaje;
+      avisarIncompleto();
       mostrarPaso(resultado.falta === 'sesiones' ? 3 : 1); // los datos básicos están en el paso 1; las sesiones, en el 3
       return;
     }
@@ -3369,6 +3382,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     } catch (e) {
       document.getElementById('incompleto').hidden = false;
       document.getElementById('incompleto').textContent = e.message;
+      avisarIncompleto();
       return;
     }
     revisionPerfilPendiente = false;
