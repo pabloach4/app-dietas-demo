@@ -2168,7 +2168,21 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     };
   }
 
+  // #210: en la pantalla de freno (derivación a consulta) la tarjeta «Que Pablo vea mis datos» (solo con ?nube=1) va debajo, para que quien
+  // más necesita que Pablo le contacte pueda dejarle su correo. Es el mismo nodo que gestiona web/nube.js: se mueve, no se duplica.
+  const nubeOriginal = { padre: null, siguiente: null };
+  function nubeAlFreno() {
+    const tarjeta = document.getElementById('tarjeta-nube');
+    if (!tarjeta || tarjeta.hidden) return; // sin ?nube=1 nada cambia
+    if (!nubeOriginal.padre) { nubeOriginal.padre = tarjeta.parentNode; nubeOriginal.siguiente = tarjeta.nextSibling; }
+    document.getElementById('derivar').after(tarjeta);
+  }
+  function nubeDeVuelta() {
+    const tarjeta = document.getElementById('tarjeta-nube');
+    if (tarjeta && nubeOriginal.padre && tarjeta.parentNode !== nubeOriginal.padre) nubeOriginal.padre.insertBefore(tarjeta, nubeOriginal.siguiente);
+  }
   function ocultarPantallas() {
+    nubeDeVuelta();
     ['incompleto', 'derivar', 'elegir-deporte', 'resultado'].forEach((id) => { document.getElementById(id).hidden = true; });
   }
 
@@ -3531,7 +3545,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       descartarPlanAnterior(); // la pantalla de derivación no deja ningún plan anterior visible ni exportable (#99)
       ocultarFormulario();
       document.getElementById('derivar').hidden = false;
-      document.getElementById('derivar-texto').textContent = '😔 ' + resultado.mensaje;
+      nubeAlFreno(); document.getElementById('derivar-texto').textContent = '😔 ' + resultado.mensaje;
       document.getElementById('derivar').focus();
       return;
     }
