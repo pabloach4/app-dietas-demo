@@ -173,6 +173,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   // --- Cribado de bajo peso y baja energía (#195): preguntas opcionales; si salta un disparador se guarda una alerta para Pablo ---
   // Sin correos ni avisos a nadie: la lista vive en este navegador (Perfil › Alertas para Pablo). A la persona solo se le dice, en neutro, que Pablo hablará con ella.
   const CLAVE_ALERTAS = 'app-dietas-alertas-pablo';
+  const TEXTO_AGUA = 'No hay un valor perfecto de agua: bebe la que tu cuerpo te pida. Aun así, es aconsejable beber algo más de 1,5 L al día (agua total: la que bebes y la que ya trae la comida).'; // Pablo, 14/10 (#159)
   let avisoCribadoHoy = ''; // mensaje neutro para «Hoy» tras calcular
   (function construirCribado() {
     const cont = document.getElementById('cribado-preguntas');
@@ -944,7 +945,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ${bloqueFuera}
       ${bloqueEntreno}
       ${cardCompeticionHtml(dia)}
-      ${mas('numeros', 'Tus números de hoy', numeros)}`;
+      ${mas('numeros', 'Tus números de hoy', numeros)}
+      ${mas('agua', 'Agua', '<p class="hoy-nota" id="hoy-agua">' + TEXTO_AGUA + '</p>')}`;
     const btnFin = document.getElementById('aviso-fin-compra');
     if (btnFin) btnFin.addEventListener('click', () => { proxima.abierta = true; renderizarListaCompra(); mostrarPanel('compra'); });
   }
