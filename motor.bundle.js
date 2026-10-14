@@ -187,6 +187,7 @@ var Motor = (() => {
     medidaCasera: () => medidaCasera,
     medidasDesdeCsv: () => medidasDesdeCsv,
     moverSesion: () => moverSesion,
+    necesitaVentanaNube: () => necesitaVentanaNube,
     noSeReescala: () => noSeReescala,
     normalizarBusqueda: () => normalizarBusqueda,
     normalizarSobras: () => normalizarSobras,
@@ -6344,7 +6345,7 @@ R184,nueces,10,grasa,170187,tal cual,`;
     "app-dietas-lista-compra-manual",
     "app-dietas-alertas-pablo"
   ];
-  var VERSION_CONSENTIMIENTO_NUBE = "2026-10-14-nube";
+  var VERSION_CONSENTIMIENTO_NUBE = "2026-10-14-nube-2";
   var MAX_INSTANTANEA = 4e5;
   function nubeOfrecida(search) {
     return new URLSearchParams(search).get("nube") === "1";
@@ -6377,6 +6378,10 @@ R184,nueces,10,grasa,170187,tal cual,`;
   }
   function correoValido(c) {
     return /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(c.trim());
+  }
+  function necesitaVentanaNube(e) {
+    if (!e.nubeOfrecida) return false;
+    return !(e.haySesion && correoValido(e.contacto ?? "") && e.consentimientoVersion === VERSION_CONSENTIMIENTO_NUBE);
   }
 
   // src/motor/plan-pablo.ts

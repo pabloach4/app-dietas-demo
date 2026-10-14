@@ -37,7 +37,7 @@
   }
 
   const TEXTO_CONSENTIMIENTO = `<p><strong>Guardar en la nube para que Pablo te vea</strong></p>
-    <p>Si lo activas, lo que metes en la app (tus respuestas, tu plan, tus comidas y los avisos) se guarda en un servidor de Supabase en Frankfurt (Unión Europea), que trabaja para Pablo como encargado del tratamiento. Pablo podrá verlo, escribirte y revisar tu plan. Para entrar te mandamos un enlace a tu correo, y ese correo es también el que usará Pablo para contactarte.</p>
+    <p>Si lo activas, lo que metes en la app (tus respuestas, tu plan, tus comidas y los avisos) se guarda en un servidor de Supabase en Frankfurt (Unión Europea), que trabaja para Pablo como encargado del tratamiento. Pablo podrá verlo, escribirte y revisar tu plan. No hace falta contraseña ni enlace: el correo que escribas es el que usará Pablo para contactarte.</p>
     <p>Puedes desconectarte cuando quieras y borrar todo lo guardado desde este mismo apartado. Si no lo activas, la app sigue funcionando igual, solo en este aparato.</p>
     <p class="subt">Versión de prueba: todavía no metas datos reales de pacientes.</p>`;
 
@@ -95,7 +95,7 @@
     try {
       const uid = sesion.user.id;
       const ahora = new Date().toISOString();
-      let r = await sb.from('perfiles').upsert({ usuario: uid, contacto: sesion.user.email, actualizado: ahora }, { onConflict: 'usuario' });
+      let r = await sb.from('perfiles').upsert({ usuario: uid, contacto: local.contacto || sesion.user.email, actualizado: ahora }, { onConflict: 'usuario' });
       if (r.error) throw r.error;
       // Consentimientos: el de la app (datos de salud) y el de la nube, una vez cada versión.
       const subidosC = new Set(local.consentimientosSubidos || []);
@@ -167,6 +167,89 @@
   }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') traerPlanDePablo(); });
 
+  // --- #211: ventana obligatoria con el correo de la persona al terminar el cuestionario (y en la pantalla de freno) ---
+  // cuestionario.js solo dispara 'app-dietas:fin-cuestionario' y espera a detail.continuar(). Aquí se decide si hace falta la ventana
+  // (Motor.necesitaVentanaNube), se entra de forma anónima en Supabase (sin correos) y se sube todo. Si no hay red, se deja seguir y se reintenta.
+  let resolverListo = () => {};
+  const listo = new Promise((ok) => { resolverListo = ok; });
+  let pendiente = false;
+  function avisoPendiente(si) {
+    pendiente = si;
+    let p = document.getElementById('nube-aviso-pendiente');
+    if (!p) {
+      p = document.createElement('p');
+      p.id = 'nube-aviso-pendiente'; p.className = 'subt'; p.setAttribute('role', 'status'); p.style.cssText = 'text-align:center;margin:0.4rem var(--gutter,16px)';
+      const cab = document.querySelector('header.top');
+      if (cab) cab.after(p); else document.body.prepend(p);
+    }
+    p.hidden = !si;
+    p.textContent = si ? 'Aún no se ha podido enviar a Pablo. Se reintentará solo.' : '';
+  }
+
+  function abrirVentana() {
+    return new Promise((ok) => {
+      const d = document.createElement('dialog');
+      d.id = 'nube-ventana';
+      d.setAttribute('aria-labelledby', 'nube-ventana-titulo');
+      d.style.cssText = 'max-width:min(30rem,94vw);max-height:90vh;overflow:auto;border:0;border-radius:18px;padding:1.1rem;background:var(--tarjeta,#fff);color:var(--texto,#15171c);box-shadow:0 20px 50px rgba(0,0,0,.35)';
+      d.innerHTML = '<h2 id="nube-ventana-titulo" style="margin:0 0 0.5rem;font-size:1.1rem">Antes de ver tu plan</h2>' + TEXTO_CONSENTIMIENTO
+        + '<label class="check"><input type="checkbox" id="nube-v-acepto"> Acepto que mis datos se guarden en ese servidor para que Pablo los vea.</label>'
+        + '<div class="campo" style="margin-top:0.5rem"><label for="nube-v-correo">Tu correo, para que Pablo se ponga en contacto contigo</label>'
+        + '<input id="nube-v-correo" type="email" autocomplete="email" inputmode="email" required style="font-size:16px"></div>'
+        + '<p class="error-inline" id="nube-v-error" role="alert" hidden></p>'
+        + '<button type="button" class="btn-principal" id="nube-v-seguir">Continuar</button>';
+      document.body.appendChild(d);
+      d.addEventListener('cancel', (ev) => ev.preventDefault()); // Esc no la cierra: sin casilla y correo válido no se sigue
+      const error = (t) => { const e = d.querySelector('#nube-v-error'); e.hidden = !t; e.textContent = t || ''; };
+      d.querySelector('#nube-v-seguir').addEventListener('click', () => {
+        const correo = d.querySelector('#nube-v-correo').value.trim();
+        if (!d.querySelector('#nube-v-acepto').checked) return error('Para continuar tienes que marcar la casilla.');
+        if (!Motor.correoValido(correo)) return error('Escribe un correo válido: es el que usará Pablo para contactarte.');
+        d.close(); d.remove();
+        ok(correo);
+      });
+      d.showModal();
+      d.querySelector('#nube-v-correo').focus();
+    });
+  }
+
+  async function entrarAnonimo(correo) {
+    const local = leerLocal();
+    local.consentimiento = { version: Motor.VERSION_CONSENTIMIENTO_NUBE, fecha: new Date().toISOString() };
+    local.contacto = correo;
+    guardarLocal(local);
+    if (!sb) { avisoPendiente(true); return; }
+    try {
+      const { data } = await sb.auth.getSession();
+      if (!data || !data.session) {
+        const r = await sb.auth.signInAnonymously();
+        if (r.error) throw r.error;
+      }
+      await subir('ventana');
+      avisoPendiente(false);
+    } catch (e) {
+      avisoPendiente(true); // el correo queda en local y se reintenta al volver
+    }
+  }
+
+  window.addEventListener('app-dietas:fin-cuestionario', (ev) => {
+    const continuar = (ev.detail && ev.detail.continuar) || (() => {});
+    ev.preventDefault(); // avisa al cuestionario de que esperamos a continuar()
+    (async () => {
+      await Promise.race([listo, new Promise((ok) => setTimeout(ok, 6000))]); // la librería tarda, o no hay red: no se bloquea a la persona
+      let haySesion = false;
+      try { if (sb) { const { data } = await sb.auth.getSession(); haySesion = Boolean(data && data.session); } } catch { /* sin red */ }
+      const local = leerLocal();
+      const hace = Motor.necesitaVentanaNube({ nubeOfrecida: true, haySesion, contacto: local.contacto, consentimientoVersion: local.consentimiento && local.consentimiento.version });
+      if (!hace) { if (local.contacto && !haySesion) avisoPendiente(true); continuar(); return; }
+      const correo = await abrirVentana();
+      await entrarAnonimo(correo);
+      continuar();
+    })().catch(() => continuar());
+  });
+  const reintentar = () => { if (pendiente || (leerLocal().contacto && sb)) subir('reintento').then(() => avisoPendiente(false)).catch(() => {}); };
+  window.addEventListener('online', reintentar);
+
   let temporizador = null;
   const subirEnUnRato = () => { clearTimeout(temporizador); temporizador = setTimeout(() => subir('auto'), 2500); };
   window.addEventListener('app-dietas:plan', (ev) => { ultimoPlan = ev.detail || null; subirEnUnRato(); });
@@ -174,10 +257,11 @@
   cuerpo.innerHTML = '<p class="subt">Cargando…</p>';
   cargarLibreria().then(async () => {
     sb = window.supabase.createClient(URL_NUBE, CLAVE_PUBLICA, { auth: { persistSession: true, detectSessionInUrl: true } });
+    resolverListo();
     const { data } = await sb.auth.getSession();
     pintar(data && data.session);
     traerPlanDePablo();
     sb.auth.onAuthStateChange((evento, sesion) => { if (evento === 'SIGNED_IN') { pintar(sesion); subirEnUnRato(); traerPlanDePablo(); } });
     if (data && data.session) subirEnUnRato();
-  }).catch((e) => { cuerpo.innerHTML = `<p class="subt">La nube no está disponible ahora (${esc(e.message)}). La app funciona igual.</p>`; });
+  }).catch((e) => { resolverListo(); cuerpo.innerHTML = `<p class="subt">La nube no está disponible ahora (${esc(e.message)}). La app funciona igual.</p>`; });
 })();

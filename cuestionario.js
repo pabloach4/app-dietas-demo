@@ -2181,6 +2181,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const tarjeta = document.getElementById('tarjeta-nube');
     if (tarjeta && nubeOriginal.padre && tarjeta.parentNode !== nubeOriginal.padre) nubeOriginal.padre.insertBefore(tarjeta, nubeOriginal.siguiente);
   }
+  // #211: web/nube.js (solo con ?nube=1) decide si hace falta la ventana del correo y llama a continuar() al terminar. Sin nube.js, no espera.
+  function esperarNube() {
+    let seguir;
+    const promesa = new Promise((ok) => { seguir = ok; });
+    const ev = new CustomEvent('app-dietas:fin-cuestionario', { cancelable: true, detail: { continuar: seguir } });
+    window.dispatchEvent(ev);
+    return ev.defaultPrevented ? promesa : null;
+  }
   function ocultarPantallas() {
     nubeDeVuelta();
     ['incompleto', 'derivar', 'elegir-deporte', 'resultado'].forEach((id) => { document.getElementById(id).hidden = true; });
@@ -3514,8 +3522,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (dlg && dlg.open) dlg.close();
   }
 
-  document.getElementById('form-cuestionario').addEventListener('submit', (ev) => {
+  let esperandoNube = false; // #211: un segundo toque en «Ver mi plan» mientras sale la ventana del correo no abre otra
+  document.getElementById('form-cuestionario').addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    if (esperandoNube) return; // ya está esperando la ventana del correo
     if (!leerFranjas().length) { // issue #61
       ocultarPantallas();
       document.getElementById('franjas-error').hidden = false;
@@ -3538,7 +3548,11 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     ocultarPantallas();
     const respuestas = construirRespuestas();
     const resultado = Motor.perfilDesdeCuestionario(respuestas);
-    if (resultado.estado === 'derivar' || resultado.estado === 'ok') procesarCribado(respuestas); // #195
+    if (resultado.estado === 'derivar' || resultado.estado === 'ok') {
+      procesarCribado(respuestas); // #195
+      const espera = esperarNube(); // #211: con ?nube=1, ventana obligatoria con el correo antes de enseñar nada
+      if (espera) { esperandoNube = true; try { await espera; } finally { esperandoNube = false; } } // sin nube.js no hay espera: todo sigue síncrono
+    }
     else avisoCribadoHoy = '';
 
     if (resultado.estado === 'derivar') {
