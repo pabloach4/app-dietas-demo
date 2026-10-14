@@ -2993,7 +2993,7 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
     let cantidad = 1;
     const resto = [];
     for (const t of tokens2) {
-      if (/^\d+([.,]\d+)?x?$/.test(t)) {
+      if (/^\d+([.,]\d+)?x?$/.test(t) && Number(t.replace(",", ".").replace("x", "")) <= 20) {
         cantidad = Number(t.replace(",", ".").replace("x", ""));
         continue;
       }
@@ -3016,7 +3016,9 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
     return void 0;
   }
   function estimarComidaFuera(texto, tabla) {
-    const trozos = texto.split(/[,;+]/).flatMap((p) => normalizarTexto2(p).split(/\b(?:con|y|mas)\b/)).map((t) => t.trim()).filter(Boolean);
+    const conConector = [...new Set(tabla.flatMap((f2) => [f2.plato, ...f2.sinonimos].map(normalizarTexto2)).filter((a2) => /\b(?:con|y|mas)\b/.test(a2)))].sort((a2, b) => b.length - a2.length);
+    const proteger = (n) => conConector.reduce((acc, a2) => acc.split(a2).join(a2.replace(/ /g, "_")), n);
+    const trozos = texto.split(/[,;+]/).flatMap((p) => proteger(normalizarTexto2(p)).split(/\b(?:con|y|mas)\b/)).map((t) => t.trim().replace(/_/g, " ")).filter(Boolean);
     const cadenas = [...new Set(tabla.map((f2) => f2.cadena))].map((c) => ({ c, alias: normalizarTexto2(c).split(" ")[0] }));
     const lineas = [];
     const sinReconocer = [];
@@ -3033,7 +3035,7 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
       for (const f2 of candidatas) {
         let p = 0;
         for (const a2 of [f2.plato, ...f2.sinonimos].map(normalizarTexto2)) {
-          const ts = a2.split(" ").filter(Boolean);
+          const ts = a2.split(" ").filter((t) => t && !PALABRAS_VACIAS.has(t));
           if (ts.length && ts.every((t) => delTrozo.has(t) || delTrozo.has(t.replace(/s$/, "")))) p = Math.max(p, ts.length);
         }
         if (p === 0) continue;
@@ -3055,10 +3057,15 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
           otras = familia.filter((f2) => f2 !== elegida).map((f2) => f2.plato);
         }
       }
+      if (mejor.length > 1 && mejor.every((m) => m.f.plato === mejor[0].f.plato && m.f.cadena === mejor[0].f.cadena)) {
+        const pref = mejor.find((m) => /lata/.test(normalizarTexto2(m.f.tamano))) ?? mejor[0];
+        otras = mejor.filter((m) => m !== pref).map((m) => `${m.f.plato} (${m.f.tamano})`);
+        mejor = [pref];
+      }
       if (mejor.length === 1) {
         const f2 = mejor[0].f;
         const r = rangoKcal(f2);
-        const contenedor = utiles.find((t) => CONTENEDORES_SIN_DATO.includes(t));
+        const contenedor = utiles.find((t) => CONTENEDORES_SIN_DATO.includes(t) && !normalizarTexto2(f2.tamano).split(" ").includes(t));
         if (contenedor && f2.estado === "oficial") {
           sinReconocer.push(`${trozo} (solo tengo ${f2.tamano || "un formato"}: dime las calor\xEDas o cu\xE1ntas latas son)`);
           continue;
@@ -3148,6 +3155,31 @@ Coca-Cola Espa\xF1a,Fanta Lim\xF3n Zero Az\xFAcares A\xF1adidos,lata 330 ml,fant
 Coca-Cola Espa\xF1a,Sprite,lata 330 ml,sprite;refresco lima limon,,19,330,,,oficial,https://www.coca-cola.com/es/es/brands/sprite;https://www.coca-cola.com/es/es/legal/bases-promocionales-sprite-verano-2026,2026-10-13
 Coca-Cola Espa\xF1a,Sprite Zero Az\xFAcar,lata 330 ml,sprite zero,,1,330,,,oficial,https://www.coca-cola.com/es/es/brands/sprite;https://www.coca-cola.com/es/es/legal/bases-promocionales-sprite-verano-2026,2026-10-13
 Coca-Cola Espa\xF1a,Aquarius Zero Az\xFAcar,lata 330 ml,aquarius zero limon,,1,330,,,oficial,https://www.coca-cola.com/es/es/brands/descubre-aquarius/productos;https://www.coca-cola.com/es/es/offerings/portfolio-zero,2026-10-13
+Burger King Espa\xF1a,Whopper,unidad,whopper,643,,289,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Doble Whopper,unidad,doble whopper,893,,378,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Hamburger,unidad,hamburguesa sencilla,231,,100,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Cheeseburger,unidad,hamburguesa con queso,267,,111,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Crispy Chicken,unidad,crispy chicken,506,,184,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Long Chicken,unidad,long chicken,585,,213,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Big King,unidad,big king,525,,200,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Whopper Vegetal,unidad,whopper vegetal,578,,291,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Patatas fritas,peque\xF1as,patatas peque\xF1as,219,,90,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Patatas fritas,medianas,patatas medianas,386,,159,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Patatas fritas,grandes,patatas grandes,530,,218,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,King Nuggets,6 unidades,nuggets 6,271,,108,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Burger King Espa\xF1a,Ensalada King C\xE9sar Queso de Cabra,unidad,cesar queso cabra,669,,415,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-14
+Mahou,Cinco Estrellas,tercio botella 330 ml,cerveza mahou tercio;tercio mahou,,49,330,,,oficial,https://www.mahou-sanmiguel.com/tienda/p/mahou-cinco-estrellas.html,2026-10-14
+Mahou,Sin,lata 330 ml,cerveza mahou sin;mahou sin alcohol,,25,330,,,oficial,https://www.mahou-sanmiguel.com/tienda/p/mahou-sin.html;https://www.bodegasbelmonte.com/es/nacional/2025-caja-24-mahou-sin-lata-33-cl.html,2026-10-14
+Don Sim\xF3n,Zumo 100% exprimido de naranja,brik 200 ml,zumo naranja don simon,,43,200,,,oficial,https://garciacarrion.com/products/zumo-100-exprimido-de-naranja-briks-de-200-ml-000000000000011928,2026-10-14
+NEA,Agua mineral con gas,lata 330 ml,agua con gas nea,0,0,330,,,oficial,https://aguanea.com/blogs/diario-de-abordo/el-agua-con-gas-engorda,2026-10-14
+Schweppes Espa\xF1a,T\xF3nica Original,botella 200 ml,tonica schweppes,23,11,200,,,oficial,https://www.schweppes.es/tonicas/tonica-original/,2026-10-14
+Coca-Cola Espa\xF1a,Coca-Cola sabor original,botella 500 ml,cocacola botella;coca cola botella,,42,500,,,oficial,https://www.coca-cola.com/es/es/brands/coca-cola/coca-cola-sabor-original;https://easyvending.com/wp-content/uploads/2023/03/COCA-COLA-500-ML-24-U-COCA-COLA-40402_1.pdf,2026-10-14
+Coca-Cola Espa\xF1a,Coca-Cola Zero Az\xFAcar,botella 500 ml,cocacola zero botella,,0.2,500,,,oficial,https://www.coca-cola.com/es/es/brands/coca-cola/coca-cola-zero;https://www.distribucionsbalague.es/wp-content/uploads/2023/11/Fam-Refrescos.pdf,2026-10-14
+Coca-Cola Espa\xF1a,Fanta Naranja,botella 500 ml,fanta naranja botella,,18,500,,,oficial,https://www.coca-cola.com/es/es/brands/fanta;https://www.despensa.es/detalle/-/Producto/refresco-naranja--fanta-naranja-500ml/500027,2026-10-14
+Coca-Cola Espa\xF1a,Fanta Lim\xF3n,botella 500 ml,fanta limon botella,,19,500,,,oficial,https://www.coca-cola.com/es/es/brands/fanta;https://www.distribucionsbalague.es/wp-content/uploads/2023/11/Fam-Refrescos.pdf,2026-10-14
+Coca-Cola Espa\xF1a,Sprite,botella 500 ml,sprite botella,,19,500,,,oficial,https://www.coca-cola.com/es/es/brands/sprite;https://www.cocacolaep.com/assets/legacy-assets/Spain/Informe-Sostenibilidad/Informe-Sostenibilidad-2023-CCEP.pdf,2026-10-14
+Coca-Cola Espa\xF1a,Aquarius Lim\xF3n,botella 500 ml,aquarius limon botella,,18,500,,,oficial,https://www.coca-cola.com/es/es/brands/descubre-aquarius/productos;https://bodegasoviedo.com/products/caja-24-unidades-aquarius-limon-botella-50cl,2026-10-14
+Coca-Cola Espa\xF1a,Aquarius Naranja,botella 500 ml,aquarius naranja botella,,19,500,,,oficial,https://www.coca-cola.com/es/es/brands/descubre-aquarius/productos;https://fruteriacantomeu.com/products/aquarius-naranja-500ml,2026-10-14
 `;
 
   // src/motor/sobras.ts
@@ -4830,7 +4862,46 @@ R141,"Arroz con claras, huevo y calabaza",comida;cena,523,26.8,16.5,65.1,EJEMPLO
 R142,Patata con tortilla y calabac\xEDn,comida;cena,473,21.6,22.0,48.3,EJEMPLO | fibraAlta,unico,6.45,huevo,patata,huevo,si,no,si,pendiente_ficha,no,30,nuevo,Lavar y cocer patata con piel (ficha con piel). Cocinar huevo y calabac\xEDn con aceite; pesos crudos.,normal
 R143,Boniato con huevo y espinacas,comida;cena,481,21.5,21.9,50.8,EJEMPLO | fibraAlta,unico,9.10,huevo,patata,huevo,si,no,si,pendiente_ficha,no,30,nuevo,Cocer boniato y espinacas; cocinar completamente huevo con aceite. Pesar ingredientes crudos seg\xFAn ficha.,normal
 R144,Lentejas con huevo y zanahoria,comida;cena,463,28.6,22.2,38.6,EJEMPLO | fibraAlta,unico,13.86,huevo,legumbre,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Pesar lentejas ya cocidas, huevo y zanahoria crudos. Cocinar zanahoria y huevo completamente, a\xF1adir lentejas y aceite.",normal
-R145,Garbanzos con huevo y calabac\xEDn,comida;cena,544,29.7,24.5,53.2,EJEMPLO | fibraAlta,unico,14.68,huevo,legumbre,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Pesar garbanzos ya cocidos, huevo y calabac\xEDn crudos. Saltear calabac\xEDn, cocinar huevo por completo y a\xF1adir garbanzos y aceite.",normal`;
+R145,Garbanzos con huevo y calabac\xEDn,comida;cena,544,29.7,24.5,53.2,EJEMPLO | fibraAlta,unico,14.68,huevo,legumbre,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Pesar garbanzos ya cocidos, huevo y calabac\xEDn crudos. Saltear calabac\xEDn, cocinar huevo por completo y a\xF1adir garbanzos y aceite.",normal
+R146,Manzana con almendra (toma peque\xF1a),media_manana;merienda,136,2.5,5.2,22.9,EJEMPLO | fibraAlta,unico,4.85,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R147,Pera con nueces (toma peque\xF1a),media_manana;merienda,145,2.0,6.7,22.7,EJEMPLO | fibraAlta,unico,5.01,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R148,Naranja con nueces (toma peque\xF1a),media_manana;merienda,136,2.9,6.7,19.0,EJEMPLO | fibraAlta,unico,4.27,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R149,Mandarina con almendra (toma peque\xF1a),media_manana;merienda,137,3.3,5.5,22.2,EJEMPLO | fibraAlta,unico,3.95,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R150,Pi\xF1a con almendra (toma peque\xF1a),media_manana;merienda,133,2.9,5.2,21.8,EJEMPLO | fibraAlta,unico,3.35,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R151,Fresas con nueces (toma peque\xF1a),media_manana;merienda,126,2.8,8.3,13.2,EJEMPLO | fibraAlta,unico,3.80,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R152,Kiwi con nueces (toma peque\xF1a),media_manana;merienda,139,2.9,7.1,19.0,EJEMPLO | fibraAlta,unico,4.27,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R153,Mel\xF3n con almendra (toma peque\xF1a),media_manana;merienda,131,4.0,6.3,17.3,EJEMPLO | fibraAlta,unico,3.12,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R154,Sand\xEDa con nueces (toma peque\xF1a),media_manana;merienda,119,2.6,6.8,15.0,EJEMPLO | fibra base \u22643g,unico,1.39,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R155,Yogur natural con fresas (toma peque\xF1a),media_manana;merienda,108,5.0,4.4,13.5,EJEMPLO | fibra base \u22643g,unico,2.00,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R156,Yogur natural con kiwi (toma peque\xF1a),media_manana;merienda,125,5.2,4.5,17.6,EJEMPLO | fibra base \u22643g,unico,2.40,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R157,Yogur natural con manzana (toma peque\xF1a),media_manana;merienda,128,4.6,4.2,19.6,EJEMPLO | fibra base \u22643g,unico,2.40,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R158,Yogur natural con pi\xF1a (toma peque\xF1a),media_manana;merienda,126,4.9,4.2,18.9,EJEMPLO | fibra base \u22643g,unico,1.40,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R159,Huevo cocido con naranja (toma peque\xF1a),media_manana;merienda,124,7.2,5.4,12.3,EJEMPLO | fibra base \u22643g,unico,2.40,huevo cocido,,huevo,si,no,si,pendiente_ficha,si,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R160,Huevo cocido con fresas (toma peque\xF1a),media_manana;merienda,110,7.0,5.6,8.2,EJEMPLO | fibra base \u22643g,unico,2.00,huevo cocido,,huevo,si,no,si,pendiente_ficha,si,5,nuevo,"Servir fruta lavada en peso comestible, frutos secos y/o yogur tal cual. Si lleva huevo, pesarlo ya cocido y sin c\xE1scara.",normal
+R161,"Bol grande de avena, yogur, pl\xE1tano y nueces",desayuno;merienda,727,23.5,25.9,107.3,EJEMPLO | fibraAlta,unico,14.33,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"Cocer avena en agua o hidratarla; servir yogur, fruta y nueces. Pesar avena seca; fruta en porci\xF3n comestible.",normal
+R162,"Bol grande de avena, yogur, manzana y nueces",desayuno;merienda,672,22.2,25.7,93.7,EJEMPLO | fibraAlta,unico,14.03,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"Cocer avena en agua o hidratarla; servir yogur, fruta y nueces. Pesar avena seca; fruta en porci\xF3n comestible.",normal
+R163,"Bol grande de avena, yogur, pera y nueces",desayuno;merienda,679,22.4,25.6,95.8,EJEMPLO | fibraAlta,unico,15.08,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"Cocer avena en agua o hidratarla; servir yogur, fruta y nueces. Pesar avena seca; fruta en porci\xF3n comestible.",normal
+R164,"Bol grande de avena, yogur, pi\xF1a y nueces",desayuno;merienda,669,22.6,25.6,92.7,EJEMPLO | fibraAlta,unico,12.53,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"Cocer avena en agua o hidratarla; servir yogur, fruta y nueces. Pesar avena seca; fruta en porci\xF3n comestible.",normal
+R165,"Tostadas grandes con huevo, pl\xE1tano y almendra",desayuno;merienda,694,34.8,23.6,89.6,EJEMPLO | fibraAlta,unico,12.97,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,Tostar pan y cocinar bien el huevo en sart\xE9n antiadherente; servir fruta y almendra. Huevo pesado crudo.,normal
+R166,"Tostadas grandes con huevo, manzana y almendra",desayuno;merienda,639,33.6,23.4,76.1,EJEMPLO | fibraAlta,unico,12.68,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,Tostar pan y cocinar bien el huevo en sart\xE9n antiadherente; servir fruta y almendra. Huevo pesado crudo.,normal
+R167,"Tostadas grandes con huevo, pera y almendra",desayuno;merienda,646,33.7,23.3,78.2,EJEMPLO | fibraAlta,unico,13.73,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,Tostar pan y cocinar bien el huevo en sart\xE9n antiadherente; servir fruta y almendra. Huevo pesado crudo.,normal
+R168,"Tostadas grandes con huevo, naranja y almendra",desayuno;merienda,631,34.6,23.3,73.0,EJEMPLO | fibraAlta,unico,12.68,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,Tostar pan y cocinar bien el huevo en sart\xE9n antiadherente; servir fruta y almendra. Huevo pesado crudo.,normal
+R169,"Arroz con leche, pl\xE1tano y nueces (raci\xF3n grande)",desayuno;merienda,754,20.1,19.1,129.0,EJEMPLO | fibraAlta,unico,6.54,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en leche y agua hasta quedar hecho; servir fruta y nueces aparte. No a\xF1adir az\xFAcar fuera de la ficha.,normal
+R170,"Arroz con leche, pera y nueces (raci\xF3n grande)",desayuno;merienda,706,19.0,18.9,117.5,EJEMPLO | fibraAlta,unico,7.29,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en leche y agua hasta quedar hecho; servir fruta y nueces aparte. No a\xF1adir az\xFAcar fuera de la ficha.,normal
+R171,"Arroz con leche, pi\xF1a y nueces (raci\xF3n grande)",desayuno;merienda,696,19.2,18.8,114.4,EJEMPLO | fibraAlta,unico,4.74,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en leche y agua hasta quedar hecho; servir fruta y nueces aparte. No a\xF1adir az\xFAcar fuera de la ficha.,normal
+R172,"Arroz con leche, mandarina y nueces (raci\xF3n grande)",desayuno;merienda,700,19.6,19.1,114.7,EJEMPLO | fibraAlta,unico,5.34,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en leche y agua hasta quedar hecho; servir fruta y nueces aparte. No a\xF1adir az\xFAcar fuera de la ficha.,normal
+R173,Manzana con nueces (acompa\xF1amiento),comida;cena,128,1.8,6.7,17.9,EJEMPLO | fibraAlta,postre,3.55,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R174,Pera con almendra (acompa\xF1amiento),comida;cena,126,2.5,5.2,20.4,EJEMPLO | fibraAlta,postre,4.97,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R175,Pi\xF1a con yogur (acompa\xF1amiento),comida;cena,126,4.9,4.2,18.9,EJEMPLO | fibra base \u22643g,postre,1.40,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R176,Kiwi con yogur (acompa\xF1amiento),comida;cena,137,5.5,4.6,20.5,EJEMPLO | fibra base \u22643g,postre,3.00,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R177,Fresas con yogur (acompa\xF1amiento),comida;cena,124,5.3,4.5,17.3,EJEMPLO | fibra base \u22643g,postre,3.00,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R178,Mel\xF3n con yogur (acompa\xF1amiento),comida;cena,127,5.6,4.3,18.1,EJEMPLO | fibra base \u22643g,postre,1.35,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R179,Mandarina con yogur (acompa\xF1amiento),comida;cena,129,5.1,4.4,19.2,EJEMPLO | fibra base \u22643g,postre,1.80,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R180,Yogur con cacao puro (acompa\xF1amiento),comida;cena,88,5.3,4.7,8.7,EJEMPLO | fibra base \u22643g,postre,1.85,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R181,Yogur con miel (acompa\xF1amiento),comida;cena,107,4.4,4.1,14.1,EJEMPLO | fibra base \u22643g,postre,0.02,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R182,Tostada blanca con aceite (acompa\xF1amiento),comida;cena,151,3.5,6.3,19.8,EJEMPLO | fibra base \u22643g,postre,1.08,,pan,gluten,si,pendiente_ficha,pendiente_ficha,no,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R183,Tostada integral con tomate y aceite (acompa\xF1amiento),comida;cena,156,5.5,6.5,19.4,EJEMPLO | fibraAlta,postre,3.12,,pan,gluten,si,pendiente_ficha,pendiente_ficha,no,no,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R184,Almendras y nueces (acompa\xF1amiento),comida;cena,123,3.6,11.5,3.5,EJEMPLO | fibra base \u22643g,postre,1.92,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal`;
   var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
 R01,garbanzo cocido,140,base,173757,peso cocido,
 R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
@@ -5466,7 +5537,110 @@ R144,aceite de oliva,10,grasa,171413,peso a\xF1adido,
 R145,garbanzo cocido,180,base,173757,cocido,
 R145,huevo,100,proteina,171287,crudo,
 R145,calabac\xEDn,100,verdura,169291,crudo,
-R145,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
+R145,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R146,manzana,150,fruta_lacteo,171688,peso comestible,
+R146,almendra,10,grasa,170567,tal cual,
+R147,pera,140,fruta_lacteo,169118,peso comestible,
+R147,nueces,10,grasa,170187,tal cual,
+R148,naranja,150,fruta_lacteo,169097,peso comestible,
+R148,nueces,10,grasa,170187,tal cual,
+R149,mandarina,150,fruta_lacteo,169105,peso comestible,
+R149,almendra,10,grasa,170567,tal cual,
+R150,pi\xF1a,150,fruta_lacteo,169124,peso comestible,
+R150,almendra,10,grasa,170567,tal cual,
+R151,fresas,150,fruta_lacteo,167762,peso comestible,
+R151,nueces,12,grasa,170187,tal cual,
+R152,kiwi,120,fruta_lacteo,168153,peso comestible,
+R152,nueces,10,grasa,170187,tal cual,
+R153,mel\xF3n,180,fruta_lacteo,169092,peso comestible,
+R153,almendra,12,grasa,170567,tal cual,
+R154,sand\xEDa,180,fruta_lacteo,167765,peso comestible,
+R154,nueces,10,grasa,170187,tal cual,
+R155,yogur natural,125,fruta_lacteo,171284,tal cual,
+R155,fresas,100,fruta_lacteo,167762,peso comestible,
+R156,yogur natural,125,fruta_lacteo,171284,tal cual,
+R156,kiwi,80,fruta_lacteo,168153,peso comestible,
+R157,yogur natural,125,fruta_lacteo,171284,tal cual,
+R157,manzana,100,fruta_lacteo,171688,peso comestible,
+R158,yogur natural,125,fruta_lacteo,171284,tal cual,
+R158,pi\xF1a,100,fruta_lacteo,169124,peso comestible,
+R159,huevo cocido,50,proteina,173424,cocido,
+R159,naranja,100,fruta_lacteo,169097,peso comestible,
+R160,huevo cocido,50,proteina,173424,cocido,
+R160,fresas,100,fruta_lacteo,167762,peso comestible,
+R161,copos de avena,90,base,173904,peso seco,
+R161,yogur natural,200,fruta_lacteo,171284,tal cual,
+R161,pl\xE1tano,150,fruta_lacteo,173944,peso comestible,
+R161,nueces,20,grasa,170187,tal cual,
+R162,copos de avena,90,base,173904,peso seco,
+R162,yogur natural,200,fruta_lacteo,171284,tal cual,
+R162,manzana,150,fruta_lacteo,171688,peso comestible,
+R162,nueces,20,grasa,170187,tal cual,
+R163,copos de avena,90,base,173904,peso seco,
+R163,yogur natural,200,fruta_lacteo,171284,tal cual,
+R163,pera,150,fruta_lacteo,169118,peso comestible,
+R163,nueces,20,grasa,170187,tal cual,
+R164,copos de avena,90,base,173904,peso seco,
+R164,yogur natural,200,fruta_lacteo,171284,tal cual,
+R164,pi\xF1a,150,fruta_lacteo,169124,peso comestible,
+R164,nueces,20,grasa,170187,tal cual,
+R165,pan integral,120,base,172688,tal cual,
+R165,huevo,120,proteina,171287,crudo,
+R165,pl\xE1tano,150,fruta_lacteo,173944,peso comestible,
+R165,almendra,15,grasa,170567,tal cual,
+R166,pan integral,120,base,172688,tal cual,
+R166,huevo,120,proteina,171287,crudo,
+R166,manzana,150,fruta_lacteo,171688,peso comestible,
+R166,almendra,15,grasa,170567,tal cual,
+R167,pan integral,120,base,172688,tal cual,
+R167,huevo,120,proteina,171287,crudo,
+R167,pera,150,fruta_lacteo,169118,peso comestible,
+R167,almendra,15,grasa,170567,tal cual,
+R168,pan integral,120,base,172688,tal cual,
+R168,huevo,120,proteina,171287,crudo,
+R168,naranja,150,fruta_lacteo,169097,peso comestible,
+R168,almendra,15,grasa,170567,tal cual,
+R169,arroz,100,base,169756,peso seco,
+R169,leche semidesnatada,250,fruta_lacteo,171267,tal cual,
+R169,pl\xE1tano,150,fruta_lacteo,173944,peso comestible,
+R169,nueces,20,grasa,170187,tal cual,
+R170,arroz,100,base,169756,peso seco,
+R170,leche semidesnatada,250,fruta_lacteo,171267,tal cual,
+R170,pera,150,fruta_lacteo,169118,peso comestible,
+R170,nueces,20,grasa,170187,tal cual,
+R171,arroz,100,base,169756,peso seco,
+R171,leche semidesnatada,250,fruta_lacteo,171267,tal cual,
+R171,pi\xF1a,150,fruta_lacteo,169124,peso comestible,
+R171,nueces,20,grasa,170187,tal cual,
+R172,arroz,100,base,169756,peso seco,
+R172,leche semidesnatada,250,fruta_lacteo,171267,tal cual,
+R172,mandarina,150,fruta_lacteo,169105,peso comestible,
+R172,nueces,20,grasa,170187,tal cual,
+R173,manzana,120,fruta_lacteo,171688,peso comestible,
+R173,nueces,10,grasa,170187,tal cual,
+R174,pera,120,fruta_lacteo,169118,peso comestible,
+R174,almendra,10,grasa,170567,tal cual,
+R175,pi\xF1a,100,fruta_lacteo,169124,peso comestible,
+R175,yogur natural,125,fruta_lacteo,171284,tal cual,
+R176,kiwi,100,fruta_lacteo,168153,peso comestible,
+R176,yogur natural,125,fruta_lacteo,171284,tal cual,
+R177,fresas,150,fruta_lacteo,167762,peso comestible,
+R177,yogur natural,125,fruta_lacteo,171284,tal cual,
+R178,mel\xF3n,150,fruta_lacteo,169092,peso comestible,
+R178,yogur natural,125,fruta_lacteo,171284,tal cual,
+R179,mandarina,100,fruta_lacteo,169105,peso comestible,
+R179,yogur natural,125,fruta_lacteo,171284,tal cual,
+R180,yogur natural,125,fruta_lacteo,171284,tal cual,
+R180,cacao puro en polvo,5,condimento,169593,peso a\xF1adido,
+R181,yogur natural,125,fruta_lacteo,171284,tal cual,
+R181,miel,10,condimento,169640,peso a\xF1adido,
+R182,pan blanco,40,base,174924,tal cual,
+R182,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R183,pan integral,40,base,172688,tal cual,
+R183,tomate,60,verdura,170457,crudo,
+R183,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R184,almendra,10,grasa,170567,tal cual,
+R184,nueces,10,grasa,170187,tal cual,`;
 
   // src/motor/coherencia-nutricional.ts
   var TOLERANCIA_RELATIVA = 0.1;
