@@ -929,6 +929,18 @@
   body.sin-consentimiento .ejemplos, body.sin-consentimiento #ejemplos-titulo, body.sin-consentimiento #progreso, body.sin-consentimiento #paso-nombre,
   body.sin-consentimiento .env:not(#consentimiento), body.sin-consentimiento #barra-pasos, body.sin-consentimiento .subt, body.sin-consentimiento details.plegable { display: none !important; }
 
+  /* #208 parte 3: el Perfil es un menú de filas y cada una abre su subpantalla, con vuelta atrás. */
+  #panel-perfil > [data-sub] { display: none; }
+  #panel-perfil[data-vista="datos"] > [data-sub="datos"], #panel-perfil[data-vista="alergias"] > [data-sub="alergias"], #panel-perfil[data-vista="competiciones"] > [data-sub="competiciones"],
+  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"] { display: block; }
+  #panel-perfil:not([data-vista="menu"]) #perfil-menu { display: none; }
+  #perfil-menu { padding: 0.3rem 1rem; }
+  .perfil-fila { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 52px; padding: 0.7rem 0; border: 0; border-bottom: 1px solid var(--borde); background: none; color: var(--texto); font-size: 1rem; font-weight: 600; text-align: left; }
+  .perfil-fila:last-of-type { border-bottom: 0; }
+  .perfil-fila span[aria-hidden] { color: var(--gris); font-size: 1.3rem; }
+  #perfil-atras { margin: 0 0 0.6rem; }
+  @media print { #perfil-menu, #perfil-atras { display: none !important; } }
+
   /* #208 parte 2: ningún texto del cuestionario por debajo de 14 px (los temas anteriores lo dejaban en 13,4 y 13,6). */
   .campo label, .ejemplos button, small.ayuda, .paso-nombre { font-size: 0.9rem; }
 
@@ -1256,28 +1268,36 @@
     <div class="tarjeta" id="lista-compra"></div>
     </section>
 
-    <section class="panel-app" id="panel-perfil" role="tabpanel" aria-labelledby="tab-perfil" hidden>
-      <div class="tarjeta" id="perfil-resumen">
+    <section class="panel-app" id="panel-perfil" role="tabpanel" aria-labelledby="tab-perfil" data-vista="menu" hidden>
+      <div class="tarjeta" id="perfil-menu">
+        <button type="button" class="perfil-fila" data-ir="datos"><span>Mis datos y recetas</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="perfil-fila" data-ir="alergias"><span>Alergias y lista negra</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="perfil-fila" data-ir="competiciones"><span>Mis competiciones</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="perfil-fila" data-ir="alertas" hidden><span>Alertas para Pablo</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="perfil-fila" data-ir="nube" hidden><span>Que Pablo vea mis datos</span><span aria-hidden="true">›</span></button>
+      </div>
+      <button type="button" class="btn-texto" id="perfil-atras" hidden>← Perfil</button>
+      <div class="tarjeta" id="perfil-resumen" data-sub="datos">
         <h2>Tu perfil</h2>
         <ul class="resumen-lista" id="perfil-datos"></ul>
         <details class="saber-mas"><summary>Qué se guarda y qué no</summary><p>Salud, alergias y preferencias <strong>no se guardan</strong> en este navegador: cada vez que vuelvas a abrir la app tendrás que revisarlos. Tu lista negra (alimentos que no quieres) sí se guarda.</p></details>
         <button type="button" class="btn-principal" id="empezar-de-nuevo">Editar perfil</button>
         <button type="button" class="btn-texto" id="perfil-reiniciar" style="margin-top:0.4rem;color:var(--peligro)">Empezar de cero (borra el perfil guardado)</button>
       </div>
-    <div class="tarjeta" id="recetas-si-o-si">
+    <div class="tarjeta" id="recetas-si-o-si" data-sub="datos">
       <h2>Mis recetas sí o sí</h2>
       <p class="una-linea">Las que quieres que salgan cada semana.</p>
       <details class="saber-mas"><summary>Saber más</summary><p>Se eligen desde la ficha de una receta (pestaña Recetas) y se quedan guardadas en este navegador hasta que las quites.</p></details>
       <ul class="resumen-lista" id="sos-lista"></ul>
       <p class="subt" id="sos-vacio">Todavía no has pedido ninguna.</p>
     </div>
-    <div class="tarjeta" id="volumen">
+    <div class="tarjeta" id="volumen" data-sub="datos">
       <h2>Volumen de tus comidas</h2>
       <p class="una-linea">Platos más abundantes o más concentrados, con las mismas calorías.</p>
       <details class="saber-mas"><summary>Saber más</summary><p>Tras cada comida puedes decir «mucha comida», «bien de cantidad» o «me he quedado con hambre» (pestaña Hoy). Eso no cambia tus calorías ni tus macros: solo hace tus platos más concentrados o más abundantes. Aquí ves el nivel y lo puedes ajustar a mano.</p></details>
       <div id="volumen-perfil"></div>
     </div>
-    <div class="tarjeta" id="lista-negra">
+    <div class="tarjeta" id="lista-negra" data-sub="alergias">
       <h2>Mi lista negra</h2>
       <p class="una-linea">Alimentos que no te vas a comer (gustos, no alergias).</p>
       <details class="saber-mas"><summary>Saber más</summary><p>No aparecerán en tus recetas y se quedan guardados en este navegador. Para alergias e intolerancias usa el paso 5 del cuestionario: aquí solo van los gustos.</p></details>
@@ -1289,16 +1309,16 @@
       <p class="subt" id="ln-vacio">Todavía no has añadido ninguno. ¡Aquí no se juzga a nadie!</p>
       <div id="perfil-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
     </div>
-    <details class="tarjeta" id="tarjeta-alertas" hidden>
+    <details class="tarjeta" id="tarjeta-alertas" data-sub="alertas" hidden open>
       <summary><h2>Alertas para Pablo</h2></summary>
       <p class="subt">Señales que Pablo tiene que repasar contigo. Se guardan solo en este navegador: no se envía nada a nadie. No son un diagnóstico.</p>
       <ul class="resumen-lista" id="alertas-lista"></ul>
     </details>
-    <div class="tarjeta" id="tarjeta-nube" hidden>
+    <div class="tarjeta" id="tarjeta-nube" data-sub="nube" hidden>
       <h2>Que Pablo vea mis datos</h2>
       <div id="nube-cuerpo"></div>
     </div>
-    <details class="tarjeta" id="tarjeta-competiciones">
+    <details class="tarjeta" id="tarjeta-competiciones" data-sub="competiciones" open>
       <summary><h2>Mis competiciones</h2></summary>
       <p class="una-linea">Añade tu competición y la semana se adapta sola.</p>
       <details class="saber-mas"><summary>Saber más</summary><p>Con la fecha y la duración de cada prueba, <strong>la semana de la competición cambia</strong>: pausa del déficit, carga de hidratos, poca fibra, el gasto de la propia prueba y la recuperación después (pauta orientativa). Se guardan solo en este navegador (sin cuenta ni nube) y no se envían a ningún calendario.</p></details>
@@ -1327,7 +1347,7 @@
       <ul class="resumen-lista" id="cal-lista-comp" style="margin-top:1rem"></ul>
       <button type="button" class="btn-texto" id="cal-borrar-todo" style="color:var(--peligro)">Borrar todas las anotaciones y la fecha elegida</button>
     </details>
-    <div class="tarjeta">
+    <div class="tarjeta" data-sub="datos">
       <h2>Para más adelante</h2>
       <p class="una-linea">Con alergias o celiaquía, las recetas de ejemplo no garantizan seguridad alimentaria.</p>
       <details class="saber-mas"><summary>Saber más</summary><p>Estos datos no cambian las kcal ni los macros. Sí se usan ya en las recetas de ejemplo: las alergias e intolerancias (y lo que evitas) excluyen las recetas que los contienen, sin garantía de seguridad alimentaria (con celiaquía, ninguna receta de ejemplo se da por segura). Lo demás todavía no cambia nada.</p></details>
@@ -1409,10 +1429,10 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=036d9cb"></script>
-<script src="fuentes.js?v=036d9cb"></script>
-<script src="motor.bundle.js?v=036d9cb"></script>
-<script src="cuestionario.js?v=036d9cb"></script>
-<script src="nube.js?v=036d9cb"></script>
+<script src="novedades.js?v=3bc2bc1"></script>
+<script src="fuentes.js?v=3bc2bc1"></script>
+<script src="motor.bundle.js?v=3bc2bc1"></script>
+<script src="cuestionario.js?v=3bc2bc1"></script>
+<script src="nube.js?v=3bc2bc1"></script>
 </body>
 </html>

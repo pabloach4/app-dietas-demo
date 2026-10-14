@@ -740,6 +740,21 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   // Rediseño (#152): cada pestaña lleva su título grande y recuerda por dónde iba al volver a ella.
   const TITULO_PANEL = { hoy: 'Hoy', semana: 'Semana', recetas: 'Recetas', compra: 'Compra', perfil: 'Perfil' };
   let scrollPorPanel = {};
+  // #208 parte 3: Perfil en subpantallas (Datos, Alergias y lista negra, Competiciones, Alertas, Que Pablo vea mis datos). Las tarjetas
+  // son las mismas de siempre (mismos ids): solo se enseña una cada vez y la fila de Alertas o de la nube solo sale si esa tarjeta existe.
+  function irPerfilSub(vista) {
+    const panel = document.getElementById('panel-perfil');
+    if (!panel) return;
+    panel.dataset.vista = vista;
+    document.querySelectorAll('#perfil-menu [data-ir]').forEach((b) => {
+      const tarjeta = panel.querySelector(`:scope > [data-sub="${b.dataset.ir}"]`) || document.getElementById(b.dataset.ir === 'nube' ? 'tarjeta-nube' : 'tarjeta-' + b.dataset.ir);
+      b.hidden = Boolean(tarjeta && tarjeta.hidden) || (b.dataset.ir === 'nube' && !tarjeta);
+    });
+    document.getElementById('perfil-atras').hidden = vista === 'menu';
+    if (vista !== 'menu') window.scrollTo({ top: 0 });
+  }
+  document.querySelectorAll('#perfil-menu [data-ir]').forEach((b) => b.addEventListener('click', () => irPerfilSub(b.dataset.ir)));
+  document.getElementById('perfil-atras').addEventListener('click', () => irPerfilSub('menu'));
   function mostrarPanel(nombre, { mover = true, recordar = false } = {}) {
     if (recordar && nombre !== panelActual) scrollPorPanel[panelActual] = window.scrollY;
     panelActual = nombre;
@@ -751,6 +766,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       t.tabIndex = activa ? 0 : -1;
     });
     PANELES.forEach((n) => { document.getElementById(`panel-${n}`).hidden = n !== nombre; });
+    if (nombre === 'perfil') irPerfilSub('menu'); // #208: el Perfil siempre abre por su menú
     if (nombre === 'hoy') pintarHoy();
     if (nombre === 'semana' && typeof pintarResumenDia === 'function') pintarResumenDia(); // la marca «hoy» sigue al reloj (#105)
     if (nombre === 'recetas') pintarRecetas();
