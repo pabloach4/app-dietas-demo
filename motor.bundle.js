@@ -65,6 +65,7 @@ var Motor = (() => {
     aplicarSustituciones: () => aplicarSustituciones,
     asignarRecetas: () => asignarRecetas,
     avisoClasificacionSesion: () => avisoClasificacionSesion,
+    avisoDietaTerminada: () => avisoDietaTerminada,
     avisoFinDeLaDieta: () => avisoFinDeLaDieta,
     avisosVolumen: () => avisosVolumen,
     bandaPesoServido: () => bandaPesoServido,
@@ -2731,6 +2732,13 @@ var Motor = (() => {
     const fin = finDeLaDieta(inicio, semanas);
     if (!fin || !esFechaValida(hoy)) return void 0;
     return hoy < inicio ? "pendiente" : hoy <= fin ? "activa" : "caducada";
+  }
+  function avisoDietaTerminada(hoy, inicio, semanas) {
+    if (!esFechaValida(hoy)) return void 0;
+    const termino = finDeLaDieta(inicio, semanas);
+    if (!termino) return void 0;
+    const hace = Math.round((aUTC2(hoy) - aUTC2(termino)) / MS_DIA2);
+    return hace >= 1 ? { termino, hace } : void 0;
   }
 
   // src/motor/csv-simple.ts

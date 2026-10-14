@@ -835,10 +835,17 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <p style="margin:0 0 0.4rem"><strong>Tu dieta termina ${finAviso.quedan === 0 ? 'hoy' : `el ${fechaLegible(finAviso.termina, false)}`}.</strong> Prepara ya la siguiente compra.</p>
         <button type="button" class="btn-secundario" id="aviso-fin-compra">Generar próxima lista de la compra</button>
       </div>` : '';
+    // #189: una dieta ya terminada no sigue como si nada: se dice en una línea y se ofrece preparar la siguiente.
+    const terminada = periodoDieta.inicio && !finAviso ? Motor.avisoDietaTerminada(iso, periodoDieta.inicio, periodoDieta.semanas) : undefined;
+    const avisoTerminadaHtml = terminada ? `
+      <div class="hoy-bloque" id="aviso-dieta-terminada" role="status">
+        <p style="margin:0 0 0.4rem"><strong>Tu dieta terminó el ${fechaLegible(terminada.termino, false)}.</strong> Lo que ves es la última semana: prepara la siguiente.</p>
+        <button type="button" class="btn-secundario" id="aviso-fin-compra">Generar próxima lista de la compra</button>
+      </div>` : '';
     cont.innerHTML = `
       <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)}</p>
       ${avisoAlergiaHtml}
-      ${avisoFinHtml}
+      ${avisoFinHtml}${avisoTerminadaHtml}
       ${previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${bloqueComida}
       ${bloqueFuera}
