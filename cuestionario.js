@@ -161,6 +161,63 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     });
   }
 
+  // --- Cribado de bajo peso y baja energía (#195): preguntas opcionales; si salta un disparador se guarda una alerta para Pablo ---
+  // Sin correos ni avisos a nadie: la lista vive en este navegador (Perfil › Alertas para Pablo). A la persona solo se le dice, en neutro, que Pablo hablará con ella.
+  const CLAVE_ALERTAS = 'app-dietas-alertas-pablo';
+  let avisoCribadoHoy = ''; // mensaje neutro para «Hoy» tras calcular
+  (function construirCribado() {
+    const cont = document.getElementById('cribado-preguntas');
+    cont.innerHTML = Motor.PREGUNTAS_CRIBADO.map((p) => `
+      <div class="campo"><label for="cribado-p${p.n}">${p.texto}</label>
+        <select id="cribado-p${p.n}" class="cribado-sel" data-n="${p.n}" style="font-size:16px"><option value="">Sin contestar</option>${p.opciones.map((o) => `<option value="${o.valor}">${o.etiqueta}</option>`).join('')}</select></div>
+      ${p.n === 1 ? `<div id="cribado-pesos" class="fila2" hidden>
+        <div class="campo"><label for="cribado-peso-antes">Peso hace 3 meses (kg, opcional)</label><input id="cribado-peso-antes" type="number" step="0.1" inputmode="decimal"></div>
+        <div class="campo"><label for="cribado-peso-ahora">Peso ahora (kg, opcional)</label><input id="cribado-peso-ahora" type="number" step="0.1" inputmode="decimal"></div></div>` : ''}`).join('');
+    document.querySelector('.cribado-sel[data-n="1"]').addEventListener('change', (ev) => { document.getElementById('cribado-pesos').hidden = ev.target.value !== 'si'; });
+  })();
+  function leerCribado() {
+    const respuestas = {};
+    document.querySelectorAll('.cribado-sel').forEach((s) => { if (s.value) respuestas[Number(s.dataset.n)] = s.value; });
+    const n = (id) => { const v = document.getElementById(id).value; return v === '' ? undefined : Number(v); };
+    return { respuestas, pesoHace3m: n('cribado-peso-antes'), pesoAhora: n('cribado-peso-ahora') };
+  }
+  function limpiarCribado() {
+    document.querySelectorAll('.cribado-sel').forEach((s) => { s.value = ''; });
+    ['cribado-peso-antes', 'cribado-peso-ahora'].forEach((id) => { document.getElementById(id).value = ''; });
+    document.getElementById('cribado-pesos').hidden = true;
+  }
+  function leerAlertas() {
+    try { const l = JSON.parse(localStorage.getItem(CLAVE_ALERTAS) || '[]'); return Array.isArray(l) ? l.filter((a) => a && typeof a.fecha === 'string' && Array.isArray(a.disparadores)) : []; } catch { return []; }
+  }
+  function guardarAlertas(l) {
+    try { localStorage.setItem(CLAVE_ALERTAS, JSON.stringify(l)); } catch { falloAlmacenamiento(); }
+  }
+  function pintarAlertas() {
+    const l = leerAlertas();
+    const caja = document.getElementById('tarjeta-alertas');
+    caja.hidden = !l.length;
+    document.getElementById('alertas-lista').innerHTML = l.map((a, i) => `<li class="item-compra"><div style="flex:1;min-width:0">
+      <strong>${escaparHtml(fechaLegible(a.fecha.slice(0, 10)))}</strong>${a.prioritaria ? ' · <strong>REVISIÓN PRIORITARIA</strong> (valoración sanitaria, sin plan automático)' : ''}
+      <ul>${a.disparadores.map((d) => `<li>${escaparHtml(d.señal)} <small class="dieta-dato">(pregunta ${d.pregunta}: ${escaparHtml(d.etiqueta)})</small></li>`).join('')}</ul>
+      ${a.perdidaKg !== undefined ? `<small class="dieta-dato">Pérdida declarada: ${String(a.perdidaKg).replace('.', ',')} kg en 3 meses.</small> ` : ''}
+      ${(a.contexto ?? []).length ? `<small class="dieta-dato">Contexto: ${a.contexto.map((c) => `pregunta ${c.pregunta}: ${escaparHtml(c.etiqueta)}`).join('; ')}.</small> ` : ''}
+      ${(a.sinInterpretar ?? []).length ? `<small class="dieta-dato">Sin responder o sin saber: preguntas ${a.sinInterpretar.join(', ')} (no se interpretan como Sí ni como normal).</small>` : ''}
+      </div><button type="button" class="btn-texto alerta-quitar" data-i="${i}">Ya la he revisado</button></li>`).join('');
+    document.querySelectorAll('.alerta-quitar').forEach((b) => b.addEventListener('click', () => { const l2 = leerAlertas(); l2.splice(Number(b.dataset.i), 1); guardarAlertas(l2); pintarAlertas(); }));
+  }
+  /** Evalúa el cribado de lo que se acaba de enviar: guarda la alerta (si salta algún disparador) y deja el mensaje neutro para la persona. */
+  function procesarCribado(respuestas) {
+    const res = Motor.evaluarCribado(respuestas.cribado);
+    const alerta = Motor.alertaParaPablo(res, new Date().toISOString());
+    avisoCribadoHoy = '';
+    if (alerta) {
+      guardarAlertas(Motor.anadirAlerta(leerAlertas(), alerta));
+      avisoCribadoHoy = res.prioritaria ? Motor.MENSAJE_CRIBADO_PRIORITARIO : Motor.MENSAJE_CRIBADO_NEUTRO;
+    }
+    pintarAlertas();
+  }
+  queueMicrotask(pintarAlertas); // tras cargar todo el script (usa funciones de fecha definidas más abajo)
+
   // --- Recorrido por pasos (issue #13) ---
   const PASOS = [1, 2, 3, 4];
   const NOMBRE_PASO = { 1: 'Paso 1 de 4 · Tus datos', 2: 'Paso 2 de 4 · Objetivo y vida diaria', 3: 'Paso 3 de 4 · Sesiones de la semana', 4: 'Paso 4 de 4 · Salud y algo más' };
@@ -378,6 +435,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('vida-pasos').value = ej.vidaPasos ?? '';
     document.querySelectorAll('.salud').forEach((c) => { c.checked = false; });
     document.getElementById('salud-otra').value = '';
+    limpiarCribado(); // #195: el cribado no se guarda con el perfil ni viaja entre ejemplos
     (ej.salud ?? []).forEach((texto) => {
       const marcada = Array.from(document.querySelectorAll('.salud')).find((c) => texto.includes(c.value));
       if (marcada) marcada.checked = true; else document.getElementById('salud-otra').value = texto;
@@ -849,6 +907,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`;
     const avisoAlergiaHtml = avisosAlergiasHoy.length ? `<div class="hoy-bloque" id="aviso-alergia-hoy" role="status"><p style="margin:0">${avisosAlergiasHoy[0]}${avisosAlergiasHoy.length > 1 ? ` (y ${avisosAlergiasHoy.length - 1} más en los avisos del plan)` : ''}</p></div>` : '';
+    const avisoCribadoHtml = avisoCribadoHoy ? `<div class="hoy-bloque" id="aviso-cribado" role="status"><p style="margin:0">${escaparHtml(avisoCribadoHoy)}</p></div>` : '';
     const finAviso = periodoDieta.inicio ? Motor.avisoFinDeLaDieta(iso, periodoDieta.inicio, periodoDieta.semanas) : undefined;
     const avisoFinHtml = finAviso ? `
       <div class="hoy-bloque" id="aviso-fin-dieta" role="status">
@@ -865,6 +924,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     cont.innerHTML = `
       <p class="antetitulo hoy-fecha">${escaparHtml(fechaTxt)}</p>
       ${avisoAlergiaHtml}
+      ${avisoCribadoHtml}
       ${avisoFinHtml}${avisoTerminadaHtml}
       ${previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${bloqueComida}
@@ -2057,6 +2117,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         pasos: document.getElementById('vida-pasos').value || undefined,
       },
       salud,
+      cribado: leerCribado(),
       alergias: {
         celiaquia: document.getElementById('al-celiaquia').checked,
         lactosa: document.getElementById('al-lactosa').checked,
@@ -3384,6 +3445,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     ocultarPantallas();
     const respuestas = construirRespuestas();
     const resultado = Motor.perfilDesdeCuestionario(respuestas);
+    if (resultado.estado === 'derivar' || resultado.estado === 'ok') procesarCribado(respuestas); // #195
+    else avisoCribadoHoy = '';
 
     if (resultado.estado === 'derivar') {
       descartarPlanAnterior(); // la pantalla de derivación no deja ningún plan anterior visible ni exportable (#99)

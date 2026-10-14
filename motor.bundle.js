@@ -38,12 +38,15 @@ var Motor = (() => {
     MAX_KG_PERDIDOS_CREIBLE: () => MAX_KG_PERDIDOS_CREIBLE,
     MAX_SUBIDA_COMIDA: () => MAX_SUBIDA_COMIDA,
     MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
+    MENSAJE_CRIBADO_NEUTRO: () => MENSAJE_CRIBADO_NEUTRO,
+    MENSAJE_CRIBADO_PRIORITARIO: () => MENSAJE_CRIBADO_PRIORITARIO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
     NOTA_PAUTA: () => NOTA_PAUTA,
     NOTA_PAUTA_ORIENTATIVA: () => NOTA_PAUTA_ORIENTATIVA,
     OPCIONES_GELES: () => OPCIONES_GELES,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
+    PREGUNTAS_CRIBADO: () => PREGUNTAS_CRIBADO,
     RECETAS_CATALOGO_CSV: () => RECETAS_CATALOGO_CSV,
     RECETAS_CATALOGO_INGREDIENTES_CSV: () => RECETAS_CATALOGO_INGREDIENTES_CSV,
     RECETAS_EJEMPLO_CSV: () => RECETAS_EJEMPLO_CSV,
@@ -58,8 +61,10 @@ var Motor = (() => {
     aHoraTexto: () => aHoraTexto,
     aMinutos: () => aMinutos2,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
+    alertaParaPablo: () => alertaParaPablo,
     alternarFavorita: () => alternarFavorita,
     alternativasParaSlot: () => alternativasParaSlot,
+    anadirAlerta: () => anadirAlerta,
     anadirCompeticion: () => anadirCompeticion,
     aplicarCompeticion: () => aplicarCompeticion,
     aplicarSustituciones: () => aplicarSustituciones,
@@ -113,6 +118,7 @@ var Motor = (() => {
     estimarCoste: () => estimarCoste,
     etiquetasContextoDia: () => etiquetasContextoDia,
     evaluarCompatibilidad: () => evaluarCompatibilidad,
+    evaluarCribado: () => evaluarCribado,
     evaluarMarcas: () => evaluarMarcas,
     explicarComida: () => explicarComida,
     explicarCompra: () => explicarCompra,
@@ -496,6 +502,120 @@ var Motor = (() => {
     };
   }
 
+  // src/motor/cribado-energia.ts
+  var NO = { valor: "no", etiqueta: "No" };
+  var SI = { valor: "si", etiqueta: "S\xED" };
+  var NO_SE = { valor: "nolose", etiqueta: "No lo s\xE9" };
+  var PREFIERO_NO = { valor: "prefiero", etiqueta: "Prefiero no responder" };
+  var PREGUNTAS_CRIBADO = [
+    { n: 1, texto: "En los \xFAltimos 3 meses, \xBFhas perdido peso sin propon\xE9rtelo?", opciones: [NO, SI, NO_SE, PREFIERO_NO], dispara: ["si"], se\u00F1al: "P\xE9rdida de peso sin propon\xE9rselo en los \xFAltimos 3 meses" },
+    {
+      n: 2,
+      texto: "En las \xFAltimas 4 semanas, \xBFhas comido bastante menos de lo que necesitabas, te has saltado comidas o has entrenado sin comer para bajar peso o grasa?",
+      opciones: [NO, { valor: "alguna", etiqueta: "S\xED, alguna vez" }, { valor: "varias", etiqueta: "S\xED, varias veces por semana" }, PREFIERO_NO],
+      dispara: ["varias"],
+      contexto: ["alguna"],
+      se\u00F1al: "Comer bastante menos de lo necesario, saltarse comidas o entrenar sin comer varias veces por semana (\xFAltimas 4 semanas)"
+    },
+    {
+      n: 3,
+      texto: "\xBFTe cuesta aumentar la comida aunque tengas hambre o entrenes m\xE1s, por miedo a subir de peso o por culpa despu\xE9s de comer?",
+      opciones: [NO, SI, NO_SE, PREFIERO_NO],
+      dispara: ["si"],
+      se\u00F1al: "Dificultad para aumentar la comida por miedo a subir de peso o por culpa"
+    },
+    {
+      n: 4,
+      texto: "\xBFHas recurrido a provocarte el v\xF3mito, usar laxantes o diur\xE9ticos, o hacer ejercicio para compensar lo que has comido?",
+      opciones: [NO, SI, PREFIERO_NO],
+      dispara: ["si"],
+      derivaPlan: ["si"],
+      se\u00F1al: "Conductas compensatorias (v\xF3mito, laxantes o diur\xE9ticos, ejercicio para compensar): revisi\xF3n prioritaria y valoraci\xF3n sanitaria"
+    },
+    {
+      n: 5,
+      texto: "En los \xFAltimos 12 meses, \xBFun profesional te ha diagnosticado una fractura por estr\xE9s o una lesi\xF3n \xF3sea por sobrecarga?",
+      opciones: [NO, { valor: "una", etiqueta: "S\xED, una" }, { valor: "mas", etiqueta: "S\xED, m\xE1s de una" }, { valor: "dolor", etiqueta: "Tengo dolor \xF3seo pendiente de valorar" }, NO_SE],
+      dispara: ["una", "mas", "dolor"],
+      se\u00F1al: "Lesi\xF3n \xF3sea por sobrecarga se\xF1alada por un profesional o dolor \xF3seo pendiente de valorar (\xFAltimos 12 meses)"
+    },
+    {
+      n: 6,
+      texto: "Si menstruas o menstruabas: \xBFhas dejado de tener la regla durante 3 meses seguidos o has tenido un cambio claro de regularidad que no has revisado con un profesional?",
+      opciones: [NO, SI, { valor: "anticoncepcion", etiqueta: "Uso anticoncepci\xF3n hormonal y no puedo valorar mi ciclo habitual" }, { valor: "embarazo", etiqueta: "Embarazo, posparto o menopausia" }, { valor: "nocorresponde", etiqueta: "No me corresponde" }, PREFIERO_NO],
+      dispara: ["si"],
+      se\u00F1al: "Falta de regla durante 3 meses o cambio claro de regularidad sin revisar"
+    },
+    {
+      n: 7,
+      texto: "En las \xFAltimas 4 semanas, \xBFhas tenido cansancio que no mejora con el descanso habitual o te has recuperado mucho peor de tus entrenamientos?",
+      opciones: [NO, { valor: "pocos", etiqueta: "S\xED, unos pocos d\xEDas" }, { valor: "dos", etiqueta: "S\xED, durante al menos 2 semanas" }, NO_SE],
+      dispara: ["dos"],
+      contexto: ["pocos"],
+      se\u00F1al: "Cansancio o peor recuperaci\xF3n durante al menos 2 semanas (\xFAltimas 4 semanas)"
+    },
+    {
+      n: 8,
+      texto: "En las \xFAltimas 4 semanas, \xBFha bajado tu rendimiento de forma persistente aunque tu entrenamiento no haya cambiado mucho?",
+      opciones: [NO, { valor: "pocos", etiqueta: "S\xED, unos pocos d\xEDas" }, { valor: "dos", etiqueta: "S\xED, durante al menos 2 semanas" }, { valor: "nopuedo", etiqueta: "No puedo compararlo" }],
+      dispara: ["dos"],
+      contexto: ["pocos"],
+      se\u00F1al: "Bajada de rendimiento durante al menos 2 semanas sin cambio de entrenamiento"
+    },
+    {
+      n: 9,
+      texto: "\xBFAlg\xFAn profesional te ha indicado que podr\xEDas tener falta de energ\xEDa para tu actividad, un trastorno de la conducta alimentaria o un problema hormonal o de salud \xF3sea que sigue pendiente de revisi\xF3n?",
+      opciones: [NO, SI, NO_SE, PREFIERO_NO],
+      dispara: ["si"],
+      se\u00F1al: "Un profesional ya indic\xF3 una posible falta de energ\xEDa u otro asunto de salud pendiente de revisi\xF3n"
+    }
+  ];
+  var NO_INTERPRETABLES = /* @__PURE__ */ new Set(["prefiero", "nolose", "nopuedo"]);
+  function evaluarCribado(entrada) {
+    const vacio = { disparadores: [], contexto: [], sinInterpretar: [], contestadas: 0, prioritaria: false, derivaPlan: false };
+    const r = entrada?.respuestas;
+    if (!r) return vacio;
+    const out = { ...vacio, disparadores: [], contexto: [], sinInterpretar: [] };
+    for (const p of PREGUNTAS_CRIBADO) {
+      const v = r[p.n];
+      const op = p.opciones.find((o) => o.valor === v);
+      if (!v || !op) continue;
+      out.contestadas++;
+      const senal = { pregunta: p.n, respuesta: v, etiqueta: op.etiqueta, se\u00F1al: p.se\u00F1al };
+      if (NO_INTERPRETABLES.has(v)) out.sinInterpretar.push(p.n);
+      else if (p.dispara.includes(v)) out.disparadores.push(senal);
+      else if (p.contexto?.includes(v)) out.contexto.push(senal);
+      if (p.derivaPlan?.includes(v)) {
+        out.prioritaria = true;
+        out.derivaPlan = true;
+      }
+    }
+    const a2 = entrada?.pesoHace3m, b = entrada?.pesoAhora;
+    if (r[1] === "si" && typeof a2 === "number" && typeof b === "number" && a2 > 0 && b > 0 && a2 < 500 && b < 500) out.perdidaKg = Math.round((a2 - b) * 10) / 10;
+    return out;
+  }
+  var MENSAJE_CRIBADO_NEUTRO = "Gracias por cont\xE1rmelo. Pablo hablar\xE1 contigo para repasar c\xF3mo vas de energ\xEDa y de alimentaci\xF3n.";
+  var MENSAJE_CRIBADO_PRIORITARIO = "Gracias por cont\xE1rmelo. Esto lo tiene que valorar Pablo contigo, y conviene que tambi\xE9n lo vea un profesional sanitario; la app no te prepara un plan de ajuste. Pablo hablar\xE1 contigo.";
+  function alertaParaPablo(res, fechaISO) {
+    if (!res.disparadores.length) return void 0;
+    const disparadores = res.disparadores.map((d) => ({ pregunta: d.pregunta, etiqueta: d.etiqueta, se\u00F1al: d.se\u00F1al }));
+    const firma = `${res.prioritaria ? "P" : "N"}|${disparadores.map((d) => `${d.pregunta}${res.disparadores.find((x) => x.pregunta === d.pregunta).respuesta}`).join(",")}`;
+    return {
+      fecha: fechaISO,
+      prioritaria: res.prioritaria,
+      disparadores,
+      contexto: res.contexto.map((c) => ({ pregunta: c.pregunta, etiqueta: c.etiqueta })),
+      sinInterpretar: res.sinInterpretar,
+      ...res.perdidaKg !== void 0 ? { perdidaKg: res.perdidaKg } : {},
+      firma
+    };
+  }
+  function anadirAlerta(lista, nueva) {
+    const dia = nueva.fecha.slice(0, 10);
+    const resto = lista.filter((a2) => !(a2.firma === nueva.firma && a2.fecha.slice(0, 10) === dia));
+    return [nueva, ...resto].slice(0, 30);
+  }
+
   // src/motor/perfil-cuestionario.ts
   var EDAD_MINIMA = 18;
   var SIN_CONDICION = /* @__PURE__ */ new Set(["no", "nada", "ninguna", "ninguno", "ningun", "no tengo", "no tengo nada", "no tengo ninguna", "ninguna condicion", "n a", "na"]);
@@ -558,6 +678,7 @@ var Motor = (() => {
         mensaje: "Esto lo tiene que valorar Pablo en consulta; la app no genera protocolo cl\xEDnico autom\xE1tico."
       };
     }
+    if (evaluarCribado(r.cribado).derivaPlan) return { estado: "derivar", mensaje: MENSAJE_CRIBADO_PRIORITARIO };
     const vacio = (v) => v == null || typeof v === "number" && Number.isNaN(v);
     if (!esPositivo(r.peso)) return { estado: "incompleto", falta: "peso", mensaje: vacio(r.peso) ? "Falta el peso." : "El peso tiene que ser un n\xFAmero mayor que 0, en kilos." };
     if (!esPositivo(r.altura)) return { estado: "incompleto", falta: "altura", mensaje: vacio(r.altura) ? "Falta la talla." : "La altura tiene que ser un n\xFAmero mayor que 0, en cent\xEDmetros." };
