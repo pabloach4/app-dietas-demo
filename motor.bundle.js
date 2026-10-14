@@ -3155,6 +3155,26 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
     }
     return { cantidad, resto };
   }
+  var FIN_NO_VALIDO = /* @__PURE__ */ new Set([...PALABRAS_VACIAS, "sin"]);
+  function nombresGenericos(tabla) {
+    const ocupados = new Set(tabla.flatMap((f2) => [f2.plato, ...f2.sinonimos].map(normalizarTexto2)));
+    const duenos = /* @__PURE__ */ new Map();
+    for (const f2 of tabla.filter((x) => x.estado === "estimacion" && !esPizza(x))) {
+      const t = normalizarTexto2(f2.plato).split(" ").filter(Boolean);
+      for (let n = 2; n < t.length; n++) {
+        if (FIN_NO_VALIDO.has(t[n - 1])) continue;
+        const a2 = t.slice(0, n).join(" ");
+        if (ocupados.has(a2)) continue;
+        (duenos.get(a2) ?? duenos.set(a2, /* @__PURE__ */ new Set()).get(a2)).add(f2);
+      }
+    }
+    const out = /* @__PURE__ */ new Map();
+    for (const [a2, fs] of duenos) if (fs.size === 1) {
+      const f2 = [...fs][0];
+      out.set(f2, [...out.get(f2) ?? [], a2]);
+    }
+    return out;
+  }
   function rangoKcal(f2) {
     if (f2.kcalUnidad !== void 0) return { min: f2.kcalUnidad, max: f2.kcalUnidad };
     if (f2.kcal100 === void 0) return void 0;
@@ -3166,7 +3186,9 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
     return void 0;
   }
   function estimarComidaFuera(texto, tabla) {
-    const conConector = [...new Set(tabla.flatMap((f2) => [f2.plato, ...f2.sinonimos].map(normalizarTexto2)).filter((a2) => /\b(?:con|y|mas)\b/.test(a2)))].sort((a2, b) => b.length - a2.length);
+    const genericos = nombresGenericos(tabla);
+    const aliasesDe = (f2) => [f2.plato, ...f2.sinonimos, ...genericos.get(f2) ?? []];
+    const conConector = [...new Set(tabla.flatMap((f2) => aliasesDe(f2).map(normalizarTexto2)).filter((a2) => /\b(?:con|y|mas)\b/.test(a2)))].sort((a2, b) => b.length - a2.length);
     const proteger = (n) => conConector.reduce((acc, a2) => acc.split(a2).join(a2.replace(/ /g, "_")), n);
     const trozos = texto.split(/[,;+]/).flatMap((p) => proteger(normalizarTexto2(p)).split(/\b(?:con|y|mas)\b/)).map((t) => t.trim().replace(/_/g, " ")).filter(Boolean);
     const cadenas = [...new Set(tabla.map((f2) => f2.cadena))].map((c) => ({ c, alias: normalizarTexto2(c).replace(/ espana$/, "") }));
@@ -3184,7 +3206,7 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
       let otras = [];
       for (const f2 of candidatas) {
         let p = 0;
-        for (const a2 of [f2.plato, ...f2.sinonimos].map(normalizarTexto2)) {
+        for (const a2 of aliasesDe(f2).map(normalizarTexto2)) {
           const ts = a2.split(" ").filter((t) => t && !PALABRAS_VACIAS.has(t));
           if (ts.length && ts.every((t) => delTrozo.has(t) || delTrozo.has(t.replace(/s$/, "")))) p = Math.max(p, ts.length);
         }
@@ -3232,6 +3254,8 @@ zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar an
         if (comoMinimo) notas.push(`\xAB${tamPedido}\xBB no tiene dato propio: la cifra es como m\xEDnimo la de una mediana (${f2.pesoMin} g, sin inventar el peso de la ${tamPedido}). Dime cu\xE1ntas porciones o cu\xE1nto pesaba y aj\xFAstalo.`);
         else if (f2.estado === "estimacion") notas.push(`${esPizza(f2) ? "Peso" : "Cantidad"} estimad${esPizza(f2) ? "o" : "a"} (${f2.pesoMin}-${f2.pesoMax} ${unidadPeso(f2)}): la cifra es un rango. Si sabes ${unidadPeso(f2) === "ml" ? "cu\xE1nto has tomado" : "cu\xE1nto pesaba o cu\xE1nto comiste"}, aj\xFAstalo.`);
         if (supuesto) notas.push(`He supuesto ${f2.tamano}.`);
+        const nombreCompleto = [f2.plato, ...f2.sinonimos].some((a2) => normalizarTexto2(a2).split(" ").filter((t) => t && !PALABRAS_VACIAS.has(t)).every((t) => delTrozo.has(t) || delTrozo.has(t.replace(/s$/, ""))));
+        if (f2.estado === "estimacion" && !nombreCompleto) notas.push(`He usado \xAB${f2.plato}\xBB (${f2.tamano}), la \xFAnica cifra de ese tipo que tengo; si fue otra cosa, aj\xFAstalo.`);
         lineas.push({
           nombre: `${f2.plato}${f2.tamano ? ` (${f2.tamano})` : ""}`,
           cadena: f2.cadena,
