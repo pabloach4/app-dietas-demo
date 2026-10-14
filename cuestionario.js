@@ -2170,6 +2170,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         const platos = DIAS.map((d) => [d, delasDias.filter((a) => a.dia === d).map((a) => (Motor.recetaDeId(porId, a.receta) || { nombre: a.receta }).nombre)]).filter(([, n]) => n.length);
         return { ...Motor.descontarSobras(base, proxima.sobras), semanas, platos, huecos: sig.huecos.length };
       };
+      // #192: si el plan se recalculó (alergia, lista negra…) la próxima lista ya preparada se rehace desde las recetas revisadas.
+      if (proxima.resultado && proxima.obsoleta) { proxima.resultado = generarProxima(proxima.semanas); proxima.obsoleta = false; }
       // #164: la próxima lista de la compra, con las sobras de la dieta anterior descontadas.
       const nombresLista = lista.map((i) => i.ingrediente).sort((a, b) => a.localeCompare(b, 'es'));
       const gramosCorto = (g) => String(Math.round(g * 10) / 10).replace('.', ',');
@@ -3009,6 +3011,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       return { ...base, asignaciones: Motor.cuadrarDias(base.asignaciones, slotsSemana, rc, { noMover: enCompeticion }).asignaciones };
     };
     proxima.dieta = null; // el plan se ha recalculado: la dieta siguiente preparada antes ya no vale
+    if (proxima.resultado) proxima.obsoleta = true; // #192: la lista ya preparada se rehace con las restricciones de ahora al pintar la compra
     if (aplicadas.invalidadas.length) {
       aplicadas.invalidadas.forEach((i) => { delete sustituciones[i.clave]; });
       avisoSustituciones = [...avisoSustituciones, ...aplicadas.invalidadas];
