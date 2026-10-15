@@ -3361,7 +3361,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     }
 
     document.getElementById('r-dias').innerHTML = repartosPorDia.map(({ dia: d, reparto }) => {
+      const kcalFranjas = reparto.franjas.reduce((t, x) => t + x.kcalAprox, 0); // #153: la barra es el % de las kcal del día que lleva cada franja
       const franjasHtml = reparto.franjas.map((f) => {
+        const pct = kcalFranjas > 0 ? Math.round((f.kcalAprox / kcalFranjas) * 100) : 0;
         const asignada = recetaPorSlot.get(`${d.dia}|${f.franja}`);
         const hueco = huecoPorSlot.get(`${d.dia}|${f.franja}`);
         const conflictosHtml = reparto.conflictos.filter((c) => c.franja === f.franja).map((c) => `
@@ -3377,8 +3379,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
                 <div class="nombre">${NOMBRE_FRANJA[f.franja] ?? f.franja}${(() => { const x = franjasDelDia(d.dia).find((y) => y.franja === f.franja); return x && x.hora !== undefined ? ` <small style="font-weight:400;color:var(--gris)">· ${horaDecimalATexto(x.hora)}</small>` : ''; })()}</div>
                 ${f.rol !== 'normal' ? `<div class="rol">${f.rol.replace(/_/g, ' ')}</div>` : ''}
               </div>
-              <div class="macros"><strong>~${f.kcalAprox}</strong> kcal</div>
+              <div class="macros"><strong>~${f.kcalAprox}</strong> kcal<div class="franja-barra-pct">${pct} % del día</div></div>
             </div>
+            <div class="franja-reparto-macros"><span><span class="chip chip-p" aria-hidden="true">P</span>${f.proteina} g<span class="sr-solo"> de proteína</span></span><span><span class="chip chip-g" aria-hidden="true">G</span>${f.grasa} g<span class="sr-solo"> de grasa</span></span><span><span class="chip chip-h" aria-hidden="true">H</span>${f.hidrato} g<span class="sr-solo"> de hidratos</span></span></div>
+            <div class="franja-barra" aria-hidden="true"><span style="width:${pct}%"></span></div>
             ${recetaHtml}
             ${conflictosHtml}
             ${botonVerComida(d.dia, f.franja)}
