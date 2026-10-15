@@ -147,6 +147,8 @@
   .paso.activo { display: block; }
 
   #incompleto { background: var(--derivar); border: 1px solid var(--derivar-borde); border-radius: var(--radio); padding: 1rem; font-weight: 600; color: var(--peligro); margin-bottom: 1rem; }
+  .aviso-suelo { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: var(--radio); padding: 0.8rem 1rem; margin: 0 0 1rem; color: var(--texto); } /* #230 */
+  #freno-peso { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: var(--radio); padding: 1.2rem; margin-bottom: 1rem; color: var(--texto); } /* #229: tono amable, no de error */
   #derivar { background: var(--derivar); border: 1px solid var(--derivar-borde); border-radius: var(--radio); padding: 1.2rem; font-weight: 600; color: var(--peligro); margin-bottom: 1rem; text-align: center; }
   #elegir-deporte { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: var(--radio); padding: 1rem; margin-bottom: 1rem; }
   #elegir-deporte select { margin: 0.6rem 0; }
@@ -234,7 +236,7 @@
   .solo-impresion { display: none; }
   @media print {
     header.top, nav.barra, #aviso-almacenamiento, #btn-imprimir, #btn-copiar, #btn-descargar-csv, .acciones-compra, #btn-comparar, #empezar-de-nuevo, #incompleto,
-    #derivar, #elegir-deporte, #comparador, .dia-toggle, .sesion-mover,
+    #derivar, #freno-peso, #elegir-deporte, #comparador, .dia-toggle, .sesion-mover,
     .manual-form, #btn-borrar-lista-manual, .quitar-manual,
     .contexto-toggle, .contexto-dia, .horario-toggle, .horario-dia, #zona-deshacer, .tabs-app, details.mas-acciones, #resumen-manual, #resumen-dia, .acciones-rapidas, #panel-calendario, #cal-exportar, #panel-hoy, #panel-recetas, .subvista, #rec-limpiar, #zona-sustituciones, .dc-acciones, #perfil-resumen button, details.porque, dialog#detalle-comida, .ver-comida, .hor-ir { display: none !important; }
     .panel-app[hidden] { display: block !important; }
@@ -486,7 +488,7 @@
   .dia-resumen-kcal, .dia-card .dia-kcal { letter-spacing: -0.02em; }
   .stat .l { font-size: 0.7rem; }
   .avisos li, .notas li, .rec-restricciones, .dc-chiste { border: 0; border-radius: var(--radio-chico); }
-  #incompleto, #derivar, #elegir-deporte { border: 0; }
+  #incompleto, #derivar, #freno-peso, #elegir-deporte { border: 0; }
   .contexto-badge, .etq-pedido { border: 0; background: var(--acento-suave); color: var(--acento-fuerte); }
   details.mas-acciones { border: 0; box-shadow: var(--sombra); }
   body > section.tarjeta { width: min(528px, calc(100% - 2 * var(--gutter))); margin-left: auto; margin-right: auto; }
@@ -1161,6 +1163,13 @@
     <button type="button" class="btn-secundario" id="derivar-volver">← Volver a mis respuestas</button>
     <button type="button" class="btn-texto" id="derivar-reiniciar" style="margin-top:0.4rem">Empezar con otro perfil</button>
   </div>
+  <div id="freno-peso" hidden tabindex="-1">
+    <p style="margin:0 0 0.8rem"><strong>Ahora mismo no es buen momento para perder grasa:</strong> Pablo prefiere verlo contigo antes. Le hemos dejado aviso.</p>
+    <p style="margin:0 0 0.8rem">Mientras tanto, puedes tener un plan para:</p>
+    <button type="button" class="btn-principal" data-objetivo="mantener">Ver un plan para mantener mi peso</button>
+    <button type="button" class="btn-secundario" data-objetivo="ganar músculo" style="margin-top:0.5rem">Ver un plan para ganar músculo</button>
+    <button type="button" class="btn-texto" id="freno-volver" style="margin-top:0.4rem">← Volver a mis respuestas</button>
+  </div>
   <div id="elegir-deporte" hidden></div>
 
   <div id="resultado" hidden>
@@ -1191,6 +1200,7 @@
       <button type="button" class="sub-calendario" aria-pressed="false">Calendario</button>
       <button type="button" class="sub-plan" aria-pressed="true">Plan</button>
     </div>
+    <p id="aviso-suelo-semana" class="aviso-suelo" role="status" hidden></p>
 
     <div class="tarjeta">
       <h2>Tu semana</h2>
@@ -1242,6 +1252,7 @@
       <button type="button" class="sub-calendario" aria-pressed="true">Calendario</button>
       <button type="button" class="sub-plan" aria-pressed="false">Plan</button>
     </div>
+    <p id="aviso-suelo-cal" class="aviso-suelo" role="status" hidden></p>
     <div class="tarjeta">
       <h2>Calendario semanal</h2>
       <p class="una-linea">Elige el lunes en que empieza tu semana.</p>
@@ -1481,12 +1492,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=aa55630"></script>
-<script src="fuentes.js?v=aa55630"></script>
-<script src="motor.bundle.js?v=aa55630"></script>
-<script src="cuestionario.js?v=aa55630"></script>
-<script src="nube.js?v=aa55630"></script>
-<script src="pwa.js?v=aa55630"></script>
+<script src="novedades.js?v=6c69588"></script>
+<script src="fuentes.js?v=6c69588"></script>
+<script src="motor.bundle.js?v=6c69588"></script>
+<script src="cuestionario.js?v=6c69588"></script>
+<script src="nube.js?v=6c69588"></script>
+<script src="pwa.js?v=6c69588"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

@@ -179,6 +179,17 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   const CLAVE_ALERTAS = 'app-dietas-alertas-pablo';
   const TEXTO_AGUA = 'No hay un valor perfecto de agua: bebe la que tu cuerpo te pida. Aun así, es aconsejable beber algo más de 1,5 L al día (agua total: la que bebes y la que ya trae la comida).'; // Pablo, 14/10 (#159)
   let avisoCribadoHoy = ''; // mensaje neutro para «Hoy» tras calcular
+  let avisoFrenoHoy = ''; // #229: tras el freno de «perder grasa», el plan es para mantener o ganar músculo y «Hoy» lo dice
+  let objetivoPorFreno = ''; // el objetivo que se eligió en la pantalla del freno, para el aviso de «Hoy»
+  let diasSuelo = []; // #230: días en que el cálculo quedó por debajo del suelo de kcal (D11) y se prescribe el suelo
+  function pintarAvisoSuelo() {
+    for (const id of ['aviso-suelo-semana', 'aviso-suelo-cal']) {
+      const e = document.getElementById(id);
+      if (!e) continue;
+      e.textContent = Motor.MENSAJE_SUELO;
+      e.hidden = !diasSuelo.length;
+    }
+  }
   (function construirCribado() {
     const cont = document.getElementById('cribado-preguntas');
     cont.innerHTML = Motor.PREGUNTAS_CRIBADO.map((p) => `
@@ -186,18 +197,19 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <select id="cribado-p${p.n}" class="cribado-sel" data-n="${p.n}" style="font-size:16px"><option value="">Sin contestar</option>${p.opciones.map((o) => `<option value="${o.valor}">${o.etiqueta}</option>`).join('')}</select></div>
       ${p.n === 1 ? `<div id="cribado-pesos" class="fila2" hidden>
         <div class="campo"><label for="cribado-peso-antes">Peso hace 3 meses (kg, opcional)</label><input id="cribado-peso-antes" type="number" step="0.1" inputmode="decimal"></div>
-        <div class="campo"><label for="cribado-peso-ahora">Peso ahora (kg, opcional)</label><input id="cribado-peso-ahora" type="number" step="0.1" inputmode="decimal"></div></div>` : ''}`).join('');
+        <div class="campo"><label for="cribado-peso-ahora">Peso ahora (kg, opcional)</label><input id="cribado-peso-ahora" type="number" step="0.1" inputmode="decimal"></div>
+        <div class="campo"><label for="cribado-peso-habitual">Tu peso habitual (kg, opcional)</label><input id="cribado-peso-habitual" type="number" step="0.1" inputmode="decimal"></div></div>` : ''}`).join('');
     document.querySelector('.cribado-sel[data-n="1"]').addEventListener('change', (ev) => { document.getElementById('cribado-pesos').hidden = ev.target.value !== 'si'; });
   })();
   function leerCribado() {
     const respuestas = {};
     document.querySelectorAll('.cribado-sel').forEach((s) => { if (s.value) respuestas[Number(s.dataset.n)] = s.value; });
     const n = (id) => { const v = document.getElementById(id).value; return v === '' ? undefined : Number(v); };
-    return { respuestas, pesoHace3m: n('cribado-peso-antes'), pesoAhora: n('cribado-peso-ahora') };
+    return { respuestas, pesoHace3m: n('cribado-peso-antes'), pesoAhora: n('cribado-peso-ahora'), pesoHabitual: n('cribado-peso-habitual') }; // #229: el habitual, para el freno
   }
   function limpiarCribado() {
     document.querySelectorAll('.cribado-sel').forEach((s) => { s.value = ''; });
-    ['cribado-peso-antes', 'cribado-peso-ahora'].forEach((id) => { document.getElementById(id).value = ''; });
+    ['cribado-peso-antes', 'cribado-peso-ahora', 'cribado-peso-habitual'].forEach((id) => { document.getElementById(id).value = ''; });
     document.getElementById('cribado-pesos').hidden = true;
   }
   function leerAlertas() {
@@ -211,8 +223,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const caja = document.getElementById('tarjeta-alertas');
     caja.hidden = !l.length;
     document.getElementById('alertas-lista').innerHTML = l.map((a, i) => `<li class="item-compra"><div style="flex:1;min-width:0">
-      <strong>${escaparHtml(fechaLegible(a.fecha.slice(0, 10)))}</strong>${a.prioritaria ? ' · <strong>REVISIÓN PRIORITARIA</strong> (valoración sanitaria, sin plan automático)' : ''}
-      <ul>${a.disparadores.map((d) => `<li>${escaparHtml(d.señal)} <small class="dieta-dato">(pregunta ${d.pregunta}: ${escaparHtml(d.etiqueta)})</small></li>`).join('')}</ul>
+      <strong>${escaparHtml(fechaLegible(a.fecha.slice(0, 10)))}</strong>${a.suelo ? ' · revisar el suelo de kcal' : ''}${a.freno ? ' · <strong>REVISIÓN PRIORITARIA</strong> (sin plan para perder grasa; puede tener uno para mantener o ganar músculo)' : a.prioritaria ? ' · <strong>REVISIÓN PRIORITARIA</strong> (valoración sanitaria, sin plan automático)' : ''}
+      <ul>${a.disparadores.map((d) => `<li>${escaparHtml(d.señal)}${d.pregunta ? ` <small class="dieta-dato">(pregunta ${d.pregunta}: ${escaparHtml(d.etiqueta)})</small>` : ''}</li>`).join('')}</ul>
       ${a.perdidaKg !== undefined ? `<small class="dieta-dato">Pérdida declarada: ${String(a.perdidaKg).replace('.', ',')} kg en 3 meses.</small> ` : ''}
       ${(a.contexto ?? []).length ? `<small class="dieta-dato">Contexto: ${a.contexto.map((c) => `pregunta ${c.pregunta}: ${escaparHtml(c.etiqueta)}`).join('; ')}.</small> ` : ''}
       ${(a.sinInterpretar ?? []).length ? `<small class="dieta-dato">Sin responder o sin saber: preguntas ${a.sinInterpretar.join(', ')} (no se interpretan como Sí ni como normal).</small>` : ''}
@@ -560,7 +572,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       fila.querySelector('.f-activa').checked = esObjeto ? guardado.activa : true;
       fila.querySelector('.f-hora').value = (esObjeto ? guardado.hora : guardado) ?? horaDef;
     });
-    ['incompleto', 'derivar', 'elegir-deporte', 'resultado'].forEach((id) => { document.getElementById(id).hidden = true; });
+    ['incompleto', 'derivar', 'freno-peso', 'elegir-deporte', 'resultado'].forEach((id) => { document.getElementById(id).hidden = true; });
     mostrarFormulario();
     mostrarPaso(1);
   }
@@ -1053,7 +1065,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <p class="hoy-nota">${escaparHtml(nota)}</p>`;
     const avisoAlergiaHtml = avisosAlergiasHoy.length ? `<div class="hoy-bloque" id="aviso-alergia-hoy" role="status"><p style="margin:0">${avisosAlergiasHoy[0]}${avisosAlergiasHoy.length > 1 ? ` (y ${avisosAlergiasHoy.length - 1} más en los avisos del plan)` : ''}</p></div>` : '';
     const avisoPabloHtml = avisoPabloHoy ? `<div class="hoy-bloque" id="aviso-plan-pablo" role="status"><p style="margin:0">${avisoPabloHoy}</p></div>` : '';
-    const avisoCribadoHtml = avisoCribadoHoy ? `<div class="hoy-bloque" id="aviso-cribado" role="status"><p style="margin:0">${escaparHtml(avisoCribadoHoy)}</p></div>` : '';
+    const avisoCribadoHtml = (avisoCribadoHoy ? `<div class="hoy-bloque" id="aviso-cribado" role="status"><p style="margin:0">${escaparHtml(avisoCribadoHoy)}</p></div>` : '')
+      + (avisoFrenoHoy ? `<div class="hoy-bloque" id="aviso-freno" role="status"><p style="margin:0">${escaparHtml(avisoFrenoHoy)}</p></div>` : '')
+      + (diasSuelo.includes(dia) ? `<div class="hoy-bloque aviso-suelo" id="aviso-suelo-hoy" role="status"><p style="margin:0">${escaparHtml(Motor.MENSAJE_SUELO)}</p></div>` : '');
     const finAviso = periodoDieta.inicio ? Motor.avisoFinDeLaDieta(iso, periodoDieta.inicio, periodoDieta.semanas) : undefined;
     const avisoFinHtml = finAviso ? `
       <div class="hoy-bloque" id="aviso-fin-dieta" role="status">
@@ -2295,11 +2309,11 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   // #210: en la pantalla de freno (derivación a consulta) la tarjeta «Que Pablo vea mis datos» (solo con ?nube=1) va debajo, para que quien
   // más necesita que Pablo le contacte pueda dejarle su correo. Es el mismo nodo que gestiona web/nube.js: se mueve, no se duplica.
   const nubeOriginal = { padre: null, siguiente: null };
-  function nubeAlFreno() {
+  function nubeAlFreno(pantalla = 'derivar') {
     const tarjeta = document.getElementById('tarjeta-nube');
     if (!tarjeta || tarjeta.hidden) return; // sin ?nube=1 nada cambia
     if (!nubeOriginal.padre) { nubeOriginal.padre = tarjeta.parentNode; nubeOriginal.siguiente = tarjeta.nextSibling; }
-    document.getElementById('derivar').after(tarjeta);
+    document.getElementById(pantalla).after(tarjeta);
   }
   function nubeDeVuelta() {
     const tarjeta = document.getElementById('tarjeta-nube');
@@ -2315,7 +2329,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   }
   function ocultarPantallas() {
     nubeDeVuelta();
-    ['incompleto', 'derivar', 'elegir-deporte', 'resultado'].forEach((id) => { document.getElementById(id).hidden = true; });
+    ['incompleto', 'derivar', 'freno-peso', 'elegir-deporte', 'resultado'].forEach((id) => { document.getElementById(id).hidden = true; });
   }
 
   function mostrarElegirDeporte(resultado) {
@@ -3627,6 +3641,19 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const primero = document.querySelector('.paso[data-paso="4"] input');
     if (primero) primero.focus();
   });
+  // #229: salidas de la pantalla del freno de «perder grasa».
+  document.querySelectorAll('#freno-peso [data-objetivo]').forEach((b) => b.addEventListener('click', () => {
+    document.getElementById('objetivo').value = b.dataset.objetivo;
+    objetivoPorFreno = b.dataset.objetivo;
+    document.getElementById('freno-peso').hidden = true;
+    document.getElementById('form-cuestionario').requestSubmit();
+  }));
+  document.getElementById('freno-volver').addEventListener('click', () => {
+    document.getElementById('freno-peso').hidden = true;
+    nubeDeVuelta();
+    mostrarFormulario();
+    mostrarPaso(2); // el objetivo está en el paso 2
+  });
   document.getElementById('derivar-reiniciar').addEventListener('click', () => {
     document.getElementById('derivar').hidden = true;
     formularioNuevo();
@@ -3635,6 +3662,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   });
 
   function descartarPlanAnterior() {
+    diasSuelo = [];
+    pintarAvisoSuelo();
     semanaActual = null;
     planActual = null;
     respuestasActuales = null;
@@ -3700,6 +3729,23 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       return;
     }
 
+    // #229: freno de «perder grasa» por bajo peso (las 4 referencias de Pablo). No se calcula ese plan: pantalla amable, alerta
+    // prioritaria para Pablo y dos salidas (mantener o ganar músculo), que recalculan con ese objetivo.
+    const freno = Motor.frenoBajoPeso(resultado.perfil, respuestas.cribado);
+    if (freno.salta) {
+      const alerta = Motor.alertaFreno(freno, new Date().toISOString());
+      guardarAlertas(Motor.anadirAlerta(leerAlertas(), alerta));
+      pintarAlertas();
+      descartarPlanAnterior();
+      ocultarFormulario();
+      document.getElementById('freno-peso').hidden = false;
+      nubeAlFreno('freno-peso');
+      document.getElementById('freno-peso').focus();
+      return;
+    }
+    avisoFrenoHoy = objetivoPorFreno ? `Pablo prefiere verlo contigo antes de un plan para perder grasa. Mientras tanto tienes un plan para ${objetivoPorFreno === 'mantener' ? 'mantener tu peso' : 'ganar músculo'}.` : '';
+    objetivoPorFreno = '';
+
     let plan;
     try {
       plan = Motor.calcular(resultado.perfil);
@@ -3709,6 +3755,11 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       avisarIncompleto();
       return;
     }
+    // #230: si el suelo de kcal (D11) cambió algún día, la persona lo ve sin desplegar nada y Pablo recibe una alerta (una por plan).
+    diasSuelo = Motor.diasConSuelo(plan).map((d) => d.dia);
+    const alertaSuelo = Motor.alertaSuelo(plan, new Date().toISOString());
+    if (alertaSuelo) { guardarAlertas(Motor.anadirAlerta(leerAlertas(), alertaSuelo)); pintarAlertas(); }
+    pintarAvisoSuelo();
     revisionPerfilPendiente = false;
     document.getElementById('revision-precargado').hidden = true;
     const nuevasFranjas = leerFranjas();
