@@ -1989,7 +1989,136 @@ var Motor = (() => {
     return `Has indicado ${dicho}: no se han quitado los dem\xE1s moluscos (sepia, calamar, pulpo, mejillones, almejas\u2026). Si tambi\xE9n te sientan mal, m\xE1rcalo en Alergias.`;
   }
 
+  // src/motor/csv-simple.ts
+  function filasCsv(texto) {
+    const filas = [];
+    let fila = [], celda2 = "", entreComillas = false;
+    for (let i = 0; i < texto.length; i++) {
+      const c = texto[i];
+      if (entreComillas) {
+        if (c === '"' && texto[i + 1] === '"') {
+          celda2 += '"';
+          i++;
+        } else if (c === '"') entreComillas = false;
+        else celda2 += c;
+      } else if (c === '"') entreComillas = true;
+      else if (c === ",") {
+        fila.push(celda2);
+        celda2 = "";
+      } else if (c === "\n" || c === "\r") {
+        if (c === "\r" && texto[i + 1] === "\n") i++;
+        fila.push(celda2);
+        celda2 = "";
+        if (fila.some((x) => x !== "")) filas.push(fila);
+        fila = [];
+      } else celda2 += c;
+    }
+    fila.push(celda2);
+    if (fila.some((x) => x !== "")) filas.push(fila);
+    return filas;
+  }
+  function registros(texto) {
+    const [cab = [], ...resto] = filasCsv(texto);
+    const nombres = cab.map((x) => x.trim());
+    return resto.map((f2) => Object.fromEntries(nombres.map((n, i) => [n, (f2[i] ?? "").trim()])));
+  }
+
+  // src/motor/medidas-caseras.ts
+  var COLUMNAS = ["ingrediente", "medida", "gramos", "estado", "fuente_url_o_nota"];
+  function comprobarMedidasCsv(texto) {
+    const fallos = [];
+    const cab = (texto.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
+    for (const c of COLUMNAS) if (!cab.includes(c)) fallos.push(`falta la columna \xAB${c}\xBB`);
+    if (fallos.length) return fallos;
+    const vistas = /* @__PURE__ */ new Set();
+    for (const r of registros(texto)) {
+      const id = `${r.ingrediente || "(sin nombre)"} \xB7 ${r.medida || "(sin medida)"}`;
+      if (!r.ingrediente) fallos.push("fila sin ingrediente");
+      if (!r.medida) fallos.push(`${id}: sin medida`);
+      if (vistas.has(id.toLowerCase())) fallos.push(`${id}: fila duplicada`);
+      vistas.add(id.toLowerCase());
+      const g = Number(r.gramos.replace(",", "."));
+      if (!Number.isFinite(g) || g <= 0 || g > 500) fallos.push(`${id}: gramos \xAB${r.gramos}\xBB no es el peso de una medida (0-500)`);
+      if (r.estado !== "fuente" && r.estado !== "estimacion") fallos.push(`${id}: estado \xAB${r.estado}\xBB (solo fuente o estimacion)`);
+      if (!r.fuente_url_o_nota) fallos.push(`${id}: sin fuente_url_o_nota`);
+    }
+    return fallos;
+  }
+  function medidasDesdeCsv(texto) {
+    return registros(texto).map((r) => ({ ingrediente: r.ingrediente, medida: r.medida, gramos: Number(r.gramos.replace(",", ".")), estado: r.estado }));
+  }
+  var FRACCIONES = { 0.5: "\xBD", 1.5: "1\xBD", 2.5: "2\xBD", 3.5: "3\xBD" };
+  var mismoNombre = (a2, b) => a2.trim().toLowerCase() === b.trim().toLowerCase();
+  var esMedidaIndivisible = (m) => /^(vasito|lata)\b/i.test(m.medida) || /^huevo\b/i.test(m.ingrediente.trim()) && /^unidad\b/i.test(m.medida);
+  function unidadIndivisible(medidas, ingrediente) {
+    return medidas.find((m) => mismoNombre(m.ingrediente, ingrediente) && esMedidaIndivisible(m))?.gramos;
+  }
+  function medidaCasera(medidas, ingrediente, gramos) {
+    if (!(gramos > 0)) return void 0;
+    let mejor;
+    for (const m of medidas) {
+      if (!mismoNombre(m.ingrediente, ingrediente)) continue;
+      const n = gramos / m.gramos;
+      const entera = esMedidaIndivisible(m);
+      const redondeado = entera ? Math.round(n) : Math.round(n * 2) / 2;
+      if (redondeado < (entera ? 1 : 0.5) || redondeado > 4) continue;
+      const error = Math.abs(n - redondeado) / redondeado;
+      if (error > 0.12) continue;
+      if (!mejor || m.gramos > mejor.gramos || m.gramos === mejor.gramos && error < mejor.error) {
+        mejor = { texto: `\u2248 ${FRACCIONES[redondeado] ?? String(redondeado)} \xD7 ${m.medida}`, gramos: m.gramos, error };
+      }
+    }
+    return mejor?.texto;
+  }
+
+  // src/motor/medidas-caseras-datos.ts
+  var MEDIDAS_CASERAS_CSV = `ingrediente,medida,gramos,estado,fuente_url_o_nota
+pan integral,rebanada mediana de barra,30,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p10 PAN rebanada30g, tal cual; no todas las barras tienen igual corte."
+pan integral,rebanada mediana de molde,20,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p10 PAN DE MOLDE rebanada mediana20g, tal cual; confirmar etiqueta si se conoce marca."
+pan blanco,rebanada mediana de barra,30,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p10 PAN rebanada30g, tal cual; no todas las barras tienen igual corte."
+pan blanco,rebanada mediana de molde,20,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p10 PAN DE MOLDE rebanada mediana20g, tal cual; confirmar etiqueta si se conoce marca."
+aceite de oliva,cucharada sopera rasa,10,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p2 ACEITES:10g, no10ml; cuchara dom\xE9stica orientativa."
+aceite de oliva,cucharada de postre,5,fuente,https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p2 ACEITES:5g.
+aceite de oliva,cucharada de caf\xE9,3,fuente,https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p2 ACEITES:3g.
+arroz,cucharada sopera colmada en seco,30,fuente,https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p3 ARROZ:30g; no arroz cocido.
+copos de avena,cucharada sopera,13,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html | Tabla avena40g=3cucharadas:40/3=13.33g, redondeado13g. Copos secos; forma de colmar var\xEDa."
+huevo,unidad mediana sin c\xE1scara,50,estimacion,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf ; https://www.fen.org.es/MercadoAlimentosFEN/pdfs/huevos.pdf | Huevo completo mediano60g\xD7porci\xF3n comestible0.88=52.8g, redondeado50g. No incluir c\xE1scara; pesar si exactitud necesaria."
+almendra,pu\xF1ado peque\xF1o sin c\xE1scara,20,estimacion,https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Raci\xF3n orientativa20-30g=pu\xF1ado; se elige20g prudente. Mano/tama\xF1o var\xEDan; no contar nueces con c\xE1scara.
+nueces,pu\xF1ado peque\xF1o sin c\xE1scara,20,estimacion,https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Raci\xF3n orientativa20-30g=pu\xF1ado; se elige20g prudente. Mano/tama\xF1o var\xEDan; no contar nueces con c\xE1scara.
+yogur natural,vasito de 125 g,125,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p13 YOGUR unidad125g; preparado tal cual. Para griego s\xF3lo vasito marcado125g, no todos los envases. Sin conversi\xF3n de ml."
+yogur griego,vasito de 125 g,125,estimacion,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p13 YOGUR unidad125g; preparado tal cual. Para griego s\xF3lo vasito marcado125g, no todos los envases. Sin conversi\xF3n de ml."
+leche semidesnatada,vaso peque\xF1o,200,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p7 LECHE vaso200g, tal cual; cifra en g de la tabla, no confundir con200ml."
+leche semidesnatada,taza,250,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p7 LECHE taza250g, tal cual; tama\xF1o dom\xE9stico orientativo."
+pl\xE1tano,unidad mediana pelada,80,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
+manzana,unidad mediana sin coraz\xF3n,160,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
+naranja,unidad mediana pelada,200,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
+pera,unidad mediana sin coraz\xF3n,150,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
+kiwi,unidad mediana pelada,80,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
+mandarina,unidad peque\xF1a pelada,60,estimacion,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
+pi\xF1a,rodaja mediana sin piel,120,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
+mel\xF3n,rodaja mediana sin piel ni semillas,250,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
+sand\xEDa,rodaja mediana sin piel,250,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
+tomate,unidad mediana,150,fuente,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 tomate maduro crudo:unidad150g netos.
+zanahoria,unidad grande limpia,100,fuente,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 zanahoria cruda:unidadgrande100g netos.
+cebolla,unidad mediana limpia,100,fuente,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:unidadmediana100g netos; distinta a referencia UCM2015entera150g.
+pimiento rojo,unidad mediana limpia,150,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:unidadmediana150g netos, sin ped\xFAnculo/semillas."
+pimiento verde,unidad mediana limpia,75,estimacion,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:2unidades150gnetos;150/2=75g. Tama\xF1o var\xEDa mucho.
+champi\xF1\xF3n,unidad mediana limpia,20,estimacion,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:5unidades100gcrudos;100/5=20g.
+patata,unidad mediana con piel,170,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p11 PATATA unidadmediana170g completa; s\xF3lo usar si receta pesa con piel. Para pelada pesar neto, no usar esta conversi\xF3n."
+ajo,diente limpio,5,estimacion,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p2 diente5g completo como comprado; se asume redondeo similar limpio. Var\xEDa mucho por calibre, pesar si es relevante."
+aguacate,media unidad mediana sin piel ni hueso,60,fuente,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:mediaunidad120gbruto=60gneto.
+crema de cacahuete,cucharada sopera,30,fuente,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html | Tabla unsaltednutsornutbutter30g=handfulortablespoon; usar cucharada para crema, tal cual. Variaci\xF3n dom\xE9stica alta."
+cacao puro en polvo,cucharada de caf\xE9,4,estimacion,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p4 CACAOENPOLVO4g; analog\xEDa para cacao puro, no mezcla azucarada; comprobar etiqueta/compactaci\xF3n."
+tomate triturado,cucharada sopera,15,estimacion,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:10cucharadas150g;150/10=15g. Conserva tal cual.
+garbanzo cocido,cucharada sopera de legumbre cocida escurrida,15,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html; https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Peso en crudo (decisi\xF3n Pablo 14/10): 15 g en seco. Ayuda: 1 cucharada sopera de cocida escurrida = 37.5 g (BDA 150 g = 4 cucharadas), factor oficial x0.4. Variabilidad de caldo/escurrido/grano."
+lenteja cocida,cucharada sopera de legumbre cocida escurrida,15,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html; https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Peso en crudo (decisi\xF3n Pablo 14/10): 15 g en seco. Ayuda: 1 cucharada sopera de cocida escurrida = 37.5 g (BDA 150 g = 4 cucharadas), factor oficial x0.4. Variabilidad de caldo/escurrido/grano."
+alubia blanca cocida,cucharada sopera de legumbre cocida escurrida,15,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html; https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Peso en crudo (decisi\xF3n Pablo 14/10): 15 g en seco. Ayuda: 1 cucharada sopera de cocida escurrida = 37.5 g (BDA 150 g = 4 cucharadas), factor oficial x0.4. Variabilidad de caldo/escurrido/grano."
+alubia roja cocida,cucharada sopera de legumbre cocida escurrida,15,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html; https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Peso en crudo (decisi\xF3n Pablo 14/10): 15 g en seco. Ayuda: 1 cucharada sopera de cocida escurrida = 37.5 g (BDA 150 g = 4 cucharadas), factor oficial x0.4. Variabilidad de caldo/escurrido/grano."
+hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-41d3-a03717a2467754d9/Practical-guide-other-sources-of-PROTEIN.pdf | Tabla hummus2tbsp60g:unacucharada30g de preparado, no garbanzo crudo. | Preparado tal cual; no aplica peso en crudo."
+`;
+
   // src/motor/asignador-recetas.ts
+  var MEDIDAS = medidasDesdeCsv(MEDIDAS_CASERAS_CSV);
   function fibraServidaEstimada(r, slot) {
     if (typeof r.fibraG !== "number" || !(r.kcal > 0)) return void 0;
     return r.fibraG * Math.min(2, Math.max(0.5, slot.kcalObjetivo / r.kcal));
@@ -2025,9 +2154,31 @@ var Motor = (() => {
     const suelo = Math.min(1, Math.max(opciones.piso ?? 1 - AJUSTE_MAX, fMin));
     const techo = Math.max(suelo, Math.min(RACION_MAX_SUBIDA, fMax));
     const factor = Math.min(techo, Math.max(suelo, factorIdeal));
-    const factorRedondeado = factor > 1 ? Math.floor(factor * 100 + 1e-9) / 100 : Math.ceil(factor * 100 - 1e-9) / 100;
+    let factorRedondeado = factor > 1 ? Math.floor(factor * 100 + 1e-9) / 100 : Math.ceil(factor * 100 - 1e-9) / 100;
+    const enteras = opciones.sinUnidades ? [] : palancas.flatMap((i) => {
+      const u = unidadIndivisible(MEDIDAS, i.nombre);
+      return u && i.gramos > 0 ? [{ g: i.gramos, u }] : [];
+    });
+    if (enteras.length) {
+      const { g, u } = enteras[0];
+      const unidadesEnteras = (f2) => enteras.every((x) => {
+        const n = x.g * f2 / x.u;
+        return n >= 0.95 && Math.abs(n - Math.round(n)) <= 0.05 * Math.round(n) + 1e-9;
+      });
+      let mejor;
+      for (let k = 1; k * u * 0.95 <= techo * g + 1e-9; k++) {
+        const f2 = Math.min(techo, Math.max(suelo, k * u / g, k * u * 0.95 / g), k * u * 1.05 / g);
+        if (f2 < suelo - 1e-9 || !unidadesEnteras(f2)) continue;
+        if (mejor === void 0 || Math.abs(f2 - factor) < Math.abs(mejor - factor)) mejor = f2;
+      }
+      if (mejor !== void 0) {
+        factorRedondeado = Math.round(mejor * 1e4) / 1e4;
+        if (factorRedondeado > techo) factorRedondeado = Math.floor(mejor * 1e4) / 1e4;
+        if (factorRedondeado < suelo) factorRedondeado = Math.ceil(mejor * 1e4) / 1e4;
+      }
+    }
     const kcalResultante = Math.round(receta.kcal + kcalPalancas * (factorRedondeado - 1));
-    return { factor: factorRedondeado, factorRedondeado, kcalResultante, desviacion: Math.abs(kcalResultante - kcalObjetivo) };
+    return { factor: factorRedondeado, factorRedondeado, kcalResultante, desviacion: Math.abs(kcalResultante - kcalObjetivo), suelo, techo };
   }
   function gramosEscalados(receta, factorRedondeado) {
     return receta.ingredientes.map((i) => ({
@@ -2326,7 +2477,7 @@ var Motor = (() => {
       }
       const elegido = res.elegido;
       if (limitada) for (const id of idsDe(elegido.receta)) usos.set(id, (usos.get(id) ?? 0) + 1);
-      const factorRedondeado = Math.round(elegido.factor * 100) / 100;
+      const factorRedondeado = Math.round(elegido.factor * 1e4) / 1e4;
       const { protegidos, incumplimientos } = incumplimientosRacion(slot.franja, elegido.receta, factorRedondeado, { cargaAlta: slot.cargaAlta });
       if (incumplimientos.length) {
         avisos.push(`${slot.dia} ${slot.franja}: con la raci\xF3n escalada al ${Math.round(factorRedondeado * 100)} % "${elegido.receta.nombre}" ya no pasa el validador de platos (${incumplimientos.join("; ")}).`);
@@ -2683,7 +2834,7 @@ var Motor = (() => {
   }
 
   // src/motor/estimador-coste.ts
-  var COLUMNAS = ["ingrediente", "unidad", "precio_medio", "nota"];
+  var COLUMNAS2 = ["ingrediente", "unidad", "precio_medio", "nota"];
   var UNIDADES_VALIDAS = ["kg", "ud"];
   var GRAMOS_POR_UNIDAD = { huevo: 50 };
   function normalizar5(s) {
@@ -2694,14 +2845,14 @@ var Motor = (() => {
     const errores = [];
     const filas = [];
     const cabecera = (lineas[0] ?? "").split(",");
-    if (cabecera.join(",") !== COLUMNAS.join(",")) {
-      errores.push({ fila: 1, ingrediente: "(cabecera)", problema: `se esperaba "${COLUMNAS.join(",")}", se encontr\xF3 "${cabecera.join(",")}"` });
+    if (cabecera.join(",") !== COLUMNAS2.join(",")) {
+      errores.push({ fila: 1, ingrediente: "(cabecera)", problema: `se esperaba "${COLUMNAS2.join(",")}", se encontr\xF3 "${cabecera.join(",")}"` });
     }
     lineas.slice(1).forEach((linea, i) => {
       const numFila = i + 2;
       const cols = linea.split(",");
-      if (cols.length !== COLUMNAS.length) {
-        errores.push({ fila: numFila, ingrediente: cols[0] ?? "(vac\xEDo)", problema: `${cols.length} columnas, se esperaban ${COLUMNAS.length}` });
+      if (cols.length !== COLUMNAS2.length) {
+        errores.push({ fila: numFila, ingrediente: cols[0] ?? "(vac\xEDo)", problema: `${cols.length} columnas, se esperaban ${COLUMNAS2.length}` });
         return;
       }
       const [ingrediente, unidad, precioRaw, nota] = cols;
@@ -3030,40 +3181,6 @@ var Motor = (() => {
     return hace >= 1 ? { termino, hace } : void 0;
   }
 
-  // src/motor/csv-simple.ts
-  function filasCsv(texto) {
-    const filas = [];
-    let fila = [], celda2 = "", entreComillas = false;
-    for (let i = 0; i < texto.length; i++) {
-      const c = texto[i];
-      if (entreComillas) {
-        if (c === '"' && texto[i + 1] === '"') {
-          celda2 += '"';
-          i++;
-        } else if (c === '"') entreComillas = false;
-        else celda2 += c;
-      } else if (c === '"') entreComillas = true;
-      else if (c === ",") {
-        fila.push(celda2);
-        celda2 = "";
-      } else if (c === "\n" || c === "\r") {
-        if (c === "\r" && texto[i + 1] === "\n") i++;
-        fila.push(celda2);
-        celda2 = "";
-        if (fila.some((x) => x !== "")) filas.push(fila);
-        fila = [];
-      } else celda2 += c;
-    }
-    fila.push(celda2);
-    if (fila.some((x) => x !== "")) filas.push(fila);
-    return filas;
-  }
-  function registros(texto) {
-    const [cab = [], ...resto] = filasCsv(texto);
-    const nombres = cab.map((x) => x.trim());
-    return resto.map((f2) => Object.fromEntries(nombres.map((n, i) => [n, (f2[i] ?? "").trim()])));
-  }
-
   // src/motor/compra-periodo.ts
   function conservacionDesdeCsv(texto) {
     const tabla = /* @__PURE__ */ new Map();
@@ -3326,93 +3443,6 @@ cacao puro en polvo,2,10,condimento,"https://www.ucm.es/data/cont/docs/458-2015-
 mel\xF3n,125,375,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Crudo neto sin partes no comestibles; propuesta de porci\xF3n peque\xF1a/grande alrededor de tabla4, no l\xEDmites cl\xEDnicos. Pl\xE1tano media unidad; kiwi una unidad; fresas50g como complemento de bol (no raci\xF3n completa); otras frutas admiten media unidad/raci\xF3n. Fresas sin equivalencia de unidades por tama\xF1o variable. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 sand\xEDa,125,375,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Crudo neto sin partes no comestibles; propuesta de porci\xF3n peque\xF1a/grande alrededor de tabla4, no l\xEDmites cl\xEDnicos. Pl\xE1tano media unidad; kiwi una unidad; fresas50g como complemento de bol (no raci\xF3n completa); otras frutas admiten media unidad/raci\xF3n. Fresas sin equivalencia de unidades por tama\xF1o variable. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 `;
-
-  // src/motor/medidas-caseras-datos.ts
-  var MEDIDAS_CASERAS_CSV = `ingrediente,medida,gramos,estado,fuente_url_o_nota
-pan integral,rebanada mediana de barra,30,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p10 PAN rebanada30g, tal cual; no todas las barras tienen igual corte."
-pan integral,rebanada mediana de molde,20,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p10 PAN DE MOLDE rebanada mediana20g, tal cual; confirmar etiqueta si se conoce marca."
-pan blanco,rebanada mediana de barra,30,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p10 PAN rebanada30g, tal cual; no todas las barras tienen igual corte."
-pan blanco,rebanada mediana de molde,20,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p10 PAN DE MOLDE rebanada mediana20g, tal cual; confirmar etiqueta si se conoce marca."
-aceite de oliva,cucharada sopera rasa,10,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p2 ACEITES:10g, no10ml; cuchara dom\xE9stica orientativa."
-aceite de oliva,cucharada de postre,5,fuente,https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p2 ACEITES:5g.
-aceite de oliva,cucharada de caf\xE9,3,fuente,https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p2 ACEITES:3g.
-arroz,cucharada sopera colmada en seco,30,fuente,https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p3 ARROZ:30g; no arroz cocido.
-copos de avena,cucharada sopera,13,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html | Tabla avena40g=3cucharadas:40/3=13.33g, redondeado13g. Copos secos; forma de colmar var\xEDa."
-huevo,unidad mediana sin c\xE1scara,50,estimacion,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf ; https://www.fen.org.es/MercadoAlimentosFEN/pdfs/huevos.pdf | Huevo completo mediano60g\xD7porci\xF3n comestible0.88=52.8g, redondeado50g. No incluir c\xE1scara; pesar si exactitud necesaria."
-almendra,pu\xF1ado peque\xF1o sin c\xE1scara,20,estimacion,https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Raci\xF3n orientativa20-30g=pu\xF1ado; se elige20g prudente. Mano/tama\xF1o var\xEDan; no contar nueces con c\xE1scara.
-nueces,pu\xF1ado peque\xF1o sin c\xE1scara,20,estimacion,https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Raci\xF3n orientativa20-30g=pu\xF1ado; se elige20g prudente. Mano/tama\xF1o var\xEDan; no contar nueces con c\xE1scara.
-yogur natural,vasito de 125 g,125,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p13 YOGUR unidad125g; preparado tal cual. Para griego s\xF3lo vasito marcado125g, no todos los envases. Sin conversi\xF3n de ml."
-yogur griego,vasito de 125 g,125,estimacion,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p13 YOGUR unidad125g; preparado tal cual. Para griego s\xF3lo vasito marcado125g, no todos los envases. Sin conversi\xF3n de ml."
-leche semidesnatada,vaso peque\xF1o,200,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p7 LECHE vaso200g, tal cual; cifra en g de la tabla, no confundir con200ml."
-leche semidesnatada,taza,250,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p7 LECHE taza250g, tal cual; tama\xF1o dom\xE9stico orientativo."
-pl\xE1tano,unidad mediana pelada,80,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
-manzana,unidad mediana sin coraz\xF3n,160,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
-naranja,unidad mediana pelada,200,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
-pera,unidad mediana sin coraz\xF3n,150,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
-kiwi,unidad mediana pelada,80,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
-mandarina,unidad peque\xF1a pelada,60,estimacion,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
-pi\xF1a,rodaja mediana sin piel,120,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
-mel\xF3n,rodaja mediana sin piel ni semillas,250,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
-sand\xEDa,rodaja mediana sin piel,250,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 peso neto de la medida; mandarina2peque\xF1as120g/2=60g. Tama\xF1o medio de la fuente, no garant\xEDa de cualquier pieza."
-tomate,unidad mediana,150,fuente,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 tomate maduro crudo:unidad150g netos.
-zanahoria,unidad grande limpia,100,fuente,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4 zanahoria cruda:unidadgrande100g netos.
-cebolla,unidad mediana limpia,100,fuente,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:unidadmediana100g netos; distinta a referencia UCM2015entera150g.
-pimiento rojo,unidad mediana limpia,150,fuente,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:unidadmediana150g netos, sin ped\xFAnculo/semillas."
-pimiento verde,unidad mediana limpia,75,estimacion,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:2unidades150gnetos;150/2=75g. Tama\xF1o var\xEDa mucho.
-champi\xF1\xF3n,unidad mediana limpia,20,estimacion,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:5unidades100gcrudos;100/5=20g.
-patata,unidad mediana con piel,170,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p11 PATATA unidadmediana170g completa; s\xF3lo usar si receta pesa con piel. Para pelada pesar neto, no usar esta conversi\xF3n."
-ajo,diente limpio,5,estimacion,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p2 diente5g completo como comprado; se asume redondeo similar limpio. Var\xEDa mucho por calibre, pesar si es relevante."
-aguacate,media unidad mediana sin piel ni hueso,60,fuente,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:mediaunidad120gbruto=60gneto.
-crema de cacahuete,cucharada sopera,30,fuente,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html | Tabla unsaltednutsornutbutter30g=handfulortablespoon; usar cucharada para crema, tal cual. Variaci\xF3n dom\xE9stica alta."
-cacao puro en polvo,cucharada de caf\xE9,4,estimacion,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p4 CACAOENPOLVO4g; analog\xEDa para cacao puro, no mezcla azucarada; comprobar etiqueta/compactaci\xF3n."
-tomate triturado,cucharada sopera,15,estimacion,https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Tabla4:10cucharadas150g;150/10=15g. Conserva tal cual.
-garbanzo cocido,cucharada sopera de legumbre cocida escurrida,15,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html; https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Peso en crudo (decisi\xF3n Pablo 14/10): 15 g en seco. Ayuda: 1 cucharada sopera de cocida escurrida = 37.5 g (BDA 150 g = 4 cucharadas), factor oficial x0.4. Variabilidad de caldo/escurrido/grano."
-lenteja cocida,cucharada sopera de legumbre cocida escurrida,15,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html; https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Peso en crudo (decisi\xF3n Pablo 14/10): 15 g en seco. Ayuda: 1 cucharada sopera de cocida escurrida = 37.5 g (BDA 150 g = 4 cucharadas), factor oficial x0.4. Variabilidad de caldo/escurrido/grano."
-alubia blanca cocida,cucharada sopera de legumbre cocida escurrida,15,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html; https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Peso en crudo (decisi\xF3n Pablo 14/10): 15 g en seco. Ayuda: 1 cucharada sopera de cocida escurrida = 37.5 g (BDA 150 g = 4 cucharadas), factor oficial x0.4. Variabilidad de caldo/escurrido/grano."
-alubia roja cocida,cucharada sopera de legumbre cocida escurrida,15,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html; https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Peso en crudo (decisi\xF3n Pablo 14/10): 15 g en seco. Ayuda: 1 cucharada sopera de cocida escurrida = 37.5 g (BDA 150 g = 4 cucharadas), factor oficial x0.4. Variabilidad de caldo/escurrido/grano."
-hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-41d3-a03717a2467754d9/Practical-guide-other-sources-of-PROTEIN.pdf | Tabla hummus2tbsp60g:unacucharada30g de preparado, no garbanzo crudo. | Preparado tal cual; no aplica peso en crudo."
-`;
-
-  // src/motor/medidas-caseras.ts
-  var COLUMNAS2 = ["ingrediente", "medida", "gramos", "estado", "fuente_url_o_nota"];
-  function comprobarMedidasCsv(texto) {
-    const fallos = [];
-    const cab = (texto.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
-    for (const c of COLUMNAS2) if (!cab.includes(c)) fallos.push(`falta la columna \xAB${c}\xBB`);
-    if (fallos.length) return fallos;
-    const vistas = /* @__PURE__ */ new Set();
-    for (const r of registros(texto)) {
-      const id = `${r.ingrediente || "(sin nombre)"} \xB7 ${r.medida || "(sin medida)"}`;
-      if (!r.ingrediente) fallos.push("fila sin ingrediente");
-      if (!r.medida) fallos.push(`${id}: sin medida`);
-      if (vistas.has(id.toLowerCase())) fallos.push(`${id}: fila duplicada`);
-      vistas.add(id.toLowerCase());
-      const g = Number(r.gramos.replace(",", "."));
-      if (!Number.isFinite(g) || g <= 0 || g > 500) fallos.push(`${id}: gramos \xAB${r.gramos}\xBB no es el peso de una medida (0-500)`);
-      if (r.estado !== "fuente" && r.estado !== "estimacion") fallos.push(`${id}: estado \xAB${r.estado}\xBB (solo fuente o estimacion)`);
-      if (!r.fuente_url_o_nota) fallos.push(`${id}: sin fuente_url_o_nota`);
-    }
-    return fallos;
-  }
-  function medidasDesdeCsv(texto) {
-    return registros(texto).map((r) => ({ ingrediente: r.ingrediente, medida: r.medida, gramos: Number(r.gramos.replace(",", ".")), estado: r.estado }));
-  }
-  var FRACCIONES = { 0.5: "\xBD", 1.5: "1\xBD", 2.5: "2\xBD", 3.5: "3\xBD" };
-  function medidaCasera(medidas, ingrediente, gramos) {
-    if (!(gramos > 0)) return void 0;
-    const nombre = ingrediente.trim().toLowerCase();
-    let mejor;
-    for (const m of medidas) {
-      if (m.ingrediente.trim().toLowerCase() !== nombre) continue;
-      const n = gramos / m.gramos;
-      if (n < 0.5 || n > 12) continue;
-      const redondeado = Math.round(n * 2) / 2;
-      const error = Math.abs(n - redondeado) / redondeado;
-      if (error > 0.12) continue;
-      if (!mejor || error < mejor.error) mejor = { texto: `\u2248 ${FRACCIONES[redondeado] ?? String(redondeado).replace(".", ",")} \xD7 ${m.medida}`, error };
-    }
-    return mejor?.texto;
-  }
 
   // src/motor/limites-ingredientes.ts
   var FACTOR_LEGUMBRE_COCIDA = 0.4;
@@ -6434,7 +6464,7 @@ R184,nueces,10,grasa,170187,tal cual,`;
   }
   function filaPlanPablo(base, casillas, catalogo) {
     const ap = restriccionesComoApp(base.plan.restricciones);
-    const asignaciones = casillas.filter((c) => c.receta).map((c) => ({ dia: c.dia, franja: c.franja, receta: c.receta, racionAjustada: Math.round(c.racionAjustada * 100) / 100, kcalResultante: validarCasilla(c, catalogo, ap).kcal }));
+    const asignaciones = casillas.filter((c) => c.receta).map((c) => ({ dia: c.dia, franja: c.franja, receta: c.receta, racionAjustada: Math.round(c.racionAjustada * 1e4) / 1e4, kcalResultante: validarCasilla(c, catalogo, ap).kcal }));
     const dias = base.plan.dias.map((d) => ({ ...d }));
     return { inicio: base.inicio, semanas: base.semanas, origen: "pablo", plan: { ...base.plan, dias, asignaciones, huecos: 0 } };
   }
