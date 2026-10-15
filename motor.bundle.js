@@ -6661,6 +6661,8 @@ R184,nueces,10,grasa,170187,tal cual,`;
   // src/motor/freno-bajo-peso.ts
   var UMBRALES_FRENO = {
     ffmi: { hombre: 17, mujer: 15 },
+    imcSinGrasa: 18.5,
+    // solo sin % graso medido (provisional)
     perdida3m: 5,
     // % en 3 meses
     perdidaHabitual: 10,
@@ -6677,11 +6679,13 @@ R184,nueces,10,grasa,170187,tal cual,`;
     const motivos = [];
     const sexo = perfil.sexo === "mujer" ? "mujer" : "hombre";
     const medida = positivo(perfil.grasa) ? perfil.grasa : void 0;
-    if (positivo(perfil.altura)) {
-      const pct = medida ?? grasaDeurenberg(imc(perfil.peso, perfil.altura), perfil.edad, sexo);
-      const ffmi = perfil.peso * (1 - pct / 100) / (perfil.altura / 100) ** 2;
+    if (positivo(perfil.altura) && medida !== void 0) {
+      const ffmi = perfil.peso * (1 - medida / 100) / (perfil.altura / 100) ** 2;
       const umbral = UMBRALES_FRENO.ffmi[sexo];
-      if (ffmi < umbral) motivos.push({ codigo: "ffmi_bajo", cifra: r1(ffmi), umbral, texto: `${medida === void 0 ? "FFMI estimado (sin % graso medido)" : "Masa libre de grasa por altura (FFMI)"} de ${c(r1(ffmi))} kg/m\xB2, por debajo de ${umbral}` });
+      if (ffmi < umbral) motivos.push({ codigo: "ffmi_bajo", cifra: r1(ffmi), umbral, texto: `Masa libre de grasa por altura (FFMI) de ${c(r1(ffmi))} kg/m\xB2, por debajo de ${umbral}` });
+    } else if (positivo(perfil.altura)) {
+      const i = imc(perfil.peso, perfil.altura);
+      if (i < UMBRALES_FRENO.imcSinGrasa) motivos.push({ codigo: "imc_bajo", cifra: r1(i), umbral: UMBRALES_FRENO.imcSinGrasa, texto: `IMC de ${c(r1(i))} (< 18,5, criterio ESPEN 2015; sin % graso medido)` });
     }
     if (medida !== void 0) {
       const g = UMBRALES_FRENO.grasaMinima[sexo];
