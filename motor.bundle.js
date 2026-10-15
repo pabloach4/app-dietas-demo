@@ -225,6 +225,7 @@ var Motor = (() => {
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
     restriccionesComoApp: () => restriccionesComoApp,
+    resultadoBorradoNube: () => resultadoBorradoNube,
     resumenPersonas: () => resumenPersonas,
     revisarPlanPablo: () => revisarPlanPablo,
     revisarSiguienteGuardada: () => revisarSiguienteGuardada,
@@ -2060,20 +2061,23 @@ var Motor = (() => {
   }
   function medidaCasera(medidas, ingrediente, gramos) {
     if (!(gramos > 0)) return void 0;
-    let mejor;
-    for (const m of medidas) {
-      if (!mismoNombre(m.ingrediente, ingrediente)) continue;
+    const suyas = medidas.filter((m) => mismoNombre(m.ingrediente, ingrediente)).sort((a2, b) => b.gramos - a2.gramos);
+    if (!suyas.length) return void 0;
+    const texto = (n, m) => `\u2248 ${FRACCIONES[n] ?? String(n)} \xD7 ${m.medida}`;
+    const [mayor, ...resto] = suyas;
+    for (const m of [mayor, ...resto.reverse()]) {
       const n = gramos / m.gramos;
-      const entera = esMedidaIndivisible(m);
-      const redondeado = entera ? Math.round(n) : Math.round(n * 2) / 2;
-      if (redondeado < (entera ? 1 : 0.5) || redondeado > 4) continue;
-      const error = Math.abs(n - redondeado) / redondeado;
-      if (error > 0.12) continue;
-      if (!mejor || m.gramos > mejor.gramos || m.gramos === mejor.gramos && error < mejor.error) {
-        mejor = { texto: `\u2248 ${FRACCIONES[redondeado] ?? String(redondeado)} \xD7 ${m.medida}`, gramos: m.gramos, error };
+      if (esMedidaIndivisible(m)) {
+        const k = Math.round(n);
+        if (k >= 1 && k <= 4 && Math.abs(n - k) / k <= 0.12) return texto(k, m);
+        if (n >= 0.5) return void 0;
+        continue;
       }
+      if (n > 4.25) return void 0;
+      if (n < 0.5) continue;
+      return texto(Math.min(4, Math.round(n * 2) / 2), m);
     }
-    return mejor?.texto;
+    return void 0;
   }
 
   // src/motor/medidas-caseras-datos.ts
@@ -2088,6 +2092,7 @@ aceite de oliva,cucharada de caf\xE9,3,fuente,https://www.ucm.es/data/cont/docs/
 arroz,cucharada sopera colmada en seco,30,fuente,https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p3 ARROZ:30g; no arroz cocido.
 copos de avena,cucharada sopera,13,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html | Tabla avena40g=3cucharadas:40/3=13.33g, redondeado13g. Copos secos; forma de colmar var\xEDa."
 huevo,unidad mediana sin c\xE1scara,50,estimacion,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf ; https://www.fen.org.es/MercadoAlimentosFEN/pdfs/huevos.pdf | Huevo completo mediano60g\xD7porci\xF3n comestible0.88=52.8g, redondeado50g. No incluir c\xE1scara; pesar si exactitud necesaria."
+huevo cocido,unidad mediana sin c\xE1scara,50,estimacion,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf ; https://www.fen.org.es/MercadoAlimentosFEN/pdfs/huevos.pdf | Misma cifra que huevo en crudo (huevo completo mediano60g\xD7porci\xF3n comestible0.88=52.8g, redondeado50g): el cocido pesa lo mismo que en crudo, sin c\xE1scara. No sumar c\xE1scara; pesar si exactitud necesaria."
 almendra,pu\xF1ado peque\xF1o sin c\xE1scara,20,estimacion,https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Raci\xF3n orientativa20-30g=pu\xF1ado; se elige20g prudente. Mano/tama\xF1o var\xEDan; no contar nueces con c\xE1scara.
 nueces,pu\xF1ado peque\xF1o sin c\xE1scara,20,estimacion,https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Raci\xF3n orientativa20-30g=pu\xF1ado; se elige20g prudente. Mano/tama\xF1o var\xEDan; no contar nueces con c\xE1scara.
 yogur natural,vasito de 125 g,125,fuente,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | p13 YOGUR unidad125g; preparado tal cual. Para griego s\xF3lo vasito marcado125g, no todos los envases. Sin conversi\xF3n de ml."
@@ -6434,6 +6439,12 @@ R184,nueces,10,grasa,170187,tal cual,`;
   function accionReintentoNube(e) {
     if (!e.nubeOfrecida || !correoValido(e.contacto ?? "") || e.consentimientoVersion !== VERSION_CONSENTIMIENTO_NUBE) return "nada";
     return e.haySesion ? "subir" : "entrar_y_subir";
+  }
+  function resultadoBorradoNube(r) {
+    const codigo = r.error?.code ?? "";
+    if (codigo === "PGRST202" || codigo === "42883") return "sin_funcion";
+    if (r.error) return "error";
+    return r.data === "BORRADO" ? "total" : "error";
   }
 
   // src/motor/plan-pablo.ts

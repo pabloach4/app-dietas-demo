@@ -53,7 +53,8 @@
       return;
     }
     const ultima = local.ultimaSubida ? new Date(local.ultimaSubida).toLocaleString('es-ES') : 'todavía no';
-    cuerpo.innerHTML = `<p>Conectado como <strong>${esc(sesion.user.email)}</strong>. Pablo ve lo que guardas aquí.</p>
+    const quien = sesion.user.email || local.contacto; // #222: con la entrada anónima (#211) la sesión no lleva correo: se enseña el de contacto
+    cuerpo.innerHTML = `<p>${quien ? `Conectado como <strong>${esc(quien)}</strong>. ` : ''}Pablo ve lo que guardas aquí.</p>
       <p class="subt">Última subida: ${esc(ultima)}.</p>
       <div class="fila2"><button type="button" class="btn-secundario" id="nube-subir">Subir ahora</button>
       <button type="button" class="btn-texto" id="nube-salir">Desconectar</button></div>
@@ -143,15 +144,24 @@
     }
   }
 
+  // #222: borrado real (docs/supabase/005-borrado.sql): borra todo lo de la persona en el servidor, también su usuario de entrada.
+  // Si el servidor aún no tiene la función, se borra el perfil (arrastra todo lo demás) y se avisa de que el correo queda registrado.
   async function borrarTodo() {
-    if (!confirm('¿Borrar todo lo que tienes en la nube? Pablo dejará de verlo. Lo de este móvil se queda.')) return;
+    if (!confirm('¿Borrar todo lo que tienes en la nube? Se borra para siempre y Pablo dejará de verlo. Lo de este móvil se queda.')) return;
     const { data } = await sb.auth.getSession();
     if (!data || !data.session) return;
-    const r = await sb.from('perfiles').delete().eq('usuario', data.session.user.id);
-    if (r.error) return decir(`No se ha podido borrar (${r.error.message}).`);
-    await sb.auth.signOut();
+    decir('Borrando…');
+    let resultado = Motor.resultadoBorradoNube(await sb.rpc('borrar_mis_datos'));
+    if (resultado === 'sin_funcion') {
+      const r = await sb.from('perfiles').delete().eq('usuario', data.session.user.id);
+      if (r.error) resultado = 'error';
+    }
+    if (resultado === 'error') return decir('No se ha podido borrar. Comprueba la conexión y vuelve a intentarlo; si sigue sin ir, díselo a Pablo.');
+    try { await sb.auth.signOut({ scope: 'local' }); } catch { /* el usuario ya no existe: basta con olvidar la sesión de este navegador */ }
     guardarLocal({});
-    estado = 'Borrado. Tu correo sigue registrado para poder entrar; si quieres que lo quite también, díselo a Pablo.';
+    estado = resultado === 'total'
+      ? 'Borrado: en la nube ya no queda nada tuyo, tampoco tu correo.'
+      : 'Borrado. Tu correo sigue registrado para poder entrar; si quieres que lo quite también, díselo a Pablo.';
     pintar(null);
   }
 
