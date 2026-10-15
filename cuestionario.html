@@ -6,7 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F0F0F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0F1115" media="(prefers-color-scheme: dark)">
-<link rel="icon" href="data:,">
+<link rel="icon" href="iconos/icono-192.png" type="image/png">
+<meta name="app-manifest" content="manifest.webmanifest">
+<link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Cuestionario · Demo de la app de dietas</title>
 <style>
   :root {
@@ -1318,6 +1323,12 @@
       <p class="subt" id="ln-vacio">Todavía no has añadido ninguno. ¡Aquí no se juzga a nadie!</p>
       <div id="perfil-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
     </div>
+    <div class="tarjeta" id="instalar" data-sub="datos">
+      <h2>Instálala en tu móvil</h2>
+      <p class="subt">Así la tienes como un icono en la pantalla de inicio y abre aunque no haya cobertura.</p>
+      <p class="subt"><strong>iPhone:</strong> en Safari, pulsa Compartir y luego «Añadir a pantalla de inicio». <strong>Android:</strong> en el menú del navegador, «Instalar app».</p>
+      <button type="button" class="btn-secundario" id="instalar-boton" hidden>Instalar ahora</button>
+    </div>
     <details class="tarjeta" id="tarjeta-alertas" data-sub="alertas" hidden open>
       <summary><h2>Alertas para Pablo</h2></summary>
       <p class="subt">Señales que Pablo tiene que repasar contigo. Se guardan solo en este navegador: no se envía nada a nadie. No son un diagnóstico.</p>
@@ -1438,10 +1449,11 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=5db3222"></script>
-<script src="fuentes.js?v=5db3222"></script>
-<script src="motor.bundle.js?v=5db3222"></script>
-<script src="cuestionario.js?v=5db3222"></script>
-<script src="nube.js?v=5db3222"></script>
+<script src="novedades.js?v=e76dffa"></script>
+<script src="fuentes.js?v=e76dffa"></script>
+<script src="motor.bundle.js?v=e76dffa"></script>
+<script src="cuestionario.js?v=e76dffa"></script>
+<script src="nube.js?v=e76dffa"></script>
+<script src="pwa.js?v=e76dffa"></script>
 </body>
 </html>
