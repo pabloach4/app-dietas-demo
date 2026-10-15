@@ -94,6 +94,18 @@
   .sesion-card .quitar {
     background: none; border: none; color: var(--peligro); font-size: 0.9rem; padding: 0.3rem 0; width: auto;
   }
+  /* #219: tutorial al entrar. La luz atenúa todo lo demás con su sombra; la capa entera recoge los toques; zona segura del iPhone. */
+  #tutorial { position: fixed; inset: 0; z-index: 1000; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  #tutorial[hidden] { display: none; }
+  #tut-luz { position: fixed; border-radius: 14px; box-shadow: 0 0 0 200vmax rgba(8, 12, 18, .62); pointer-events: none; transition: top .2s, left .2s, width .2s, height .2s; }
+  #tut-tarjeta { position: fixed; width: min(340px, calc(100vw - 32px)); background: var(--tarjeta); color: var(--texto); border-radius: 16px; padding: 1rem; box-shadow: 0 12px 32px rgba(0, 0, 0, .35); }
+  #tut-texto { margin: 0; font-size: 1rem; line-height: 1.45; }
+  .tut-cuenta { margin: 0 0 0.35rem; font-size: 0.875rem; color: var(--gris); }
+  .tut-botones { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.9rem; }
+  .tut-nav { display: flex; gap: 0.5rem; }
+  .tut-botones button { width: auto; min-height: 44px; padding: 0.55rem 1rem; margin: 0; font-size: 1rem; }
+  @media (prefers-reduced-motion: reduce) { #tut-luz { transition: none; } }
+  @media print { #tutorial { display: none !important; } }
   /* #220: deporte principal y semana por días */
   .dp-pregunta { margin: 0.2rem 0 0.6rem; }
   .dp-botones { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.5rem; margin-bottom: 1rem; }
@@ -1301,6 +1313,7 @@
         <button type="button" class="perfil-fila" data-ir="competiciones"><span>Mis competiciones</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="alertas" hidden><span>Alertas para Pablo</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="nube" hidden><span>Que Pablo vea mis datos</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="perfil-fila" id="btn-tutorial"><span>Ver el tutorial otra vez</span><span aria-hidden="true">›</span></button>
       </div>
       <button type="button" class="btn-texto" id="perfil-atras" hidden>← Perfil</button>
       <div class="tarjeta" id="perfil-resumen" data-sub="datos">
@@ -1461,11 +1474,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=7079af2"></script>
-<script src="fuentes.js?v=7079af2"></script>
-<script src="motor.bundle.js?v=7079af2"></script>
-<script src="cuestionario.js?v=7079af2"></script>
-<script src="nube.js?v=7079af2"></script>
-<script src="pwa.js?v=7079af2"></script>
+<script src="novedades.js?v=851ca0e"></script>
+<script src="fuentes.js?v=851ca0e"></script>
+<script src="motor.bundle.js?v=851ca0e"></script>
+<script src="cuestionario.js?v=851ca0e"></script>
+<script src="nube.js?v=851ca0e"></script>
+<script src="pwa.js?v=851ca0e"></script>
+<div id="tutorial" hidden></div>
 </body>
 </html>

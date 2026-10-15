@@ -2118,7 +2118,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   function borrarPerfilGuardado() {
     try { localStorage.removeItem(CLAVE_GUARDADO); } catch { falloAlmacenamiento(); /* nada que borrar */ }
     document.getElementById('aviso-guardado').hidden = true;
-    cargarEjemplo('general');
+    formularioNuevo();
   }
   document.getElementById('empezar-de-cero').addEventListener('click', borrarPerfilGuardado);
 
@@ -2133,6 +2133,15 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('revision-confirmada').checked = false;
   }
 
+  // #220 (revisión de coordinación): un cuestionario nuevo arranca con los datos de ejemplo de siempre pero SIN sesiones y sin
+  // deporte principal elegido: las sesiones del ejemplo no son de la persona y el plan las usaría sin que lo sepa.
+  function formularioNuevo() {
+    cargarEjemplo('general');
+    deporteElegido = '';
+    marcarDeporte();
+    pintarSesiones([]);
+  }
+
   function cargarPerfilGuardadoSiHay() {
     let guardado = null;
     try { guardado = JSON.parse(localStorage.getItem(CLAVE_GUARDADO) || 'null'); } catch { /* storage bloqueado o dato corrupto */ }
@@ -2140,11 +2149,11 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const formaValida = guardado && typeof guardado === 'object' && !Array.isArray(guardado)
       && (guardado.sesiones === undefined || Array.isArray(guardado.sesiones))
       && (guardado.franjas === undefined || (guardado.franjas && typeof guardado.franjas === 'object' && !Array.isArray(guardado.franjas)));
-    if (!formaValida) { cargarEjemplo('general'); return; }
+    if (!formaValida) { formularioNuevo(); return; }
     try {
       rellenarFormulario(guardado, { conservarSustituciones: true });
     } catch {
-      cargarEjemplo('general'); // el perfil guardado estaba dañado a medias: se vuelve a un ejemplo limpio, sin precarga
+      formularioNuevo(); // el perfil guardado estaba dañado a medias: se vuelve a un cuestionario limpio, sin precarga
       return;
     }
     exigirRevisionPerfil(true);
@@ -3601,7 +3610,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   });
   document.getElementById('derivar-reiniciar').addEventListener('click', () => {
     document.getElementById('derivar').hidden = true;
-    cargarEjemplo('general');
+    formularioNuevo();
     const peso = document.getElementById('peso');
     if (peso) peso.focus();
   });
@@ -3692,7 +3701,116 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     diasMasAbiertos.clear();
     guardarPerfilLocal(); // issue #20: para precargarlo la próxima vez que se abra la demo
     mostrarResultado(Motor.crearSemana(resultado.perfil), plan, respuestas, leerFranjas());
+    if (!tutorialVisto()) abrirTutorial(); // #219: la primera vez que se llega al plan
   });
+
+  // #219 (Pablo, 15/10): la primera vez que la persona llega a su plan sale un tutorial corto con lo básico del día a día, señalando
+  // el sitio real de la pantalla. Una sola vez (localStorage; si no se puede guardar, solo se recuerda en esta visita). Se vuelve a ver
+  // desde Perfil. Un paso cuyo elemento no está o no se ve se salta: nunca se señala algo que no existe.
+  const CLAVE_TUTORIAL = 'app-dietas-tutorial-visto';
+  let tutorialVistoAqui = false;
+  const tutorialVisto = () => { if (tutorialVistoAqui) return true; try { return !!localStorage.getItem(CLAVE_TUTORIAL); } catch { return false; } };
+  function marcarTutorialVisto() {
+    tutorialVistoAqui = true;
+    try { localStorage.setItem(CLAVE_TUTORIAL, new Date().toISOString()); } catch { /* sin almacenamiento: no vuelve a salir en esta visita */ }
+  }
+  const seVe = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+  const PASOS_TUTORIAL = [
+    { el: () => document.querySelector('#hoy-ahora .hoy-toca') || document.getElementById('hoy-ahora'), texto: 'Aquí tienes la comida que te toca ahora. Toca «Receta» o «Cantidades» para ver cómo se hace y cuánto lleva.' },
+    { el: () => [...document.querySelectorAll('#hoy-ahora .hoy-accion')].find((b) => b.textContent.trim() === 'Cambiar'), texto: '¿No te apetece? «Cambiar» te propone otros platos que encajan. Ahí también está «He comido fuera», para apuntar lo que comes fuera de casa.' },
+    { el: () => document.getElementById('tab-semana'), texto: 'En «Semana» tienes el plan de todos los días.' },
+    { el: () => document.getElementById('tab-compra'), texto: 'En «Compra», la lista de la compra de tu plan.' },
+    { el: () => document.getElementById('tab-perfil'), texto: () => `En «Perfil» cambias tus datos y tus alergias${document.getElementById('tarjeta-nube') && !document.getElementById('tarjeta-nube').hidden ? ', y con «Que Pablo vea mis datos» le llegan a Pablo' : ''}. Desde ahí puedes volver a ver este tutorial.` },
+  ];
+  let tutorial = null; // { pasos, i, previo }
+  function cerrarTutorial() {
+    if (!tutorial) return;
+    document.querySelectorAll('[data-tutorial-activo]').forEach((e) => e.removeAttribute('data-tutorial-activo'));
+    const caja = document.getElementById('tutorial');
+    caja.hidden = true;
+    window.removeEventListener('resize', colocarTutorial);
+    window.removeEventListener('scroll', colocarTutorial, true);
+    const previo = tutorial.previo;
+    tutorial = null;
+    marcarTutorialVisto();
+    if (previo && document.contains(previo)) previo.focus();
+  }
+  function colocarTutorial() {
+    if (!tutorial) return;
+    const el = tutorial.pasos[tutorial.i].el();
+    const luz = document.getElementById('tut-luz');
+    const tarjeta = document.getElementById('tut-tarjeta');
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const m = 6;
+    Object.assign(luz.style, { top: `${r.top - m}px`, left: `${r.left - m}px`, width: `${r.width + 2 * m}px`, height: `${r.height + 2 * m}px` });
+    const alto = window.innerHeight;
+    const ancho = document.documentElement.clientWidth;
+    const t = tarjeta.getBoundingClientRect();
+    const cs = getComputedStyle(document.getElementById('tutorial')); // zona segura del iPhone (padding con env())
+    const arriba = 12 + (parseFloat(cs.paddingTop) || 0);
+    const pie = 12 + (parseFloat(cs.paddingBottom) || 0);
+    const abajo = r.top + r.height / 2 < alto / 2;
+    let top = abajo ? r.bottom + m + 12 : r.top - m - 12 - t.height;
+    top = Math.max(arriba, Math.min(top, alto - t.height - pie));
+    const left = Math.max(16, Math.min(r.left + r.width / 2 - t.width / 2, ancho - t.width - 16));
+    Object.assign(tarjeta.style, { top: `${top}px`, left: `${left}px` });
+  }
+  function pintarPasoTutorial() {
+    const paso = tutorial.pasos[tutorial.i];
+    const el = paso.el();
+    document.querySelectorAll('[data-tutorial-activo]').forEach((e) => e.removeAttribute('data-tutorial-activo'));
+    el.setAttribute('data-tutorial-activo', '');
+    if (!el.closest('#tabs-app')) el.scrollIntoView({ block: 'center' });
+    const n = tutorial.pasos.length;
+    document.getElementById('tut-texto').textContent = typeof paso.texto === 'function' ? paso.texto() : paso.texto;
+    document.getElementById('tut-cuenta').textContent = `${tutorial.i + 1} de ${n}`;
+    document.getElementById('tut-atras').disabled = tutorial.i === 0;
+    document.getElementById('tut-siguiente').textContent = tutorial.i === n - 1 ? 'Terminar' : 'Siguiente';
+    colocarTutorial();
+    document.getElementById('tut-siguiente').focus();
+  }
+  function crearCajaTutorial() {
+    const caja = document.getElementById('tutorial');
+    if (caja.dataset.listo) return caja;
+    caja.dataset.listo = '1';
+    caja.innerHTML = `<div id="tut-luz" aria-hidden="true"></div>
+      <div id="tut-tarjeta" role="dialog" aria-modal="true" aria-labelledby="tut-texto">
+        <p class="tut-cuenta" id="tut-cuenta"></p>
+        <p id="tut-texto"></p>
+        <div class="tut-botones">
+          <button type="button" class="btn-texto" id="tut-saltar">Saltar</button>
+          <span class="tut-nav"><button type="button" class="btn-secundario" id="tut-atras">Atrás</button><button type="button" class="btn-principal" id="tut-siguiente">Siguiente</button></span>
+        </div>
+      </div>`;
+    caja.querySelector('#tut-saltar').addEventListener('click', cerrarTutorial);
+    caja.querySelector('#tut-atras').addEventListener('click', () => { if (tutorial && tutorial.i > 0) { tutorial.i--; pintarPasoTutorial(); } });
+    caja.querySelector('#tut-siguiente').addEventListener('click', () => {
+      if (!tutorial) return;
+      if (tutorial.i < tutorial.pasos.length - 1) { tutorial.i++; pintarPasoTutorial(); } else cerrarTutorial();
+    });
+    caja.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') { ev.preventDefault(); cerrarTutorial(); return; }
+      if (ev.key !== 'Tab') return;
+      const botones = [...caja.querySelectorAll('button:not(:disabled)')];
+      const i = botones.indexOf(document.activeElement);
+      ev.preventDefault(); // el foco se queda dentro del tutorial
+      botones[(i + (ev.shiftKey ? -1 : 1) + botones.length) % botones.length].focus();
+    });
+    return caja;
+  }
+  function abrirTutorial() {
+    mostrarPanel('hoy');
+    const pasos = PASOS_TUTORIAL.filter((p) => seVe(p.el()));
+    if (!pasos.length) return;
+    const caja = crearCajaTutorial();
+    tutorial = { pasos, i: 0, previo: document.activeElement };
+    caja.hidden = false;
+    window.addEventListener('resize', colocarTutorial);
+    window.addEventListener('scroll', colocarTutorial, true);
+    pintarPasoTutorial();
+  }
+  document.getElementById('btn-tutorial').addEventListener('click', abrirTutorial);
 
   cargarPerfilGuardadoSiHay();
 })();
