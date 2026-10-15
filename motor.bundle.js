@@ -33,6 +33,7 @@ var Motor = (() => {
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
     ETIQUETA_FASE: () => ETIQUETA_FASE,
     FACTOR_LEGUMBRE_COCIDA: () => FACTOR_LEGUMBRE_COCIDA,
+    FILTROS_PERSONAS: () => FILTROS_PERSONAS,
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
     LIMITES_INGREDIENTES_CSV: () => LIMITES_INGREDIENTES_CSV,
@@ -103,6 +104,7 @@ var Motor = (() => {
     coincideAlimento: () => coincideAlimento,
     combinarConRecetas: () => combinarConRecetas,
     comerFueraDesdeCsv: () => comerFueraDesdeCsv,
+    comidasFueraPersona: () => comidasFueraPersona,
     competicionesDelDia: () => competicionesDelDia,
     competicionesDesdeJson: () => competicionesDesdeJson,
     componerComida: () => componerComida,
@@ -119,6 +121,7 @@ var Motor = (() => {
     copiarAlPortapapeles: () => copiarAlPortapapeles,
     correoValido: () => correoValido,
     crearSemana: () => crearSemana,
+    csvPersonas: () => csvPersonas,
     cuadrarConComidaFuera: () => cuadrarConComidaFuera,
     cuadrarDias: () => cuadrarDias,
     definirParametrosReparto: () => definirParametrosReparto,
@@ -162,6 +165,7 @@ var Motor = (() => {
     filaAlerta: () => filaAlerta,
     filaPlanPablo: () => filaPlanPablo,
     filtrarCatalogo: () => filtrarCatalogo,
+    filtrarPersonas: () => filtrarPersonas,
     filtrarPorDias: () => filtrarPorDias,
     finDeLaDieta: () => finDeLaDieta,
     finUltimaPruebaH: () => finUltimaPruebaH,
@@ -171,6 +175,7 @@ var Motor = (() => {
     generarIcs: () => generarIcs,
     generarListaCompra: () => generarListaCompra,
     grupoDeFranja: () => grupoDeFranja,
+    historialPlanes: () => historialPlanes,
     horaDeGuardado: () => horaDeGuardado,
     idAlerta: () => idAlerta,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
@@ -216,6 +221,7 @@ var Motor = (() => {
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
     restriccionesComoApp: () => restriccionesComoApp,
+    resumenPersonas: () => resumenPersonas,
     revisarPlanPablo: () => revisarPlanPablo,
     revisarSiguienteGuardada: () => revisarSiguienteGuardada,
     rolIngrediente: () => rolIngrediente,
@@ -3027,28 +3033,28 @@ var Motor = (() => {
   // src/motor/csv-simple.ts
   function filasCsv(texto) {
     const filas = [];
-    let fila = [], celda = "", entreComillas = false;
+    let fila = [], celda2 = "", entreComillas = false;
     for (let i = 0; i < texto.length; i++) {
       const c = texto[i];
       if (entreComillas) {
         if (c === '"' && texto[i + 1] === '"') {
-          celda += '"';
+          celda2 += '"';
           i++;
         } else if (c === '"') entreComillas = false;
-        else celda += c;
+        else celda2 += c;
       } else if (c === '"') entreComillas = true;
       else if (c === ",") {
-        fila.push(celda);
-        celda = "";
+        fila.push(celda2);
+        celda2 = "";
       } else if (c === "\n" || c === "\r") {
         if (c === "\r" && texto[i + 1] === "\n") i++;
-        fila.push(celda);
-        celda = "";
+        fila.push(celda2);
+        celda2 = "";
         if (fila.some((x) => x !== "")) filas.push(fila);
         fila = [];
-      } else celda += c;
+      } else celda2 += c;
     }
-    fila.push(celda);
+    fila.push(celda2);
     if (fila.some((x) => x !== "")) filas.push(fila);
     return filas;
   }
@@ -6472,5 +6478,72 @@ R184,nueces,10,grasa,170187,tal cual,`;
     return recibidas.filter((a2) => !ya.has(a2.id));
   }
   var RESPALDO_MS = 6e4;
+
+  // src/motor/centro-personas.ts
+  var FILTROS_PERSONAS = {
+    todas: "Todas",
+    "con-alertas": "Con alertas sin atender",
+    "sin-plan": "Sin plan",
+    revisado: "Plan revisado por m\xED"
+  };
+  var masReciente = (...fechas) => fechas.filter((f2) => Boolean(f2)).sort().pop() ?? "";
+  function resumenPersonas(d) {
+    const hablado = new Set((d.gestion ?? []).filter((g) => g.estado === "hablado").map((g) => g.alerta_id));
+    return d.perfiles.map((p) => {
+      const ficha = (d.fichas ?? []).find((f2) => f2.usuario === p.usuario);
+      const resp = (d.respuestas ?? []).find((r) => r.usuario === p.usuario);
+      const planes = (d.planes ?? []).filter((x) => x.usuario === p.usuario).sort((a2, b) => String(b.creado ?? "").localeCompare(String(a2.creado ?? "")));
+      const alertas = (d.alertas ?? []).filter((a2) => a2.usuario === p.usuario);
+      const pendientes = alertas.filter((a2) => !hablado.has(a2.id));
+      const contacto = (p.contacto ?? "").trim();
+      return {
+        usuario: p.usuario,
+        nombre: (ficha?.nombre ?? "").trim() || (p.nombre ?? "").trim() || contacto || "sin nombre",
+        contacto,
+        ultimaActividad: masReciente(p.actualizado, p.creado, resp?.actualizado, planes[0]?.creado, ...alertas.map((a2) => a2.creada)),
+        alertasSinAtender: pendientes.length,
+        prioritariaSinAtender: pendientes.some((a2) => a2.prioritaria === true),
+        tienePlan: planes.length > 0,
+        revisadoPorPablo: planes[0]?.origen === "pablo"
+      };
+    });
+  }
+  function sinTildes(t) {
+    return String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  }
+  function filtrarPersonas(filas, texto, filtro = "todas") {
+    const palabras = sinTildes(texto).split(/\s+/).filter(Boolean);
+    return filas.filter((f2) => {
+      const donde = sinTildes(f2.nombre + " " + f2.contacto);
+      return palabras.every((w) => donde.includes(w));
+    }).filter((f2) => filtro === "con-alertas" ? f2.alertasSinAtender > 0 : filtro === "sin-plan" ? !f2.tienePlan : filtro === "revisado" ? f2.revisadoPorPablo : true).sort((a2, b) => b.ultimaActividad.localeCompare(a2.ultimaActividad) || a2.nombre.localeCompare(b.nombre, "es"));
+  }
+  function historialPlanes(planes, usuario) {
+    return planes.filter((p) => p.usuario === usuario).sort((a2, b) => String(b.creado ?? "").localeCompare(String(a2.creado ?? "")));
+  }
+  function comidasFueraPersona(registro, copiaMovil, usuario) {
+    const todas = [
+      ...registro.filter((r) => r.usuario === usuario && r.estado === "fuera").map((r) => ({ fecha: r.fecha, franja: r.franja, texto: r.texto ?? "", kcal: r.kcal ?? null })),
+      ...Array.isArray(copiaMovil) ? copiaMovil : []
+    ];
+    const vistas = /* @__PURE__ */ new Set();
+    return todas.filter((c) => {
+      const k = [c.fecha, c.franja, sinTildes(c.texto ?? "")].join("|");
+      if (vistas.has(k)) return false;
+      vistas.add(k);
+      return true;
+    }).sort((a2, b) => String(b.fecha ?? "").localeCompare(String(a2.fecha ?? "")));
+  }
+  function celda(v) {
+    let t = String(v);
+    if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+    return /[;"\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  }
+  function csvPersonas(filas) {
+    const cab = ["nombre", "correo", "ultima_actividad", "alerta_prioritaria", "tiene_plan", "plan_revisado_por_pablo"];
+    const si = (b) => b ? "s\xED" : "no";
+    const lineas = filas.map((f2) => [f2.nombre, f2.contacto, f2.ultimaActividad.slice(0, 10), si(f2.prioritariaSinAtender), si(f2.tienePlan), si(f2.revisadoPorPablo)].map(celda).join(";"));
+    return "\uFEFF" + [cab.join(";"), ...lineas].join("\r\n") + "\r\n";
+  }
   return __toCommonJS(motor_exports);
 })();

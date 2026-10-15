@@ -47,17 +47,28 @@
   .chip { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; background: var(--verde-suave); }
   .chip.rojo { background: var(--rojo-suave); color: var(--rojo); }
   code { font-size: 0.85rem; }
+  /* #215: imprimir la ficha y el plan para la consulta: sin botones, sin alertas ni nota privada, en blanco y negro. */
+  @media print {
+    :root { --texto: #000; --gris: #444; --borde: #bbb; --fondo: #fff; --tarjeta: #fff; }
+    .no-imprimir, button, #cc-aviso, .subt.cabecera { display: none !important; }
+    body { background: #fff; font-size: 11pt; }
+    .env { max-width: none; padding: 0; }
+    .tarjeta { border: none; padding: 0; margin: 0 0 1rem; break-inside: avoid; }
+    .tabla { overflow: visible; }
+    a { color: inherit; text-decoration: none; }
+    tr { break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
 <div class="env">
-  <h1>Centro de control</h1>
-  <p class="subt">Para Pablo, como nutricionista. Lo que las personas guardan con «Que Pablo vea mis datos».</p>
+  <h1 class="no-imprimir">Centro de control</h1>
+  <p class="subt cabecera">Para Pablo, como nutricionista. Lo que las personas guardan con «Que Pablo vea mis datos».</p>
   <div id="cc-aviso" class="tarjeta" role="status" aria-live="polite" hidden></div>
   <div id="cc-cuerpo"><p class="subt">Cargando…</p></div>
 </div>
-<script src="motor.bundle.js?v=e76dffa"></script>
-<script src="centro.js?v=e76dffa"></script>
-<script src="pwa.js?v=e76dffa"></script>
+<script src="motor.bundle.js?v=de40074"></script>
+<script src="centro.js?v=de40074"></script>
+<script src="pwa.js?v=de40074"></script>
 </body>
 </html>

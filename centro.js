@@ -24,9 +24,11 @@
   })();
 
   let sb = null;
-  let datos = { perfiles: [], respuestas: [], alertas: [], gestion: [], planes: [] };
+  let datos = { perfiles: [], respuestas: [], alertas: [], gestion: [], planes: [], fichas: [], registro: [] };
   let vista = 'alertas';
   let personaAbierta = null;
+  // #215: buscador y filtro de Personas, plan elegido en el historial de cada ficha y si existe la tabla de fichas (docs/supabase/004-fichas.sql).
+  let busqueda = ''; let filtroPersonas = 'todas'; const planVisto = {}; let fichasOk = true;
 
   function cargarLibreria() {
     if (window.supabase && window.supabase.createClient) return Promise.resolve(); // (la prueba de navegador pone uno simulado)
@@ -71,7 +73,13 @@
     ]);
     const err = [p, r, a, g, pl].find((x) => x.error);
     if (err) throw err.error;
-    datos = { perfiles: p.data, respuestas: r.data, alertas: a.data, gestion: g.data, planes: pl.data };
+    // Fichas (nombre y nota de Pablo) y registro de comidas fuera: si la tabla aún no existe, el centro sigue funcionando sin ellas.
+    const [f, rc] = await Promise.all([
+      sb.from('fichas').select('usuario, nombre, nota, actualizado'),
+      sb.from('registro_comidas').select('usuario, fecha, franja, estado, kcal, texto, creado').eq('estado', 'fuera'),
+    ]);
+    fichasOk = !f.error;
+    datos = { perfiles: p.data, respuestas: r.data, alertas: a.data, gestion: g.data, planes: pl.data, fichas: (!f.error && f.data) || [], registro: (!rc.error && rc.data) || [] };
   }
 
   const contactoDe = (u) => (datos.perfiles.find((p) => p.usuario === u) || {}).contacto || 'sin contacto';
@@ -102,15 +110,40 @@
       ${hechas.length ? `<details class="tarjeta"><summary>Atendidas (${hechas.length})</summary>${hechas.map(htmlAlerta).join('')}</details>` : ''}`;
   }
 
+  // #215: buscador por nombre o correo, filtros, orden por última actividad y exportar a CSV (sin datos de salud).
+  const nombreDe = (u) => (Motor.resumenPersonas({ ...datos, perfiles: datos.perfiles.filter((p) => p.usuario === u) })[0] || {}).nombre || contactoDe(u);
+  function listaPersonas() {
+    const todas = Motor.resumenPersonas(datos);
+    const filas = Motor.filtrarPersonas(todas, busqueda, filtroPersonas);
+    const html = filas.map((x) => `<div class="tarjeta persona cc-ver" data-u="${esc(x.usuario)}"><div class="fila" style="justify-content:space-between">
+        <strong>${esc(x.nombre)}</strong><span>${x.alertasSinAtender ? `<span class="chip rojo">${x.alertasSinAtender} alerta${x.alertasSinAtender === 1 ? '' : 's'}</span> ` : ''}${x.revisadoPorPablo ? '<span class="chip">plan revisado</span>' : x.tienePlan ? '' : '<span class="chip">sin plan</span>'}</span></div>
+        <p class="subt">${x.contacto && x.contacto !== x.nombre ? `${esc(x.contacto)} · ` : ''}Última actividad: ${esc(fecha(x.ultimaActividad))}</p></div>`);
+    const cuenta = filas.length === todas.length ? `${todas.length} persona${todas.length === 1 ? '' : 's'}.` : `${filas.length} de ${todas.length} personas.`;
+    return `<p class="subt" id="cc-cuenta">${cuenta}</p>${html.join('') || `<div class="tarjeta"><p>${todas.length ? 'Nadie cumple la búsqueda.' : 'Todavía no hay nadie.'}</p></div>`}`;
+  }
   function pintarPersonas() {
-    const filas = datos.perfiles.slice().sort((a, b) => String(b.actualizado).localeCompare(String(a.actualizado))).map((p) => {
-      const n = datos.alertas.filter((a) => a.usuario === p.usuario && gestionDe(a.id).estado !== 'hablado').length;
-      const ult = (datos.respuestas.find((r) => r.usuario === p.usuario) || {}).actualizado;
-      return `<div class="tarjeta persona cc-ver" data-u="${esc(p.usuario)}"><div class="fila" style="justify-content:space-between">
-        <strong>${esc(p.nombre || p.contacto || 'sin nombre')}</strong>${n ? `<span class="chip rojo">${n} alerta${n === 1 ? '' : 's'}</span>` : ''}</div>
-        <p class="subt">Última actividad: ${esc(fecha(ult || p.actualizado))}</p></div>`;
+    return `<div class="fila"><input id="cc-buscar" type="search" placeholder="Buscar por nombre o correo" aria-label="Buscar por nombre o correo" value="${esc(busqueda)}">
+        <select id="cc-filtro" aria-label="Filtrar personas">${Object.entries(Motor.FILTROS_PERSONAS).map(([k, v]) => `<option value="${k}"${k === filtroPersonas ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></div>
+      <div class="fila" style="margin:0.5rem 0"><button class="sec" id="cc-csv" style="flex:0 0 auto">Exportar a CSV</button><span class="subt">Nombre, correo y señales; sin datos de salud.</span></div>
+      <div id="cc-lista">${listaPersonas()}</div>`;
+  }
+  function activarPersonas() {
+    const lista = document.getElementById('cc-lista');
+    if (!lista) return;
+    const repintar = () => { lista.innerHTML = listaPersonas(); activarVer(lista); };
+    document.getElementById('cc-buscar').addEventListener('input', (e) => { busqueda = e.target.value; repintar(); });
+    document.getElementById('cc-filtro').addEventListener('change', (e) => { filtroPersonas = e.target.value; repintar(); });
+    document.getElementById('cc-csv').addEventListener('click', () => {
+      const csv = Motor.csvPersonas(Motor.filtrarPersonas(Motor.resumenPersonas(datos), busqueda, filtroPersonas));
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = `personas-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     });
-    return `<p class="subt">${datos.perfiles.length} persona${datos.perfiles.length === 1 ? '' : 's'}.</p>${filas.join('') || '<div class="tarjeta"><p>Todavía no hay nadie.</p></div>'}`;
+  }
+  function activarVer(raiz) {
+    raiz.querySelectorAll('.cc-ver').forEach((e) => e.addEventListener('click', (ev) => { ev.preventDefault(); personaAbierta = e.dataset.u; pintar(); window.scrollTo(0, 0); }));
   }
 
   function pintarFicha(u) {
@@ -118,15 +151,24 @@
     const r = datos.respuestas.find((x) => x.usuario === u);
     const inst = (r && r.datos && r.datos.instantanea) || {};
     const f = inst['app-dietas-ultimo-perfil'] || {};
-    const plan = datos.planes.find((x) => x.usuario === u);
-    const fuera = inst['app-dietas-comidas-fuera'] || [];
+    const historial = Motor.historialPlanes(datos.planes, u);
+    const plan = historial.find((x) => x.id === planVisto[u]) || historial[0];
+    const fuera = Motor.comidasFueraPersona(datos.registro, inst['app-dietas-comidas-fuera'] || [], u);
+    const ficha = datos.fichas.find((x) => x.usuario === u) || {};
+    const nombre = nombreDe(u);
     const periodo = inst['app-dietas-periodo'] || {};
     const alertas = datos.alertas.filter((a) => a.usuario === u);
     const dias = (plan && plan.plan && plan.plan.dias) || [];
     const asign = (plan && plan.plan && plan.plan.asignaciones) || [];
     const ORDEN = ['desayuno', 'media_manana', 'comida', 'merienda', 'cena'];
-    return `<button class="sec" id="cc-volver">← Volver</button>${plan ? `<button id="cc-revisar" data-u="${esc(u)}" style="margin-left:0.5rem">Revisar plan</button>` : ''}
-      <div class="tarjeta"><h2>${esc(p.nombre || p.contacto)}</h2>
+    return `<div class="fila no-imprimir" style="gap:0.5rem"><button class="sec" id="cc-volver" style="flex:0 0 auto">← Volver</button>${historial.length ? `<button id="cc-revisar" data-u="${esc(u)}" style="flex:0 0 auto">Revisar plan</button>` : ''}<button class="sec" id="cc-imprimir" style="flex:0 0 auto">Imprimir / PDF</button></div>
+      <div class="tarjeta no-imprimir"><h2>Tu ficha de esta persona</h2>
+        ${fichasOk ? `<p class="subt">Solo la ves tú: la persona no ve el nombre que pongas ni la nota, y la nota no sale al imprimir.</p>
+        <input id="cc-ficha-nombre" maxlength="80" placeholder="Nombre (p. ej. María López)" aria-label="Nombre" value="${esc(ficha.nombre || '')}">
+        <textarea id="cc-ficha-nota" maxlength="4000" placeholder="Nota privada" aria-label="Nota privada" style="margin-top:0.5rem">${esc(ficha.nota || '')}</textarea>
+        <div class="fila" style="margin-top:0.5rem"><button id="cc-ficha-guardar" data-u="${esc(u)}" style="flex:0 0 auto">Guardar</button><span class="subt" id="cc-ficha-ok" aria-live="polite">${ficha.actualizado ? `Última vez: ${esc(fecha(ficha.actualizado))}` : ''}</span></div>`
+        : '<p class="subt">Para poner nombre y nota privada hace falta pegar una vez <code>docs/supabase/004-fichas.sql</code> en Supabase → SQL Editor.</p>'}</div>
+      <div class="tarjeta"><h2>${esc(nombre)}</h2>
         <p class="subt"><a href="mailto:${esc(p.contacto)}">${esc(p.contacto)}</a> · alta ${esc(fecha(p.creado))} · última subida ${esc(fecha(r && r.actualizado))}</p>
         <table><tbody>
           <tr><th>Peso / altura / edad</th><td>${esc(f.peso ?? '—')} kg · ${esc(f.altura ?? '—')} cm · ${esc(f.edad ?? '—')} años · ${esc(f.sexo || '')}</td></tr>
@@ -137,14 +179,15 @@
           <tr><th>Dieta</th><td>${periodo.inicio ? `desde ${esc(periodo.inicio)}, ${esc(periodo.semanas || 1)} semana(s)` : 'sin fechas'}</td></tr>
           <tr><th>Lista negra</th><td>${esc((Array.isArray(inst['app-dietas-lista-negra']) ? inst['app-dietas-lista-negra'] : []).join(', ') || '—')}</td></tr>
         </tbody></table></div>
-      ${alertas.length ? `<h2>Alertas</h2>${alertas.map(htmlAlerta).join('')}` : ''}
+      ${alertas.length ? `<div class="no-imprimir"><h2>Alertas</h2>${alertas.map(htmlAlerta).join('')}</div>` : ''}
+      ${historial.length > 1 ? `<div class="tarjeta no-imprimir"><h2>Historial de planes (${historial.length})</h2><ul>${historial.map((x) => `<li>${esc(fecha(x.creado))} · ${x.origen === 'pablo' ? 'publicado por ti' : 'de la app'}${x.inicio ? ` · desde ${esc(x.inicio)}, ${esc(x.semanas || 1)} semana(s)` : ''} ${x === plan ? '<strong>(el que ves)</strong>' : `<a href="#" class="cc-plan" data-u="${esc(u)}" data-id="${esc(x.id)}">ver</a>`}</li>`).join('')}</ul></div>` : ''}
       <div class="tarjeta"><h2>Plan ${plan ? `(${esc(plan.origen === 'pablo' ? 'publicado por ti' : 'de la app')}, ${esc(fecha(plan.creado))})` : ''}</h2>
         ${plan ? `<p class="subt">Media: ${esc(plan.plan.kcalMedia)} kcal/día${plan.plan.huecos ? ` · ${esc(plan.plan.huecos)} comidas sin receta` : ''}</p>
         <div class="tabla"><table><thead><tr><th>Día</th><th>kcal</th><th>P/G/H (g)</th><th>Comidas</th></tr></thead><tbody>
         ${dias.map((d) => `<tr><td>${esc(d.dia)}<br><span class="subt">${esc(d.tipo)}</span></td><td>${esc(d.kcal)}</td><td>${esc(d.proteinaG)}/${esc(d.grasaG)}/${esc(d.hidratoG)}</td>
           <td>${asign.filter((a) => a.dia === d.dia).sort((x, y) => ORDEN.indexOf(x.franja) - ORDEN.indexOf(y.franja)).map((a) => `${esc(a.franja.replace('_', ' '))}: ${esc(nombreReceta(a.receta))}${a.racionAjustada && Math.abs(a.racionAjustada - 1) > 0.01 ? ` ×${esc(String(Math.round(a.racionAjustada * 100) / 100).replace('.', ','))}` : ''}`).join('<br>')}</td></tr>`).join('')}
         </tbody></table></div>` : '<p>Todavía no ha subido ningún plan.</p>'}</div>
-      <div class="tarjeta"><h2>Comidas fuera</h2>${fuera.length ? `<ul>${fuera.slice(-20).reverse().map((c) => `<li>${esc(c.fecha)} ${esc(c.franja)}: ${esc(c.texto)}${c.kcal ? ` (${esc(c.kcal)} kcal)` : ''}</li>`).join('')}</ul>` : '<p class="subt">Ninguna.</p>'}</div>`;
+      <div class="tarjeta"><h2>Comidas fuera${fuera.length ? ` (${fuera.length})` : ''}</h2>${fuera.length ? `<ul>${fuera.map((c) => `<li>${esc(c.fecha)} ${esc(c.franja)}: ${esc(c.texto)}${c.kcal ? ` (${esc(c.kcal)} kcal)` : ''}</li>`).join('')}</ul>` : '<p class="subt">Ninguna.</p>'}</div>`;
   }
 
   // --- #207: revisar y publicar el plan de una persona ---
@@ -158,7 +201,8 @@
   const idDeTexto = (t) => { const m = /\(([^()]+)\)\s*$/.exec(t.trim()); if (m) return m[1]; const r = catalogo.find((x) => x.nombre.toLowerCase() === t.trim().toLowerCase()); return r ? r.id : t.trim(); };
 
   function abrirEditor(u) {
-    const plan = datos.planes.find((x) => x.usuario === u);
+    const historial = Motor.historialPlanes(datos.planes, u);
+    const plan = historial.find((x) => x.id === planVisto[u]) || historial[0]; // el que Pablo está viendo en la ficha (#215)
     if (!plan || !plan.plan || !Array.isArray(plan.plan.asignaciones)) return;
     edicion = {
       u, base: { inicio: plan.inicio, semanas: plan.semanas, plan: plan.plan },
@@ -302,7 +346,23 @@
     if (revisar) revisar.addEventListener('click', () => abrirEditor(revisar.dataset.u));
     const volver = document.getElementById('cc-volver');
     if (volver) volver.addEventListener('click', () => { personaAbierta = null; pintar(); });
-    cuerpo.querySelectorAll('.cc-ver').forEach((e) => e.addEventListener('click', (ev) => { ev.preventDefault(); personaAbierta = e.dataset.u; pintar(); window.scrollTo(0, 0); }));
+    activarVer(cuerpo);
+    activarPersonas();
+    const imprimir = document.getElementById('cc-imprimir');
+    if (imprimir) imprimir.addEventListener('click', () => window.print());
+    cuerpo.querySelectorAll('.cc-plan').forEach((e) => e.addEventListener('click', (ev) => { ev.preventDefault(); planVisto[e.dataset.u] = Number(e.dataset.id); pintar(); }));
+    const guardarFicha = document.getElementById('cc-ficha-guardar');
+    if (guardarFicha) guardarFicha.addEventListener('click', async () => {
+      const u = guardarFicha.dataset.u;
+      const fila = { usuario: u, nombre: document.getElementById('cc-ficha-nombre').value.trim().slice(0, 80) || null, nota: document.getElementById('cc-ficha-nota').value.slice(0, 4000) || null, actualizado: new Date().toISOString() };
+      const ok = document.getElementById('cc-ficha-ok');
+      const { error } = await sb.from('fichas').upsert(fila, { onConflict: 'usuario' });
+      if (error) { ok.textContent = `No se ha guardado (${error.message}).`; return; }
+      const i = datos.fichas.findIndex((x) => x.usuario === u);
+      if (i >= 0) datos.fichas[i] = fila; else datos.fichas.push(fila);
+      pintar();
+      document.getElementById('cc-ficha-ok').textContent = 'Guardado.';
+    });
     cuerpo.querySelectorAll('.cc-guardar').forEach((b) => b.addEventListener('click', async () => {
       const id = Number(b.dataset.id);
       const estado = cuerpo.querySelector(`.cc-estado[data-id="${id}"]`).value;
