@@ -190,6 +190,7 @@ var Motor = (() => {
     leerEvitados: () => leerEvitados,
     limiteFibraG: () => limiteFibraG,
     limitesIngredientesDesdeCsv: () => limitesIngredientesDesdeCsv,
+    limpiarCodigoTotp: () => limpiarCodigoTotp,
     limpiarNotaSesion: () => limpiarNotaSesion,
     lineasIcs: () => lineasIcs,
     liquidoRecuperacion: () => liquidoRecuperacion,
@@ -212,6 +213,7 @@ var Motor = (() => {
     parsearPrecios: () => parsearPrecios,
     parsearRecetas: () => parsearRecetas,
     parsearTablaLimites: () => parsearTablaLimites,
+    pasoDosPasos: () => pasoDosPasos,
     perfilDesdeCuestionario: () => perfilDesdeCuestionario,
     pesoCocido: () => pesoCocido,
     pesoServido: () => pesoServido,
@@ -6638,6 +6640,16 @@ R184,nueces,10,grasa,170187,tal cual,`;
       max = n;
     }
     return mejor;
+  }
+
+  // src/motor/dos-pasos.ts
+  function pasoDosPasos(e) {
+    if (e.verificados < 1) return "activar";
+    return e.nivel === "aal2" ? "listo" : "pedir_codigo";
+  }
+  function limpiarCodigoTotp(texto) {
+    const c = String(texto ?? "").replace(/[\s-]/g, "");
+    return /^\d{6}$/.test(c) ? c : null;
   }
   return __toCommonJS(motor_exports);
 })();

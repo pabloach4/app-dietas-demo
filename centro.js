@@ -1,5 +1,5 @@
 // Centro de control de Pablo (#199, parte 4): alertas, personas y ficha de cada una, leídas de Supabase.
-// Entra con un enlace al correo. Las reglas del servidor (docs/supabase/001-tablas.sql) solo dejan ver todo a una cuenta que
+// Entra con un enlace al correo y, desde #225, con el código de 6 cifras de una app del móvil (dos pasos). Las reglas del servidor (docs/supabase/001-tablas.sql) solo dejan ver todo a una cuenta que
 // esté en `nutricionistas`; cualquier otra cuenta ve solo lo suyo (o nada), así que esta página no protege nada por sí misma.
 (function () {
   'use strict';
@@ -61,6 +61,70 @@
       <p class="subt">Después recarga esta página.</p>
       <button class="sec" id="cc-salir">Salir</button></div>`;
     document.getElementById('cc-salir').addEventListener('click', async () => { parar(); await sb.auth.signOut(); pantallaEntrar(); });
+  }
+
+  // #225: dos pasos. Con la cuenta ya reconocida como nutricionista, sin el código no se carga nada. Con 007-dos-pasos.sql pegado,
+  // además el servidor no le enseña nada sin él (esta página no protege por sí misma).
+  async function comprobarDosPasos() {
+    const mfa = sb.auth.mfa;
+    if (!mfa) return { paso: 'listo' }; // librería sin dos pasos (las pruebas antiguas): el servidor sigue mandando
+    const [nivel, factores] = await Promise.all([mfa.getAuthenticatorAssuranceLevel(), mfa.listFactors()]);
+    if (nivel.error || factores.error) throw (nivel.error || factores.error);
+    const todos = (factores.data && (factores.data.all || factores.data.totp)) || [];
+    const verificados = todos.filter((f) => f.factor_type === 'totp' && f.status === 'verified');
+    const paso = Motor.pasoDosPasos({ verificados: verificados.length, nivel: nivel.data && nivel.data.currentLevel });
+    return { paso, factor: verificados[0], sinVerificar: todos.filter((f) => f.factor_type === 'totp' && f.status !== 'verified') };
+  }
+
+  function campoCodigo(id) {
+    return `<label for="${id}">Código de 6 cifras</label><input id="${id}" inputmode="numeric" autocomplete="one-time-code" maxlength="9" placeholder="123 456">`;
+  }
+
+  async function verificar(factorId, idCampo, idEstado) {
+    const estado = document.getElementById(idEstado);
+    const codigo = Motor.limpiarCodigoTotp(document.getElementById(idCampo).value);
+    if (!codigo) { estado.textContent = 'Escribe las 6 cifras que te enseña la app del móvil.'; return; }
+    estado.textContent = 'Comprobando…';
+    const { error } = await sb.auth.mfa.challengeAndVerify({ factorId, code: codigo });
+    if (error) { estado.textContent = 'Ese código no vale. Los códigos cambian cada 30 segundos: escribe el que sale ahora.'; return; }
+    iniciar();
+  }
+
+  async function pantallaActivarDosPasos(sinVerificar) {
+    cuerpo.innerHTML = '<p class="subt">Preparando la verificación en dos pasos…</p>';
+    for (const f of sinVerificar || []) await sb.auth.mfa.unenroll({ factorId: f.id }); // intentos a medias de otra vez
+    const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Centro de control' });
+    if (error) { cuerpo.innerHTML = `<div class="tarjeta"><p>No se ha podido preparar la verificación (${esc(error.message)}).</p><button class="sec" id="cc-salir">Salir</button></div>`; activarSalir(); return; }
+    const qr = data.totp && data.totp.qr_code;
+    cuerpo.innerHTML = `<div class="tarjeta"><h2>Activa la verificación en dos pasos</h2>
+      <p>Aquí ves los datos de salud de todas las personas, así que además del correo hace falta un código de tu móvil. Solo se hace una vez:</p>
+      <ol><li>Instala en el móvil una app de códigos: Google Authenticator, Microsoft Authenticator, o las Contraseñas del iPhone.</li>
+      <li>En esa app, añade una cuenta y escanea este código:</li></ol>
+      ${qr && /^data:image\//.test(qr) ? `<p style="text-align:center"><img id="cc-qr" src="${esc(qr)}" alt="Código QR para la app de códigos" width="200" height="200" style="background:#fff;padding:8px;border-radius:8px"></p>` : ''}
+      <p class="subt">Si no puedes escanearlo, escribe esta clave en la app: <code id="cc-clave">${esc(data.totp && data.totp.secret)}</code></p>
+      <ol start="3"><li>Escribe el código de 6 cifras que te sale en la app:</li></ol>
+      <div class="fila">${campoCodigo('cc-codigo')}<button id="cc-activar">Activar</button></div>
+      <p class="subt" id="cc-estado" aria-live="polite"></p>
+      <button class="sec" id="cc-salir">Salir</button></div>`;
+    document.getElementById('cc-activar').addEventListener('click', () => verificar(data.id, 'cc-codigo', 'cc-estado'));
+    activarSalir();
+  }
+
+  function pantallaPedirCodigo(factor) {
+    cuerpo.innerHTML = `<div class="tarjeta"><h2>Código de tu móvil</h2>
+      <p>Abre tu app de códigos y escribe el de «Centro de control».</p>
+      <div class="fila">${campoCodigo('cc-codigo')}<button id="cc-verificar">Entrar</button></div>
+      <p class="subt" id="cc-estado" aria-live="polite"></p>
+      <button class="sec" id="cc-salir">Salir</button></div>`;
+    document.getElementById('cc-verificar').addEventListener('click', () => verificar(factor.id, 'cc-codigo', 'cc-estado'));
+    document.getElementById('cc-codigo').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') verificar(factor.id, 'cc-codigo', 'cc-estado'); });
+    document.getElementById('cc-codigo').focus();
+    activarSalir();
+  }
+
+  function activarSalir() {
+    const b = document.getElementById('cc-salir');
+    if (b) b.addEventListener('click', async () => { parar(); await sb.auth.signOut(); pantallaEntrar(); });
   }
 
   async function cargarDatos() {
@@ -384,6 +448,10 @@
     const n = await sb.from('nutricionistas').select('user_id').eq('user_id', sesion.user.id);
     if (n.error) { cuerpo.innerHTML = `<div class="tarjeta"><p>Error al comprobar la cuenta: ${esc(n.error.message)}</p></div>`; return; }
     if (!n.data.length) return pantallaNoNutricionista(sesion);
+    let dos;
+    try { dos = await comprobarDosPasos(); } catch (e) { cuerpo.innerHTML = `<div class="tarjeta"><p>Error al comprobar la verificación en dos pasos: ${esc(e.message)}</p></div>`; return; }
+    if (dos.paso === 'activar') return pantallaActivarDosPasos(dos.sinVerificar);
+    if (dos.paso === 'pedir_codigo') return pantallaPedirCodigo(dos.factor);
     cuerpo.innerHTML = '<p class="subt">Cargando datos…</p>';
     try { await cargarDatos(); pintar(); suscribir(); } catch (e) { cuerpo.innerHTML = `<div class="tarjeta"><p>Error al cargar: ${esc(e.message)}</p></div>`; }
   }

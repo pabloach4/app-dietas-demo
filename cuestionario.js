@@ -995,6 +995,25 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       }
     } else if (conHora.length) {
       bloqueComida = '<div class="hoy-bloque"><h3>Comidas</h3><div class="titulo">Hoy ya no te queda ninguna comida por delante. ¡Buen trabajo!</div></div>';
+      // #219 (revisión): de noche se adelanta la primera comida de mañana, con sus botones, para que se pueda mirar y preparar.
+      const manana = LETRA_DIA_JS[(ahora.getDay() + 1) % 7];
+      const repManana = vistaSemana.repartosPorDia.find((r) => r.dia.dia === manana);
+      const horasManana = franjasDelDia(manana);
+      const primera = repManana && repManana.reparto.franjas
+        .map((f) => ({ f, hora: (horasManana.find((x) => x.franja === f.franja) || {}).hora }))
+        .filter((c) => c.hora !== undefined).sort((a, b) => a.hora - b.hora)[0];
+      const asignadaM = primera && vistaSemana.recetaPorSlot.get(`${manana}|${primera.f.franja}`);
+      if (asignadaM) {
+        const nombreM = NOMBRE[primera.f.franja] ?? primera.f.franja;
+        const accionM = (vista, texto) => `<button type="button" class="hoy-accion" data-dia="${manana}" data-franja="${primera.f.franja}" data-vista="${vista}" aria-label="${texto}: ${nombreM.toLowerCase()} de mañana">${texto}</button>`;
+        const partesM = asignadaM.receta.nombre.split(' · ');
+        bloqueComida += `
+        <div class="hoy-bloque destacado hoy-toca hoy-manana">
+          <h3>Mañana · ${nombreM} · ${horaDecimalATexto(primera.hora)}</h3>
+          <div class="hoy-plato${partesM.length > 1 ? ' hoy-plato-menu' : ''}">${partesM.map((x) => `<span>${escaparHtml(x)}</span>`).join(' ')} <span class="etq-ejemplo">EJEMPLO</span></div>
+          <div class="hoy-acciones">${accionM('receta', 'Receta')}${accionM('cantidades', 'Cantidades')}${accionM('cambiar', 'Cambiar')}</div>
+        </div>`;
+      }
     } else {
       bloqueComida = '<div class="hoy-bloque"><h3>Comidas</h3><div class="titulo">Ninguna comida de hoy tiene hora indicada.</div></div>';
     }
@@ -3715,9 +3734,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     try { localStorage.setItem(CLAVE_TUTORIAL, new Date().toISOString()); } catch { /* sin almacenamiento: no vuelve a salir en esta visita */ }
   }
   const seVe = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+  // La comida que se enseña en Hoy: la de ahora o la siguiente de hoy y, si hoy ya no queda ninguna, la primera de mañana (#219).
+  const bloqueComidaHoy = () => document.querySelector('#hoy-ahora .hoy-toca .hoy-acciones')?.closest('.hoy-toca');
+  const esDeManana = () => !!bloqueComidaHoy()?.classList.contains('hoy-manana');
   const PASOS_TUTORIAL = [
-    { el: () => document.querySelector('#hoy-ahora .hoy-toca') || document.getElementById('hoy-ahora'), texto: 'Aquí tienes la comida que te toca ahora. Toca «Receta» o «Cantidades» para ver cómo se hace y cuánto lleva.' },
-    { el: () => [...document.querySelectorAll('#hoy-ahora .hoy-accion')].find((b) => b.textContent.trim() === 'Cambiar'), texto: '¿No te apetece? «Cambiar» te propone otros platos que encajan. Ahí también está «He comido fuera», para apuntar lo que comes fuera de casa.' },
+    { el: () => bloqueComidaHoy() || document.getElementById('hoy-ahora'),
+      texto: () => (!bloqueComidaHoy() ? 'Aquí tienes tus comidas de hoy; en «Semana», las de cada día.' : esDeManana() ? 'Hoy ya no te queda ninguna comida: esta es la primera de mañana. Toca «Receta» o «Cantidades» para ver cómo se hace y cuánto lleva.' : 'Aquí tienes la comida que te toca ahora. Toca «Receta» o «Cantidades» para ver cómo se hace y cuánto lleva.') },
+    { el: () => [...document.querySelectorAll('#hoy-ahora .hoy-accion')].find((b) => b.textContent.trim() === 'Cambiar'),
+      texto: () => (esDeManana() ? '¿No te apetece? «Cambiar» te propone otros platos que encajan. En las comidas de hoy, ahí también está «He comido fuera», para apuntar lo que comes fuera de casa.' : '¿No te apetece? «Cambiar» te propone otros platos que encajan. Ahí también está «He comido fuera», para apuntar lo que comes fuera de casa.') },
     { el: () => document.getElementById('tab-semana'), texto: 'En «Semana» tienes el plan de todos los días.' },
     { el: () => document.getElementById('tab-compra'), texto: 'En «Compra», la lista de la compra de tu plan.' },
     { el: () => document.getElementById('tab-perfil'), texto: () => `En «Perfil» cambias tus datos y tus alergias${document.getElementById('tarjeta-nube') && !document.getElementById('tarjeta-nube').hidden ? ', y con «Que Pablo vea mis datos» le llegan a Pablo' : ''}. Desde ahí puedes volver a ver este tutorial.` },

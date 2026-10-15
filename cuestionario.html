@@ -116,6 +116,9 @@
   .dia-sesiones-cab select { max-width: 60%; font: inherit; font-size: 1rem; padding: 0.6rem 0.7rem; border: 1px solid var(--borde); border-radius: 10px; background: var(--tarjeta); color: var(--texto); }
   .dia-sesiones .dia-filas .sesion-card { margin: 0.6rem 0 0; }
   .sesion-card .s-tipo { margin-bottom: 0.6rem; width: 100%; }
+  .sesion-card select, .sesion-card input { max-width: 100%; min-width: 0; } /* #156: una opción larga no ensancha la tarjeta a 375 px */
+  .sesion-card .s-actividad-completa { width: 100%; }
+  .dia-sesiones, .dia-filas, .sesion-card { min-width: 0; }
   .franja-card .cabecera { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
   .franja-card .cabecera .check { padding: 0; font-weight: 600; }
 
@@ -394,6 +397,10 @@
   .dc-ing-gramos { font-weight: 800; font-size: 1.02rem; text-align: right; white-space: nowrap; }
   .dc-ing-gramos .dc-cocido { display: block; font-weight: 500; font-size: 0.72rem; color: var(--verde); }
   .dc-ing-compra { font-size: 0.78rem; color: var(--gris); text-align: right; min-width: 4.5rem; }
+  /* #156: a 375 px la medida casera («≈ 1½ × cucharada sopera rasa») va en su línea, bajo los gramos, y no ensancha la hoja. */
+  .dc-ing { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .dc-ing-nombre { min-width: 0; overflow-wrap: anywhere; }
+  .dc-ing-gramos .dc-medida { display: block; max-width: 9rem; white-space: normal; font-weight: 500; font-size: 0.78rem; color: var(--gris); }
   @media (max-width: 359px) { .dc-ing { grid-template-columns: 1fr auto; } .dc-ing-compra { grid-column: 1 / -1; text-align: left; } .dc-ings-cab span:nth-child(3) { display: none; } }
   .dc-chiste { font-size: 0.85rem; background: var(--nota); border: 1px solid var(--nota-borde); border-radius: 8px; padding: 0.4rem 0.6rem; margin: 0.4rem 0; }
   .dc-pasos { padding-left: 1.2rem; } .dc-pasos li { margin-bottom: 0.3rem; }
@@ -1474,12 +1481,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=53bc5c5"></script>
-<script src="fuentes.js?v=53bc5c5"></script>
-<script src="motor.bundle.js?v=53bc5c5"></script>
-<script src="cuestionario.js?v=53bc5c5"></script>
-<script src="nube.js?v=53bc5c5"></script>
-<script src="pwa.js?v=53bc5c5"></script>
+<script src="novedades.js?v=aa55630"></script>
+<script src="fuentes.js?v=aa55630"></script>
+<script src="motor.bundle.js?v=aa55630"></script>
+<script src="cuestionario.js?v=aa55630"></script>
+<script src="nube.js?v=aa55630"></script>
+<script src="pwa.js?v=aa55630"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>
