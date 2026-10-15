@@ -94,6 +94,16 @@
   .sesion-card .quitar {
     background: none; border: none; color: var(--peligro); font-size: 0.9rem; padding: 0.3rem 0; width: auto;
   }
+  /* #220: deporte principal y semana por días */
+  .dp-pregunta { margin: 0.2rem 0 0.6rem; }
+  .dp-botones { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.5rem; margin-bottom: 1rem; }
+  .dp-botones .dp-btn { width: 100%; min-height: 3rem; }
+  .dp-botones .dp-btn[aria-pressed="true"], .dp-botones .dp-btn[aria-pressed="true"]:hover { background: var(--acento-cta); border-color: var(--acento-cta); color: #fff; }
+  .dia-sesiones { border-top: 1px solid var(--borde); padding: 0.6rem 0; }
+  .dia-sesiones-cab { display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; }
+  .dia-sesiones-cab select { max-width: 60%; font: inherit; font-size: 1rem; padding: 0.6rem 0.7rem; border: 1px solid var(--borde); border-radius: 10px; background: var(--tarjeta); color: var(--texto); }
+  .dia-sesiones .dia-filas .sesion-card { margin: 0.6rem 0 0; }
+  .sesion-card .s-tipo { margin-bottom: 0.6rem; width: 100%; }
   .franja-card .cabecera { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
   .franja-card .cabecera .check { padding: 0; font-weight: 600; }
 
@@ -256,7 +266,7 @@
     white-space: nowrap; overflow-wrap: normal; word-break: keep-all; /* nunca partir una palabra (#49) */
   }
   @media (max-width: 359px) { .tabs-app { gap: 0.25rem; } .tabs-app button { font-size: 0.8rem; padding-inline: 0.2rem; } }
-  .tabs-app button[aria-selected="true"] { background: var(--verde); border-color: var(--verde); color: #fff; }
+  .tabs-app button[aria-selected="true"] { background: var(--acento-cta); border-color: var(--acento-cta); color: #fff; }
   .tabs-app button.aparte { flex: 0 1 auto; color: var(--gris); font-weight: 500; padding-inline: 0.6rem; }
   .panel-app[hidden] { display: none !important; }
   /* Issue #74: catálogo de recetas de ejemplo */
@@ -1047,6 +1057,8 @@
     <div class="paso" data-paso="3">
       <div class="tarjeta">
         <h2>3. Sesiones de la semana</h2>
+        <p class="dp-pregunta"><strong>¿Cuál es tu deporte principal?</strong></p>
+        <div id="deporte-principal" class="dp-botones" role="group" aria-label="Deporte principal"></div>
         <div id="sesiones"></div>
         <button type="button" id="add-sesion">+ Añadir sesión</button>
       </div>
@@ -1449,11 +1461,11 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=fdf1cb4"></script>
-<script src="fuentes.js?v=fdf1cb4"></script>
-<script src="motor.bundle.js?v=fdf1cb4"></script>
-<script src="cuestionario.js?v=fdf1cb4"></script>
-<script src="nube.js?v=fdf1cb4"></script>
-<script src="pwa.js?v=fdf1cb4"></script>
+<script src="novedades.js?v=7079af2"></script>
+<script src="fuentes.js?v=7079af2"></script>
+<script src="motor.bundle.js?v=7079af2"></script>
+<script src="cuestionario.js?v=7079af2"></script>
+<script src="nube.js?v=7079af2"></script>
+<script src="pwa.js?v=7079af2"></script>
 </body>
 </html>

@@ -27,6 +27,7 @@ var Motor = (() => {
     CLAVES_NUBE: () => CLAVES_NUBE,
     COMER_FUERA_CSV: () => COMER_FUERA_CSV,
     CONSERVACION_CSV: () => CONSERVACION_CSV,
+    DEPORTES_PRINCIPALES: () => DEPORTES_PRINCIPALES,
     DIAS: () => DIAS,
     DIAS_AVISO_FIN: () => DIAS_AVISO_FIN,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
@@ -73,6 +74,7 @@ var Motor = (() => {
     aHoraTexto: () => aHoraTexto,
     aMinutos: () => aMinutos2,
     accionReintentoNube: () => accionReintentoNube,
+    actividadesDesconocidas: () => actividadesDesconocidas,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
     alertaParaPablo: () => alertaParaPablo,
     alertasNuevas: () => alertasNuevas,
@@ -124,10 +126,12 @@ var Motor = (() => {
     csvPersonas: () => csvPersonas,
     cuadrarConComidaFuera: () => cuadrarConComidaFuera,
     cuadrarDias: () => cuadrarDias,
+    deducirDeportePrincipal: () => deducirDeportePrincipal,
     definirParametrosReparto: () => definirParametrosReparto,
     definirRolIngrediente: () => definirRolIngrediente,
     definirTablaLimites: () => definirTablaLimites,
     densidadKcalG: () => densidadKcalG,
+    deportePrincipal: () => deportePrincipal,
     descontarSobras: () => descontarSobras,
     deshacer: () => deshacer,
     diaDeLaFecha: () => diaDeLaFecha,
@@ -231,6 +235,7 @@ var Motor = (() => {
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
     textoNotificacion: () => textoNotificacion,
     textoOtrasAlergias: () => textoOtrasAlergias,
+    tipoDeSesion: () => tipoDeSesion,
     tituloCentro: () => tituloCentro,
     totalesPorDia: () => totalesPorDia,
     usosVariedadSemana: () => usosVariedadSemana,
@@ -693,8 +698,8 @@ var Motor = (() => {
     return Array.from(s.normalize("NFD")).filter((c) => c.codePointAt(0) < 768 || c.codePointAt(0) > 879).join("").toLowerCase().trim();
   }
   function declaraCondicion(salud) {
-    return (salud ?? []).some((t) => {
-      const texto = normalizarTexto(String(t)).replace(/[^a-z0-9]+/g, " ").trim();
+    return (salud ?? []).some((t2) => {
+      const texto = normalizarTexto(String(t2)).replace(/[^a-z0-9]+/g, " ").trim();
       return texto !== "" && !SIN_CONDICION.has(texto);
     });
   }
@@ -702,10 +707,10 @@ var Motor = (() => {
     return typeof v === "number" && Number.isFinite(v) && v > 0;
   }
   function objetivoDesde(texto) {
-    const t = normalizarTexto(texto ?? "");
-    if (t.includes("rendimiento") || t.includes("mantener")) return "mantener";
-    if (t.includes("recomposicion")) return "recomposicion";
-    if (t.includes("ganar musculo") || t.includes("volumen")) return "ganar_musculo";
+    const t2 = normalizarTexto(texto ?? "");
+    if (t2.includes("rendimiento") || t2.includes("mantener")) return "mantener";
+    if (t2.includes("recomposicion")) return "recomposicion";
+    if (t2.includes("ganar musculo") || t2.includes("volumen")) return "ganar_musculo";
     return "perder_grasa";
   }
   function vidaDesde(v) {
@@ -1162,7 +1167,7 @@ var Motor = (() => {
       }
       if (nombreRaw === "Protegidos que nunca se reescalan") {
         const antesDeDosPuntos = nota.split(":")[0] ?? "";
-        protegidos = antesDeDosPuntos.split(/,| y /i).map((t) => normalizar(t).trim()).filter(Boolean);
+        protegidos = antesDeDosPuntos.split(/,| y /i).map((t2) => normalizar(t2).trim()).filter(Boolean);
         continue;
       }
       if (minimo == null && recomendado == null && tope == null) continue;
@@ -1171,7 +1176,7 @@ var Motor = (() => {
       const parentesis = nombreRaw.match(/\(([^)]*)\)/)?.[1] ?? "";
       const esNotaDeRegla = /cada una|por separado/i.test(parentesis);
       const ejemplos = parentesis && !esNotaDeRegla ? parentesis.replace(/\.\.\.$/, "").split(",").map((e) => e.trim()).filter(Boolean) : [];
-      const keywords = [...nombresBase.flatMap((n) => n.split(/ y /)), ...ejemplos].map((n) => tokens(n)).filter((t) => t.length > 0);
+      const keywords = [...nombresBase.flatMap((n) => n.split(/ y /)), ...ejemplos].map((n) => tokens(n)).filter((t2) => t2.length > 0);
       const categoria = nombresBase[0] ?? nombreRaw;
       const alias = ALIAS_EXTRA[normalizar(nombresBase.join(" / "))];
       if (alias) keywords.push(...alias.map((a2) => tokens(a2)));
@@ -1198,8 +1203,8 @@ var Motor = (() => {
     return { alimentos, pesoPlatoRecomendado, pesoPlatoTope, guarnicionMinima, protegidos };
   }
   var tablaInyectada;
-  function definirTablaLimites(t) {
-    tablaInyectada = t;
+  function definirTablaLimites(t2) {
+    tablaInyectada = t2;
   }
   function cargarTabla() {
     if (!tablaInyectada) {
@@ -1211,7 +1216,7 @@ var Motor = (() => {
   }
   function coincide(nombreIngrediente, keywords) {
     const tokensIngrediente = new Set(tokens(nombreIngrediente));
-    return keywords.some((kw) => kw.every((t) => tokensIngrediente.has(t)));
+    return keywords.some((kw) => kw.every((t2) => tokensIngrediente.has(t2)));
   }
   function buscarLimite(tabla, nombre) {
     return tabla.alimentos.find((a2) => coincide(nombre, a2.keywords));
@@ -1480,7 +1485,7 @@ var Motor = (() => {
     const cab = parseCsvLine2(csvRecetas.split(/\r?\n/).find((l) => l.trim() !== "") ?? "");
     const col = (n) => cab.indexOf(n);
     const dato = (cols, n) => col(n) >= 0 ? (cols[col(n)] ?? "").trim() : "";
-    const lista = (t) => t.split(";").map((x) => x.trim()).filter(Boolean);
+    const lista = (t2) => t2.split(";").map((x) => x.trim()).filter(Boolean);
     return lineasDatos(csvRecetas).map((cols) => {
       const [id, nombre, franjasRaw, kcal, proteina, grasa, hidrato, notas] = cols;
       const tipoCol = dato(cols, "tipoPlato");
@@ -1971,20 +1976,20 @@ var Motor = (() => {
     return lecturas;
   }
   function textoOtrasAlergias(c) {
-    return [c.otros, c.pescado ? "pescado" : "", c.crustaceos ? "crust\xE1ceos" : "", c.moluscos ? "moluscos" : "", c.mas].map((t) => (t ?? "").trim()).filter(Boolean).join(", ");
+    return [c.otros, c.pescado ? "pescado" : "", c.crustaceos ? "crust\xE1ceos" : "", c.moluscos ? "moluscos" : "", c.mas].map((t2) => (t2 ?? "").trim()).filter(Boolean).join(", ");
   }
   var RE_PESCADO = /\bpescad/;
   var RE_MARISCO_O_MOLUSCO = /marisc|crust|molusc|cefalop|sepia|calamar|pulpo|chipiron|gamba|langostin|mejillon|almeja|berberech|cigala|bogavante|nécora|necora|ostra|vieira|navaja|centollo/;
   function avisoSoloPescado(textoAlergias) {
-    const t = normalizar3(textoAlergias);
-    if (!RE_PESCADO.test(t) || RE_MARISCO_O_MOLUSCO.test(t)) return void 0;
+    const t2 = normalizar3(textoAlergias);
+    if (!RE_PESCADO.test(t2) || RE_MARISCO_O_MOLUSCO.test(t2)) return void 0;
     return "Has indicado alergia al pescado: se ha quitado el pescado, pero la sepia, el calamar, el pulpo y el marisco no. Si tambi\xE9n te sientan mal, m\xE1rcalo en Alergias.";
   }
   var MOLUSCOS_SUELTOS = ["calamar", "sepia", "pulpo", "chipiron", "mejillon", "almeja", "berberecho", "ostra", "vieira", "navaja"];
   function avisoMoluscoSuelto(textoAlergias) {
-    const t = normalizar3(textoAlergias);
-    if (/molusc|cefalop|marisc/.test(t)) return void 0;
-    const dicho = MOLUSCOS_SUELTOS.find((m) => t.includes(m));
+    const t2 = normalizar3(textoAlergias);
+    if (/molusc|cefalop|marisc/.test(t2)) return void 0;
+    const dicho = MOLUSCOS_SUELTOS.find((m) => t2.includes(m));
     if (!dicho) return void 0;
     return `Has indicado ${dicho}: no se han quitado los dem\xE1s moluscos (sepia, calamar, pulpo, mejillones, almejas\u2026). Si tambi\xE9n te sientan mal, m\xE1rcalo en Alergias.`;
   }
@@ -2522,8 +2527,8 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       if (ap && recetas.length) {
         const choque = evaluarCompatibilidad({ ...recetas[0], alergenos: void 0, aptitudes: void 0, ingredientes: [{ nombre: alimento, gramos: 100 }] }, ap);
         if (!choque.compatible) {
-          const t = choque.motivo?.tipo;
-          const causa = t === "evitado" ? "est\xE1 en tu lista negra o en tus alergias, y eso manda siempre" : t === "celiaquia_sin_confirmar" ? "con celiaqu\xEDa no se da por segura ninguna receta de ejemplo" : `choca con lo que has indicado (${t === "lactosa" ? "lactosa" : t === "no_vegano" ? "vegano" : "vegetariano"})`;
+          const t2 = choque.motivo?.tipo;
+          const causa = t2 === "evitado" ? "est\xE1 en tu lista negra o en tus alergias, y eso manda siempre" : t2 === "celiaquia_sin_confirmar" ? "con celiaqu\xEDa no se da por segura ninguna receta de ejemplo" : `choca con lo que has indicado (${t2 === "lactosa" ? "lactosa" : t2 === "no_vegano" ? "vegano" : "vegetariano"})`;
           estados.push({ alimento, cubierto: false, causa });
           continue;
         }
@@ -2589,7 +2594,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     const hay = (rol) => palancas.some((i) => rolIngrediente(i.nombre) === rol);
     const kcalPalancas = Math.min(
       receta.kcal,
-      (hay("base") ? 4 * receta.hidrato : 0) + (hay("proteina") ? 4 * receta.proteina : 0) + 9 * palancas.filter((i) => rolIngrediente(i.nombre) === "grasa").reduce((t, i) => t + i.gramos, 0)
+      (hay("base") ? 4 * receta.hidrato : 0) + (hay("proteina") ? 4 * receta.proteina : 0) + 9 * palancas.filter((i) => rolIngrediente(i.nombre) === "grasa").reduce((t2, i) => t2 + i.gramos, 0)
     );
     return Math.round(receta.kcal + kcalPalancas * (factor - 1));
   }
@@ -2980,12 +2985,12 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     const m = RE_FECHA.exec(fecha);
     if (!m) return void 0;
     const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-    const t = Date.UTC(y, mo - 1, d);
-    const c = new Date(t);
-    return c.getUTCFullYear() === y && c.getUTCMonth() === mo - 1 && c.getUTCDate() === d ? t : void 0;
+    const t2 = Date.UTC(y, mo - 1, d);
+    const c = new Date(t2);
+    return c.getUTCFullYear() === y && c.getUTCMonth() === mo - 1 && c.getUTCDate() === d ? t2 : void 0;
   }
-  function deUTC(t) {
-    const c = new Date(t);
+  function deUTC(t2) {
+    const c = new Date(t2);
     return `${String(c.getUTCFullYear()).padStart(4, "0")}-${String(c.getUTCMonth() + 1).padStart(2, "0")}-${String(c.getUTCDate()).padStart(2, "0")}`;
   }
   function esFechaValida(fecha) {
@@ -2995,14 +3000,14 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     return RE_HORA.test(hora);
   }
   function esLunes(fecha) {
-    const t = aUTC(fecha);
-    return t !== void 0 && new Date(t).getUTCDay() === 1;
+    const t2 = aUTC(fecha);
+    return t2 !== void 0 && new Date(t2).getUTCDay() === 1;
   }
   function lunesDeLaSemana(fecha) {
-    const t = aUTC(fecha);
-    if (t === void 0) throw new Error(`Fecha no v\xE1lida: ${fecha}`);
-    const desdeLunes = (new Date(t).getUTCDay() + 6) % 7;
-    return deUTC(t - desdeLunes * MS_DIA);
+    const t2 = aUTC(fecha);
+    if (t2 === void 0) throw new Error(`Fecha no v\xE1lida: ${fecha}`);
+    const desdeLunes = (new Date(t2).getUTCDay() + 6) % 7;
+    return deUTC(t2 - desdeLunes * MS_DIA);
   }
   function fechaDelDia(inicio, dia) {
     if (!esLunes(inicio)) throw new Error(`La fecha de inicio debe ser un lunes v\xE1lido (recibido: ${inicio})`);
@@ -3012,9 +3017,9 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
   }
   function diaDeLaFecha(inicio, fecha) {
     if (!esLunes(inicio)) return void 0;
-    const t = aUTC(fecha);
-    if (t === void 0) return void 0;
-    const i = Math.round((t - aUTC(inicio)) / MS_DIA);
+    const t2 = aUTC(fecha);
+    if (t2 === void 0) return void 0;
+    const i = Math.round((t2 - aUTC(inicio)) / MS_DIA);
     return i >= 0 && i < DIAS.length ? DIAS[i] : void 0;
   }
   var MAX_DIAS_COMPETICION = 14;
@@ -3134,8 +3139,8 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     const [y, m, d] = f2.split("-").map(Number);
     return Date.UTC(y, m - 1, d);
   }
-  function deUTC2(t) {
-    const c = new Date(t);
+  function deUTC2(t2) {
+    const c = new Date(t2);
     return `${String(c.getUTCFullYear()).padStart(4, "0")}-${String(c.getUTCMonth() + 1).padStart(2, "0")}-${String(c.getUTCDate()).padStart(2, "0")}`;
   }
   function semanasValidas(valor) {
@@ -3556,16 +3561,16 @@ sand\xEDa,125,375,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=
   function cantidadDe(tokens2) {
     let cantidad = 1;
     const resto = [];
-    for (const t of tokens2) {
-      if (/^\d+([.,]\d+)?x?$/.test(t) && Number(t.replace(",", ".").replace("x", "")) <= 20) {
-        cantidad = Number(t.replace(",", ".").replace("x", ""));
+    for (const t2 of tokens2) {
+      if (/^\d+([.,]\d+)?x?$/.test(t2) && Number(t2.replace(",", ".").replace("x", "")) <= 20) {
+        cantidad = Number(t2.replace(",", ".").replace("x", ""));
         continue;
       }
-      if (t in NUMEROS) {
-        cantidad = NUMEROS[t];
+      if (t2 in NUMEROS) {
+        cantidad = NUMEROS[t2];
         continue;
       }
-      resto.push(t);
+      resto.push(t2);
     }
     return { cantidad, resto };
   }
@@ -3574,10 +3579,10 @@ sand\xEDa,125,375,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=
     const ocupados = new Set(tabla.flatMap((f2) => [f2.plato, ...f2.sinonimos].map(normalizarTexto2)));
     const duenos = /* @__PURE__ */ new Map();
     for (const f2 of tabla.filter((x) => x.estado === "estimacion" && !esPizza(x))) {
-      const t = normalizarTexto2(f2.plato).split(" ").filter(Boolean);
-      for (let n = 2; n < t.length; n++) {
-        if (FIN_NO_VALIDO.has(t[n - 1])) continue;
-        const a2 = t.slice(0, n).join(" ");
+      const t2 = normalizarTexto2(f2.plato).split(" ").filter(Boolean);
+      for (let n = 2; n < t2.length; n++) {
+        if (FIN_NO_VALIDO.has(t2[n - 1])) continue;
+        const a2 = t2.slice(0, n).join(" ");
         if (ocupados.has(a2)) continue;
         (duenos.get(a2) ?? duenos.set(a2, /* @__PURE__ */ new Set()).get(a2)).add(f2);
       }
@@ -3605,16 +3610,16 @@ sand\xEDa,125,375,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=
     };
     const conConector = [...new Set(tabla.flatMap((f2) => aliasesDe(f2).map(normalizarTexto2)).filter((a2) => /\b(?:con|y|mas)\b/.test(a2)).flatMap(conPlural))].sort((a2, b) => b.length - a2.length);
     const proteger = (n) => conConector.reduce((acc, a2) => acc.split(a2).join(a2.replace(/ /g, "_")), n);
-    const trozos = texto.split(/[,;+]/).flatMap((p) => proteger(normalizarTexto2(p)).split(/\b(?:con|y|mas)\b/)).map((t) => t.trim().replace(/_/g, " ")).filter(Boolean);
+    const trozos = texto.split(/[,;+]/).flatMap((p) => proteger(normalizarTexto2(p)).split(/\b(?:con|y|mas)\b/)).map((t2) => t2.trim().replace(/_/g, " ")).filter(Boolean);
     const cadenas = [...new Set(tabla.map((f2) => f2.cadena))].map((c) => ({ c, alias: normalizarTexto2(c).replace(/ espana$/, "") }));
     const lineas = [];
     const sinReconocer = [];
     for (const trozo of trozos) {
       const toks = trozo.split(" ").filter(Boolean);
-      const { cantidad, resto } = cantidadDe(toks.filter((t) => !PALABRAS_VACIAS.has(t) || t in NUMEROS || t === "con"));
-      const utiles = resto.filter((t) => !PALABRAS_VACIAS.has(t));
+      const { cantidad, resto } = cantidadDe(toks.filter((t2) => !PALABRAS_VACIAS.has(t2) || t2 in NUMEROS || t2 === "con"));
+      const utiles = resto.filter((t2) => !PALABRAS_VACIAS.has(t2));
       const cadena = cadenas.find((x) => ` ${utiles.join(" ")} `.includes(` ${x.alias} `));
-      const delTrozo = new Set(utiles.map((t) => t.replace(/s$/, "")).concat(utiles));
+      const delTrozo = new Set(utiles.map((t2) => t2.replace(/s$/, "")).concat(utiles));
       const candidatas = tabla.filter((f2) => !cadena || f2.cadena === cadena.c);
       let mejor = [];
       let mejorPuntos = 0;
@@ -3622,20 +3627,20 @@ sand\xEDa,125,375,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=
       for (const f2 of candidatas) {
         let p = 0;
         for (const a2 of aliasesDe(f2).map(normalizarTexto2)) {
-          const ts = a2.split(" ").filter((t) => t && !PALABRAS_VACIAS.has(t));
-          if (ts.length && ts.every((t) => delTrozo.has(t) || delTrozo.has(t.replace(/s$/, "")))) p = Math.max(p, ts.length);
+          const ts = a2.split(" ").filter((t2) => t2 && !PALABRAS_VACIAS.has(t2));
+          if (ts.length && ts.every((t2) => delTrozo.has(t2) || delTrozo.has(t2.replace(/s$/, "")))) p = Math.max(p, ts.length);
         }
         if (p === 0) continue;
         if (f2.estado === "estimacion" && esPizza(f2) && !cadena && !delTrozo.has("pizza")) continue;
         const deSuNombre = new Set(normalizarTexto2(f2.plato).split(" "));
-        for (const t of normalizarTexto2(f2.tamano).split(" ")) if (t.length > 3 && delTrozo.has(t) && !deSuNombre.has(t)) p += 0.5;
+        for (const t2 of normalizarTexto2(f2.tamano).split(" ")) if (t2.length > 3 && delTrozo.has(t2) && !deSuNombre.has(t2)) p += 0.5;
         if (p > mejorPuntos) {
           mejorPuntos = p;
           mejor = [{ f: f2, puntos: p }];
         } else if (p === mejorPuntos) mejor.push({ f: f2, puntos: p });
       }
       if (mejor.length === 0 && !delTrozo.has("pizza")) {
-        const marca = utiles.filter((t) => t.length >= 4 && !(cadena && cadena.alias.split(" ").includes(t)) && !FORMATOS.has(t));
+        const marca = utiles.filter((t2) => t2.length >= 4 && !(cadena && cadena.alias.split(" ").includes(t2)) && !FORMATOS.has(t2));
         const familia = marca.length ? candidatas.filter((f2) => f2.estado === "oficial" && (() => {
           const ts = new Set([f2.plato, ...f2.sinonimos].flatMap((a2) => normalizarTexto2(a2).split(" ")));
           return marca.every((m) => ts.has(m) || ts.has(m.replace(/s$/, "")));
@@ -3658,23 +3663,23 @@ sand\xEDa,125,375,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=
       if (mejor.length === 1) {
         const f2 = mejor[0].f;
         const r = rangoKcal(f2);
-        const contenedor = utiles.find((t) => CONTENEDORES_SIN_DATO.includes(t) && !normalizarTexto2(f2.tamano).split(" ").includes(t));
+        const contenedor = utiles.find((t2) => CONTENEDORES_SIN_DATO.includes(t2) && !normalizarTexto2(f2.tamano).split(" ").includes(t2));
         if (contenedor && f2.estado === "oficial") {
           sinReconocer.push(`${trozo} (solo tengo ${f2.tamano || "un formato"}: dime las calor\xEDas o cu\xE1ntas latas son)`);
           continue;
         }
-        const tamPedido = utiles.find((t) => TAMANOS_PIZZA.includes(t));
+        const tamPedido = utiles.find((t2) => TAMANOS_PIZZA.includes(t2));
         if (tamPedido === "individual" && f2.estado === "estimacion" && esPizza(f2)) {
           sinReconocer.push(`${trozo} (la pizza individual no tiene datos: dime los gramos o las calor\xEDas)`);
           continue;
         }
         const comoMinimo = f2.estado === "estimacion" && esPizza(f2) && tamPedido !== void 0 && tamPedido !== "mediana";
-        const supuesto = f2.estado === "oficial" && f2.tamano && !normalizarTexto2(f2.tamano).split(" ").some((t) => t.length > 3 && delTrozo.has(t));
+        const supuesto = f2.estado === "oficial" && f2.tamano && !normalizarTexto2(f2.tamano).split(" ").some((t2) => t2.length > 3 && delTrozo.has(t2));
         const notas = [];
         if (comoMinimo) notas.push(`\xAB${tamPedido}\xBB no tiene dato propio: la cifra es como m\xEDnimo la de una mediana (${f2.pesoMin} g, sin inventar el peso de la ${tamPedido}). Dime cu\xE1ntas porciones o cu\xE1nto pesaba y aj\xFAstalo.`);
         else if (f2.estado === "estimacion") notas.push(`${esPizza(f2) ? "Peso" : "Cantidad"} estimad${esPizza(f2) ? "o" : "a"} (${f2.pesoMin}-${f2.pesoMax} ${unidadPeso(f2)}): la cifra es un rango. Si sabes ${unidadPeso(f2) === "ml" ? "cu\xE1nto has tomado" : "cu\xE1nto pesaba o cu\xE1nto comiste"}, aj\xFAstalo.`);
         if (supuesto) notas.push(`He supuesto ${f2.tamano}.`);
-        const nombreCompleto = [f2.plato, ...f2.sinonimos].some((a2) => normalizarTexto2(a2).split(" ").filter((t) => t && !PALABRAS_VACIAS.has(t)).every((t) => delTrozo.has(t) || delTrozo.has(t.replace(/s$/, ""))));
+        const nombreCompleto = [f2.plato, ...f2.sinonimos].some((a2) => normalizarTexto2(a2).split(" ").filter((t2) => t2 && !PALABRAS_VACIAS.has(t2)).every((t2) => delTrozo.has(t2) || delTrozo.has(t2.replace(/s$/, ""))));
         if (f2.estado === "estimacion" && !nombreCompleto) notas.push(`He usado \xAB${f2.plato}\xBB (${f2.tamano}), la cifra de ese tipo m\xE1s general que tengo; si fue otra cosa, aj\xFAstalo.`);
         lineas.push({
           nombre: `${f2.plato}${f2.tamano ? ` (${f2.tamano})` : ""}`,
@@ -3692,7 +3697,7 @@ sand\xEDa,125,375,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=
       const quierePizza = delTrozo.has("pizza") && cadena !== void 0;
       if (quierePizza) {
         const pizzas = candidatas.filter((f2) => f2.estado === "estimacion" && f2.pesoMin !== void 0 && f2.kcal100 !== void 0);
-        const tam = utiles.find((t) => TAMANOS_PIZZA.includes(t));
+        const tam = utiles.find((t2) => TAMANOS_PIZZA.includes(t2));
         if (tam === "individual") {
           sinReconocer.push(`${trozo} (la pizza individual de Telepizza no tiene datos: dime los gramos o las calor\xEDas)`);
           continue;
@@ -3832,8 +3837,8 @@ Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g
     { id: "flotante", nombre: "Hora local del dispositivo (sin zona fija)" }
   ];
   var DOMINIO_UID = "app-dietas.local";
-  function slug(t) {
-    return t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
+  function slug(t2) {
+    return t2.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
   }
   function construirEventos(op) {
     if (!esLunes(op.inicio)) throw new Error("Para exportar hace falta haber elegido el lunes de inicio de la semana.");
@@ -3918,8 +3923,8 @@ Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g
     eventos.sort((a2, b) => a2.fecha.localeCompare(b.fecha) || (a2.hora ?? "").localeCompare(b.hora ?? "") || a2.uid.localeCompare(b.uid));
     return { eventos, omitidos };
   }
-  function escaparTextoIcs(t) {
-    return t.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r\n|\r|\n/g, "\\n");
+  function escaparTextoIcs(t2) {
+    return t2.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r\n|\r|\n/g, "\\n");
   }
   function plegarLineaIcs(linea) {
     const enc = new TextEncoder();
@@ -3949,8 +3954,8 @@ Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g
   }
   function siguienteDia(f2) {
     const [y, m, d] = f2.split("-").map(Number);
-    const t = new Date(Date.UTC(y, m - 1, d + 1));
-    return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(t.getUTCDate()).padStart(2, "0")}`;
+    const t2 = new Date(Date.UTC(y, m - 1, d + 1));
+    return `${t2.getUTCFullYear()}-${String(t2.getUTCMonth() + 1).padStart(2, "0")}-${String(t2.getUTCDate()).padStart(2, "0")}`;
   }
   function dtstamp(ahora) {
     const p = (n, l = 2) => String(n).padStart(l, "0");
@@ -4518,8 +4523,8 @@ Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g
     const terminos = normalizarBusqueda(consulta);
     if (!terminos.length) return recetas;
     return recetas.filter((r) => {
-      const palabras = [r.nombre, ...r.ingredientes.map((i) => i.nombre)].flatMap((t) => normalizarBusqueda(t));
-      return terminos.every((t) => palabras.some((p) => p.startsWith(t)));
+      const palabras = [r.nombre, ...r.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
+      return terminos.every((t2) => palabras.some((p) => p.startsWith(t2)));
     });
   }
   function filtrarCatalogo(recetas, f2) {
@@ -4885,8 +4890,8 @@ r43,aceite de oliva,10`;
   var LIMITE_NOTA = 120;
   function limpiarNotaSesion(valor) {
     if (typeof valor !== "string") return void 0;
-    const t = valor.replace(/\s+/g, " ").trim().slice(0, LIMITE_NOTA);
-    return t ? t : void 0;
+    const t2 = valor.replace(/\s+/g, " ").trim().slice(0, LIMITE_NOTA);
+    return t2 ? t2 : void 0;
   }
   var PIDE_INTERMITENTE = /metcon|\bwod\b|\bengine\b|amrap|emom|crossfit|hyrox|circuito/i;
   var PIDE_INTERVALOS = /intervalo|series|fartlek|cuestas|progresiv|\b\d+\s*[x×]\s*\d+/i;
@@ -5055,10 +5060,10 @@ r43,aceite de oliva,10`;
         kcalDia = d.kcal + (gastoDia - d.gasto);
         kcalEntrenoDia = kcalPrueba;
         minutosCargaDia = minPrueba;
-        const t = TIPO_POR_MINUTOS(minPrueba);
-        if (ORDEN_TIPO[t.tipo] >= ORDEN_TIPO[d.tipo]) {
-          tipoDia2 = t.tipo;
-          rangoDia = t.rango;
+        const t2 = TIPO_POR_MINUTOS(minPrueba);
+        if (ORDEN_TIPO[t2.tipo] >= ORDEN_TIPO[d.tipo]) {
+          tipoDia2 = t2.tipo;
+          rangoDia = t2.rango;
         }
         gastoPrueba = { kcal: Math.round(kcalPrueba), minutos: minPrueba, actividad: [...nombresAct].join(" + ") };
         motivos.push(`gasto estimado de la prueba: ~${gastoPrueba.kcal} kcal (tu peso, ${minPrueba} min de ${gastoPrueba.actividad}); sustituye al entreno habitual de este d\xEDa`);
@@ -5267,9 +5272,9 @@ r43,aceite de oliva,10`;
     const avisos = [];
     const movidasDespues = [];
     const procesadas = /* @__PURE__ */ new Set();
-    const mover = (t, motivo) => {
-      salidas.push({ ...t, motivo });
-      if (t.habitual === void 0 || t.minuto !== t.habitual) cambios.push({ franja: t.franja, de: t.habitual, a: t.minuto, motivo });
+    const mover = (t2, motivo) => {
+      salidas.push({ ...t2, motivo });
+      if (t2.habitual === void 0 || t2.minuto !== t2.habitual) cambios.push({ franja: t2.franja, de: t2.habitual, a: t2.minuto, motivo });
     };
     const objetivo = salida - 180;
     let minutoPrevia;
@@ -5283,7 +5288,7 @@ r43,aceite de oliva,10`;
         tratarResto(fuente, 1 - FRACCION_LIGERA_MADRUGADA);
       }
     } else if (orden.length) {
-      const previa = orden.reduce((mejor, t) => Math.abs(t.minuto - objetivo) < Math.abs(mejor.minuto - objetivo) ? t : mejor, orden[0]);
+      const previa = orden.reduce((mejor, t2) => Math.abs(t2.minuto - objetivo) < Math.abs(mejor.minuto - objetivo) ? t2 : mejor, orden[0]);
       procesadas.add(previa);
       const valida = previa.minuto >= salida - 240 && previa.minuto <= salida - 120;
       const minuto = valida ? previa.minuto : objetivo;
@@ -5291,47 +5296,47 @@ r43,aceite de oliva,10`;
       minutoPrevia = minuto;
       if (!previa.principal) avisos.push(`La comida previa es \xAB${previa.franja}\xBB reforzada: t\xF3mala como comida previa (hidratos de siempre, poca grasa y fibra).`);
     }
-    const intermedias = orden.filter((t) => !procesadas.has(t) && minutoPrevia !== void 0 && t.minuto > minutoPrevia && t.minuto < salida);
+    const intermedias = orden.filter((t2) => !procesadas.has(t2) && minutoPrevia !== void 0 && t2.minuto > minutoPrevia && t2.minuto < salida);
     const ligeraRegla4 = intermedias.length ? intermedias[intermedias.length - 1] : void 0;
-    for (const t of orden) {
-      if (procesadas.has(t)) continue;
-      procesadas.add(t);
-      if (t === ligeraRegla4) {
-        mover({ franja: t.franja, habitual: t.minuto, minuto: salida - 75, rol: "ligera", fraccion: 1 }, "entre la comida previa y la salida: pasa a toma ligera 75 min antes");
-      } else if (intermedias.includes(t) || t.minuto >= salida && t.minuto < fin) {
-        movidasDespues.push(t);
+    for (const t2 of orden) {
+      if (procesadas.has(t2)) continue;
+      procesadas.add(t2);
+      if (t2 === ligeraRegla4) {
+        mover({ franja: t2.franja, habitual: t2.minuto, minuto: salida - 75, rol: "ligera", fraccion: 1 }, "entre la comida previa y la salida: pasa a toma ligera 75 min antes");
+      } else if (intermedias.includes(t2) || t2.minuto >= salida && t2.minuto < fin) {
+        movidasDespues.push(t2);
       } else {
-        tratarResto(t, 1);
+        tratarResto(t2, 1);
       }
     }
-    function tratarResto(t, fraccion) {
-      if (t.minuto >= salida && t.minuto < fin) {
-        movidasDespues.push(t);
-        t._f = fraccion;
+    function tratarResto(t2, fraccion) {
+      if (t2.minuto >= salida && t2.minuto < fin) {
+        movidasDespues.push(t2);
+        t2._f = fraccion;
         return;
       }
-      if (t.minuto >= fin && t.minuto < fin + 30) {
-        mover({ franja: t.franja, habitual: t.minuto, minuto: fin + 30, rol: "recuperacion", fraccion }, "coincid\xEDa con el final de la prueba: se retrasa 30 min");
+      if (t2.minuto >= fin && t2.minuto < fin + 30) {
+        mover({ franja: t2.franja, habitual: t2.minuto, minuto: fin + 30, rol: "recuperacion", fraccion }, "coincid\xEDa con el final de la prueba: se retrasa 30 min");
         return;
       }
-      salidas.push({ franja: t.franja, habitual: t.minuto, minuto: t.minuto, rol: "normal", fraccion });
+      salidas.push({ franja: t2.franja, habitual: t2.minuto, minuto: t2.minuto, rol: "normal", fraccion });
     }
     const yaRecuperacion = salidas.some((s) => s.rol === "recuperacion");
     if (!yaRecuperacion) {
-      const siguiente = orden.find((t) => t.principal && t.minuto >= fin && !movidasDespues.includes(t) && !salidas.some((s) => s.franja === t.franja && s.rol !== "normal"));
+      const siguiente = orden.find((t2) => t2.principal && t2.minuto >= fin && !movidasDespues.includes(t2) && !salidas.some((s) => s.franja === t2.franja && s.rol !== "normal"));
       if (siguiente && siguiente.minuto - fin <= 120) {
         const s = salidas.find((x) => x.franja === siguiente.franja);
         if (s) s.rol = "recuperacion", s.motivo = "es la siguiente comida principal y queda a 120 min o menos del final: hace de recuperaci\xF3n";
       } else if (movidasDespues.length) {
-        const t = movidasDespues.shift();
-        mover({ franja: t.franja, habitual: t.minuto, minuto: fin + 30, rol: "recuperacion", fraccion: t._f ?? 1 }, "toma de recuperaci\xF3n 30 min despu\xE9s de acabar, con la toma que se movi\xF3");
+        const t2 = movidasDespues.shift();
+        mover({ franja: t2.franja, habitual: t2.minuto, minuto: fin + 30, rol: "recuperacion", fraccion: t2._f ?? 1 }, "toma de recuperaci\xF3n 30 min despu\xE9s de acabar, con la toma que se movi\xF3");
       } else {
         salidas.push({ franja: "recuperaci\xF3n", minuto: fin + 30, rol: "opcional", fraccion: 0, motivo: "la siguiente comida principal queda lejos: toma de recuperaci\xF3n opcional 30 min despu\xE9s de acabar" });
         avisos.push("La siguiente comida principal queda a m\xE1s de 2 h del final: toma de recuperaci\xF3n opcional.");
       }
     }
-    for (const t of movidasDespues) {
-      mover({ franja: t.franja, habitual: t.minuto, minuto: fin + 60, rol: "despues", fraccion: t._f ?? 1 }, "ca\xEDa dentro de la prueba: pasa a despu\xE9s");
+    for (const t2 of movidasDespues) {
+      mover({ franja: t2.franja, habitual: t2.minuto, minuto: fin + 60, rol: "despues", fraccion: t2._f ?? 1 }, "ca\xEDa dentro de la prueba: pasa a despu\xE9s");
     }
     salidas.sort((a2, b) => a2.minuto - b.minuto);
     return { tomas: salidas, cambios, avisos };
@@ -6538,8 +6543,8 @@ R184,nueces,10,grasa,170187,tal cual,`;
       };
     });
   }
-  function sinTildes(t) {
-    return String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  function sinTildes(t2) {
+    return String(t2 ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   }
   function filtrarPersonas(filas, texto, filtro = "todas") {
     const palabras = sinTildes(texto).split(/\s+/).filter(Boolean);
@@ -6565,15 +6570,63 @@ R184,nueces,10,grasa,170187,tal cual,`;
     }).sort((a2, b) => String(b.fecha ?? "").localeCompare(String(a2.fecha ?? "")));
   }
   function celda(v) {
-    let t = String(v);
-    if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
-    return /[;"\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+    let t2 = String(v);
+    if (/^[=+\-@\t\r]/.test(t2)) t2 = "'" + t2;
+    return /[;"\n\r]/.test(t2) ? '"' + t2.replace(/"/g, '""') + '"' : t2;
   }
   function csvPersonas(filas) {
     const cab = ["nombre", "correo", "ultima_actividad", "alerta_prioritaria", "tiene_plan", "plan_revisado_por_pablo"];
     const si = (b) => b ? "s\xED" : "no";
     const lineas = filas.map((f2) => [f2.nombre, f2.contacto, f2.ultimaActividad.slice(0, 10), si(f2.prioritariaSinAtender), si(f2.tienePlan), si(f2.revisadoPorPablo)].map(celda).join(";"));
     return "\uFEFF" + [cab.join(";"), ...lineas].join("\r\n") + "\r\n";
+  }
+
+  // src/motor/deporte-principal.ts
+  var t = (nombre, actividad) => ({ nombre, actividad });
+  var DEPORTES_PRINCIPALES = [
+    { id: "hyrox", nombre: "Hyrox", tipos: [t("Carrera", "correr"), t("Carrera suave", "correr_suave"), t("Series / carrera r\xE1pida", "correr_rapido"), t("Fuerza", "fuerza"), t("Erg\xF3metros (remo, ski, bici)", "remo_maquina"), t("Simulaci\xF3n Hyrox / circuito", "hyrox")] },
+    { id: "running", nombre: "Running", tipos: [t("Rodaje suave", "correr_suave"), t("Rodaje", "correr"), t("Series", "correr_rapido"), t("Tirada larga", "correr"), t("Fuerza", "fuerza")] },
+    { id: "ciclismo", nombre: "Ciclismo", tipos: [t("Rodaje", "bici"), t("Suave", "bici_paseo"), t("Intensa / series", "bici_intensa"), t("MTB", "bici_montana"), t("Rodillo / spinning", "spinning"), t("Fuerza", "fuerza")] },
+    { id: "triatlon", nombre: "Triatl\xF3n", tipos: [t("Nataci\xF3n", "natacion"), t("Bici", "bici"), t("Carrera", "correr"), t("Transici\xF3n / combinado", "bici_intensa"), t("Fuerza", "fuerza")] },
+    { id: "crossfit", nombre: "CrossFit", tipos: [t("WOD", "crossfit"), t("Fuerza", "fuerza"), t("Halterofilia", "fuerza_intensa"), t("Cardio", "remo_maquina")] },
+    { id: "gimnasio", nombre: "Gimnasio / fuerza", tipos: [t("Fuerza", "fuerza"), t("Fuerza intensa", "fuerza_intensa"), t("M\xE1quinas", "fuerza_suave"), t("Cardio", "eliptica")] },
+    { id: "natacion", nombre: "Nataci\xF3n", tipos: [t("Suave", "natacion_suave"), t("Entreno", "natacion"), t("Fuerza", "fuerza")] },
+    { id: "futbol", nombre: "F\xFAtbol", tipos: [t("Entreno", "futbol"), t("Partido", "futbol_partido"), t("Fuerza", "fuerza")] },
+    { id: "padel", nombre: "P\xE1del", tipos: [t("Partido", "padel"), t("Fuerza", "fuerza")] },
+    { id: "otro", nombre: "Otro", tipos: [] },
+    { id: "ninguno", nombre: "Ninguno en concreto", tipos: [] }
+  ];
+  var deportePrincipal = (id) => DEPORTES_PRINCIPALES.find((d) => d.id === id);
+  function actividadesDesconocidas() {
+    return DEPORTES_PRINCIPALES.flatMap((d) => d.tipos.filter((x) => !ACTIVIDADES[x.actividad]).map((x) => `${d.nombre} \xB7 ${x.nombre} \u2192 ${x.actividad}`));
+  }
+  function tipoDeSesion(id, actividad, nombre) {
+    const tipos = deportePrincipal(id)?.tipos ?? [];
+    return tipos.find((x) => x.actividad === actividad && x.nombre === nombre) ?? tipos.find((x) => x.actividad === actividad);
+  }
+  var DEPORTE_DE_ACTIVIDAD = [
+    [/^hyrox$/, "hyrox"],
+    [/^correr/, "running"],
+    [/^(bici|spinning)/, "ciclismo"],
+    [/^natacion/, "natacion"],
+    [/^crossfit$/, "crossfit"],
+    [/^(fuerza|eliptica)/, "gimnasio"],
+    [/^futbol/, "futbol"],
+    [/^padel$/, "padel"]
+  ];
+  function deducirDeportePrincipal(actividades) {
+    const cuenta = /* @__PURE__ */ new Map();
+    for (const a2 of actividades) {
+      const d = a2 ? DEPORTE_DE_ACTIVIDAD.find(([re]) => re.test(a2))?.[1] : void 0;
+      if (d) cuenta.set(d, (cuenta.get(d) ?? 0) + 1);
+    }
+    let mejor = "otro";
+    let max = 0;
+    for (const [d, n] of cuenta) if (n > max) {
+      mejor = d;
+      max = n;
+    }
+    return mejor;
   }
   return __toCommonJS(motor_exports);
 })();

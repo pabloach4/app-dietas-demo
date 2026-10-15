@@ -312,11 +312,67 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     return Object.entries(Motor.ACTIVIDADES).map(([clave, act]) => `<option value="${clave}">${act.nombre}</option>`).join('');
   }
 
-  function nuevaFilaSesion(dia, deporte, minutos, horaInicio, actividad, nota) {
+  // #220: deporte principal al principio del paso 3. Con uno de la lista, la semana va por días (Descanso por defecto) y cada sesión
+  // se elige entre los tipos de ese deporte (Motor.DEPORTES_PRINCIPALES, cada uno ya traducido a una actividad del motor); «Otra
+  // actividad…» abre la lista completa. Con «Otro» o «Ninguno en concreto», las filas de siempre. Las sesiones que llegan al motor
+  // tienen la misma forma que antes.
+  const DIA_LARGO = { L: 'Lunes', M: 'Martes', X: 'Miércoles', J: 'Jueves', V: 'Viernes', S: 'Sábado', D: 'Domingo' };
+  let deporteElegido = 'otro';
+  const tiposDelDeporte = () => (Motor.deportePrincipal(deporteElegido) || { tipos: [] }).tipos;
+  const opcionesTipo = () => tiposDelDeporte().map((t, i) => `<option value="${i}">${escaparHtml(t.nombre)}</option>`).join('') + '<option value="__otra__">Otra actividad…</option>';
+  const botonesDeporte = document.getElementById('deporte-principal');
+  botonesDeporte.innerHTML = Motor.DEPORTES_PRINCIPALES.map((d) => `<button type="button" class="btn-secundario dp-btn" data-deporte="${d.id}" aria-pressed="false">${escaparHtml(d.nombre)}</button>`).join('');
+  function marcarDeporte() {
+    botonesDeporte.querySelectorAll('.dp-btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.deporte === deporteElegido)));
+    document.getElementById('add-sesion').hidden = tiposDelDeporte().length > 0;
+  }
+  function pintarSesiones(sesiones) {
+    sesionesDiv.innerHTML = '';
+    if (tiposDelDeporte().length) {
+      DIAS.forEach((d) => {
+        const bloque = document.createElement('div');
+        bloque.className = 'dia-sesiones';
+        bloque.dataset.dia = d;
+        bloque.innerHTML = `<div class="dia-sesiones-cab"><strong>${DIA_LARGO[d]}</strong>
+          <select class="dia-anadir" aria-label="${DIA_LARGO[d]}: añadir sesión"></select></div><div class="dia-filas"></div>`;
+        const sel = bloque.querySelector('.dia-anadir');
+        sel.addEventListener('change', () => {
+          if (sel.value === '') return;
+          const t = tiposDelDeporte()[Number(sel.value)];
+          nuevaFilaSesion(d, '', '', undefined, t ? t.actividad : undefined, t ? t.nombre : undefined, t ? t.nombre : '__otra__');
+        });
+        sesionesDiv.appendChild(bloque);
+      });
+    }
+    sesiones.forEach((s) => nuevaFilaSesion(s.dia, s.deporte, s.minutos, s.horaInicio, s.actividad, s.nota));
+    rotularDias();
+  }
+  function rotularDias() {
+    sesionesDiv.querySelectorAll('.dia-sesiones').forEach((b) => {
+      const sel = b.querySelector('.dia-anadir');
+      sel.innerHTML = `<option value="">${b.querySelector('.sesion') ? '+ Otra sesión este día' : 'Descanso'}</option>${opcionesTipo()}`;
+      sel.value = '';
+      b.classList.toggle('con-sesion', !!b.querySelector('.sesion'));
+    });
+  }
+  function elegirDeporte(id) {
+    const actuales = leerSesiones();
+    deporteElegido = Motor.deportePrincipal(id) ? id : 'otro';
+    marcarDeporte();
+    pintarSesiones(actuales);
+  }
+  botonesDeporte.addEventListener('click', (ev) => { const b = ev.target.closest('.dp-btn'); if (b) elegirDeporte(b.dataset.deporte); });
+
+  /** `tipoInicial`: nombre del tipo recién elegido en el día, o '__otra__' («Otra actividad…»). */
+  function nuevaFilaSesion(dia, deporte, minutos, horaInicio, actividad, nota, tipoInicial) {
     const fila = document.createElement('div');
     fila.className = 'sesion sesion-card';
+    // Por días solo si se sabe la actividad (un deporte escrito que no se reconoce sigue a la pantalla de elegir deporte).
+    const actividadFila = actividad || resolverActividadUI({ deporte });
+    const bloqueDia = (tipoInicial || actividadFila) ? sesionesDiv.querySelector(`.dia-sesiones[data-dia="${dia}"] .dia-filas`) : null;
     fila.innerHTML = `
-      <div class="fila2">
+      ${bloqueDia ? '<select class="s-tipo" aria-label="Tipo de sesión"></select>' : ''}
+      <div class="fila2"${bloqueDia ? ' hidden' : ''}>
         <select class="s-dia">${DIAS.map((d) => `<option value="${d}">${d}</option>`).join('')}</select>
         <select class="s-deporte">${opcionesDeporteRapido()}</select>
       </div>
@@ -336,7 +392,25 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     fila.querySelector('.s-hora').value = Motor.horaDeGuardado(horaInicio);
     const selDeporte = fila.querySelector('.s-deporte');
     const selCompleta = fila.querySelector('.s-actividad-completa');
-    if (actividad) {
+    if (bloqueDia) {
+      // Por días la actividad va siempre explícita; el tipo elegido («Series») se escribe como nota y se ve en el plan.
+      selDeporte.value = '__otro__';
+      if (actividadFila) selCompleta.value = actividadFila;
+      const selTipo = fila.querySelector('.s-tipo');
+      const notaEl = fila.querySelector('.s-nota');
+      selTipo.innerHTML = opcionesTipo();
+      const tipo = tipoInicial === '__otra__' ? undefined : Motor.tipoDeSesion(deporteElegido, actividadFila, tipoInicial || nota);
+      selTipo.value = tipo ? String(tiposDelDeporte().indexOf(tipo)) : '__otra__';
+      selCompleta.hidden = !!tipo;
+      let nombreTipo = tipo ? tipo.nombre : '';
+      selTipo.addEventListener('change', () => {
+        const t = tiposDelDeporte()[Number(selTipo.value)];
+        selCompleta.hidden = !!t;
+        if (t) selCompleta.value = t.actividad;
+        if (notaEl.value.trim() === '' || notaEl.value.trim() === nombreTipo) notaEl.value = t ? t.nombre : '';
+        nombreTipo = t ? t.nombre : '';
+      });
+    } else if (actividad) {
       selDeporte.value = '__otro__';
       selCompleta.hidden = false;
       selCompleta.value = actividad;
@@ -344,8 +418,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       selDeporte.value = deporte;
     }
     selDeporte.addEventListener('change', () => { selCompleta.hidden = selDeporte.value !== '__otro__'; });
-    fila.querySelector('.quitar').addEventListener('click', () => fila.remove());
-    sesionesDiv.appendChild(fila);
+    fila.querySelector('.quitar').addEventListener('click', () => { fila.remove(); rotularDias(); });
+    (bloqueDia || sesionesDiv).appendChild(fila);
+    if (bloqueDia) rotularDias();
   }
 
   document.getElementById('add-sesion').addEventListener('click', () => nuevaFilaSesion('L', 'fuerza', 45));
@@ -471,8 +546,11 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('tiempo-cocina').value = ej.tiempoCocina ?? 'normal';
     document.getElementById('comunidad').value = ej.comunidad ?? 'Comunidad de Madrid';
     restablecerEstadoDelPlan(conservarSustituciones);
-    sesionesDiv.innerHTML = '';
-    (ej.sesiones ?? []).forEach((s) => nuevaFilaSesion(s.dia, s.deporte, s.minutos, s.horaInicio, s.actividad, s.nota));
+    // #220: el deporte principal guardado, o deducido de las sesiones si el perfil o el ejemplo es de antes.
+    deporteElegido = Motor.deportePrincipal(ej.deportePrincipal) ? ej.deportePrincipal
+      : Motor.deducirDeportePrincipal((ej.sesiones ?? []).map((s) => s.actividad || resolverActividadUI(s)));
+    marcarDeporte();
+    pintarSesiones(ej.sesiones ?? []);
     // Horas de las comidas: las del ejemplo/guardado si las da, si no las de por defecto (bloque 7).
     // ej.franjas[franja] puede ser solo la hora (texto, ejemplos de siempre) o {activa, hora} (guardado).
     Array.from(franjasDiv.children).forEach((fila) => {
@@ -2023,6 +2101,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       objetivo: document.getElementById('objetivo').value,
       vidaTrabajo: document.getElementById('vida-trabajo').value,
       vidaPasos: document.getElementById('vida-pasos').value || undefined,
+      deportePrincipal: deporteElegido,
       sesiones: leerSesiones().map(({ dia, deporte, minutos, horaInicio, actividad, nota }) => ({ dia, deporte, minutos, horaInicio, actividad, nota })),
       franjas: Object.fromEntries(Array.from(franjasDiv.children).map((fila) => [
         fila.dataset.franja, { activa: fila.querySelector('.f-activa').checked, hora: fila.querySelector('.f-hora').value },
