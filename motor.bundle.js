@@ -69,6 +69,7 @@ var Motor = (() => {
     SEMANAS_MIN: () => SEMANAS_MIN,
     SEMANAS_POR_DEFECTO: () => SEMANAS_POR_DEFECTO,
     TEXTOS_LOGROS: () => TEXTOS_LOGROS,
+    TEXTO_ALERTA_PERSONA: () => TEXTO_ALERTA_PERSONA,
     TEXTO_NIVEL: () => TEXTO_NIVEL,
     TEXTO_PLAN_PABLO: () => TEXTO_PLAN_PABLO,
     TIPOS_ALERTA: () => TIPOS_ALERTA,
@@ -216,6 +217,7 @@ var Motor = (() => {
     limitesIngredientesDesdeCsv: () => limitesIngredientesDesdeCsv,
     limpiarCodigoTotp: () => limpiarCodigoTotp,
     limpiarNotaSesion: () => limpiarNotaSesion,
+    lineasAlertasPersona: () => lineasAlertasPersona,
     lineasIcs: () => lineasIcs,
     liquidoRecuperacion: () => liquidoRecuperacion,
     listaManualDesdeJson: () => listaManualDesdeJson,
@@ -267,6 +269,7 @@ var Motor = (() => {
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
     sinFilaDeGluten: () => sinFilaDeGluten,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
+    textoLlegaAPablo: () => textoLlegaAPablo,
     textoNotificacion: () => textoNotificacion,
     textoOtrasAlergias: () => textoOtrasAlergias,
     tipoDeSesion: () => tipoDeSesion,
@@ -7572,6 +7575,20 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
     pablo: "Revisado por Pablo",
     pablo_con_cambios: "Revisado por Pablo, con cambios tuyos"
   };
+
+  // src/motor/alertas-persona.ts
+  var TEXTO_ALERTA_PERSONA = "Pablo revisar\xE1 tus respuestas y hablar\xE1 contigo.";
+  var TEXTO_NUBE_ACTIVA = "Pablo ya lo tiene.";
+  var TEXTO_NUBE_INACTIVA = "Cuando actives \xABQue Pablo vea mis datos\xBB, le llegar\xE1 a Pablo.";
+  function textoLlegaAPablo(nubeActiva) {
+    return nubeActiva ? TEXTO_NUBE_ACTIVA : TEXTO_NUBE_INACTIVA;
+  }
+  function lineasAlertasPersona(alertas, nubeActiva) {
+    return alertas.map((a2) => ({
+      fecha: typeof a2.fecha === "string" ? a2.fecha.slice(0, 10) : "",
+      texto: `${TEXTO_ALERTA_PERSONA} ${textoLlegaAPablo(nubeActiva)}`
+    }));
+  }
 
   // src/motor/logros.ts
   var TEXTOS_LOGROS = {

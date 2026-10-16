@@ -226,14 +226,17 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const l = leerAlertas();
     const caja = document.getElementById('tarjeta-alertas');
     caja.hidden = !l.length;
-    document.getElementById('alertas-lista').innerHTML = l.map((a, i) => `<li class="item-compra"><div style="flex:1;min-width:0">
-      <strong>${escaparHtml(fechaLegible(a.fecha.slice(0, 10)))}</strong>${a.suelo ? ' · revisar el suelo de kcal' : ''}${a.freno ? ' · <strong>REVISIÓN PRIORITARIA</strong> (sin plan para perder grasa; puede tener uno para mantener o ganar músculo)' : a.prioritaria ? ' · <strong>REVISIÓN PRIORITARIA</strong> (valoración sanitaria, sin plan automático)' : ''}
-      <ul>${a.disparadores.map((d) => `<li>${escaparHtml(d.señal)}${d.pregunta ? ` <small class="dieta-dato">(pregunta ${d.pregunta}: ${escaparHtml(d.etiqueta)})</small>` : ''}</li>`).join('')}</ul>
-      ${a.perdidaKg !== undefined ? `<small class="dieta-dato">Pérdida declarada: ${String(a.perdidaKg).replace('.', ',')} kg en 3 meses.</small> ` : ''}
-      ${(a.contexto ?? []).length ? `<small class="dieta-dato">Contexto: ${a.contexto.map((c) => `pregunta ${c.pregunta}: ${escaparHtml(c.etiqueta)}`).join('; ')}.</small> ` : ''}
-      ${(a.sinInterpretar ?? []).length ? `<small class="dieta-dato">Sin responder o sin saber: preguntas ${a.sinInterpretar.join(', ')} (no se interpretan como Sí ni como normal).</small>` : ''}
-      </div><button type="button" class="btn-texto alerta-quitar" data-i="${i}">Ya la he revisado</button></li>`).join('');
-    document.querySelectorAll('.alerta-quitar').forEach((b) => b.addEventListener('click', () => { const l2 = leerAlertas(); l2.splice(Number(b.dataset.i), 1); guardarAlertas(l2); pintarAlertas(); }));
+    // #254: la persona solo ve que Pablo revisará sus respuestas, con la fecha; el tipo, los motivos y las cifras son solo para Pablo.
+    const llega = Motor.textoLlegaAPablo(nubeActiva());
+    document.getElementById('alertas-lista').innerHTML = Motor.lineasAlertasPersona(l, nubeActiva()).map((x) => `<li class="item-compra"><div style="flex:1;min-width:0">
+      <strong>${escaparHtml(x.fecha ? fechaLegible(x.fecha) : '')}</strong> · ${escaparHtml(x.texto)}</div></li>`).join('');
+    const freno = document.getElementById('freno-aviso-pablo');
+    if (freno) freno.textContent = `${Motor.TEXTO_ALERTA_PERSONA} ${llega}`;
+  }
+  /** ¿Está activa «Que Pablo vea mis datos»? (web/nube.js, solo con ?nube=1, guarda el consentimiento en app-dietas-nube). */
+  function nubeActiva() {
+    if (!Motor.nubeOfrecida(location.search)) return false;
+    try { const g = JSON.parse(localStorage.getItem('app-dietas-nube') || '{}'); return Boolean(g && g.consentimiento); } catch { return false; }
   }
   /** Evalúa el cribado de lo que se acaba de enviar: guarda la alerta (si salta algún disparador) y deja el mensaje neutro para la persona. */
   function procesarCribado(respuestas) {
