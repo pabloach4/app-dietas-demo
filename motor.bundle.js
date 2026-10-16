@@ -794,7 +794,7 @@ var Motor = (() => {
   var PRINCIPALES = ["desayuno", "comida", "cena"];
   var SECUNDARIAS = ["media_manana", "merienda"];
   function hhmm(h) {
-    const total = Math.round(h * 60);
+    const total = (Math.round(h * 60) % 1440 + 1440) % 1440;
     return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
   }
   var NOMBRE_FRANJA = { desayuno: "El desayuno", media_manana: "La media ma\xF1ana", comida: "La comida", merienda: "La merienda", cena: "La cena" };

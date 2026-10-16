@@ -1546,9 +1546,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
   function horaDecimalATexto(h) {
     if (h === undefined || h === null) return '';
-    const horas = Math.floor(h + 1e-9);
-    const min = Math.round((h - horas) * 60);
-    return `${String(horas).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    // #241: una sesión que acaba a medianoche o después se escribe «00:30», nunca «24:00» ni «25:00»; 7,9999 h es «08:00», no «07:60».
+    const total = ((Math.round(h * 60) % 1440) + 1440) % 1440;
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
   }
 
   // Entrenos y comidas de un día, tal como salen de la única fuente del plan (issue #44: el calendario y el
