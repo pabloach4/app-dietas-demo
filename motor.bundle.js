@@ -3383,6 +3383,7 @@ compota de manzana,despensa,si,"Se supone conserva estable cerrada; tras abrir, 
 semillas de calabaza,despensa,no,"Secas y bien cerradas; pueden enranciarse; revisar etiqueta y estado. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
 semillas de girasol,despensa,no,"Secas y bien cerradas; pueden enranciarse; revisar etiqueta y estado. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
 queso fresco,nevera,no,"Queso fresco: propuesta conservadora por p\xE9rdida de textura; t\xE9cnicamente congelable para cocinar, no prohibici\xF3n sanitaria.",https://ask.fsis.usda.gov/article/How-long-can-you-keep-dairy-products-like-yogurt-milk-and-cheese-in-the-refrigerator,no
+reques\xF3n,nevera,no,"Queso fresco batido: propuesta conservadora por p\xE9rdida de textura al congelar; seguir etiqueta de la marca.",https://nchfp.uga.edu/how/freeze/dairy-products/freezing-cheese/,no
 `;
 
   // src/motor/limites-ingredientes-datos.ts
@@ -3487,6 +3488,7 @@ compota de manzana,50,200,fruta_procesada,"https://www.ucm.es/data/cont/docs/458
 semillas de calabaza,10,40,semilla,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Neto sin c\xE1scara; misma banda que los frutos secos del cat\xE1logo (almendra y nueces 10-40 g): m\xEDnimo 10 g culinario para completar un bol, m\xE1ximo 40 g como raci\xF3n grasa del d\xEDa. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 semillas de girasol,10,40,semilla,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Neto sin c\xE1scara; misma banda que los frutos secos del cat\xE1logo (almendra y nueces 10-40 g): m\xEDnimo 10 g culinario para completar un bol, m\xE1ximo 40 g como raci\xF3n grasa del d\xEDa. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 queso fresco,60,300,queso_fresco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Tal cual; misma banda que el queso cottage del cat\xE1logo (60-300 g, familia queso_fresco): m\xEDnimo 60 g como prote\xEDna principal de una cena, m\xE1ximo 300 g conservado del m\xE9todo. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+reques\xF3n,60,300,queso_fresco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Tal cual; m\xEDnimo propuesto 60 g como porci\xF3n peque\xF1a frente a la referencia de queso fresco 80-125 g. Reques\xF3n aproximado con queso cottage en alimentos-usda.csv (equivalente_aprox=si). | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 `;
 
   // src/motor/limites-ingredientes.ts
@@ -5664,7 +5666,13 @@ R411,Arroz con verduras y queso fresco,comida;cena,622,23.5,30.1,66.1,EJEMPLO,un
 R412,Cusc\xFAs con verduras asadas y yogur,comida;cena,469,14.8,15.0,70.6,EJEMPLO,unico,10.03,yogur natural,cereal,gluten;l\xE1cteos,si,no,no,no,no,30,nuevo,"Asar la berenjena, el pimiento y la cebolla. Preparar el cusc\xFAs y servir con las verduras y el yogur. Pesar el cusc\xFAs en seco.",normal
 R413,Pisto con queso fresco y pan integral,comida;cena,522,24.0,31.5,39.6,EJEMPLO | fibraAlta,unico,9.47,queso fresco,pan,gluten;l\xE1cteos,si,no,no,no,no,30,nuevo,"Pochar la cebolla, el pimiento y el calabac\xEDn; a\xF1adir el tomate y cocer. Servir con el queso fresco desmigado y el pan. Pesar el pan tal cual.",normal
 R414,Ensalada templada de lenteja con queso fresco,comida;cena,530,30.3,25.3,48.8,EJEMPLO | fibraAlta,unico,17.40,queso fresco,legumbre,l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,"Templar la lenteja y mezclar con el tomate, el pepino y el queso fresco; ali\xF1ar con el aceite. Pesar la lenteja cocida.",normal
-R417,Ensalada de garbanzo con yogur y pepino,comida;cena,416,20.0,13.5,57.2,EJEMPLO | fibraAlta,unico,13.86,garbanzo cocido,legumbre,l\xE1cteos,si,no,no,pendiente_ficha,no,10,nuevo,Mezclar el garbanzo con el pepino y el tomate; ali\xF1ar con el yogur y el aceite. Pesar el garbanzo cocido.,normal`;
+R417,Ensalada de garbanzo con yogur y pepino,comida;cena,416,20.0,13.5,57.2,EJEMPLO | fibraAlta,unico,13.86,garbanzo cocido,legumbre,l\xE1cteos,si,no,no,pendiente_ficha,no,10,nuevo,Mezclar el garbanzo con el pepino y el tomate; ali\xF1ar con el yogur y el aceite. Pesar el garbanzo cocido.,normal
+R320,Calabaza asada con tofu y pan integral,comida;cena,508,35.4,25.4,42.8,EJEMPLO,unico,8.05,tofu firme,pan,gluten;soja,si,si,si,no,no,40,nuevo,Asar la calabaza y dorar el tofu en dados con el aceite; servir con el pan tostado.,normal
+R409,Garbanzos con espinacas y reques\xF3n,comida;cena,553,32.5,20.1,65.3,EJEMPLO | fibraAlta,unico,19.30,reques\xF3n,legumbre,l\xE1cteos,si,no,no,pendiente_ficha,no,25,nuevo,"Sofre\xEDr el tomate, a\xF1adir el garbanzo y las espinacas; servir con el reques\xF3n por encima. Pesar el garbanzo cocido.",normal
+R416,Boniato asado relleno de reques\xF3n con ensalada,comida;cena,382,16.5,9.8,58.8,EJEMPLO | fibraAlta,unico,9.72,reques\xF3n,patata,l\xE1cteos,si,no,no,pendiente_ficha,no,40,nuevo,"Asar el boniato, abrirlo y rellenarlo con el reques\xF3n. Servir con la ensalada ali\xF1ada. Pesar el boniato en crudo.",normal
+R401,Crema de calabac\xEDn con tofu y patata,comida;cena,338,22.8,14.5,35.2,EJEMPLO,unico,7.45,tofu firme,patata,soja,si,si,si,pendiente_ficha,no,30,nuevo,Cocer el calabac\xEDn y la patata y triturar. Servir con el tofu a la plancha en dados y el aceite. Pesar la patata en crudo.,normal
+R415,Crema de calabaza con reques\xF3n y patata,comida;cena,348,17.2,9.7,51.4,EJEMPLO,unico,5.20,reques\xF3n,patata,l\xE1cteos,si,no,no,pendiente_ficha,si,30,nuevo,Cocer la calabaza y la patata y triturar. Servir con el reques\xF3n y el aceite. Pesar la patata en crudo.,normal
+R418,Berenjena asada con mozzarella y tomate y pan integral,comida;cena,390,21.0,20.3,33.8,EJEMPLO | fibraAlta,unico,10.30,mozzarella,pan,gluten;l\xE1cteos,si,no,no,no,no,35,nuevo,"Asar la berenjena en rodajas con el tomate, gratinar con la mozzarella y servir con el pan. Pesar el pan tal cual.",normal`;
   var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
 R01,garbanzo cocido,140,base,173757,peso cocido,
 R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
@@ -6792,7 +6800,34 @@ R417,garbanzo cocido,160,base,173757,peso cocido,
 R417,pepino,100,verdura,168409,peso crudo,
 R417,tomate,100,verdura,170457,peso crudo,
 R417,yogur natural,125,fruta_lacteo,171284,tal cual,
-R417,aceite de oliva,5,grasa,171413,peso a\xF1adido,`;
+R417,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R320,calabaza,200,verdura,168448,peso crudo,
+R320,tofu firme,150,proteina,172475,tal cual,
+R320,pan integral,60,base,172688,tal cual,
+R320,aceite de oliva,10,grasa,171413,tal cual,
+R409,garbanzo cocido,200,base,173757,peso cocido,
+R409,espinacas,100,verdura,168462,peso crudo,
+R409,reques\xF3n,100,proteina,172182,tal cual,si
+R409,tomate triturado,100,verdura,170051,crudo,
+R409,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R416,boniato,250,base,168482,peso crudo,
+R416,reques\xF3n,100,proteina,172182,tal cual,si
+R416,lechuga romana,60,verdura,169247,peso crudo,
+R416,tomate,80,verdura,170457,peso crudo,
+R416,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R401,calabac\xEDn,200,verdura,169291,peso crudo,
+R401,patata,150,base,170026,peso crudo,
+R401,tofu firme,100,proteina,172475,tal cual,
+R401,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R415,calabaza,200,verdura,168448,peso crudo,
+R415,patata,200,base,170026,peso crudo,
+R415,reques\xF3n,100,proteina,172182,tal cual,si
+R415,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R418,berenjena,200,verdura,169228,peso crudo,
+R418,mozzarella,60,proteina,170845,tal cual,
+R418,tomate triturado,100,verdura,170051,crudo,
+R418,pan integral,40,base,172688,tal cual,
+R418,aceite de oliva,5,grasa,171413,peso a\xF1adido,`;
 
   // src/motor/coherencia-nutricional.ts
   var TOLERANCIA_RELATIVA = 0.1;
