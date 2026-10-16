@@ -24,6 +24,7 @@ var Motor = (() => {
     ACTIVIDADES: () => ACTIVIDADES,
     ACTIVIDAD_POR_TIPO: () => ACTIVIDAD_POR_TIPO,
     AVISO_DESCARGA: () => AVISO_DESCARGA,
+    AVISO_ETIQUETA_GLUTEN: () => AVISO_ETIQUETA_GLUTEN,
     CLAVES_NUBE: () => CLAVES_NUBE,
     COMER_FUERA_CSV: () => COMER_FUERA_CSV,
     CONSERVACION_CSV: () => CONSERVACION_CSV,
@@ -36,6 +37,7 @@ var Motor = (() => {
     FACTOR_LEGUMBRE_COCIDA: () => FACTOR_LEGUMBRE_COCIDA,
     FILTROS_PERSONAS: () => FILTROS_PERSONAS,
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
+    GLUTEN_CSV: () => GLUTEN_CSV,
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
     LIMITES_INGREDIENTES_CSV: () => LIMITES_INGREDIENTES_CSV,
     LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
@@ -45,6 +47,7 @@ var Motor = (() => {
     MAX_SUBIDA_COMIDA: () => MAX_SUBIDA_COMIDA,
     MEDIDAS_CASERAS_CSV: () => MEDIDAS_CASERAS_CSV,
     MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
+    MENSAJE_CELIAQUIA_HOY: () => MENSAJE_CELIAQUIA_HOY,
     MENSAJE_CRIBADO_NEUTRO: () => MENSAJE_CRIBADO_NEUTRO,
     MENSAJE_CRIBADO_PRIORITARIO: () => MENSAJE_CRIBADO_PRIORITARIO,
     MENSAJE_SUELO: () => MENSAJE_SUELO,
@@ -78,6 +81,7 @@ var Motor = (() => {
     accionReintentoNube: () => accionReintentoNube,
     actividadesDesconocidas: () => actividadesDesconocidas,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
+    alertaCeliaquia: () => alertaCeliaquia,
     alertaFreno: () => alertaFreno,
     alertaParaPablo: () => alertaParaPablo,
     alertaSuelo: () => alertaSuelo,
@@ -90,6 +94,7 @@ var Motor = (() => {
     anadirCompeticion: () => anadirCompeticion,
     aplicarCompeticion: () => aplicarCompeticion,
     aplicarSustituciones: () => aplicarSustituciones,
+    aptitudCeliaca: () => aptitudCeliaca,
     asignarRecetas: () => asignarRecetas,
     avisoClasificacionSesion: () => avisoClasificacionSesion,
     avisoDietaTerminada: () => avisoDietaTerminada,
@@ -105,6 +110,7 @@ var Motor = (() => {
     cambiarHoraSesion: () => cambiarHoraSesion,
     cargaDeHidratos: () => cargaDeHidratos,
     categoriasDeTexto: () => categoriasDeTexto,
+    claseGluten: () => claseGluten,
     claveSlot: () => claveSlot,
     coherenciaKcalMacros: () => coherenciaKcalMacros,
     coincideAlimento: () => coincideAlimento,
@@ -117,6 +123,7 @@ var Motor = (() => {
     compraDelPeriodo: () => compraDelPeriodo,
     comprobarComerFueraCsv: () => comprobarComerFueraCsv,
     comprobarConservacionCsv: () => comprobarConservacionCsv,
+    comprobarGlutenCsv: () => comprobarGlutenCsv,
     comprobarLimitesIngredientesCsv: () => comprobarLimitesIngredientesCsv,
     comprobarMedidasCsv: () => comprobarMedidasCsv,
     conLimitesIngredientes: () => conLimitesIngredientes,
@@ -184,6 +191,7 @@ var Motor = (() => {
     gastoDePrueba: () => gastoDePrueba,
     generarIcs: () => generarIcs,
     generarListaCompra: () => generarListaCompra,
+    glutenDesdeCsv: () => glutenDesdeCsv,
     grupoDeFranja: () => grupoDeFranja,
     historialPlanes: () => historialPlanes,
     horaDeGuardado: () => horaDeGuardado,
@@ -241,6 +249,7 @@ var Motor = (() => {
     semanaDeLaDieta: () => semanaDeLaDieta,
     semanasValidas: () => semanasValidas,
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
+    sinFilaDeGluten: () => sinFilaDeGluten,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
     textoNotificacion: () => textoNotificacion,
     textoOtrasAlergias: () => textoOtrasAlergias,
@@ -738,8 +747,8 @@ var Motor = (() => {
     if (s.actividad) {
       return ACTIVIDADES[s.actividad] ? { clave: s.actividad } : { opciones: Object.keys(ACTIVIDADES) };
     }
-    const clave = MAPA_DEPORTES[normalizarTexto(s.deporte)];
-    return clave ? { clave } : { opciones: Object.keys(ACTIVIDADES) };
+    const clave2 = MAPA_DEPORTES[normalizarTexto(s.deporte)];
+    return clave2 ? { clave: clave2 } : { opciones: Object.keys(ACTIVIDADES) };
   }
   function perfilDesdeCuestionario(r) {
     if (declaraCondicion(r.salud)) {
@@ -809,15 +818,15 @@ var Motor = (() => {
       bordePrimeraHora: { sesion_antes_de_h: 9, toma_pre_min_antes: 30, toma_pre_max_antes: 60, hidrato_rapido_g_kg_min: 0.5, hidrato_rapido_g_kg_max: 1 }
     };
     for (const linea of lineas.slice(1)) {
-      const [grupo, clave, franja, valorRaw] = linea.split(",");
+      const [grupo, clave2, franja, valorRaw] = linea.split(",");
       const valor = Number(valorRaw);
       if (!Number.isFinite(valor)) continue;
       if (grupo === "peso_base") p.pesoBase[franja] = valor;
-      else if (grupo === "factor_contexto") p.factor[clave] = valor;
-      else if (grupo === "ventana_horas") p.ventana[clave] = valor;
-      else if (grupo === "tope") p.tope[clave] = valor;
-      else if (grupo === "proteina_principal") p.proteinaPrincipal[clave] = valor;
-      else if (grupo === "borde_primera_hora") p.bordePrimeraHora[clave] = valor;
+      else if (grupo === "factor_contexto") p.factor[clave2] = valor;
+      else if (grupo === "ventana_horas") p.ventana[clave2] = valor;
+      else if (grupo === "tope") p.tope[clave2] = valor;
+      else if (grupo === "proteina_principal") p.proteinaPrincipal[clave2] = valor;
+      else if (grupo === "borde_primera_hora") p.bordePrimeraHora[clave2] = valor;
     }
     return p;
   }
@@ -1227,17 +1236,17 @@ var Motor = (() => {
     const tokensIngrediente = new Set(tokens(nombreIngrediente));
     return keywords.some((kw) => kw.every((t2) => tokensIngrediente.has(t2)));
   }
-  function buscarLimite(tabla, nombre) {
-    return tabla.alimentos.find((a2) => coincide(nombre, a2.keywords));
+  function buscarLimite(tabla2, nombre) {
+    return tabla2.alimentos.find((a2) => coincide(nombre, a2.keywords));
   }
-  function esProtegido(tabla, nombre) {
+  function esProtegido(tabla2, nombre) {
     const tokensIngrediente = new Set(tokens(nombre));
-    return tabla.protegidos.some((p) => tokensIngrediente.has(stem(p)));
+    return tabla2.protegidos.some((p) => tokensIngrediente.has(stem(p)));
   }
   function esIngredienteProtegido(nombre) {
-    const tabla = cargarTabla();
-    if (esProtegido(tabla, nombre)) return true;
-    const limite = buscarLimite(tabla, nombre);
+    const tabla2 = cargarTabla();
+    if (esProtegido(tabla2, nombre)) return true;
+    const limite = buscarLimite(tabla2, nombre);
     return limite !== void 0 && /^condimentos/i.test(limite.categoria);
   }
   var NO_LIQUIDO = /crema de (leche|cacahuete|cacao|avellana|almendra|queso|pistacho|coco)|crema (untable|de untar)/;
@@ -1247,7 +1256,7 @@ var Motor = (() => {
     return LIQUIDO_KEYWORDS.some((k) => n.includes(k));
   }
   function validarPlato(franja, ingredientes, opts = {}) {
-    const tabla = cargarTabla();
+    const tabla2 = cargarTabla();
     const incumplimientos = [];
     const avisos = [];
     const esComidaOCena = franja === "comida" || franja === "cena";
@@ -1255,9 +1264,9 @@ var Motor = (() => {
     let pesoTotalSolidos = 0;
     let pesoGuarnicion = 0;
     for (const ing of ingredientes) {
-      const protegido = esProtegido(tabla, ing.nombre);
+      const protegido = esProtegido(tabla2, ing.nombre);
       if (!protegido) pesoTotalSolidos += ing.gramos;
-      const limite = buscarLimite(tabla, ing.nombre);
+      const limite = buscarLimite(tabla2, ing.nombre);
       if (!limite) continue;
       if (limite.minimo != null && esComidaOCena && !esLiquido && ing.gramos < limite.minimo) {
         incumplimientos.push(
@@ -1285,14 +1294,14 @@ var Motor = (() => {
       }
       if (!protegido && limite.esBaseDeGuarnicion) pesoGuarnicion += ing.gramos;
     }
-    if (pesoTotalSolidos > tabla.pesoPlatoTope) {
-      incumplimientos.push(`Peso total del plato: ${pesoTotalSolidos} g supera el tope de ${tabla.pesoPlatoTope} g`);
-    } else if (pesoTotalSolidos > tabla.pesoPlatoRecomendado) {
-      avisos.push(`Peso total del plato: ${pesoTotalSolidos} g por encima de lo recomendado (${tabla.pesoPlatoRecomendado} g)`);
+    if (pesoTotalSolidos > tabla2.pesoPlatoTope) {
+      incumplimientos.push(`Peso total del plato: ${pesoTotalSolidos} g supera el tope de ${tabla2.pesoPlatoTope} g`);
+    } else if (pesoTotalSolidos > tabla2.pesoPlatoRecomendado) {
+      avisos.push(`Peso total del plato: ${pesoTotalSolidos} g por encima de lo recomendado (${tabla2.pesoPlatoRecomendado} g)`);
     }
-    if (esComidaOCena && !esLiquido && pesoGuarnicion < tabla.guarnicionMinima) {
+    if (esComidaOCena && !esLiquido && pesoGuarnicion < tabla2.guarnicionMinima) {
       incumplimientos.push(
-        `Falta guarnici\xF3n: ${pesoGuarnicion} g de base de hidrato o verdura (m\xEDnimo ${tabla.guarnicionMinima} g; la fruta no cuenta)`
+        `Falta guarnici\xF3n: ${pesoGuarnicion} g de base de hidrato o verdura (m\xEDnimo ${tabla2.guarnicionMinima} g; la fruta no cuenta)`
       );
     }
     return { incumplimientos, avisos };
@@ -1300,11 +1309,11 @@ var Motor = (() => {
   function rolIngrediente(nombre) {
     const declarado = rolesCatalogo.get(normalizar(nombre));
     if (declarado) return declarado;
-    const tabla = cargarTabla();
-    const limite = buscarLimite(tabla, nombre);
+    const tabla2 = cargarTabla();
+    const limite = buscarLimite(tabla2, nombre);
     const c2 = limite ? normalizar(limite.categoria) : "";
     if (/^condimento/.test(c2)) return "condimento";
-    if (esProtegido(tabla, nombre)) return "fruta_lacteo";
+    if (esProtegido(tabla2, nombre)) return "fruta_lacteo";
     if (!limite) return "fijo";
     if (/^(pollo|ternera|pescado|atun|huevo|marisco|conejo|sepia)/.test(c2)) return "proteina";
     if (/^(legumbre|patata|cereal|pasta|pan)/.test(c2)) return "base";
@@ -1321,41 +1330,41 @@ var Motor = (() => {
     return l ? l.recomendado ?? l.tope : void 0;
   }
   function validarPlatoGenerado(franja, ingredientes, opts = {}) {
-    const tabla = cargarTabla();
+    const tabla2 = cargarTabla();
     const base = validarPlato(franja, ingredientes, opts.esLiquido === void 0 ? {} : { esLiquido: opts.esLiquido });
     const incumplimientos = base.incumplimientos.filter((i) => !i.startsWith("Peso total del plato"));
     const avisos = base.avisos.filter((a2) => !a2.startsWith("Peso total del plato"));
     const esLiquido = opts.esLiquido ?? ingredientes.some((i) => esLiquidoPorNombre(i.nombre));
     let peso = 0;
     for (const ing of ingredientes) {
-      if (!esProtegido(tabla, ing.nombre)) peso += ing.gramos;
+      if (!esProtegido(tabla2, ing.nombre)) peso += ing.gramos;
       const max = racionRealistaMaxima(ing.nombre);
       if (max !== void 0 && !esLiquido && ing.gramos > max && !incumplimientos.some((i) => i.startsWith(`${ing.nombre}:`))) {
         incumplimientos.push(`${ing.nombre}: ${ing.gramos} g pasa de la raci\xF3n normal (${max} g)`);
       }
     }
-    const maxPeso = opts.cargaAlta ? tabla.pesoPlatoTope : tabla.pesoPlatoRecomendado;
+    const maxPeso = opts.cargaAlta ? tabla2.pesoPlatoTope : tabla2.pesoPlatoRecomendado;
     if (peso > maxPeso) incumplimientos.push(`Peso total del plato: ${peso} g pasa del m\xE1ximo de ${maxPeso} g${opts.cargaAlta ? "" : " (hasta 900 g solo en d\xEDas de carga alta)"}`);
-    else if (opts.cargaAlta && peso > tabla.pesoPlatoRecomendado) avisos.push(`Peso total del plato: ${peso} g, por encima de 700 g (d\xEDa de carga alta)`);
+    else if (opts.cargaAlta && peso > tabla2.pesoPlatoRecomendado) avisos.push(`Peso total del plato: ${peso} g, por encima de 700 g (d\xEDa de carga alta)`);
     return { incumplimientos, avisos };
   }
   function limitesDeFactor(franja, ingredientes, cargaAlta = false) {
-    const tabla = cargarTabla();
+    const tabla2 = cargarTabla();
     const esComidaOCena = franja === "comida" || franja === "cena";
     const esLiquido = ingredientes.some((i) => esLiquidoPorNombre(i.nombre));
-    const maxPeso = cargaAlta ? tabla.pesoPlatoTope : tabla.pesoPlatoRecomendado;
+    const maxPeso = cargaAlta ? tabla2.pesoPlatoTope : tabla2.pesoPlatoRecomendado;
     let fMin = 0;
     let fMax = Infinity;
     let pesoFijo = 0;
     let pesoPalancas = 0;
     for (const ing of ingredientes) {
-      const cuentaPeso = !esProtegido(tabla, ing.nombre);
+      const cuentaPeso = !esProtegido(tabla2, ing.nombre);
       if (!esPalanca(ing.nombre)) {
         if (cuentaPeso) pesoFijo += ing.gramos;
         continue;
       }
       if (cuentaPeso) pesoPalancas += ing.gramos;
-      const limite = buscarLimite(tabla, ing.nombre);
+      const limite = buscarLimite(tabla2, ing.nombre);
       const cap = limite ? limite.recomendado ?? limite.tope : void 0;
       if (cap !== void 0 && ing.gramos > 0) fMax = Math.min(fMax, cap / ing.gramos);
       if (limite?.minimo != null && esComidaOCena && !esLiquido && ing.gramos > 0) fMin = Math.max(fMin, limite.minimo / ing.gramos);
@@ -1372,9 +1381,9 @@ var Motor = (() => {
     const l = buscarLimite(cargarTabla(), nombre);
     return l?.minimo ?? void 0;
   }
-  function conLimitesIngredientes(tabla, limites) {
+  function conLimitesIngredientes(tabla2, limites) {
     const propios = limites.map((l) => {
-      const previo = buscarLimite(tabla, l.ingrediente);
+      const previo = buscarLimite(tabla2, l.ingrediente);
       return {
         categoria: previo?.categoria ?? l.ingrediente,
         keywords: [tokens(l.ingrediente)],
@@ -1386,7 +1395,7 @@ var Motor = (() => {
       };
     });
     propios.sort((a2, b) => b.keywords[0].length - a2.keywords[0].length);
-    return { ...tabla, alimentos: [...propios, ...tabla.alimentos] };
+    return { ...tabla2, alimentos: [...propios, ...tabla2.alimentos] };
   }
 
   // src/motor/semana.ts
@@ -1547,7 +1556,7 @@ var Motor = (() => {
   var normalizar2 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   function factorCocido(ingrediente) {
     const n = normalizar2(ingrediente);
-    return FACTORES_COCIDO_EJEMPLO.find(([clave]) => n === clave || n.startsWith(`${clave} `))?.[1];
+    return FACTORES_COCIDO_EJEMPLO.find(([clave2]) => n === clave2 || n.startsWith(`${clave2} `))?.[1];
   }
   function pesoCocido(ingrediente, gramosSecos) {
     const factor = factorCocido(ingrediente);
@@ -1801,6 +1810,216 @@ var Motor = (() => {
     }
   ];
 
+  // src/motor/csv-simple.ts
+  function filasCsv(texto) {
+    const filas = [];
+    let fila = [], celda2 = "", entreComillas = false;
+    for (let i = 0; i < texto.length; i++) {
+      const c2 = texto[i];
+      if (entreComillas) {
+        if (c2 === '"' && texto[i + 1] === '"') {
+          celda2 += '"';
+          i++;
+        } else if (c2 === '"') entreComillas = false;
+        else celda2 += c2;
+      } else if (c2 === '"') entreComillas = true;
+      else if (c2 === ",") {
+        fila.push(celda2);
+        celda2 = "";
+      } else if (c2 === "\n" || c2 === "\r") {
+        if (c2 === "\r" && texto[i + 1] === "\n") i++;
+        fila.push(celda2);
+        celda2 = "";
+        if (fila.some((x) => x !== "")) filas.push(fila);
+        fila = [];
+      } else celda2 += c2;
+    }
+    fila.push(celda2);
+    if (fila.some((x) => x !== "")) filas.push(fila);
+    return filas;
+  }
+  function registros(texto) {
+    const [cab = [], ...resto] = filasCsv(texto);
+    const nombres = cab.map((x) => x.trim());
+    return resto.map((f2) => Object.fromEntries(nombres.map((n, i) => [n, (f2[i] ?? "").trim()])));
+  }
+
+  // src/motor/gluten-datos.ts
+  var GLUTEN_CSV = `ingrediente,clase,necesita_etiqueta,motivo,fuente
+aceite de oliva,sin_gluten_natural,no,"grasa vegetal, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+aceituna negra,sin_gluten_natural,no,"grasa vegetal, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+aguacate,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+ajo,sin_gluten_natural,no,"hierba arom\xE1tica fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+alcachofa,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+almendra,sin_gluten_natural,no,"fruto seco natural, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+alubia blanca cocida,sin_gluten_natural,no,"legumbre (seca o cocida sin salsa), sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+alubia blanca seca,sin_gluten_natural,no,"legumbre (seca o cocida sin salsa), sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+alubia roja cocida,sin_gluten_natural,no,"legumbre (seca o cocida sin salsa), sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+arroz,sin_gluten_natural,no,cereal sin gluten por naturaleza (FACE: gen\xE9rico),https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+at\xFAn en lata,riesgo,si,"al natural o en aceite suele ser apto, pero en escabeche o con salsas puede llevar gluten seg\xFAn la marca (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+at\xFAn fresco,sin_gluten_natural,no,"pescado fresco, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+avena,riesgo,si,"la avena se contamina con trigo/cebada en campo y molino; solo apta la certificada \xABsin gluten\xBB (<20 ppm), RE 828/2014",https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32014R0828
+bacalao fresco,sin_gluten_natural,no,"pescado fresco, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+berenjena,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+boniato,sin_gluten_natural,no,"tub\xE9rculo, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+br\xF3coli,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+caballa,sin_gluten_natural,no,"pescado fresco, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+cacao puro en polvo,riesgo,si,"el cacao es apto, pero el envasado puede a\xF1adir antiapelmazantes o declarar trazas (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+calabac\xEDn,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+calabaza,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+calamar,sin_gluten_natural,no,"pescado fresco, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+canela,riesgo,si,especia molida: riesgo de contaminaci\xF3n cruzada o antiapelmazante seg\xFAn la marca (FACE: convencional),https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+can\xF3nigos,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+cebolla,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+champi\xF1ones,sin_gluten_natural,no,"seta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+champi\xF1\xF3n,sin_gluten_natural,no,"seta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+claras de huevo,sin_gluten_natural,no,"huevo, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+coliflor,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+comino,riesgo,si,especia molida: riesgo de contaminaci\xF3n cruzada o antiapelmazante seg\xFAn la marca (FACE: convencional),https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+conejo,sin_gluten_natural,no,"carne fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+copos de avena,riesgo,si,"la avena se contamina con trigo/cebada en campo y molino; solo apta la certificada \xABsin gluten\xBB (<20 ppm), RE 828/2014",https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32014R0828
+crema de cacahuete,riesgo,si,"el cacahuete es apto, pero la crema puede llevar aditivos o emulgentes seg\xFAn la marca (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+cusc\xFAs,con_gluten,no,"s\xE9mola de trigo (cereal con gluten, anexo II RE 1169/2011)",https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32011R1169
+espinaca,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+espinacas,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+esp\xE1rrago,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+esp\xE1rragos,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+fresas,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+garbanzo cocido,sin_gluten_natural,no,"legumbre (seca o cocida sin salsa), sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+garbanzos cocidos,riesgo,si,"en bote o conserva suelen ser aptos, pero el l\xEDquido de gobierno puede variar seg\xFAn la marca (FACE: convencional); cocidos en casa son aptos",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+gazpacho,riesgo,si,"elaborado que tradicionalmente lleva pan y cuya formulaci\xF3n var\xEDa seg\xFAn la marca (FACE: convencional); el casero sin pan es apto",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+guisantes,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+huevo cocido,sin_gluten_natural,no,"huevo, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+huevo,sin_gluten_natural,no,"huevo, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+hummus,riesgo,si,"elaborado: garbanzo y tahini son aptos, pero la formulaci\xF3n (especias, conservantes) var\xEDa seg\xFAn la marca (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+jam\xF3n cocido,riesgo,si,"fiambre cocido que puede llevar aditivos o saborizantes con gluten seg\xFAn la marca (FACE: convencional, a revisar en su lista)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+jud\xEDa verde,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+jud\xEDas verdes,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+kiwi,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+leche semidesnatada,sin_gluten_natural,no,"leche o derivado natural sin azucarar ni sabor, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+lechuga hoja verde,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+lechuga romana,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+lechuga,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+legumbre cocida,sin_gluten_natural,no,"legumbre (seca o cocida sin salsa), sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+legumbre seca,sin_gluten_natural,no,"legumbre (seca o cocida sin salsa), sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+lenteja cocida,sin_gluten_natural,no,"legumbre (seca o cocida sin salsa), sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+lenteja seca,sin_gluten_natural,no,"legumbre (seca o cocida sin salsa), sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+lomo de cerdo,sin_gluten_natural,no,"carne fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+lubina,sin_gluten_natural,no,"pescado fresco, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+mandarina,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+manzana,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+mejill\xF3n,sin_gluten_natural,no,"pescado fresco, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+mel\xF3n,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+merluza,sin_gluten_natural,no,"pescado fresco, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+miel,sin_gluten_natural,no,"producto natural puro, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+mozzarella,sin_gluten_natural,no,"leche o derivado natural sin azucarar ni sabor, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+naranja,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+nueces,sin_gluten_natural,no,"fruto seco natural, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pan blanco,con_gluten,no,"harina de trigo (cereal con gluten, anexo II RE 1169/2011)",https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32011R1169
+pan integral,con_gluten,no,"harina de trigo (cereal con gluten, anexo II RE 1169/2011)",https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32011R1169
+pan,con_gluten,no,"harina de trigo (cereal con gluten, anexo II RE 1169/2011)",https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32011R1169
+pasta,con_gluten,no,"s\xE9mola/harina de trigo (cereal con gluten, anexo II RE 1169/2011)",https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32011R1169
+patata,sin_gluten_natural,no,"tub\xE9rculo, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pavo,sin_gluten_natural,no,"carne fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pechuga de pavo asada,sin_gluten_natural,no,"carne fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pechuga de pavo en embutido,riesgo,si,"embutido que puede llevar aditivos o saborizantes con gluten seg\xFAn la marca (FACE: convencional, a revisar en su lista)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pechuga de pavo,sin_gluten_natural,no,"carne fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pechuga de pollo asada,sin_gluten_natural,no,"carne fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pechuga de pollo,sin_gluten_natural,no,"carne fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pepino,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pera,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+perejil,sin_gluten_natural,no,"hierba arom\xE1tica fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+piment\xF3n,riesgo,si,especia molida: riesgo de contaminaci\xF3n cruzada o antiapelmazante seg\xFAn la marca (FACE: convencional),https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pimiento rojo,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pimiento verde,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pimiento,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pi\xF1a,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pl\xE1tano,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pollo,sin_gluten_natural,no,"carne fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+puerro,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+queso cottage,sin_gluten_natural,no,"leche o derivado natural sin azucarar ni sabor, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+queso curado,sin_gluten_natural,no,"queso natural, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+queso fresco,sin_gluten_natural,no,"queso natural, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+quinoa,sin_gluten_natural,no,"seudocereal sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+remolacha cocida,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+repollo,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+r\xFAcula,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+salm\xF3n,sin_gluten_natural,no,"pescado fresco, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+sand\xEDa,sin_gluten_natural,no,"fruta fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+sardina en lata,riesgo,si,"en aceite suele ser apta, pero en salsas o escabeche puede llevar gluten seg\xFAn la marca (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+sepia,sin_gluten_natural,no,"pescado fresco, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+tempeh,riesgo,si,"la soja es apta, pero algunos tempeh se fermentan con cebada u otros cereales con gluten (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+ternera magra (solomillo de aguja),sin_gluten_natural,no,"carne fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+ternera picada,riesgo,si,carne picada en obrador: puede llevar aditivos o contacto con gluten (FACE: convencional); la pieza entera es apta,https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+ternera,sin_gluten_natural,no,"carne fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+tofu firme,riesgo,si,"la soja es apta, pero el tofu puede llevar aditivos o salsa de soja con trigo seg\xFAn la marca (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+tomate triturado,riesgo,si,procesado que puede llevar espesantes o aditivos con gluten seg\xFAn la marca (FACE: convencional),https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+tomate,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+tortilla de trigo,con_gluten,no,"harina de trigo (cereal con gluten, anexo II RE 1169/2011)",https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32011R1169
+yogur griego,sin_gluten_natural,no,"leche o derivado natural sin azucarar ni sabor, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+yogur natural,sin_gluten_natural,no,"leche o derivado natural sin azucarar ni sabor, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+zanahoria,sin_gluten_natural,no,"verdura u hortaliza fresca, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pan sin gluten,riesgo,si,"pan elaborado sin cereales con gluten; apto solo si el envase declara \xABsin gluten\xBB (<20 ppm, RE 828/2014); marcas certificadas listadas por FACE",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pasta sin gluten,riesgo,si,"pasta de ma\xEDz/arroz; apta solo con declaraci\xF3n \xABsin gluten\xBB (<20 ppm, RE 828/2014); la convencional sin etiqueta puede tener trazas (FACE: convencional, mirar etiqueta)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+tortita de ma\xEDz,riesgo,si,"el ma\xEDz no tiene gluten por naturaleza, pero el elaborado puede llevar trazas o mezclas; apto solo con etiqueta \xABsin gluten\xBB (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+polenta,riesgo,si,"harina de ma\xEDz, sin gluten por naturaleza pero con riesgo de contaminaci\xF3n en molino; elegir con etiqueta \xABsin gluten\xBB (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+copos de avena sin gluten,riesgo,si,"la avena se contamina con trigo/cebada en campo y molino; solo apta la certificada \xABsin gluten\xBB (<20 ppm), RE 828/2014; la avena normal no es apta",https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32014R0828
+`;
+
+  // src/motor/gluten.ts
+  var CLASES = ["sin_gluten_natural", "riesgo", "con_gluten"];
+  var COLUMNAS = ["ingrediente", "clase", "necesita_etiqueta", "motivo", "fuente"];
+  var clave = (s) => s.trim().toLowerCase();
+  function comprobarGlutenCsv(texto) {
+    const fallos = [];
+    const cab = (texto.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
+    for (const c2 of COLUMNAS) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
+    if (fallos.length) return fallos;
+    const vistos = /* @__PURE__ */ new Set();
+    for (const r of registros(texto)) {
+      const id = r.ingrediente || "(sin nombre)";
+      if (!r.ingrediente) fallos.push("fila sin ingrediente");
+      if (vistos.has(clave(id))) fallos.push(`${id}: fila repetida`);
+      vistos.add(clave(id));
+      if (!CLASES.includes(r.clase)) fallos.push(`${id}: clase \xAB${r.clase}\xBB (solo ${CLASES.join(", ")})`);
+      if (r.necesita_etiqueta !== "si" && r.necesita_etiqueta !== "no") fallos.push(`${id}: necesita_etiqueta \xAB${r.necesita_etiqueta}\xBB (si o no)`);
+      if (!r.motivo) fallos.push(`${id}: sin motivo`);
+      if (!/^https:\/\/\S+$/.test(r.fuente ?? "")) fallos.push(`${id}: sin fuente https`);
+    }
+    return fallos;
+  }
+  function glutenDesdeCsv(texto) {
+    return new Map(registros(texto).map((r) => [clave(r.ingrediente), { ingrediente: r.ingrediente, clase: r.clase, necesitaEtiqueta: r.necesita_etiqueta === "si", motivo: r.motivo, fuente: r.fuente }]));
+  }
+  var tabla;
+  var tablaGluten = () => tabla ??= glutenDesdeCsv(GLUTEN_CSV);
+  function claseGluten(ingrediente, t2 = tablaGluten()) {
+    return t2.get(clave(ingrediente))?.clase ?? "con_gluten";
+  }
+  function sinFilaDeGluten(nombres, t2 = tablaGluten()) {
+    return [...new Set(nombres.filter((n) => !t2.has(clave(n))))];
+  }
+  function aptitudCeliaca(ingredientes, t2 = tablaGluten()) {
+    const nombres = [...new Set(ingredientes.map((i) => i.nombre))];
+    const sinFila = nombres.filter((n) => !t2.has(clave(n)));
+    const conGluten = nombres.filter((n) => claseGluten(n, t2) === "con_gluten");
+    const riesgo = nombres.filter((n) => claseGluten(n, t2) === "riesgo");
+    return { apta: conGluten.length === 0, conGluten, riesgo, sinFila };
+  }
+  var AVISO_ETIQUETA_GLUTEN = "compra la versi\xF3n con el sello sin gluten";
+  var MENSAJE_CELIAQUIA_HOY = "Pablo revisar\xE1 tu plan personalmente; mientras, en la compra f\xEDjate en las etiquetas marcadas.";
+  function alertaCeliaquia(fechaISO) {
+    return {
+      fecha: fechaISO,
+      prioritaria: false,
+      celiaquia: true,
+      disparadores: [{ pregunta: 0, etiqueta: "celiaquia", se\u00F1al: "Persona cel\xEDaca: Pablo revisa su plan" }],
+      contexto: [],
+      sinInterpretar: [],
+      firma: "C|celiaquia"
+    };
+  }
+
   // src/motor/filtro-alergias.ts
   function normalizar3(s) {
     return Array.from(s.normalize("NFD")).filter((c2) => c2.codePointAt(0) < 768 || c2.codePointAt(0) > 879).join("").toLowerCase();
@@ -1846,8 +2065,8 @@ var Motor = (() => {
     const anadir = (c2) => {
       if (encontradas.has(c2.cat.clave)) return;
       encontradas.set(c2.cat.clave, c2.cat);
-      for (const clave of c2.cat.incluye ?? []) {
-        const hija = listas.get(clave);
+      for (const clave2 of c2.cat.incluye ?? []) {
+        const hija = listas.get(clave2);
         if (hija) anadir(hija);
       }
     };
@@ -1857,11 +2076,14 @@ var Motor = (() => {
     }
     return [...encontradas.values()];
   }
+  var sinLoQueNoLleva = (nombre) => nombre.replace(/(^|\s)sin\s+\S+/gi, " ");
   function choqueConCategoria(receta, cat, esAlergia) {
+    if (esAlergia && cat.clave === "gluten") return motivoGluten(receta);
     const c2 = categoriasListas().get(cat.clave);
     if ((receta.alergenos ?? []).some((a2) => c2.etiquetas.includes(raizAlimento(a2)))) return `lleva ${cat.rotulo}`;
     const ingrediente = receta.ingredientes.find((ing) => {
-      const nombre = raizAlimento(ing.nombre);
+      const nombre = raizAlimento(sinLoQueNoLleva(ing.nombre));
+      if (cat.clave === "gluten" && /\bsin gluten\b/i.test(ing.nombre)) return false;
       return c2.alimentos.some((a2) => contienePalabras(nombre, a2)) && !(cat.clave === "lacteos" && esAlternativaVegetal(ing.nombre));
     });
     if (ingrediente) return `lleva "${ingrediente.nombre}" (${cat.rotulo})`;
@@ -1914,15 +2136,16 @@ var Motor = (() => {
     }
     return void 0;
   }
+  function motivoGluten(receta) {
+    const a2 = aptitudCeliaca(receta.ingredientes);
+    if (a2.apta) return void 0;
+    const x = a2.conGluten[0];
+    return a2.sinFila.includes(x) ? `lleva "${x}", que no tiene dato de gluten: no se da por segura` : `lleva "${x}" (con gluten)`;
+  }
   function evaluarCompatibilidad(receta, ap) {
-    if (ap.celiaquia && receta.aptitudes?.sinGluten !== "si") {
-      return {
-        compatible: false,
-        motivo: {
-          tipo: "celiaquia_sin_confirmar",
-          detalle: "ninguna receta de este cat\xE1logo de ejemplo tiene el gluten verificado: no se afirma que sea segura para celiaqu\xEDa"
-        }
-      };
+    if (ap.celiaquia) {
+      const detalle = motivoGluten(receta);
+      if (detalle) return { compatible: false, motivo: { tipo: "celiaquia_sin_confirmar", detalle } };
     }
     const apt = receta.aptitudes;
     if (ap.lactosa) {
@@ -1952,7 +2175,7 @@ var Motor = (() => {
     for (const evitado of ap.evitados) {
       const raiz = raizAlimento(evitado);
       if (!raiz) continue;
-      const ingrediente = receta.ingredientes.find((ing) => coincideAlimento(ing.nombre, evitado));
+      const ingrediente = receta.ingredientes.find((ing) => coincideAlimento(sinLoQueNoLleva(ing.nombre), evitado));
       if (ingrediente) {
         return { compatible: false, motivo: { tipo: "evitado", detalle: `lleva "${ingrediente.nombre}" (en la lista de alimentos evitados: "${evitado}")` } };
       }
@@ -2014,46 +2237,12 @@ var Motor = (() => {
     return `Has indicado ${dicho}: no se han quitado los dem\xE1s moluscos (sepia, calamar, pulpo, mejillones, almejas\u2026). Si tambi\xE9n te sientan mal, m\xE1rcalo en Alergias.`;
   }
 
-  // src/motor/csv-simple.ts
-  function filasCsv(texto) {
-    const filas = [];
-    let fila = [], celda2 = "", entreComillas = false;
-    for (let i = 0; i < texto.length; i++) {
-      const c2 = texto[i];
-      if (entreComillas) {
-        if (c2 === '"' && texto[i + 1] === '"') {
-          celda2 += '"';
-          i++;
-        } else if (c2 === '"') entreComillas = false;
-        else celda2 += c2;
-      } else if (c2 === '"') entreComillas = true;
-      else if (c2 === ",") {
-        fila.push(celda2);
-        celda2 = "";
-      } else if (c2 === "\n" || c2 === "\r") {
-        if (c2 === "\r" && texto[i + 1] === "\n") i++;
-        fila.push(celda2);
-        celda2 = "";
-        if (fila.some((x) => x !== "")) filas.push(fila);
-        fila = [];
-      } else celda2 += c2;
-    }
-    fila.push(celda2);
-    if (fila.some((x) => x !== "")) filas.push(fila);
-    return filas;
-  }
-  function registros(texto) {
-    const [cab = [], ...resto] = filasCsv(texto);
-    const nombres = cab.map((x) => x.trim());
-    return resto.map((f2) => Object.fromEntries(nombres.map((n, i) => [n, (f2[i] ?? "").trim()])));
-  }
-
   // src/motor/medidas-caseras.ts
-  var COLUMNAS = ["ingrediente", "medida", "gramos", "estado", "fuente_url_o_nota"];
+  var COLUMNAS2 = ["ingrediente", "medida", "gramos", "estado", "fuente_url_o_nota"];
   function comprobarMedidasCsv(texto) {
     const fallos = [];
     const cab = (texto.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
-    for (const c2 of COLUMNAS) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
+    for (const c2 of COLUMNAS2) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
     if (fallos.length) return fallos;
     const vistas = /* @__PURE__ */ new Set();
     for (const r of registros(texto)) {
@@ -2235,8 +2424,8 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     }
     const principales = platos.filter((p) => p.tipoPlato !== "postre");
     const franjas = (principales.length ? principales : platos)[0].franjas.filter((f2) => (principales.length ? principales : platos).every((p) => p.franjas.includes(f2)));
-    const aptitud = (clave) => {
-      const valores = platos.map((p) => p.aptitudes?.[clave] ?? "pendiente_ficha");
+    const aptitud = (clave2) => {
+      const valores = platos.map((p) => p.aptitudes?.[clave2] ?? "pendiente_ficha");
       return valores.includes("no") ? "no" : valores.every((v) => v === "si") ? "si" : "pendiente_ficha";
     };
     return {
@@ -2460,7 +2649,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
           const falta = faltaProteina(r, factorRedondeado2);
-          if (!mejor || clave(desviacion, dist, falta) < clave(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
+          if (!mejor || clave2(desviacion, dist, falta) < clave2(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
         return { elegido: mejor };
@@ -2474,7 +2663,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       };
       const alcanza = (e) => !!e && e.desviacion <= slot.kcalObjetivo * 0.1;
       const faltaProteina = (r, factor) => slot.proteinaObjetivoG === void 0 ? 0 : Math.max(0, slot.proteinaObjetivoG - proteinaServida(r, factor));
-      const clave = (desv, dist, falta = 0) => desv > slot.kcalObjetivo * 0.1 ? 1e9 + desv : dist * 1e5 + desv + 4 * falta;
+      const clave2 = (desv, dist, falta = 0) => desv > slot.kcalObjetivo * 0.1 ? 1e9 + desv : dist * 1e5 + desv + 4 * falta;
       const fijada = fijadasPorSlot.get(claveSlotSiOSi(slot));
       const reservada = fijada ? void 0 : reservas.get(claveSlotSiOSi(slot));
       let res = fijada ? { elegido: fijada } : reservada ? { elegido: reservada } : intentar(recetas.filter((r) => esUnico(r) && !idsPedidos.has(r.id)), true);
@@ -2483,7 +2672,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
         const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
         const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));
         const parejas = primeros.flatMap((p) => segundos.filter((s) => combinanBien(p, s)).map((s) => componerComida([p, s])));
-        const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave(b.elegido.desviacion, b.elegido.dist ?? 0, b.elegido.falta ?? 0) < clave(a2.elegido.desviacion, a2.elegido.dist ?? 0, a2.elegido.falta ?? 0)) ? b : a2;
+        const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave2(b.elegido.desviacion, b.elegido.dist ?? 0, b.elegido.falta ?? 0) < clave2(a2.elegido.desviacion, a2.elegido.dist ?? 0, a2.elegido.falta ?? 0)) ? b : a2;
         if (parejas.length) {
           const r2 = intentar(parejas, false);
           res = mejorDe(res, r2);
@@ -2552,7 +2741,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
         const choque = evaluarCompatibilidad({ ...recetas[0], alergenos: void 0, aptitudes: void 0, ingredientes: [{ nombre: alimento, gramos: 100 }] }, ap);
         if (!choque.compatible) {
           const t2 = choque.motivo?.tipo;
-          const causa = t2 === "evitado" ? "est\xE1 en tu lista negra o en tus alergias, y eso manda siempre" : t2 === "celiaquia_sin_confirmar" ? "con celiaqu\xEDa no se da por segura ninguna receta de ejemplo" : `choca con lo que has indicado (${t2 === "lactosa" ? "lactosa" : t2 === "no_vegano" ? "vegano" : "vegetariano"})`;
+          const causa = t2 === "evitado" ? "est\xE1 en tu lista negra o en tus alergias, y eso manda siempre" : t2 === "celiaquia_sin_confirmar" ? "con celiaqu\xEDa no se ofrece si lleva gluten o un ingrediente sin dato de gluten" : `choca con lo que has indicado (${t2 === "lactosa" ? "lactosa" : t2 === "no_vegano" ? "vegano" : "vegetariano"})`;
           estados.push({ alimento, cubierto: false, causa });
           continue;
         }
@@ -2863,7 +3052,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
   }
 
   // src/motor/estimador-coste.ts
-  var COLUMNAS2 = ["ingrediente", "unidad", "precio_medio", "nota"];
+  var COLUMNAS3 = ["ingrediente", "unidad", "precio_medio", "nota"];
   var UNIDADES_VALIDAS = ["kg", "ud"];
   var GRAMOS_POR_UNIDAD = { huevo: 50 };
   function normalizar5(s) {
@@ -2874,14 +3063,14 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     const errores = [];
     const filas = [];
     const cabecera = (lineas[0] ?? "").split(",");
-    if (cabecera.join(",") !== COLUMNAS2.join(",")) {
-      errores.push({ fila: 1, ingrediente: "(cabecera)", problema: `se esperaba "${COLUMNAS2.join(",")}", se encontr\xF3 "${cabecera.join(",")}"` });
+    if (cabecera.join(",") !== COLUMNAS3.join(",")) {
+      errores.push({ fila: 1, ingrediente: "(cabecera)", problema: `se esperaba "${COLUMNAS3.join(",")}", se encontr\xF3 "${cabecera.join(",")}"` });
     }
     lineas.slice(1).forEach((linea, i) => {
       const numFila = i + 2;
       const cols = linea.split(",");
-      if (cols.length !== COLUMNAS2.length) {
-        errores.push({ fila: numFila, ingrediente: cols[0] ?? "(vac\xEDo)", problema: `${cols.length} columnas, se esperaban ${COLUMNAS2.length}` });
+      if (cols.length !== COLUMNAS3.length) {
+        errores.push({ fila: numFila, ingrediente: cols[0] ?? "(vac\xEDo)", problema: `${cols.length} columnas, se esperaban ${COLUMNAS3.length}` });
         return;
       }
       const [ingrediente, unidad, precioRaw, nota] = cols;
@@ -2944,7 +3133,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     { clave: "comedor", texto: "Comedor/cantina" }
   ];
   function etiquetasContextoDia(contexto) {
-    const etiquetas = ETIQUETAS.filter(({ clave }) => contexto[clave]).map(({ texto }) => texto);
+    const etiquetas = ETIQUETAS.filter(({ clave: clave2 }) => contexto[clave2]).map(({ texto }) => texto);
     if (contexto.tiempoCocina !== "normal") {
       etiquetas.push(contexto.tiempoCocina === "poco" ? "Poco tiempo para cocinar" : "Le gusta cocinar");
     }
@@ -3212,14 +3401,14 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
 
   // src/motor/compra-periodo.ts
   function conservacionDesdeCsv(texto) {
-    const tabla = /* @__PURE__ */ new Map();
+    const tabla2 = /* @__PURE__ */ new Map();
     for (const r of registros(texto)) {
       const lugar = r.lugar ?? r.tipo ?? "";
       const tipo = lugar === "despensa" ? "despensa" : lugar === "nevera" || lugar === "fresco" ? "fresco" : void 0;
       if (!r.ingrediente || !tipo) continue;
-      tabla.set(r.ingrediente, { tipo, congelable: tipo === "fresco" && r.congelable === "si" });
+      tabla2.set(r.ingrediente, { tipo, congelable: tipo === "fresco" && r.congelable === "si" });
     }
-    return tabla;
+    return tabla2;
   }
   function comprobarConservacionCsv(texto, ingredientesCatalogo) {
     const fallos = [];
@@ -3384,6 +3573,11 @@ semillas de calabaza,despensa,no,"Secas y bien cerradas; pueden enranciarse; rev
 semillas de girasol,despensa,no,"Secas y bien cerradas; pueden enranciarse; revisar etiqueta y estado. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
 queso fresco,nevera,no,"Queso fresco: propuesta conservadora por p\xE9rdida de textura; t\xE9cnicamente congelable para cocinar, no prohibici\xF3n sanitaria.",https://ask.fsis.usda.gov/article/How-long-can-you-keep-dairy-products-like-yogurt-milk-and-cheese-in-the-refrigerator,no
 reques\xF3n,nevera,no,"Queso fresco batido: propuesta conservadora por p\xE9rdida de textura al congelar; seguir etiqueta de la marca.",https://nchfp.uga.edu/how/freeze/dairy-products/freezing-cheese/,no
+pan sin gluten,despensa,si,"A temperatura ambiente para consumo cercano; no garantiza varias semanas. Si el usuario elige congelar, hacerlo en porciones. Misma pauta que el pan del cat\xE1logo; seguir etiqueta de la marca.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf,no
+pasta sin gluten,despensa,no,"Seca; guardar cerrada en lugar fresco y seco. Una vez cocinada requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+tortita de ma\xEDz,despensa,no,"Seca; guardar cerrada en lugar fresco y seco para que no se ablande. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+polenta,despensa,no,"Harina seca; guardar cerrada en lugar fresco y seco. Una vez cocida requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+copos de avena sin gluten,despensa,no,"Secos; guardar cerrados en lugar fresco y seco. Una vez cocinados requieren fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
 `;
 
   // src/motor/limites-ingredientes-datos.ts
@@ -3489,16 +3683,21 @@ semillas de calabaza,10,40,semilla,"https://estilosdevidasaludable.sanidad.gob.e
 semillas de girasol,10,40,semilla,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Neto sin c\xE1scara; misma banda que los frutos secos del cat\xE1logo (almendra y nueces 10-40 g): m\xEDnimo 10 g culinario para completar un bol, m\xE1ximo 40 g como raci\xF3n grasa del d\xEDa. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 queso fresco,60,300,queso_fresco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Tal cual; misma banda que el queso cottage del cat\xE1logo (60-300 g, familia queso_fresco): m\xEDnimo 60 g como prote\xEDna principal de una cena, m\xE1ximo 300 g conservado del m\xE9todo. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 reques\xF3n,60,300,queso_fresco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Tal cual; m\xEDnimo propuesto 60 g como porci\xF3n peque\xF1a frente a la referencia de queso fresco 80-125 g. Reques\xF3n aproximado con queso cottage en alimentos-usda.csv (equivalente_aprox=si). | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+pan sin gluten,20,150,pan,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Tal cual; misma banda que el pan del cat\xE1logo (20-150 g) por analog\xEDa de uso. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+pasta sin gluten,30,150,cereal_seco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Seco sin cocer; misma banda que la pasta del cat\xE1logo (30-150 g) por analog\xEDa. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+tortita de ma\xEDz,10,60,pan_plano,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Tal cual; m\xEDnimo 10 g como una tortita de referencia y m\xE1ximo 60 g por analog\xEDa con la raci\xF3n de pan 40-60 g. Unidades y marcas var\xEDan; no convertir a unidades sin etiqueta. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+polenta,30,150,cereal_seco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Harina de ma\xEDz en seco antes de cocer; misma banda que los cereales secos del cat\xE1logo (30-150 g). | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+copos de avena sin gluten,20,150,avena,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html | Seco; misma banda que los copos de avena del cat\xE1logo (20-150 g): misma semilla en su versi\xF3n certificada sin gluten. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 `;
 
   // src/motor/limites-ingredientes.ts
   var FACTOR_LEGUMBRE_COCIDA = 0.4;
   var RE_LEGUMBRE_COCIDA = /\b(garbanzo|lenteja|alubia)s?\b.*\bcocid/i;
-  var COLUMNAS3 = ["ingrediente", "min_g", "max_g", "familia", "fuente_url_o_nota", "estado"];
+  var COLUMNAS4 = ["ingrediente", "min_g", "max_g", "familia", "fuente_url_o_nota", "estado"];
   function comprobarLimitesIngredientesCsv(texto) {
     const fallos = [];
     const cab = (texto.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
-    for (const c2 of COLUMNAS3) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
+    for (const c2 of COLUMNAS4) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
     if (fallos.length) return fallos;
     const vistos = /* @__PURE__ */ new Set();
     for (const r of registros(texto)) {
@@ -3617,10 +3816,10 @@ reques\xF3n,60,300,queso_fresco,"https://estilosdevidasaludable.sanidad.gob.es/a
     return { cantidad, resto };
   }
   var FIN_NO_VALIDO = /* @__PURE__ */ new Set([...PALABRAS_VACIAS, "sin"]);
-  function nombresGenericos(tabla) {
-    const ocupados = new Set(tabla.flatMap((f2) => [f2.plato, ...f2.sinonimos].map(normalizarTexto2)));
+  function nombresGenericos(tabla2) {
+    const ocupados = new Set(tabla2.flatMap((f2) => [f2.plato, ...f2.sinonimos].map(normalizarTexto2)));
     const duenos = /* @__PURE__ */ new Map();
-    for (const f2 of tabla.filter((x) => x.estado === "estimacion" && !esPizza(x))) {
+    for (const f2 of tabla2.filter((x) => x.estado === "estimacion" && !esPizza(x))) {
       const t2 = normalizarTexto2(f2.plato).split(" ").filter(Boolean);
       for (let n = 2; n < t2.length; n++) {
         if (FIN_NO_VALIDO.has(t2[n - 1])) continue;
@@ -3643,17 +3842,17 @@ reques\xF3n,60,300,queso_fresco,"https://estilosdevidasaludable.sanidad.gob.es/a
     if (f2.pesoMin !== void 0 && f2.pesoMax !== void 0) return { min: Math.round(f2.kcal100 * f2.pesoMin / 100), max: Math.round(f2.kcal100 * f2.pesoMax / 100) };
     return void 0;
   }
-  function estimarComidaFuera(texto, tabla) {
-    const genericos = nombresGenericos(tabla);
+  function estimarComidaFuera(texto, tabla2) {
+    const genericos = nombresGenericos(tabla2);
     const aliasesDe = (f2) => [f2.plato, ...f2.sinonimos, ...genericos.get(f2) ?? []];
     const conPlural = (a2) => {
       const [p, ...resto] = a2.split(" ");
       return [a2, [`${p}s`, ...resto].join(" "), [`${p}es`, ...resto].join(" ")];
     };
-    const conConector = [...new Set(tabla.flatMap((f2) => aliasesDe(f2).map(normalizarTexto2)).filter((a2) => /\b(?:con|y|mas)\b/.test(a2)).flatMap(conPlural))].sort((a2, b) => b.length - a2.length);
+    const conConector = [...new Set(tabla2.flatMap((f2) => aliasesDe(f2).map(normalizarTexto2)).filter((a2) => /\b(?:con|y|mas)\b/.test(a2)).flatMap(conPlural))].sort((a2, b) => b.length - a2.length);
     const proteger = (n) => conConector.reduce((acc, a2) => acc.split(a2).join(a2.replace(/ /g, "_")), n);
     const trozos = texto.split(/[,;+]/).flatMap((p) => proteger(normalizarTexto2(p)).split(/\b(?:con|y|mas)\b/)).map((t2) => t2.trim().replace(/_/g, " ")).filter(Boolean);
-    const cadenas = [...new Set(tabla.map((f2) => f2.cadena))].map((c2) => ({ c: c2, alias: normalizarTexto2(c2).replace(/ espana$/, "") }));
+    const cadenas = [...new Set(tabla2.map((f2) => f2.cadena))].map((c2) => ({ c: c2, alias: normalizarTexto2(c2).replace(/ espana$/, "") }));
     const lineas = [];
     const sinReconocer = [];
     for (const trozo of trozos) {
@@ -3662,7 +3861,7 @@ reques\xF3n,60,300,queso_fresco,"https://estilosdevidasaludable.sanidad.gob.es/a
       const utiles = resto.filter((t2) => !PALABRAS_VACIAS.has(t2));
       const cadena = cadenas.find((x) => ` ${utiles.join(" ")} `.includes(` ${x.alias} `));
       const delTrozo = new Set(utiles.map((t2) => t2.replace(/s$/, "")).concat(utiles));
-      const candidatas = tabla.filter((f2) => !cadena || f2.cadena === cadena.c);
+      const candidatas = tabla2.filter((f2) => !cadena || f2.cadena === cadena.c);
       let mejor = [];
       let mejorPuntos = 0;
       let otras = [];
@@ -4670,21 +4869,21 @@ Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g
     let huecos = resultado.huecos.map((h) => ({ ...h }));
     const avisos = [...resultado.avisos];
     const invalidadas = [];
-    for (const [clave, recetaId] of Object.entries(sustituciones)) {
-      const slot = slots.find((s) => claveSlot(s.dia, s.franja) === clave);
+    for (const [clave2, recetaId] of Object.entries(sustituciones)) {
+      const slot = slots.find((s) => claveSlot(s.dia, s.franja) === clave2);
       const receta = recetaDeId(new Map(recetas.map((r) => [r.id, r])), recetaId);
       if (!slot) {
-        invalidadas.push({ clave, recetaId, motivo: "esa comida ya no existe en tu plan" });
+        invalidadas.push({ clave: clave2, recetaId, motivo: "esa comida ya no existe en tu plan" });
         continue;
       }
       if (!receta) {
-        invalidadas.push({ clave, recetaId, motivo: "la receta ya no est\xE1 en el cat\xE1logo" });
+        invalidadas.push({ clave: clave2, recetaId, motivo: "la receta ya no est\xE1 en el cat\xE1logo" });
         continue;
       }
-      const usos = usosVariedadSemana(asignaciones, clave);
+      const usos = usosVariedadSemana(asignaciones, clave2);
       const e = evaluar(slot, receta, { ...opciones, usosSemana: usos });
       if ("motivo" in e) {
-        invalidadas.push({ clave, recetaId, motivo: e.motivo });
+        invalidadas.push({ clave: clave2, recetaId, motivo: e.motivo });
         continue;
       }
       const nueva = {
@@ -4695,8 +4894,8 @@ Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g
         kcalResultante: e.kcalResultante,
         ...e.protegidosSinEscalar.length ? { protegidosSinEscalar: e.protegidosSinEscalar } : {}
       };
-      asignaciones = asignaciones.filter((a2) => claveSlot(a2.dia, a2.franja) !== clave);
-      huecos = huecos.filter((h) => claveSlot(h.dia, h.franja) !== clave);
+      asignaciones = asignaciones.filter((a2) => claveSlot(a2.dia, a2.franja) !== clave2);
+      huecos = huecos.filter((h) => claveSlot(h.dia, h.franja) !== clave2);
       asignaciones.push(nueva);
       for (const av of e.avisos) avisos.push(`${slot.dia} ${slot.franja}: "${receta.nombre}" ${av}.`);
     }
@@ -5672,7 +5871,39 @@ R409,Garbanzos con espinacas y reques\xF3n,comida;cena,553,32.5,20.1,65.3,EJEMPL
 R416,Boniato asado relleno de reques\xF3n con ensalada,comida;cena,382,16.5,9.8,58.8,EJEMPLO | fibraAlta,unico,9.72,reques\xF3n,patata,l\xE1cteos,si,no,no,pendiente_ficha,no,40,nuevo,"Asar el boniato, abrirlo y rellenarlo con el reques\xF3n. Servir con la ensalada ali\xF1ada. Pesar el boniato en crudo.",normal
 R401,Crema de calabac\xEDn con tofu y patata,comida;cena,338,22.8,14.5,35.2,EJEMPLO,unico,7.45,tofu firme,patata,soja,si,si,si,pendiente_ficha,no,30,nuevo,Cocer el calabac\xEDn y la patata y triturar. Servir con el tofu a la plancha en dados y el aceite. Pesar la patata en crudo.,normal
 R415,Crema de calabaza con reques\xF3n y patata,comida;cena,348,17.2,9.7,51.4,EJEMPLO,unico,5.20,reques\xF3n,patata,l\xE1cteos,si,no,no,pendiente_ficha,si,30,nuevo,Cocer la calabaza y la patata y triturar. Servir con el reques\xF3n y el aceite. Pesar la patata en crudo.,normal
-R418,Berenjena asada con mozzarella y tomate y pan integral,comida;cena,390,21.0,20.3,33.8,EJEMPLO | fibraAlta,unico,10.30,mozzarella,pan,gluten;l\xE1cteos,si,no,no,no,no,35,nuevo,"Asar la berenjena en rodajas con el tomate, gratinar con la mozzarella y servir con el pan. Pesar el pan tal cual.",normal`;
+R418,Berenjena asada con mozzarella y tomate y pan integral,comida;cena,390,21.0,20.3,33.8,EJEMPLO | fibraAlta,unico,10.30,mozzarella,pan,gluten;l\xE1cteos,si,no,no,no,no,35,nuevo,"Asar la berenjena en rodajas con el tomate, gratinar con la mozzarella y servir con el pan. Pesar el pan tal cual.",normal
+R420,Pan sin gluten tostado con pavo y tomate,desayuno,369,27.4,15.0,30.6,EJEMPLO,unico,3.54,pechuga de pavo asada,pan,,no,no,pendiente_ficha,si,si,10,nuevo,Tostar el pan sin gluten. Cubrir con el tomate rallado y el aceite y terminar con el pavo. Pesar el pan tal cual.,normal
+R421,"Tortitas de ma\xEDz con at\xFAn, aguacate y tomate",desayuno,318,20.5,9.2,40.7,EJEMPLO,unico,5.07,at\xFAn en lata,tortita de ma\xEDz,pescado,no,no,pendiente_ficha,si,no,10,nuevo,Escurrir el at\xFAn y mezclarlo con el tomate rallado; servir sobre las tortitas de ma\xEDz.,normal
+R422,Huevos revueltos con salm\xF3n y pan sin gluten,desayuno,432,28.6,26.0,19.0,EJEMPLO,unico,1.72,huevo,pan,huevo;pescado,no,no,pendiente_ficha,si,si,10,nuevo,Hacer el revuelto con el aceite y a\xF1adir el salm\xF3n en tiras al final. Servir con el pan sin gluten tostado.,normal
+R423,"Huevo cocido con tortitas de ma\xEDz, aguacate y pavo",desayuno,448,40.2,18.9,28.5,EJEMPLO | fibraAlta,unico,4.12,huevo cocido,tortita de ma\xEDz,huevo,no,no,pendiente_ficha,si,si,15,nuevo,"Cocer el huevo 10 minutos. Machacar el aguacate con el tomate y servir con las tortitas, el huevo en rodajas y el pavo.",normal
+R424,Revuelto de claras con pavo y pan sin gluten,desayuno,433,43.0,15.1,28.6,EJEMPLO,unico,2.58,claras de huevo,pan,huevo,no,no,pendiente_ficha,si,si,10,nuevo,Cuajar las claras con el aceite y a\xF1adir el pavo en dados. Servir con el pan sin gluten.,normal
+R425,"Pan sin gluten con tortilla francesa, salm\xF3n y tomate",desayuno,446,29.3,26.2,22.1,EJEMPLO,unico,2.68,huevo,pan,huevo;pescado,no,no,pendiente_ficha,si,si,10,nuevo,"Hacer la tortilla francesa con el aceite. Servir con el salm\xF3n, el pan sin gluten tostado y el tomate rallado.",normal
+R426,"Yogur griego con copos de avena sin gluten, fresas y miel",desayuno,332,26.3,3.7,50.2,EJEMPLO,unico,6.06,yogur griego,copos de avena sin gluten,l\xE1cteos,si,no,no,si,no,5,nuevo,Mezclar el yogur con los copos de avena sin gluten y las fresas en trozos; terminar con la miel.,normal
+R427,"Gachas de copos de avena sin gluten con leche, manzana y canela",desayuno,344,13.5,7.4,58.1,EJEMPLO,unico,7.98,leche semidesnatada,copos de avena sin gluten,l\xE1cteos,si,no,no,si,no,10,nuevo,Cocer los copos con la leche 5 minutos removiendo; servir con la manzana en dados y la canela.,normal
+R428,"Pan sin gluten con reques\xF3n y miel, y una naranja",desayuno,303,12.5,6.2,51.5,EJEMPLO,unico,5.77,reques\xF3n,pan,l\xE1cteos,si,no,no,si,no,5,nuevo,Untar el pan sin gluten con el reques\xF3n y la miel. Servir con la naranja.,normal
+R429,"Yogur natural con copos de avena sin gluten, kiwi y almendras",desayuno,421,16.5,17.1,54.3,EJEMPLO,unico,8.91,yogur natural,copos de avena sin gluten,l\xE1cteos;frutos de c\xE1scara,si,no,no,si,no,5,nuevo,"Mezclar el yogur con los copos de avena sin gluten, el kiwi en trozos y las almendras picadas.",normal
+R430,Tortitas de ma\xEDz con pavo,media_manana;merienda,206,26.3,2.3,19.0,EJEMPLO | fibraAlta,unico,1.10,pechuga de pavo asada,tortita de ma\xEDz,,no,no,pendiente_ficha,si,si,5,nuevo,Cubrir las tortitas con el tomate rallado y el pavo.,normal
+R431,At\xFAn con tortitas de ma\xEDz,media_manana;merienda,145,13.9,1.2,20.3,EJEMPLO | fibraAlta,unico,1.64,at\xFAn en lata,tortita de ma\xEDz,pescado,no,no,pendiente_ficha,si,si,5,nuevo,Escurrir el at\xFAn y servirlo con el pimiento en tiras sobre las tortitas.,normal
+R432,Salm\xF3n con tortitas de ma\xEDz y tomate,media_manana;merienda,237,16.6,10.0,19.8,EJEMPLO | fibraAlta,unico,1.34,salm\xF3n,tortita de ma\xEDz,pescado,no,no,pendiente_ficha,si,si,5,nuevo,Servir el salm\xF3n en lonchas finas sobre las tortitas con el tomate rallado.,normal
+R433,Yogur natural con pl\xE1tano y copos de avena sin gluten,media_manana;merienda,223,7.8,5.6,37.6,EJEMPLO,unico,4.10,yogur natural,copos de avena sin gluten,l\xE1cteos,si,no,no,si,si,5,nuevo,Mezclar el yogur con el pl\xE1tano en rodajas y los copos de avena sin gluten.,normal
+R434,Pan sin gluten con reques\xF3n y tomate,media_manana;merienda,144,8.5,4.3,18.1,EJEMPLO | fibraAlta,unico,2.01,reques\xF3n,pan,l\xE1cteos,si,no,no,si,si,5,nuevo,Untar el pan sin gluten con el reques\xF3n y cubrir con el tomate en rodajas.,normal
+R435,Mandarina con yogur griego y almendras,media_manana;merienda,196,13.5,5.8,25.8,EJEMPLO,unico,3.95,yogur griego,fruta,l\xE1cteos;frutos de c\xE1scara,si,no,no,si,si,5,nuevo,Servir el yogur con la mandarina en gajos y las almendras picadas.,normal
+R436,Arroz con pollo y verduras,comida,549,34.2,14.2,69.9,EJEMPLO,unico,5.51,pechuga de pollo,arroz,,no,no,pendiente_ficha,si,no,35,nuevo,"Sofre\xEDr la cebolla y el pimiento, dorar el pollo en dados, a\xF1adir el tomate y el arroz con el doble de agua; cocer 18 minutos. Pesar el arroz en seco.",normal
+R437,Merluza a la plancha con patata cocida y jud\xEDas verdes,comida,400,31.3,11.2,45.4,EJEMPLO,unico,8.25,merluza,patata,pescado,no,no,si,si,no,30,nuevo,Cocer la patata y las jud\xEDas; hacer la merluza a la plancha. Ali\xF1ar con el aceite. Pesar la patata en crudo.,normal
+R438,Ternera magra con boniato asado y br\xF3coli,comida,487,35.9,16.7,50.2,EJEMPLO,unico,9.90,ternera magra (solomillo de aguja),boniato,,no,no,si,si,no,40,nuevo,Asar el boniato 35 minutos; cocer el br\xF3coli al vapor y hacer la ternera a la plancha. Ali\xF1ar con el aceite.,normal
+R439,"Pasta sin gluten con at\xFAn, tomate y calabac\xEDn",comida,440,21.4,12.9,63.6,EJEMPLO,unico,11.10,at\xFAn en lata,pasta sin gluten,pescado,no,no,pendiente_ficha,si,no,25,nuevo,"Cocer la pasta sin gluten seg\xFAn su envase. Sofre\xEDr el calabac\xEDn, a\xF1adir el tomate y el at\xFAn; mezclar con la pasta. Pesar la pasta en seco.",normal
+R440,Lubina al horno con patata panadera y pimiento,comida,434,32.2,14.0,45.7,EJEMPLO,unico,7.15,lubina,patata,pescado,no,no,si,si,no,40,nuevo,"Hornear la patata, el pimiento y la cebolla 25 minutos; a\xF1adir la lubina y hornear 12 minutos m\xE1s. Pesar la patata en crudo.",normal
+R441,Lentejas estofadas con arroz y verduras,comida,552,22.0,11.5,92.9,EJEMPLO | fibraAlta,unico,20.03,lenteja cocida,legumbre;arroz,,si,si,si,si,no,30,nuevo,"Sofre\xEDr la cebolla y la zanahoria, a\xF1adir el tomate y la lenteja cocida y cocer 15 minutos; servir con el arroz hervido. Pesar la lenteja cocida y el arroz en seco.",normal
+R442,Garbanzos con espinacas y quinoa,comida,570,25.2,17.7,82.1,EJEMPLO | fibraAlta,unico,20.58,garbanzo cocido,legumbre;quinoa,,si,si,si,si,no,30,nuevo,"Cocer la quinoa 15 minutos. Sofre\xEDr las espinacas, a\xF1adir el garbanzo y el tomate y cocer 10 minutos; servir con la quinoa. Pesar la quinoa en seco.",normal
+R443,"Polenta con champi\xF1ones, huevo poch\xE9 y tomate",comida,431,16.0,16.6,56.4,EJEMPLO,unico,5.74,huevo,polenta,huevo,si,no,pendiente_ficha,si,no,30,nuevo,"Cocer la polenta seg\xFAn su envase. Saltear los champi\xF1ones, sumar el tomate y escalfar el huevo encima. Pesar la polenta en seco.",normal
+R444,Pechuga de pollo a la plancha con calabac\xEDn y arroz,cena,380,34.5,9.3,38.2,EJEMPLO,unico,2.52,pechuga de pollo,arroz,,no,no,si,si,si,25,nuevo,Hervir el arroz. Hacer el pollo y el calabac\xEDn a la plancha; ali\xF1ar con el aceite. Pesar el arroz en seco.,normal
+R445,"Tortilla francesa con at\xFAn, ensalada y tortitas de ma\xEDz",cena,332,25.3,15.8,22.5,EJEMPLO | fibraAlta,unico,2.60,huevo,tortita de ma\xEDz,huevo;pescado,no,no,pendiente_ficha,si,si,15,nuevo,Hacer la tortilla con el aceite y rellenar con el at\xFAn escurrido; servir con la ensalada y las tortitas.,normal
+R446,Salm\xF3n a la plancha con boniato y esp\xE1rragos,cena,443,29.1,21.3,34.1,EJEMPLO,unico,6.60,salm\xF3n,boniato,pescado,no,no,si,si,no,30,nuevo,Asar el boniato 25 minutos; hacer el salm\xF3n y los esp\xE1rragos a la plancha. Ali\xF1ar con el aceite.,normal
+R447,Crema de calabac\xEDn con pavo y pan sin gluten,cena,364,28.7,14.9,29.1,EJEMPLO,unico,4.15,pechuga de pavo asada,pan,,no,no,pendiente_ficha,si,si,25,nuevo,Cocer el calabac\xEDn y triturarlo con el aceite; servir con el pavo en dados y el pan sin gluten tostado.,normal
+R448,Sepia a la plancha con patata y pimiento,cena,348,28.4,11.5,33.5,EJEMPLO,unico,5.25,sepia,patata,moluscos,no,no,si,si,no,30,nuevo,Cocer la patata; hacer la sepia y el pimiento a la plancha. Ali\xF1ar con el aceite. Pesar la patata en crudo.,normal
+R449,Revuelto de claras con champi\xF1ones y pan sin gluten,cena,349,28.6,13.5,29.2,EJEMPLO,unico,3.65,claras de huevo,pan,huevo,si,no,pendiente_ficha,si,si,15,nuevo,Saltear los champi\xF1ones y cuajar las claras con el aceite; servir con el pan sin gluten.,normal
+R450,Crema de calabaza con reques\xF3n y quinoa,cena,341,18.8,11.9,42.0,EJEMPLO,unico,3.80,reques\xF3n,quinoa,l\xE1cteos,si,no,no,si,si,30,nuevo,Cocer la quinoa 15 minutos. Cocer la calabaza y triturarla con el aceite; servir con el reques\xF3n y la quinoa. Pesar la quinoa en seco.,normal
+R451,Tortilla de patata con ensalada,cena,430,18.7,20.1,45.5,EJEMPLO | fibraAlta,unico,7.27,huevo,patata,huevo,si,no,si,si,no,35,nuevo,"Pochar la patata y la cebolla en el aceite, cuajar con el huevo; servir con la ensalada. Pesar la patata en crudo.",normal`;
   var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
 R01,garbanzo cocido,140,base,173757,peso cocido,
 R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
@@ -6827,7 +7058,143 @@ R418,berenjena,200,verdura,169228,peso crudo,
 R418,mozzarella,60,proteina,170845,tal cual,
 R418,tomate triturado,100,verdura,170051,crudo,
 R418,pan integral,40,base,172688,tal cual,
-R418,aceite de oliva,5,grasa,171413,peso a\xF1adido,`;
+R418,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R420,pan sin gluten,60,base,2707797,tal cual,
+R420,pechuga de pavo asada,80,proteina,171496,peso cocinado,
+R420,tomate,80,verdura,170457,peso crudo,
+R420,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R421,tortita de ma\xEDz,40,base,168857,tal cual,
+R421,at\xFAn en lata,80,proteina,173709,peso escurrido,
+R421,aguacate,50,grasa,171705,peso comestible,
+R421,tomate,80,verdura,170457,peso crudo,
+R422,huevo,100,proteina,171287,peso crudo,
+R422,salm\xF3n,70,proteina,175167,peso crudo,
+R422,pan sin gluten,40,base,2707797,tal cual,
+R422,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R423,huevo cocido,100,proteina,173424,peso cocido,
+R423,pechuga de pavo asada,80,proteina,171496,peso cocinado,
+R423,tortita de ma\xEDz,25,base,168857,tal cual,
+R423,aguacate,40,grasa,171705,peso comestible,
+R423,tomate,80,verdura,170457,peso crudo,
+R424,claras de huevo,150,proteina,172183,peso crudo,
+R424,pechuga de pavo asada,80,proteina,171496,peso cocinado,
+R424,pan sin gluten,60,base,2707797,tal cual,
+R424,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R425,huevo,100,proteina,171287,peso crudo,
+R425,salm\xF3n,70,proteina,175167,peso crudo,
+R425,pan sin gluten,40,base,2707797,tal cual,
+R425,tomate,80,verdura,170457,peso crudo,
+R425,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R426,yogur griego,200,fruta_lacteo,170894,tal cual,
+R426,copos de avena sin gluten,40,base,173904,peso seco,si
+R426,fresas,100,fruta_lacteo,167762,peso comestible,
+R426,miel,10,fruta_lacteo,169640,tal cual,
+R427,copos de avena sin gluten,50,base,173904,peso seco,si
+R427,leche semidesnatada,200,fruta_lacteo,171267,tal cual,
+R427,manzana,100,fruta_lacteo,171688,peso comestible,
+R427,canela,1,condimento,171320,tal cual,
+R428,pan sin gluten,50,base,2707797,tal cual,
+R428,reques\xF3n,80,proteina,172182,tal cual,si
+R428,miel,10,fruta_lacteo,169640,tal cual,
+R428,naranja,150,fruta_lacteo,169097,peso comestible,
+R429,yogur natural,200,fruta_lacteo,171284,tal cual,
+R429,copos de avena sin gluten,40,base,173904,peso seco,si
+R429,kiwi,100,fruta_lacteo,168153,peso comestible,
+R429,almendra,15,grasa,170567,peso comestible,
+R430,tortita de ma\xEDz,20,base,168857,tal cual,
+R430,pechuga de pavo asada,80,proteina,171496,peso cocinado,
+R430,tomate,60,verdura,170457,peso crudo,
+R431,at\xFAn en lata,60,proteina,173709,peso escurrido,
+R431,tortita de ma\xEDz,20,base,168857,tal cual,
+R431,pimiento rojo,60,verdura,170108,peso crudo,
+R432,salm\xF3n,70,proteina,175167,peso crudo,
+R432,tortita de ma\xEDz,20,base,168857,tal cual,
+R432,tomate,80,verdura,170457,peso crudo,
+R433,yogur natural,125,fruta_lacteo,171284,tal cual,
+R433,pl\xE1tano,80,fruta_lacteo,173944,peso comestible,
+R433,copos de avena sin gluten,20,base,173904,peso seco,si
+R434,pan sin gluten,30,base,2707797,tal cual,
+R434,reques\xF3n,60,proteina,172182,tal cual,si
+R434,tomate,60,verdura,170457,peso crudo,
+R435,mandarina,150,fruta_lacteo,169105,peso comestible,
+R435,yogur griego,100,fruta_lacteo,170894,tal cual,
+R435,almendra,10,grasa,170567,peso comestible,
+R436,arroz,70,base,169756,peso seco,
+R436,pechuga de pollo,120,proteina,171077,peso crudo,
+R436,pimiento rojo,80,verdura,170108,peso crudo,
+R436,cebolla,60,verdura,170000,peso crudo,
+R436,tomate triturado,100,verdura,170051,crudo,
+R436,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R437,merluza,150,proteina,171964,peso crudo,si
+R437,patata,200,base,170026,peso crudo,
+R437,jud\xEDa verde,150,verdura,169961,peso crudo,
+R437,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R438,ternera magra (solomillo de aguja),130,proteina,174763,peso crudo,si
+R438,boniato,200,base,168482,peso crudo,
+R438,br\xF3coli,150,verdura,170379,peso crudo,
+R438,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R439,pasta sin gluten,70,base,168899,peso seco,
+R439,at\xFAn en lata,70,proteina,173709,peso escurrido,
+R439,tomate triturado,100,verdura,170051,crudo,
+R439,calabac\xEDn,150,verdura,169291,peso crudo,
+R439,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R440,lubina,150,proteina,171948,peso crudo,si
+R440,patata,200,base,170026,peso crudo,
+R440,pimiento rojo,100,verdura,170108,peso crudo,
+R440,cebolla,50,verdura,170000,peso crudo,
+R440,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R441,lenteja cocida,180,base,172421,peso cocido,
+R441,arroz,50,base,169756,peso seco,
+R441,zanahoria,80,verdura,170393,peso crudo,
+R441,cebolla,60,verdura,170000,peso crudo,
+R441,tomate triturado,100,verdura,170051,crudo,
+R441,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R442,garbanzo cocido,180,base,173757,peso cocido,
+R442,espinacas,100,verdura,168462,peso crudo,
+R442,quinoa,40,base,168874,peso seco,
+R442,tomate triturado,100,verdura,170051,crudo,
+R442,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R443,polenta,60,base,168867,peso seco,
+R443,champi\xF1\xF3n,150,verdura,169251,peso crudo,
+R443,huevo,50,proteina,171287,peso crudo,
+R443,tomate triturado,100,verdura,170051,crudo,
+R443,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R444,pechuga de pollo,130,proteina,171077,peso crudo,
+R444,calabac\xEDn,200,verdura,169291,peso crudo,
+R444,arroz,40,base,169756,peso seco,
+R444,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R445,huevo,100,proteina,171287,peso crudo,
+R445,at\xFAn en lata,50,proteina,173709,peso escurrido,
+R445,lechuga romana,60,verdura,169247,peso crudo,
+R445,tomate,80,verdura,170457,peso crudo,
+R445,tortita de ma\xEDz,20,base,168857,tal cual,
+R445,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R446,salm\xF3n,120,proteina,175167,peso crudo,
+R446,boniato,150,base,168482,peso crudo,
+R446,esp\xE1rrago,100,verdura,168389,peso crudo,
+R446,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R447,calabac\xEDn,200,verdura,169291,peso crudo,
+R447,pechuga de pavo asada,80,proteina,171496,peso cocinado,
+R447,pan sin gluten,50,base,2707797,tal cual,
+R447,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R448,sepia,150,proteina,174215,peso crudo,
+R448,patata,150,base,170026,peso crudo,
+R448,pimiento rojo,100,verdura,170108,peso crudo,
+R448,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R449,claras de huevo,200,proteina,172183,peso crudo,
+R449,champi\xF1\xF3n,150,verdura,169251,peso crudo,
+R449,pan sin gluten,50,base,2707797,tal cual,
+R449,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R450,calabaza,200,verdura,168448,peso crudo,
+R450,reques\xF3n,100,proteina,172182,tal cual,si
+R450,quinoa,40,base,168874,peso seco,
+R450,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R451,huevo,100,proteina,171287,peso crudo,
+R451,patata,200,base,170026,peso crudo,
+R451,cebolla,50,verdura,170000,peso crudo,
+R451,lechuga romana,60,verdura,169247,peso crudo,
+R451,tomate,80,verdura,170457,peso crudo,
+R451,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
 
   // src/motor/coherencia-nutricional.ts
   var TOLERANCIA_RELATIVA = 0.1;
@@ -6955,11 +7322,11 @@ R418,aceite de oliva,5,grasa,171413,peso a\xF1adido,`;
   }
   function instantaneaLocal(leer) {
     const datos = {};
-    for (const clave of CLAVES_NUBE) {
-      const crudo = leer(clave);
+    for (const clave2 of CLAVES_NUBE) {
+      const crudo = leer(clave2);
       if (crudo === null || crudo === "") continue;
       try {
-        datos[clave] = JSON.parse(crudo);
+        datos[clave2] = JSON.parse(crudo);
       } catch {
       }
     }
@@ -7045,9 +7412,9 @@ R418,aceite de oliva,5,grasa,171413,peso a\xF1adido,`;
     return revisarSiguienteGuardada(asignaciones.map((a2) => ({ dia: a2.dia, franja: a2.franja, receta: a2.receta })), catalogo, ap);
   }
   function etiquetaPlanPablo(enUso, deP) {
-    const clave = (x) => `${x.dia}|${x.franja}|${x.receta}`;
-    const uso = new Set(enUso.map(clave));
-    return deP.every((x) => uso.has(clave(x))) && enUso.length === deP.length ? "pablo" : "pablo_con_cambios";
+    const clave2 = (x) => `${x.dia}|${x.franja}|${x.receta}`;
+    const uso = new Set(enUso.map(clave2));
+    return deP.every((x) => uso.has(clave2(x))) && enUso.length === deP.length ? "pablo" : "pablo_con_cambios";
   }
   var TEXTO_PLAN_PABLO = {
     pablo: "Revisado por Pablo",

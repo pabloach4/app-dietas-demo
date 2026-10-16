@@ -181,6 +181,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   let avisoCribadoHoy = ''; // mensaje neutro para «Hoy» tras calcular
   let avisoFrenoHoy = ''; // #229: tras el freno de «perder grasa», el plan es para mantener o ganar músculo y «Hoy» lo dice
   let objetivoPorFreno = ''; // el objetivo que se eligió en la pantalla del freno, para el aviso de «Hoy»
+  // #242: con celiaquía, al lado de cada ingrediente «riesgo» (avena, embutido, tomate triturado…) se dice que hay que comprar la versión
+  // con el sello sin gluten; y Pablo lleva el plan en persona (alerta para él y una línea en «Hoy»).
+  const esCeliaco = () => Boolean(respuestasActuales && respuestasActuales.alergias && respuestasActuales.alergias.celiaquia);
+  const avisoGlutenHtml = (nombre) => (esCeliaco() && Motor.claseGluten(nombre) === 'riesgo' ? ` <small class="aviso-gluten">${Motor.AVISO_ETIQUETA_GLUTEN}</small>` : '');
   let diasSuelo = []; // #230: días en que el cálculo quedó por debajo del suelo de kcal (D11) y se prescribe el suelo
   function pintarAvisoSuelo() {
     for (const id of ['aviso-suelo-semana', 'aviso-suelo-cal']) {
@@ -1067,6 +1071,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const avisoPabloHtml = avisoPabloHoy ? `<div class="hoy-bloque" id="aviso-plan-pablo" role="status"><p style="margin:0">${avisoPabloHoy}</p></div>` : '';
     const avisoCribadoHtml = (avisoCribadoHoy ? `<div class="hoy-bloque" id="aviso-cribado" role="status"><p style="margin:0">${escaparHtml(avisoCribadoHoy)}</p></div>` : '')
       + (avisoFrenoHoy ? `<div class="hoy-bloque" id="aviso-freno" role="status"><p style="margin:0">${escaparHtml(avisoFrenoHoy)}</p></div>` : '')
+      + (esCeliaco() ? `<div class="hoy-bloque" id="aviso-celiaquia" role="status"><p style="margin:0">${escaparHtml(Motor.MENSAJE_CELIAQUIA_HOY)}</p></div>` : '')
       + (diasSuelo.includes(dia) ? `<div class="hoy-bloque aviso-suelo" id="aviso-suelo-hoy" role="status"><p style="margin:0">${escaparHtml(Motor.MENSAJE_SUELO)}</p></div>` : '');
     const finAviso = periodoDieta.inicio ? Motor.avisoFinDeLaDieta(iso, periodoDieta.inicio, periodoDieta.semanas) : undefined;
     const avisoFinHtml = finAviso ? `
@@ -2493,7 +2498,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
             <li class="item-compra${aRevisar.has(item.ingrediente) ? ' a-revisar' : ''}">
               <label>
                 <input type="checkbox" class="marca-en-casa" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}" ${item.yaEnCasa ? 'checked' : ''} aria-label="Comprado o ya en casa: ${escaparHtml(item.ingrediente)}">
-                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · si quieres, se puede congelar' : ''}</small>` : ''}</span>
+                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${avisoGlutenHtml(item.ingrediente)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · si quieres, se puede congelar' : ''}</small>` : ''}</span>
               </label>
               ${aRevisar.has(item.ingrediente) ? `<div class="aviso-cantidad" role="status">Lo marcaste cuando hacían falta ${gramosTxt(aRevisar.get(item.ingrediente).marcado)} y ahora hacen falta ${gramosTxt(aRevisar.get(item.ingrediente).ahora)}: no se da por cubierto.
                 <button type="button" class="btn-texto marca-confirmar" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}">Sigue cubierto</button></div>` : ''}
@@ -2804,7 +2809,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         const c = verCocido && Motor.pesoCocido(i.nombre, i.gramosRacion);
         return `
         <li class="dc-ing">
-          <span class="dc-ing-nombre">${escaparHtml(i.nombre)}${i.protegido ? ' <small class="dc-ing-nota">no se escala</small>' : ''}</span>
+          <span class="dc-ing-nombre">${escaparHtml(i.nombre)}${i.protegido ? ' <small class="dc-ing-nota">no se escala</small>' : ''}${avisoGlutenHtml(i.nombre)}</span>
           <span class="dc-ing-gramos">${String(i.gramosRacion).replace('.', ',')} g${medidaAlLado(i.nombre, i.gramosRacion)}${c ?` <small class="dc-cocido">≈ ${c.gramos} g cocido</small>` : ''}</span>
           <span class="dc-ing-compra">compra: ${enCompra ? escaparHtml(comprados.get(i.nombre) ?? '—') : 'día fuera de la compra'}</span>
         </li>`;
@@ -3763,6 +3768,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     diasSuelo = Motor.diasConSuelo(plan).map((d) => d.dia);
     const alertaSuelo = Motor.alertaSuelo(plan, new Date().toISOString());
     if (alertaSuelo) { guardarAlertas(Motor.anadirAlerta(leerAlertas(), alertaSuelo)); pintarAlertas(); }
+    if (respuestas.alergias && respuestas.alergias.celiaquia) { guardarAlertas(Motor.anadirAlerta(leerAlertas(), Motor.alertaCeliaquia(new Date().toISOString()))); pintarAlertas(); } // #242
     pintarAvisoSuelo();
     revisionPerfilPendiente = false;
     document.getElementById('revision-precargado').hidden = true;
