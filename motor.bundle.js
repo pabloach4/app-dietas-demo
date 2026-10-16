@@ -1106,7 +1106,16 @@ var Motor = (() => {
   ];
   var MARCA_DIACRITICA_MIN = 768;
   var MARCA_DIACRITICA_MAX = 879;
+  var cacheNormalizar = /* @__PURE__ */ new Map();
   function normalizar(s) {
+    let r = cacheNormalizar.get(s);
+    if (r === void 0) {
+      r = normalizarSinCache(s);
+      cacheNormalizar.set(s, r);
+    }
+    return r;
+  }
+  function normalizarSinCache(s) {
     return Array.from(s.normalize("NFD")).filter((c2) => c2.codePointAt(0) < MARCA_DIACRITICA_MIN || c2.codePointAt(0) > MARCA_DIACRITICA_MAX).join("").toLowerCase();
   }
   function stem(palabra) {
@@ -1116,8 +1125,14 @@ var Motor = (() => {
     if (s.endsWith("e") && s.length > 4) s = s.slice(0, -1);
     return s;
   }
+  var cacheTokens = /* @__PURE__ */ new Map();
   function tokens(texto) {
-    return normalizar(texto).split(/[^a-z0-9]+/).filter(Boolean).map(stem);
+    let r = cacheTokens.get(texto);
+    if (r === void 0) {
+      r = normalizar(texto).split(/[^a-z0-9]+/).filter(Boolean).map(stem);
+      cacheTokens.set(texto, r);
+    }
+    return r.slice();
   }
   function parseCsvLine(linea) {
     const campos = [];
@@ -1236,12 +1251,34 @@ var Motor = (() => {
     const tokensIngrediente = new Set(tokens(nombreIngrediente));
     return keywords.some((kw) => kw.every((t2) => tokensIngrediente.has(t2)));
   }
+  var cacheLimite = /* @__PURE__ */ new WeakMap();
+  var cacheProtegido = /* @__PURE__ */ new WeakMap();
+  function deTabla(cache, tabla2) {
+    let m = cache.get(tabla2);
+    if (!m) {
+      m = /* @__PURE__ */ new Map();
+      cache.set(tabla2, m);
+    }
+    return m;
+  }
   function buscarLimite(tabla2, nombre) {
-    return tabla2.alimentos.find((a2) => coincide(nombre, a2.keywords));
+    const m = deTabla(cacheLimite, tabla2);
+    let r = m.get(nombre);
+    if (r === void 0) {
+      r = tabla2.alimentos.find((a2) => coincide(nombre, a2.keywords)) ?? null;
+      m.set(nombre, r);
+    }
+    return r ?? void 0;
   }
   function esProtegido(tabla2, nombre) {
-    const tokensIngrediente = new Set(tokens(nombre));
-    return tabla2.protegidos.some((p) => tokensIngrediente.has(stem(p)));
+    const m = deTabla(cacheProtegido, tabla2);
+    let r = m.get(nombre);
+    if (r === void 0) {
+      const tokensIngrediente = new Set(tokens(nombre));
+      r = tabla2.protegidos.some((p) => tokensIngrediente.has(stem(p)));
+      m.set(nombre, r);
+    }
+    return r;
   }
   function esIngredienteProtegido(nombre) {
     const tabla2 = cargarTabla();
@@ -1250,7 +1287,16 @@ var Motor = (() => {
     return limite !== void 0 && /^condimentos/i.test(limite.categoria);
   }
   var NO_LIQUIDO = /crema de (leche|cacahuete|cacao|avellana|almendra|queso|pistacho|coco)|crema (untable|de untar)/;
+  var cacheLiquido = /* @__PURE__ */ new Map();
   function esLiquidoPorNombre(nombre) {
+    let r = cacheLiquido.get(nombre);
+    if (r === void 0) {
+      r = esLiquidoSinCache(nombre);
+      cacheLiquido.set(nombre, r);
+    }
+    return r;
+  }
+  function esLiquidoSinCache(nombre) {
     const n = normalizar(nombre);
     if (NO_LIQUIDO.test(n)) return false;
     return LIQUIDO_KEYWORDS.some((k) => n.includes(k));
