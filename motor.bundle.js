@@ -1700,7 +1700,9 @@ var Motor = (() => {
         "lactoglobulina",
         "lactoalb\xFAmina",
         "caseinato"
-      ]
+      ],
+      // #227: las alternativas vegetales («yogur de soja», «bebida vegetal de avena») no son lácteo. Su soja o su fruto seco va por su categoría.
+      noSon: ["soja", "vegetal", "avena", "almendra", "arroz", "coco"]
     },
     {
       clave: "huevo",
@@ -1825,7 +1827,8 @@ var Motor = (() => {
       nombres: cat.nombres.map(raizAlimento),
       soloAlergia: (cat.nombresSoloAlergia ?? []).map(raizAlimento),
       etiquetas: cat.etiquetas.map(raizAlimento),
-      alimentos: cat.alimentos.map(raizAlimento)
+      alimentos: cat.alimentos.map(raizAlimento),
+      noSon: (cat.noSon ?? []).map(raizAlimento)
     }]));
     return indiceCategorias;
   }
@@ -1860,7 +1863,7 @@ var Motor = (() => {
     if ((receta.alergenos ?? []).some((a2) => c2.etiquetas.includes(raizAlimento(a2)))) return `lleva ${cat.rotulo}`;
     const ingrediente = receta.ingredientes.find((ing) => {
       const nombre = raizAlimento(ing.nombre);
-      return c2.alimentos.some((a2) => contienePalabras(nombre, a2));
+      return c2.alimentos.some((a2) => contienePalabras(nombre, a2)) && !c2.noSon.some((x) => contienePalabras(nombre, x));
     });
     if (ingrediente) return `lleva "${ingrediente.nombre}" (${cat.rotulo})`;
     if (esAlergia && cat.aptitud && receta.aptitudes && receta.aptitudes[cat.aptitud] !== "si") return `no consta como apta sin ${cat.rotulo} (pendiente de ficha)`;
@@ -1896,9 +1899,12 @@ var Motor = (() => {
     "caballa"
   ];
   var OTROS_NO_VEGANOS = ["huevo", "miel"];
+  var NO_SON_LACTEO = ["soja", "vegetal", "avena", "almendra", "arroz", "coco"];
   function buscarIngrediente(ingredientes, palabras) {
     for (const ing of ingredientes) {
       const n = raizAlimento(ing.nombre);
+      const esLacteo = LACTEOS.some((p) => contienePalabras(n, raizAlimento(p)));
+      if (esLacteo && NO_SON_LACTEO.some((x) => contienePalabras(n, raizAlimento(x))) && !palabras.some((p) => !LACTEOS.includes(p) && contienePalabras(n, raizAlimento(p)))) continue;
       if (palabras.some((p) => contienePalabras(n, raizAlimento(p)))) return ing.nombre;
     }
     return void 0;
