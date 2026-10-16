@@ -7571,7 +7571,7 @@ R451,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
   var UMBRALES_FRENO = {
     ffmi: { hombre: 17, mujer: 15 },
     imcSinGrasa: 18.5,
-    // solo sin % graso medido (provisional)
+    // solo sin % graso medido (confirmado por Pablo el 16/10)
     perdida3m: 5,
     // % en 3 meses
     perdidaHabitual: 10,
