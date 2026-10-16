@@ -27,6 +27,11 @@
   let datos = { perfiles: [], respuestas: [], alertas: [], gestion: [], planes: [], fichas: [], registro: [] };
   let vista = 'alertas';
   let personaAbierta = null;
+  // #251: filtros de la lista de alertas, «agrupar por persona», cuántas se pintan (50 y «Ver más») y las marcadas para cambiarlas a la vez.
+  let filtroAlertas = { estado: 'nueva', soloPrioritarias: false, tipo: '' };
+  let agruparAlertas = false;
+  let mostrarAlertas = 50;
+  const marcadas = new Set();
   // #215: buscador y filtro de Personas, plan elegido en el historial de cada ficha y si existe la tabla de fichas (docs/supabase/004-fichas.sql).
   let busqueda = ''; let filtroPersonas = 'todas'; const planVisto = {}; let fichasOk = true;
 
@@ -149,15 +154,16 @@
   const contactoDe = (u) => (datos.perfiles.find((p) => p.usuario === u) || {}).contacto || 'sin contacto';
   const gestionDe = (id) => datos.gestion.find((g) => g.alerta_id === id) || { estado: 'nueva', nota: '' };
 
-  function htmlAlerta(a) {
+  function htmlAlerta(a, conMarca = true) {
     const g = gestionDe(a.id);
     const d = a.datos || {};
-    const senales = (d.disparadores || []).map((x) => `<li>${esc(x.señal)} <span class="subt">(pregunta ${esc(x.pregunta)}: ${esc(x.etiqueta)})</span></li>`).join('');
-    return `<div class="tarjeta ${a.prioritaria ? 'prioritaria' : ''}">
-      <div class="fila" style="justify-content:space-between"><strong>${esc(fecha(a.creada))}</strong>
-        ${a.prioritaria ? '<span class="chip rojo">REVISIÓN PRIORITARIA · valoración sanitaria</span>' : `<span class="chip">${esc(a.tipo)}</span>`}</div>
+    const senales = Motor.motivosAlerta(a).map((m) => `<li>${esc(m)}</li>`).join('');
+    const clase = Motor.clasificarAlerta(a);
+    return `<div class="tarjeta cc-alerta ${a.prioritaria ? 'prioritaria' : ''}" data-id="${a.id}" data-tipo="${esc(clase)}">
+      <div class="fila" style="justify-content:space-between"><label style="display:flex;gap:0.4rem;align-items:center;flex:0 0 auto">${conMarca ? `<input type="checkbox" class="cc-marca" data-id="${a.id}"${marcadas.has(a.id) ? ' checked' : ''} aria-label="Seleccionar esta alerta">` : ''}<strong>${esc(fecha(a.creada))}</strong></label>
+        <span>${a.prioritaria ? '<span class="chip rojo">REVISIÓN PRIORITARIA · valoración sanitaria</span> ' : ''}<span class="chip cc-tipo">${esc(Motor.TIPOS_ALERTA[clase])}</span> <span class="chip">${esc(ESTADOS[g.estado] || 'Nueva')}</span></span></div>
       <p class="subt"><a href="mailto:${esc(contactoDe(a.usuario))}">${esc(contactoDe(a.usuario))}</a> · <a href="#" class="cc-ver" data-u="${esc(a.usuario)}">ver ficha</a></p>
-      <ul>${senales || '<li>(sin detalle)</li>'}</ul>
+      <ul class="cc-motivos">${senales}</ul>
       ${d.perdidaKg !== undefined ? `<p class="subt">Pérdida declarada: ${esc(d.perdidaKg)} kg en 3 meses.</p>` : ''}
       ${(d.contexto || []).length ? `<p class="subt">Contexto: ${d.contexto.map((c) => `pregunta ${esc(c.pregunta)}: ${esc(c.etiqueta)}`).join('; ')}.</p>` : ''}
       <div class="fila" style="margin-top:0.5rem"><select class="cc-estado" data-id="${a.id}">${Object.entries(ESTADOS).map(([k, v]) => `<option value="${k}"${k === g.estado ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
@@ -167,11 +173,61 @@
   }
 
   function pintarAlertas() {
-    const pendientes = datos.alertas.filter((a) => gestionDe(a.id).estado !== 'hablado');
-    const hechas = datos.alertas.filter((a) => gestionDe(a.id).estado === 'hablado');
-    return `<p class="subt">${pendientes.length} por atender · ${hechas.length} atendidas.</p>
-      ${pendientes.map(htmlAlerta).join('') || '<div class="tarjeta"><p>No hay alertas por atender.</p></div>'}
-      ${hechas.length ? `<details class="tarjeta"><summary>Atendidas (${hechas.length})</summary>${hechas.map(htmlAlerta).join('')}</details>` : ''}`;
+    const n = Motor.contarPorEstado(datos.alertas, datos.gestion, filtroAlertas);
+    const lista = Motor.filtrarAlertas(datos.alertas, datos.gestion, filtroAlertas);
+    const BOTONES = { nueva: 'Nuevas', vista: 'Vistas', hablado: 'Habladas', todas: 'Todas' };
+    const filtros = `<div class="fila cc-filtros" style="gap:0.4rem;flex-wrap:wrap">${Object.entries(BOTONES).map(([k, v]) => `<button class="${filtroAlertas.estado === k ? '' : 'sec'} cc-f-estado" data-estado="${k}" aria-pressed="${filtroAlertas.estado === k}" style="flex:0 0 auto">${v} (<span class="cc-n">${n[k]}</span>)</button>`).join('')}</div>
+      <div class="fila" style="gap:0.6rem;flex-wrap:wrap;margin:0.5rem 0"><label style="flex:0 0 auto"><input type="checkbox" id="cc-f-prio"${filtroAlertas.soloPrioritarias ? ' checked' : ''}> Solo prioritarias</label>
+        <select id="cc-f-tipo" aria-label="Tipo de alerta" style="flex:0 0 auto"><option value="">Todos los tipos</option>${Object.entries(Motor.TIPOS_ALERTA).map(([k, v]) => `<option value="${k}"${filtroAlertas.tipo === k ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select>
+        <label style="flex:0 0 auto"><input type="checkbox" id="cc-agrupar"${agruparAlertas ? ' checked' : ''}> Agrupar por persona</label></div>
+      <div class="fila" style="gap:0.4rem;flex-wrap:wrap;margin-bottom:0.5rem"><span class="subt" id="cc-n-marcadas">${marcadas.size} seleccionada${marcadas.size === 1 ? '' : 's'}</span>
+        <button class="sec cc-bloque" data-estado="vista" style="flex:0 0 auto"${marcadas.size ? '' : ' disabled'}>Marcar como vistas</button><button class="sec cc-bloque" data-estado="hablado" style="flex:0 0 auto"${marcadas.size ? '' : ' disabled'}>Marcar como habladas</button>
+        <span class="subt" id="cc-bloque-ok" aria-live="polite"></span></div>`;
+    if (!lista.length) return `${filtros}<div class="tarjeta"><p>No hay alertas con este filtro.</p></div>`;
+    if (agruparAlertas) {
+      const grupos = Motor.agruparPorPersona(lista, datos.gestion);
+      return `${filtros}${grupos.map((x) => `<details class="tarjeta cc-grupo" data-u="${esc(x.usuario)}"><summary><strong>${esc(nombreDe(x.usuario))}</strong> · <span class="cc-g-total">${x.alertas.length}</span> alerta${x.alertas.length === 1 ? '' : 's'}${x.sinAtender ? ` · <span class="chip rojo"><span class="cc-g-sin">${x.sinAtender}</span> sin atender</span>` : ''} · la última ${esc(fecha(x.ultima))}</summary>${x.alertas.map((a) => htmlAlerta(a)).join('')}</details>`).join('')}`;
+    }
+    const vistas = lista.slice(0, mostrarAlertas);
+    return `${filtros}<p class="subt" id="cc-n-lista">${lista.length} alerta${lista.length === 1 ? '' : 's'}${lista.length > vistas.length ? `; ves las ${vistas.length} primeras` : ''}.</p>
+      ${vistas.map((a) => htmlAlerta(a)).join('')}
+      ${lista.length > vistas.length ? `<button class="sec" id="cc-ver-mas">Ver más (${Math.min(50, lista.length - vistas.length)} de ${lista.length - vistas.length} que quedan)</button>` : ''}`;
+  }
+
+  function activarAlertas() {
+    const prio = document.getElementById('cc-f-prio');
+    if (!prio) return;
+    cuerpo.querySelectorAll('.cc-f-estado').forEach((b) => b.addEventListener('click', () => { filtroAlertas.estado = b.dataset.estado; mostrarAlertas = 50; pintar(); }));
+    prio.addEventListener('change', () => { filtroAlertas.soloPrioritarias = prio.checked; mostrarAlertas = 50; pintar(); });
+    document.getElementById('cc-f-tipo').addEventListener('change', (e) => { filtroAlertas.tipo = e.target.value; mostrarAlertas = 50; pintar(); });
+    document.getElementById('cc-agrupar').addEventListener('change', (e) => { agruparAlertas = e.target.checked; pintar(); });
+    const mas = document.getElementById('cc-ver-mas');
+    if (mas) mas.addEventListener('click', () => { mostrarAlertas += 50; pintar(); });
+    const contar = () => {
+      document.getElementById('cc-n-marcadas').textContent = `${marcadas.size} seleccionada${marcadas.size === 1 ? '' : 's'}`;
+      cuerpo.querySelectorAll('.cc-bloque').forEach((b) => { b.disabled = !marcadas.size; });
+    };
+    cuerpo.querySelectorAll('.cc-marca').forEach((c) => c.addEventListener('change', () => { const id = Number(c.dataset.id); if (c.checked) marcadas.add(id); else marcadas.delete(id); contar(); }));
+    // Varias a la vez: una escritura por alerta en alertas_gestion (se conserva su nota); si alguna falla, se dice cuál y por qué.
+    cuerpo.querySelectorAll('.cc-bloque').forEach((b) => b.addEventListener('click', async () => {
+      const estado = b.dataset.estado;
+      const ids = [...marcadas];
+      document.getElementById('cc-bloque-ok').textContent = 'Guardando…';
+      const res = await Promise.all(ids.map(async (id) => {
+        const fila = { alerta_id: id, estado, nota: gestionDe(id).nota || '', actualizado: new Date().toISOString() };
+        const { error } = await sb.from('alertas_gestion').upsert(fila, { onConflict: 'alerta_id' });
+        if (!error) {
+          const i = datos.gestion.findIndex((g) => g.alerta_id === id);
+          if (i >= 0) datos.gestion[i] = fila; else datos.gestion.push(fila);
+          marcadas.delete(id);
+        }
+        return { id, error };
+      }));
+      const fallos = res.filter((r) => r.error);
+      pintar();
+      const msg = document.getElementById('cc-bloque-ok');
+      if (msg) msg.textContent = fallos.length ? `${ids.length - fallos.length} guardadas; no se han guardado ${fallos.length}: ${fallos.map((r) => `alerta ${r.id} (${r.error.message})`).join('; ')}.` : `${ids.length} marcada${ids.length === 1 ? '' : 's'} como ${estado === 'hablado' ? 'habladas' : 'vistas'}.`;
+    }));
   }
 
   // #215: buscador por nombre o correo, filtros, orden por última actividad y exportar a CSV (sin datos de salud).
@@ -222,6 +278,7 @@
     const nombre = nombreDe(u);
     const periodo = inst['app-dietas-periodo'] || {};
     const alertas = datos.alertas.filter((a) => a.usuario === u);
+    const adh = Motor.adherenciaSemana(inst['app-dietas-comidas-hechas'], inst['app-dietas-comidas-fuera'], (plan && plan.plan && plan.plan.asignaciones) || [], Motor.fechaLocalISO(new Date()));
     const dias = (plan && plan.plan && plan.plan.dias) || [];
     const asign = (plan && plan.plan && plan.plan.asignaciones) || [];
     const ORDEN = ['desayuno', 'media_manana', 'comida', 'merienda', 'cena'];
@@ -241,9 +298,10 @@
           <tr><th>Vida diaria</th><td>${esc(f.vidaTrabajo || '—')}${f.vidaPasos ? ` · ${esc(f.vidaPasos)} pasos` : ''}</td></tr>
           <tr><th>Sesiones</th><td>${(f.sesiones || []).map((s) => `${esc(s.dia)} ${esc(s.deporte)} ${esc(s.minutos)} min`).join(' · ') || '—'}</td></tr>
           <tr><th>Dieta</th><td>${periodo.inicio ? `desde ${esc(periodo.inicio)}, ${esc(periodo.semanas || 1)} semana(s)` : 'sin fechas'}</td></tr>
+          <tr><th>Comidas hechas esta semana</th><td id="cc-adherencia">${adh ? `${adh.hechas} de ${adh.total} (${adh.pct} %) <span class="subt">desde el ${esc(adh.desde.split('-').reverse().slice(0, 2).join('/'))}; de hoy, solo las ya hechas</span>` : 'sin registro'}</td></tr>
           <tr><th>Lista negra</th><td>${esc((Array.isArray(inst['app-dietas-lista-negra']) ? inst['app-dietas-lista-negra'] : []).join(', ') || '—')}</td></tr>
         </tbody></table></div>
-      ${alertas.length ? `<div class="no-imprimir"><h2>Alertas</h2>${alertas.map(htmlAlerta).join('')}</div>` : ''}
+      ${alertas.length ? `<div class="no-imprimir"><h2>Alertas</h2>${alertas.map((a) => htmlAlerta(a, false)).join('')}</div>` : ''}
       ${historial.length > 1 ? `<div class="tarjeta no-imprimir"><h2>Historial de planes (${historial.length})</h2><ul>${historial.map((x) => `<li>${esc(fecha(x.creado))} · ${x.origen === 'pablo' ? 'publicado por ti' : 'de la app'}${x.inicio ? ` · desde ${esc(x.inicio)}, ${esc(x.semanas || 1)} semana(s)` : ''} ${x === plan ? '<strong>(el que ves)</strong>' : `<a href="#" class="cc-plan" data-u="${esc(u)}" data-id="${esc(x.id)}">ver</a>`}</li>`).join('')}</ul></div>` : ''}
       <div class="tarjeta"><h2>Plan ${plan ? `(${esc(plan.origen === 'pablo' ? 'publicado por ti' : 'de la app')}, ${esc(fecha(plan.creado))})` : ''}</h2>
         ${plan ? `<p class="subt">Media: ${esc(plan.plan.kcalMedia)} kcal/día${plan.plan.huecos ? ` · ${esc(plan.plan.huecos)} comidas sin receta` : ''}</p>
@@ -412,6 +470,7 @@
     if (volver) volver.addEventListener('click', () => { personaAbierta = null; pintar(); });
     activarVer(cuerpo);
     activarPersonas();
+    if (!personaAbierta && vista === 'alertas') activarAlertas();
     const imprimir = document.getElementById('cc-imprimir');
     if (imprimir) imprimir.addEventListener('click', () => window.print());
     cuerpo.querySelectorAll('.cc-plan').forEach((e) => e.addEventListener('click', (ev) => { ev.preventDefault(); planVisto[e.dataset.u] = Number(e.dataset.id); pintar(); }));

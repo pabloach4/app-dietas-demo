@@ -70,6 +70,7 @@ var Motor = (() => {
     SEMANAS_POR_DEFECTO: () => SEMANAS_POR_DEFECTO,
     TEXTO_NIVEL: () => TEXTO_NIVEL,
     TEXTO_PLAN_PABLO: () => TEXTO_PLAN_PABLO,
+    TIPOS_ALERTA: () => TIPOS_ALERTA,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
     UMBRALES_FRENO: () => UMBRALES_FRENO,
@@ -80,6 +81,8 @@ var Motor = (() => {
     aMinutos: () => aMinutos2,
     accionReintentoNube: () => accionReintentoNube,
     actividadesDesconocidas: () => actividadesDesconocidas,
+    adherenciaSemana: () => adherenciaSemana,
+    agruparPorPersona: () => agruparPorPersona,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
     alertaCeliaquia: () => alertaCeliaquia,
     alertaFreno: () => alertaFreno,
@@ -111,6 +114,7 @@ var Motor = (() => {
     cargaDeHidratos: () => cargaDeHidratos,
     categoriasDeTexto: () => categoriasDeTexto,
     claseGluten: () => claseGluten,
+    clasificarAlerta: () => clasificarAlerta,
     claveSlot: () => claveSlot,
     coherenciaKcalMacros: () => coherenciaKcalMacros,
     coincideAlimento: () => coincideAlimento,
@@ -130,6 +134,7 @@ var Motor = (() => {
     conflictosComidaEntreno: () => conflictosComidaEntreno,
     conservacionDesdeCsv: () => conservacionDesdeCsv,
     construirEventos: () => construirEventos,
+    contarPorEstado: () => contarPorEstado,
     contextoDiaPorDefecto: () => contextoDiaPorDefecto,
     copiarAlPortapapeles: () => copiarAlPortapapeles,
     correoValido: () => correoValido,
@@ -180,6 +185,7 @@ var Motor = (() => {
     fechaLocalISO: () => fechaLocalISO,
     filaAlerta: () => filaAlerta,
     filaPlanPablo: () => filaPlanPablo,
+    filtrarAlertas: () => filtrarAlertas,
     filtrarCatalogo: () => filtrarCatalogo,
     filtrarPersonas: () => filtrarPersonas,
     filtrarPorDias: () => filtrarPorDias,
@@ -215,6 +221,7 @@ var Motor = (() => {
     medidaCasera: () => medidaCasera,
     medidasDesdeCsv: () => medidasDesdeCsv,
     mezclarAlerta: () => mezclarAlerta,
+    motivosAlerta: () => motivosAlerta,
     moverSesion: () => moverSesion,
     necesitaVentanaNube: () => necesitaVentanaNube,
     noSeReescala: () => noSeReescala,
@@ -7577,6 +7584,93 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
     return recibidas.filter((a2) => !ya.has(a2.id));
   }
   var RESPALDO_MS = 6e4;
+  var TIPOS_ALERTA = {
+    cribado: "Cribado",
+    freno: "Freno de \xABperder grasa\xBB",
+    suelo: "Suelo de kcal",
+    celiaquia: "Celiaqu\xEDa"
+  };
+  var datosDe = (a2) => a2.datos && typeof a2.datos === "object" ? a2.datos : {};
+  function clasificarAlerta(a2) {
+    const d = datosDe(a2);
+    if (d.freno === true) return "freno";
+    if (d.suelo === true) return "suelo";
+    if (d.celiaquia === true) return "celiaquia";
+    return "cribado";
+  }
+  function motivosAlerta(a2) {
+    const disp = datosDe(a2).disparadores;
+    const lista = Array.isArray(disp) ? disp : [];
+    const m = lista.map((x) => {
+      const se\u00F1al = typeof x.se\u00F1al === "string" && x.se\u00F1al.trim() ? x.se\u00F1al.trim() : x.etiqueta || "Sin detalle";
+      return typeof x.pregunta === "number" && x.pregunta > 0 ? `${se\u00F1al} (pregunta ${x.pregunta}: ${x.etiqueta ?? ""})` : se\u00F1al;
+    });
+    return m.length ? m : ["(sin detalle)"];
+  }
+  var estadoDe = (gestion) => {
+    const m = new Map(gestion.map((g) => [g.alerta_id, g.estado]));
+    return (a2) => m.get(a2.id) === "vista" || m.get(a2.id) === "hablado" ? m.get(a2.id) : "nueva";
+  };
+  function contarPorEstado(alertas, gestion, f2 = {}) {
+    const est = estadoDe(gestion);
+    const c2 = { nueva: 0, vista: 0, hablado: 0, todas: 0 };
+    for (const a2 of alertas) {
+      if (f2.soloPrioritarias && !a2.prioritaria) continue;
+      if (f2.tipo && clasificarAlerta(a2) !== f2.tipo) continue;
+      c2[est(a2)]++;
+      c2.todas++;
+    }
+    return c2;
+  }
+  function filtrarAlertas(alertas, gestion, f2 = {}) {
+    const est = estadoDe(gestion);
+    return alertas.filter((a2) => (!f2.estado || f2.estado === "todas" || est(a2) === f2.estado) && (!f2.soloPrioritarias || a2.prioritaria) && (!f2.tipo || clasificarAlerta(a2) === f2.tipo)).sort((a2, b) => Number(!!b.prioritaria) - Number(!!a2.prioritaria) || String(b.creada ?? "").localeCompare(String(a2.creada ?? "")));
+  }
+  function agruparPorPersona(alertas, gestion) {
+    const est = estadoDe(gestion);
+    const g = /* @__PURE__ */ new Map();
+    for (const a2 of alertas) g.set(a2.usuario, [...g.get(a2.usuario) || [], a2]);
+    return [...g].map(([usuario, l]) => {
+      const orden = [...l].sort((a2, b) => String(b.creada ?? "").localeCompare(String(a2.creada ?? "")));
+      return { usuario, alertas: orden, sinAtender: l.filter((a2) => est(a2) !== "hablado").length, ultima: String(orden[0].creada ?? "") };
+    }).sort((a2, b) => b.ultima.localeCompare(a2.ultima));
+  }
+  var LETRA_DIA = ["D", "L", "M", "X", "J", "V", "S"];
+  var isoMas = (iso, n) => {
+    const d = /* @__PURE__ */ new Date(`${iso}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+  function adherenciaSemana(hechas, fuera, asignaciones, hoyISO) {
+    const porDia = /* @__PURE__ */ new Map();
+    const anota = (iso, f2) => {
+      if (typeof iso === "string" && typeof f2 === "string") porDia.set(iso, (porDia.get(iso) || /* @__PURE__ */ new Set()).add(f2));
+    };
+    if (hechas && typeof hechas === "object") {
+      const h = hechas;
+      if (Array.isArray(h.franjas)) for (const f2 of h.franjas) anota(h.fecha, f2);
+      if (h.dias && typeof h.dias === "object") {
+        for (const [iso, l] of Object.entries(h.dias)) if (Array.isArray(l)) for (const f2 of l) anota(iso, f2);
+      }
+    }
+    if (Array.isArray(fuera)) {
+      for (const c2 of fuera) if (c2 && typeof c2 === "object") anota(c2.fecha, c2.franja);
+    }
+    const dow = (/* @__PURE__ */ new Date(`${hoyISO}T12:00:00Z`)).getUTCDay();
+    const lunes = isoMas(hoyISO, -((dow + 6) % 7));
+    const conDato = [...porDia.keys()].filter((iso) => iso >= lunes && iso <= hoyISO).sort();
+    if (!conDato.length) return void 0;
+    const planDe = (iso) => new Set(asignaciones.filter((a2) => a2.dia === LETRA_DIA[(/* @__PURE__ */ new Date(`${iso}T12:00:00Z`)).getUTCDay()]).map((a2) => a2.franja));
+    let x = 0, y = 0;
+    for (let iso = conDato[0]; iso <= hoyISO; iso = isoMas(iso, 1)) {
+      const plan = planDe(iso);
+      const hecho = [...porDia.get(iso) || []].filter((f2) => plan.has(f2));
+      x += hecho.length;
+      y += iso === hoyISO ? hecho.length : plan.size;
+    }
+    if (!y) return void 0;
+    return { hechas: x, total: y, pct: Math.round(x / y * 100), desde: conDato[0] };
+  }
 
   // src/motor/centro-personas.ts
   var FILTROS_PERSONAS = {

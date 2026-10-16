@@ -1317,15 +1317,26 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     return `${b('mucha', 'Mucha comida')}${b('bien', 'Bien de cantidad')}${b('hambre', 'Me he quedado con hambre')}`;
   }
   // Comidas marcadas como hechas hoy (Pablo, 08/10): «Hoy» pasa a la siguiente cuando la persona lo dice. Solo se guarda el día
-  // en curso y solo sirve para eso: no es un registro de lo comido ni cambia el plan.
+  // en curso y solo sirve para eso: no es un registro de lo comido ni cambia el plan. Desde #251, los 14 días anteriores se
+  // guardan en `dias` (solo las franjas marcadas) para que Pablo vea en el centro las comidas hechas de la semana.
   const CLAVE_HECHAS = 'app-dietas-comidas-hechas';
-  let comidasHechas = { fecha: '', franjas: [] };
+  let comidasHechas = { fecha: '', franjas: [], dias: {} };
   try {
     const g = JSON.parse(localStorage.getItem(CLAVE_HECHAS) || 'null');
-    if (g && typeof g.fecha === 'string' && Array.isArray(g.franjas)) comidasHechas = { fecha: g.fecha, franjas: g.franjas.filter((x) => typeof x === 'string').slice(0, 8) };
+    if (g && typeof g.fecha === 'string' && Array.isArray(g.franjas)) {
+      const dias = {};
+      if (g.dias && typeof g.dias === 'object') for (const [d, l] of Object.entries(g.dias)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && Array.isArray(l)) dias[d] = l.filter((x) => typeof x === 'string').slice(0, 8);
+      comidasHechas = { fecha: g.fecha, franjas: g.franjas.filter((x) => typeof x === 'string').slice(0, 8), dias };
+    }
   } catch { /* sin almacenamiento o dato corrupto: ninguna marcada */ }
   function hechasDe(iso) {
-    if (comidasHechas.fecha !== iso) comidasHechas = { fecha: iso, franjas: [] };
+    if (comidasHechas.fecha !== iso) {
+      const dias = { ...comidasHechas.dias };
+      if (comidasHechas.fecha && comidasHechas.franjas.length) dias[comidasHechas.fecha] = comidasHechas.franjas;
+      const limite = Motor.fechaLocalISO(new Date(new Date(`${iso}T12:00:00`).getTime() - 14 * 864e5));
+      for (const d of Object.keys(dias)) if (d < limite || d >= iso) delete dias[d];
+      comidasHechas = { fecha: iso, franjas: [], dias };
+    }
     return comidasHechas.franjas;
   }
   let porValorar = null; // { fecha, franja }: comida recién marcada como hecha, a la espera de «¿qué tal de cantidad?»
