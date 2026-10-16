@@ -5956,7 +5956,25 @@ R447,Crema de calabac\xEDn con pavo y pan sin gluten,cena,364,28.7,14.9,29.1,EJE
 R448,Sepia a la plancha con patata y pimiento,cena,348,28.4,11.5,33.5,EJEMPLO,unico,5.25,sepia,patata,moluscos,no,no,si,si,no,30,nuevo,Cocer la patata; hacer la sepia y el pimiento a la plancha. Ali\xF1ar con el aceite. Pesar la patata en crudo.,normal
 R449,Revuelto de claras con champi\xF1ones y pan sin gluten,cena,349,28.6,13.5,29.2,EJEMPLO,unico,3.65,claras de huevo,pan,huevo,si,no,pendiente_ficha,si,si,15,nuevo,Saltear los champi\xF1ones y cuajar las claras con el aceite; servir con el pan sin gluten.,normal
 R450,Crema de calabaza con reques\xF3n y quinoa,cena,341,18.8,11.9,42.0,EJEMPLO,unico,3.80,reques\xF3n,quinoa,l\xE1cteos,si,no,no,si,si,30,nuevo,Cocer la quinoa 15 minutos. Cocer la calabaza y triturarla con el aceite; servir con el reques\xF3n y la quinoa. Pesar la quinoa en seco.,normal
-R451,Tortilla de patata con ensalada,cena,430,18.7,20.1,45.5,EJEMPLO | fibraAlta,unico,7.27,huevo,patata,huevo,si,no,si,si,no,35,nuevo,"Pochar la patata y la cebolla en el aceite, cuajar con el huevo; servir con la ensalada. Pesar la patata en crudo.",normal`;
+R451,Tortilla de patata con ensalada,cena,430,18.7,20.1,45.5,EJEMPLO | fibraAlta,unico,7.27,huevo,patata,huevo,si,no,si,si,no,35,nuevo,"Pochar la patata y la cebolla en el aceite, cuajar con el huevo; servir con la ensalada. Pesar la patata en crudo.",normal
+R460,"Gachas de copos de avena sin gluten con bebida de soja, pl\xE1tano y canela",desayuno,389,14.2,7.1,70.1,EJEMPLO,unico,9.38,bebida de soja,copos de avena sin gluten,soja,si,si,si,si,no,10,nuevo,Cocer los copos de avena sin gluten en la bebida de soja 5 minutos removiendo. Servir con el pl\xE1tano en rodajas y la canela. Pesar los copos en seco.,normal
+R461,"Yogur de soja con copos de avena sin gluten, fresas y semillas de girasol",desayuno,436,15.6,15.0,62.0,EJEMPLO,unico,8.33,yogur de soja,copos de avena sin gluten,soja,si,si,si,si,no,5,nuevo,"Mezclar el yogur de soja con los copos de avena sin gluten, las fresas en trozos y las semillas de girasol.",normal
+R462,Pan sin gluten con crema de cacahuete y pl\xE1tano,desayuno,357,8.1,13.7,54.8,EJEMPLO,unico,6.18,crema de cacahuete,pan,cacahuete,si,si,si,si,no,5,nuevo,"Tostar el pan sin gluten, untar la crema de cacahuete y cubrir con el pl\xE1tano en rodajas. Pesar el pan tal cual.",normal
+R463,Tortitas de ma\xEDz con crema de cacahuete y manzana,desayuno,352,8.1,11.5,58.5,EJEMPLO,unico,5.36,crema de cacahuete,tortita de ma\xEDz,cacahuete,si,si,si,si,si,5,nuevo,Untar las tortitas con la crema de cacahuete y servir con la manzana en l\xE1minas.,normal
+R464,Pan sin gluten con hummus y tomate,desayuno,305,8.0,14.0,39.6,EJEMPLO,unico,6.84,hummus,pan,s\xE9samo,si,si,si,si,no,5,nuevo,"Tostar el pan sin gluten, untar el hummus y cubrir con el tomate en rodajas.",normal
+R465,Gachas de copos de avena sin gluten con compota de manzana y semillas de calabaza,desayuno,388,16.1,13.3,53.9,EJEMPLO,unico,7.73,bebida de soja,copos de avena sin gluten,soja,si,si,si,si,no,10,nuevo,Cocer los copos en la bebida de soja 5 minutos. Servir con la compota de manzana y las semillas de calabaza. Pesar los copos en seco.,normal
+R466,"Yogur de soja con kiwi, mandarina y copos de avena sin gluten",desayuno,393,12.5,7.2,72.5,EJEMPLO,unico,8.83,yogur de soja,copos de avena sin gluten,soja,si,si,si,si,no,5,nuevo,"Mezclar el yogur de soja con el kiwi en trozos, la mandarina en gajos y los copos de avena sin gluten.",normal
+R467,Pan sin gluten con tofu firme a la plancha y tomate,desayuno,327,20.1,16.5,28.8,EJEMPLO,unico,5.41,tofu firme,pan,soja,si,si,si,si,si,10,nuevo,Hacer el tofu firme a la plancha con el aceite. Servir sobre el pan sin gluten tostado con el tomate rallado.,normal
+R468,Tortitas de ma\xEDz con hummus y tomate,media_manana;merienda,195,5.6,8.6,25.8,EJEMPLO | fibraAlta,unico,3.58,hummus,tortita de ma\xEDz,s\xE9samo,si,si,si,si,no,5,nuevo,Untar las tortitas con el hummus y cubrir con el tomate en rodajas.,normal
+R469,Pan sin gluten con crema de cacahuete y manzana,media_manana;merienda,216,4.9,9.4,30.9,EJEMPLO | fibraAlta,unico,4.44,crema de cacahuete,pan,cacahuete,si,si,si,si,no,5,nuevo,Untar el pan sin gluten con la crema de cacahuete y servir con la manzana.,normal
+R470,Yogur de soja con fresas y semillas de calabaza,media_manana;merienda,170,7.0,7.4,20.9,EJEMPLO,unico,3.1,yogur de soja,fruta,soja,si,si,si,si,si,5,nuevo,Servir el yogur de soja con las fresas en trozos y las semillas de calabaza.,normal
+R471,"Batido de bebida de soja, pl\xE1tano y crema de cacahuete",media_manana;merienda,239,9.6,8.9,33.1,EJEMPLO,unico,3.78,bebida de soja,fruta,soja;cacahuete,si,si,si,si,si,5,nuevo,Batir todo junto hasta que quede fino.,normal
+R472,Tortitas de ma\xEDz con tofu firme y pimiento,media_manana;merienda,201,15.2,7.2,22.4,EJEMPLO | fibraAlta,unico,3.37,tofu firme,tortita de ma\xEDz,soja,si,si,si,si,no,10,nuevo,Hacer el tofu a la plancha y servirlo sobre las tortitas con el pimiento en tiras.,normal
+R473,Yogur de soja con compota de manzana y canela,media_manana;merienda,176,5.5,3.6,31.5,EJEMPLO,unico,2.43,yogur de soja,fruta,soja,si,si,si,si,si,5,nuevo,Mezclar el yogur de soja con la compota de manzana y la canela.,normal
+R474,"Salteado de tofu firme con quinoa, calabac\xEDn y pimiento",cena,535,35.6,26.8,45.7,EJEMPLO,unico,10.13,tofu firme,quinoa,soja,si,si,si,si,no,25,nuevo,"Cocer la quinoa 15 minutos. Saltear el tofu en dados con el aceite, a\xF1adir el calabac\xEDn y el pimiento y saltear 8 minutos; mezclar con la quinoa. Pesar la quinoa en seco.",normal
+R475,Tempeh a la plancha con boniato asado y br\xF3coli,cena,503,27.7,21.5,57.8,EJEMPLO,unico,9.9,tempeh,boniato,soja,si,si,si,si,no,35,nuevo,Asar el boniato 30 minutos. Cocer el br\xF3coli al vapor y hacer el tempeh a la plancha con el aceite. Pesar el boniato en crudo.,normal
+R476,"Soja texturizada con tomate, calabac\xEDn y arroz",cena,415,26.5,11.6,55.4,EJEMPLO,unico,11.87,soja texturizada,arroz,soja,si,si,si,si,no,30,nuevo,"Hidratar la soja texturizada 15 minutos y escurrir. Hervir el arroz. Sofre\xEDr el calabac\xEDn, a\xF1adir la soja y el tomate y cocer 10 minutos; servir con el arroz. Pesar la soja y el arroz en seco.",normal
+R477,Crema de calabac\xEDn con tofu firme y pan sin gluten,cena,390,21.8,22.0,31.9,EJEMPLO,unico,6.45,tofu firme,pan,soja,si,si,si,si,no,25,nuevo,Cocer el calabac\xEDn y triturarlo con el aceite. Hacer el tofu a la plancha en dados y servir sobre la crema con el pan sin gluten tostado.,normal`;
   var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
 R01,garbanzo cocido,140,base,173757,peso cocido,
 R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
@@ -7247,7 +7265,72 @@ R451,patata,200,base,170026,peso crudo,
 R451,cebolla,50,verdura,170000,peso crudo,
 R451,lechuga romana,60,verdura,169247,peso crudo,
 R451,tomate,80,verdura,170457,peso crudo,
-R451,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
+R451,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R460,copos de avena sin gluten,50,base,173904,peso seco,si
+R460,bebida de soja,200,fruta_lacteo,172446,tal cual,
+R460,pl\xE1tano,100,fruta_lacteo,173944,peso comestible,
+R460,canela,1,condimento,171320,tal cual,
+R461,yogur de soja,250,fruta_lacteo,175227,tal cual,si
+R461,copos de avena sin gluten,40,base,173904,peso seco,si
+R461,fresas,100,fruta_lacteo,167762,peso comestible,
+R461,semillas de girasol,15,grasa,170562,peso comestible,
+R462,pan sin gluten,60,base,2707797,tal cual,
+R462,crema de cacahuete,20,grasa,172470,tal cual,
+R462,pl\xE1tano,100,fruta_lacteo,173944,peso comestible,
+R463,tortita de ma\xEDz,40,base,168857,tal cual,
+R463,crema de cacahuete,20,grasa,172470,tal cual,
+R463,manzana,150,fruta_lacteo,171688,peso comestible,
+R464,pan sin gluten,60,base,2707797,tal cual,
+R464,hummus,60,proteina,174289,tal cual,
+R464,tomate,80,verdura,170457,peso crudo,
+R465,copos de avena sin gluten,50,base,173904,peso seco,si
+R465,bebida de soja,150,fruta_lacteo,172446,tal cual,
+R465,compota de manzana,80,fruta_lacteo,171695,tal cual,
+R465,semillas de calabaza,15,grasa,170556,peso comestible,
+R466,yogur de soja,250,fruta_lacteo,175227,tal cual,si
+R466,kiwi,100,fruta_lacteo,168153,peso comestible,
+R466,mandarina,100,fruta_lacteo,169105,peso comestible,
+R466,copos de avena sin gluten,30,base,173904,peso seco,si
+R467,pan sin gluten,50,base,2707797,tal cual,
+R467,tofu firme,100,proteina,172475,peso crudo,
+R467,tomate,80,verdura,170457,peso crudo,
+R467,aceite de oliva,5,grasa,171413,peso a\xF1adido,
+R468,tortita de ma\xEDz,20,base,168857,tal cual,
+R468,hummus,45,proteina,174289,tal cual,
+R468,tomate,60,verdura,170457,peso crudo,
+R469,pan sin gluten,30,base,2707797,tal cual,
+R469,crema de cacahuete,15,grasa,172470,tal cual,
+R469,manzana,100,fruta_lacteo,171688,peso comestible,
+R470,yogur de soja,125,fruta_lacteo,175227,tal cual,si
+R470,fresas,100,fruta_lacteo,167762,peso comestible,
+R470,semillas de calabaza,10,grasa,170556,peso comestible,
+R471,bebida de soja,200,fruta_lacteo,172446,tal cual,
+R471,pl\xE1tano,80,fruta_lacteo,173944,peso comestible,
+R471,crema de cacahuete,10,grasa,172470,tal cual,
+R472,tortita de ma\xEDz,20,base,168857,tal cual,
+R472,tofu firme,75,proteina,172475,peso crudo,
+R472,pimiento rojo,60,verdura,170108,peso crudo,
+R473,yogur de soja,200,fruta_lacteo,175227,tal cual,si
+R473,compota de manzana,100,fruta_lacteo,171695,tal cual,
+R473,canela,1,condimento,171320,tal cual,
+R474,tofu firme,150,proteina,172475,peso crudo,
+R474,quinoa,50,base,168874,peso seco,
+R474,calabac\xEDn,150,verdura,169291,peso crudo,
+R474,pimiento rojo,80,verdura,170108,peso crudo,
+R474,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R475,tempeh,100,proteina,174272,peso crudo,
+R475,boniato,200,base,168482,peso crudo,
+R475,br\xF3coli,150,verdura,170379,peso crudo,
+R475,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R476,soja texturizada,40,proteina,174275,peso seco,si
+R476,tomate triturado,150,verdura,170051,crudo,
+R476,calabac\xEDn,150,verdura,169291,peso crudo,
+R476,arroz,40,base,169756,peso seco,
+R476,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R477,calabac\xEDn,200,verdura,169291,peso crudo,
+R477,tofu firme,100,proteina,172475,peso crudo,
+R477,pan sin gluten,50,base,2707797,tal cual,
+R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
 
   // src/motor/coherencia-nutricional.ts
   var TOLERANCIA_RELATIVA = 0.1;
