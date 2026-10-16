@@ -2010,6 +2010,13 @@ pasta sin gluten,riesgo,si,"pasta de ma\xEDz/arroz; apta solo con declaraci\xF3n
 tortita de ma\xEDz,riesgo,si,"el ma\xEDz no tiene gluten por naturaleza, pero el elaborado puede llevar trazas o mezclas; apto solo con etiqueta \xABsin gluten\xBB (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 polenta,riesgo,si,"harina de ma\xEDz, sin gluten por naturaleza pero con riesgo de contaminaci\xF3n en molino; elegir con etiqueta \xABsin gluten\xBB (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 copos de avena sin gluten,riesgo,si,"la avena se contamina con trigo/cebada en campo y molino; solo apta la certificada \xABsin gluten\xBB (<20 ppm), RE 828/2014; la avena normal no es apta",https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32014R0828
+bebida de soja,riesgo,si,"bebida vegetal elaborada: la soja es apta, pero puede llevar aditivos o aromas seg\xFAn la marca (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+yogur de soja,riesgo,si,"postre vegetal elaborado: la soja es apta, pero la formulaci\xF3n (espesantes, aromas) var\xEDa seg\xFAn la marca (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+soja texturizada,riesgo,si,"elaborado de soja: la legumbre es apta, pero puede contaminarse en la planta o llevar aditivos seg\xFAn la marca (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+compota de manzana,riesgo,si,"pur\xE9 de fruta elaborado: la fruta es apta, pero puede llevar aditivos seg\xFAn la marca (FACE: convencional)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+reques\xF3n,sin_gluten_natural,no,"leche o derivado natural sin azucarar ni sabor, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+semillas de calabaza,sin_gluten_natural,no,"semilla natural, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 `;
 
   // src/motor/gluten.ts
