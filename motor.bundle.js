@@ -68,12 +68,14 @@ var Motor = (() => {
     SEMANAS_MAX: () => SEMANAS_MAX,
     SEMANAS_MIN: () => SEMANAS_MIN,
     SEMANAS_POR_DEFECTO: () => SEMANAS_POR_DEFECTO,
+    TEXTOS_LOGROS: () => TEXTOS_LOGROS,
     TEXTO_NIVEL: () => TEXTO_NIVEL,
     TEXTO_PLAN_PABLO: () => TEXTO_PLAN_PABLO,
     TIPOS_ALERTA: () => TIPOS_ALERTA,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
     UMBRALES_FRENO: () => UMBRALES_FRENO,
+    UMBRALES_LOGROS: () => UMBRALES_LOGROS,
     UMBRAL_FALTA_COMPETICION: () => UMBRAL_FALTA_COMPETICION,
     VERSION_CONSENTIMIENTO_NUBE: () => VERSION_CONSENTIMIENTO_NUBE,
     ZONAS_ICS: () => ZONAS_ICS,
@@ -98,6 +100,7 @@ var Motor = (() => {
     aplicarCompeticion: () => aplicarCompeticion,
     aplicarSustituciones: () => aplicarSustituciones,
     aptitudCeliaca: () => aptitudCeliaca,
+    apuntadoPorDia: () => apuntadoPorDia,
     asignarRecetas: () => asignarRecetas,
     avisoClasificacionSesion: () => avisoClasificacionSesion,
     avisoDietaTerminada: () => avisoDietaTerminada,
@@ -194,6 +197,7 @@ var Motor = (() => {
     firmaPlan: () => firmaPlan,
     formatearListaPendiente: () => formatearListaPendiente,
     frenoBajoPeso: () => frenoBajoPeso,
+    frenoLogros: () => frenoLogros,
     gastoDePrueba: () => gastoDePrueba,
     generarIcs: () => generarIcs,
     generarListaCompra: () => generarListaCompra,
@@ -215,9 +219,12 @@ var Motor = (() => {
     lineasIcs: () => lineasIcs,
     liquidoRecuperacion: () => liquidoRecuperacion,
     listaManualDesdeJson: () => listaManualDesdeJson,
+    lunesDe: () => lunesDe,
     lunesDeLaSemana: () => lunesDeLaSemana,
     lunesDelInicio: () => lunesDelInicio,
     marcarYaEnCasa: () => marcarYaEnCasa,
+    medallasDia: () => medallasDia,
+    medallasNuevas: () => medallasNuevas,
     medidaCasera: () => medidaCasera,
     medidasDesdeCsv: () => medidasDesdeCsv,
     mezclarAlerta: () => mezclarAlerta,
@@ -249,7 +256,9 @@ var Motor = (() => {
     repartirComidas: () => repartirComidas,
     restriccionesComoApp: () => restriccionesComoApp,
     resultadoBorradoNube: () => resultadoBorradoNube,
+    resumenCincoSemanas: () => resumenCincoSemanas,
     resumenPersonas: () => resumenPersonas,
+    resumenSemana: () => resumenSemana,
     revisarPlanPablo: () => revisarPlanPablo,
     revisarSiguienteGuardada: () => revisarSiguienteGuardada,
     rolIngrediente: () => rolIngrediente,
@@ -7564,6 +7573,119 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
     pablo_con_cambios: "Revisado por Pablo, con cambios tuyos"
   };
 
+  // src/motor/logros.ts
+  var TEXTOS_LOGROS = {
+    nombre: { completo: "D\xEDa completo", proteina: "Prote\xEDna cumplida", sincera: "Sincera" },
+    explica: {
+      completo: "Todas las comidas de hoy hechas o apuntadas (comer fuera tambi\xE9n cuenta).",
+      proteina: "Las comidas de hoy ya suman casi toda la prote\xEDna del plan.",
+      sincera: "Has apuntado una comida fuera con lo que comiste."
+    },
+    aviso: { completo: "\xA1D\xEDa completo!", proteina: "\xA1Prote\xEDna cumplida!", sincera: "\xA1Gracias por apuntarlo!" },
+    titulo: "Mis medallas",
+    semanaRedonda: "Semana redonda",
+    animo: "Cada semana cuenta. Las celebraciones tambi\xE9n son parte de la vida.",
+    sinRegistro: "Sin nada apuntado esa semana.",
+    interruptor: "Ense\xF1ar las medallas"
+  };
+  var UMBRALES_LOGROS = { proteina: 0.9, semanaRedonda: 85 };
+  var LETRA_DIA = ["D", "L", "M", "X", "J", "V", "S"];
+  var letraDe = (iso) => LETRA_DIA[(/* @__PURE__ */ new Date(`${iso}T12:00:00Z`)).getUTCDay()];
+  var isoMasDias = (iso, n) => {
+    const d = /* @__PURE__ */ new Date(`${iso}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+  var lunesDe = (iso) => isoMasDias(iso, -(((/* @__PURE__ */ new Date(`${iso}T12:00:00Z`)).getUTCDay() + 6) % 7));
+  function apuntadoPorDia(hechas, fuera) {
+    const m = /* @__PURE__ */ new Map();
+    const dia = (iso) => {
+      let d = m.get(iso);
+      if (!d) {
+        d = { hechas: /* @__PURE__ */ new Set(), fuera: /* @__PURE__ */ new Map() };
+        m.set(iso, d);
+      }
+      return d;
+    };
+    const esIso = (x) => typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x);
+    if (hechas && typeof hechas === "object") {
+      const h = hechas;
+      if (esIso(h.fecha) && Array.isArray(h.franjas)) {
+        for (const f2 of h.franjas) if (typeof f2 === "string") dia(h.fecha).hechas.add(f2);
+      }
+      if (h.dias && typeof h.dias === "object") {
+        for (const [iso, l] of Object.entries(h.dias)) if (esIso(iso) && Array.isArray(l)) {
+          for (const f2 of l) if (typeof f2 === "string") dia(iso).hechas.add(f2);
+        }
+      }
+    }
+    if (Array.isArray(fuera)) for (const c2 of fuera) {
+      if (!c2 || typeof c2 !== "object") continue;
+      const x = c2;
+      if (!esIso(x.fecha) || typeof x.franja !== "string") continue;
+      dia(x.fecha).fuera.set(x.franja, { texto: typeof x.texto === "string" ? x.texto : "", ...typeof x.proteina === "number" && Number.isFinite(x.proteina) && x.proteina >= 0 ? { proteina: x.proteina } : {} });
+    }
+    return m;
+  }
+  function medallasDia(plan, apuntado) {
+    const sin = { completo: false, proteina: false, sincera: false };
+    if (!plan || !apuntado) return sin;
+    const franjas = plan.franjas.map((f2) => f2.franja);
+    const hechaOFuera = (f2) => apuntado.hechas.has(f2) || apuntado.fuera.has(f2);
+    let prot = 0;
+    for (const f2 of plan.franjas) {
+      if (apuntado.fuera.has(f2.franja)) prot += apuntado.fuera.get(f2.franja).proteina ?? 0;
+      else if (apuntado.hechas.has(f2.franja)) prot += f2.proteina;
+    }
+    return {
+      completo: franjas.length > 0 && franjas.every(hechaOFuera),
+      proteina: plan.proteinaObjetivo > 0 && prot >= UMBRALES_LOGROS.proteina * plan.proteinaObjetivo - 1e-9,
+      sincera: [...apuntado.fuera.values()].some((x) => x.texto.trim().length > 0)
+    };
+  }
+  var PREGUNTAS_FRENO_LOGROS = [2, 3, 4, 9];
+  function frenoLogros(alertas, planEnSuelo = false) {
+    if (planEnSuelo) return true;
+    if (!Array.isArray(alertas)) return false;
+    return alertas.some((a2) => {
+      if (!a2 || typeof a2 !== "object") return false;
+      const x = a2;
+      if (x.freno === true || x.suelo === true) return true;
+      const preguntas = [...Array.isArray(x.disparadores) ? x.disparadores : [], ...Array.isArray(x.contexto) ? x.contexto : []].map((d) => d && typeof d === "object" ? d.pregunta : void 0);
+      return preguntas.some((n) => PREGUNTAS_FRENO_LOGROS.includes(n));
+    });
+  }
+  function resumenSemana(plan, apuntado, lunes, hoyISO) {
+    const fin = isoMasDias(lunes, 6) < hoyISO ? isoMasDias(lunes, 6) : hoyISO;
+    const dias = [...apuntado.keys()].filter((iso) => iso >= lunes && iso <= fin).sort();
+    if (!dias.length) return void 0;
+    let conMedalla = 0, x = 0, y = 0;
+    for (let iso = lunes; iso <= fin; iso = isoMasDias(iso, 1)) {
+      const p = plan[letraDe(iso)];
+      const a2 = apuntado.get(iso);
+      const m = medallasDia(p, a2);
+      if (m.completo || m.proteina || m.sincera) conMedalla++;
+      if (iso < dias[0] || !p) continue;
+      const hecho = p.franjas.filter((f2) => a2 && (a2.hechas.has(f2.franja) || a2.fuera.has(f2.franja))).length;
+      x += hecho;
+      y += iso === hoyISO ? hecho : p.franjas.length;
+    }
+    const pct = y ? Math.round(x / y * 100) : 0;
+    const redonda = y > 0 && pct >= UMBRALES_LOGROS.semanaRedonda;
+    const texto = `${conMedalla} de 7 d\xEDas con alguna medalla \xB7 comidas hechas ${x} de ${y}${y ? ` (${pct} %)` : ""}`;
+    return { lunes, diasConMedalla: conMedalla, hechas: x, total: y, pct, redonda, texto };
+  }
+  function resumenCincoSemanas(plan, apuntado, hoyISO) {
+    const lunes = lunesDe(hoyISO);
+    return [0, 1, 2, 3, 4].map((i) => {
+      const l = isoMasDias(lunes, -7 * i);
+      return { lunes: l, resumen: resumenSemana(plan, apuntado, l, hoyISO) };
+    });
+  }
+  function medallasNuevas(antes, ahora) {
+    return Object.keys(ahora).filter((m) => ahora[m] && !antes[m]);
+  }
+
   // src/motor/centro-alertas.ts
   function alertasSinAtender(alertas, gestion) {
     const hablado = new Set(gestion.filter((g) => g.estado === "hablado").map((g) => g.alerta_id));
@@ -7635,7 +7757,7 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
       return { usuario, alertas: orden, sinAtender: l.filter((a2) => est(a2) !== "hablado").length, ultima: String(orden[0].creada ?? "") };
     }).sort((a2, b) => b.ultima.localeCompare(a2.ultima));
   }
-  var LETRA_DIA = ["D", "L", "M", "X", "J", "V", "S"];
+  var LETRA_DIA2 = ["D", "L", "M", "X", "J", "V", "S"];
   var isoMas = (iso, n) => {
     const d = /* @__PURE__ */ new Date(`${iso}T12:00:00Z`);
     d.setUTCDate(d.getUTCDate() + n);
@@ -7660,7 +7782,7 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
     const lunes = isoMas(hoyISO, -((dow + 6) % 7));
     const conDato = [...porDia.keys()].filter((iso) => iso >= lunes && iso <= hoyISO).sort();
     if (!conDato.length) return void 0;
-    const planDe = (iso) => new Set(asignaciones.filter((a2) => a2.dia === LETRA_DIA[(/* @__PURE__ */ new Date(`${iso}T12:00:00Z`)).getUTCDay()]).map((a2) => a2.franja));
+    const planDe = (iso) => new Set(asignaciones.filter((a2) => a2.dia === LETRA_DIA2[(/* @__PURE__ */ new Date(`${iso}T12:00:00Z`)).getUTCDay()]).map((a2) => a2.franja));
     let x = 0, y = 0;
     for (let iso = conDato[0]; iso <= hoyISO; iso = isoMas(iso, 1)) {
       const plan = planDe(iso);

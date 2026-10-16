@@ -1094,6 +1094,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ${avisoFinHtml}${avisoTerminadaHtml}
       ${previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${bloqueComida}
+      ${medallasHoyHtml(dia, iso)}
       ${bloqueFuera}
       ${bloqueEntreno}
       ${cardCompeticionHtml(dia)}
@@ -1103,6 +1104,72 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (btnFin) btnFin.addEventListener('click', () => { proxima.abierta = true; renderizarListaCompra(); mostrarPanel('compra'); });
   }
   setInterval(() => { if (panelActual === 'hoy' && !document.getElementById('resultado').hidden) pintarHoy(); }, 60000);
+  // #253: medallas del día y resumen de la semana, sin rachas. Salen solas de «Ya he comido» y «He comido fuera»; con un freno
+  // (cribado de forma de comer o conductas compensatorias, freno de bajo peso, suelo de kcal) no sale nada. Se pueden ocultar en Perfil.
+  const CLAVE_MEDALLAS_OCULTAS = 'app-dietas-medallas-ocultas';
+  let medallasOcultas = false;
+  try { medallasOcultas = localStorage.getItem(CLAVE_MEDALLAS_OCULTAS) === '1'; } catch { /* sin almacenamiento: se enseñan */ }
+  let medallasAntes = null; // { iso, m }: para el aviso breve solo cuando se consigue una nueva
+  let avisoMedallaTimer = null;
+  const SVG_MEDALLA = '<svg viewBox="0 0 28 28" aria-hidden="true" focusable="false"><circle cx="14" cy="14" r="11.5"/><path d="M9 14.5l3.2 3.2L19 11"/></svg>';
+  function planLogros() {
+    const p = {};
+    for (const { dia: d, reparto } of vistaSemana.repartosPorDia) {
+      const dPlan = planActual.dias.find((x) => x.dia === d.dia) || d;
+      p[d.dia] = {
+        franjas: reparto.franjas.map((f) => { const a = vistaSemana.recetaPorSlot.get(`${d.dia}|${f.franja}`); return { franja: f.franja, proteina: a ? (Number(a.receta.proteina) || 0) * (a.racionAjustada || 1) : 0 }; }),
+        proteinaObjetivo: Number(dPlan.proteinaG) || 0,
+      };
+    }
+    return p;
+  }
+  function logrosActivos() { return Boolean(vistaSemana && planActual) && !Motor.frenoLogros(leerAlertas(), diasSuelo.length > 0); }
+  function medallasHoyHtml(dia, iso) {
+    const tarjeta = document.getElementById('tarjeta-medallas');
+    const activos = logrosActivos();
+    if (tarjeta) tarjeta.hidden = !activos;
+    const filaMenu = document.querySelector('#perfil-menu [data-ir="medallas"]');
+    if (filaMenu) filaMenu.hidden = !activos;
+    if (!activos) { medallasAntes = null; pintarMedallasPerfil(); return ''; }
+    const plan = planLogros();
+    const apuntado = Motor.apuntadoPorDia(comidasHechas, comidasFuera);
+    const m = Motor.medallasDia(plan[dia], apuntado.get(iso));
+    const nuevas = medallasAntes && medallasAntes.iso === iso ? Motor.medallasNuevas(medallasAntes.m, m) : [];
+    medallasAntes = { iso, m };
+    pintarMedallasPerfil(plan, apuntado, iso);
+    if (medallasOcultas) return '';
+    if (nuevas.length) avisoMedalla(Motor.TEXTOS_LOGROS.aviso[nuevas[0]]);
+    const T = Motor.TEXTOS_LOGROS;
+    const fila = ['completo', 'proteina', 'sincera'].map((k) => `<div class="medalla${m[k] ? ' conseguida' : ''}" data-medalla="${k}" title="${escaparHtml(T.explica[k])}">${SVG_MEDALLA}<span>${escaparHtml(T.nombre[k])}</span><span class="sr-solo">${m[k] ? ': conseguida' : ': todavía no'}</span></div>`).join('');
+    // El domingo, el resumen de la semana también en Hoy.
+    const domingo = new Date(`${iso}T12:00:00`).getDay() === 0;
+    const r = domingo ? Motor.resumenSemana(plan, apuntado, Motor.lunesDe(iso), iso) : undefined;
+    return `<div class="hoy-medallas" role="group" aria-label="Medallas de hoy">${fila}</div>${r ? `<p class="hoy-semana" id="hoy-semana">Esta semana: ${escaparHtml(r.texto)}. <strong>${escaparHtml(r.redonda ? T.semanaRedonda : T.animo)}</strong></p>` : ''}`;
+  }
+  function avisoMedalla(texto) {
+    const a = document.getElementById('medallas-aviso');
+    a.textContent = texto;
+    a.hidden = false;
+    clearTimeout(avisoMedallaTimer);
+    avisoMedallaTimer = setTimeout(() => { a.hidden = true; }, 2600);
+  }
+  function pintarMedallasPerfil(plan, apuntado, iso) {
+    const cont = document.getElementById('medallas-perfil');
+    const ver = document.getElementById('medallas-ver');
+    if (!cont || !ver) return;
+    ver.checked = !medallasOcultas;
+    if (!plan || medallasOcultas) { cont.innerHTML = medallasOcultas ? '<p class="subt">Ocultas. Marca la casilla para volver a verlas.</p>' : ''; return; }
+    const T = Motor.TEXTOS_LOGROS;
+    const semanas = Motor.resumenCincoSemanas(plan, apuntado, iso);
+    const fecha = (l) => `${Number(l.slice(8, 10))}/${Number(l.slice(5, 7))}`;
+    cont.innerHTML = `<ul class="medallas-semanas" id="medallas-semanas">${semanas.map((s, i) => `<li><strong>${i === 0 ? 'Esta semana' : `Semana del ${fecha(s.lunes)}`}</strong>: ${s.resumen ? `${escaparHtml(s.resumen.texto)}${s.resumen.redonda ? ` · <strong>${escaparHtml(T.semanaRedonda)}</strong>` : ''}` : escaparHtml(T.sinRegistro)}</li>`).join('')}</ul>
+      <p class="subt">${escaparHtml(T.animo)} Las medallas salen solas de «Ya he comido» y «He comido fuera». Cada día cuenta por sí solo.</p>`;
+  }
+  document.getElementById('medallas-ver').addEventListener('change', (e) => {
+    medallasOcultas = !e.target.checked;
+    try { if (medallasOcultas) localStorage.setItem(CLAVE_MEDALLAS_OCULTAS, '1'); else localStorage.removeItem(CLAVE_MEDALLAS_OCULTAS); } catch { falloAlmacenamiento(); }
+    pintarHoy();
+  });
 
   // --- Issue #74: catálogo de recetas de EJEMPLO. Fuente única: RECETAS_EJEMPLO (la misma del plan). Explorar no
   // toca la semana; las restricciones del perfil se aplican siempre y nunca se relajan por quedarse sin resultados. ---
@@ -1318,7 +1385,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   }
   // Comidas marcadas como hechas hoy (Pablo, 08/10): «Hoy» pasa a la siguiente cuando la persona lo dice. Solo se guarda el día
   // en curso y solo sirve para eso: no es un registro de lo comido ni cambia el plan. Desde #251, los 14 días anteriores se
-  // guardan en `dias` (solo las franjas marcadas) para que Pablo vea en el centro las comidas hechas de la semana.
+  // guardan en `dias` (solo las franjas marcadas) para que Pablo vea en el centro las comidas hechas de la semana. Desde #253, 42 días:
+  // las medallas enseñan esta semana y las 4 anteriores.
   const CLAVE_HECHAS = 'app-dietas-comidas-hechas';
   let comidasHechas = { fecha: '', franjas: [], dias: {} };
   try {
@@ -1333,7 +1401,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (comidasHechas.fecha !== iso) {
       const dias = { ...comidasHechas.dias };
       if (comidasHechas.fecha && comidasHechas.franjas.length) dias[comidasHechas.fecha] = comidasHechas.franjas;
-      const limite = Motor.fechaLocalISO(new Date(new Date(`${iso}T12:00:00`).getTime() - 14 * 864e5));
+      const limite = Motor.fechaLocalISO(new Date(new Date(`${iso}T12:00:00`).getTime() - 42 * 864e5));
       for (const d of Object.keys(dias)) if (d < limite || d >= iso) delete dias[d];
       comidasHechas = { fecha: iso, franjas: [], dias };
     }

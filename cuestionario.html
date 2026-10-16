@@ -984,7 +984,24 @@
   /* #208 parte 3: el Perfil es un menú de filas y cada una abre su subpantalla, con vuelta atrás. */
   #panel-perfil > [data-sub] { display: none; }
   #panel-perfil[data-vista="datos"] > [data-sub="datos"], #panel-perfil[data-vista="alergias"] > [data-sub="alergias"], #panel-perfil[data-vista="competiciones"] > [data-sub="competiciones"],
-  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"] { display: block; }
+  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"], #panel-perfil[data-vista="medallas"] > [data-sub="medallas"] { display: block; }
+  /* #253: medallas del día (sin rachas). Grises hasta que se consiguen; el aviso no se mueve con «reducir movimiento». */
+  .hoy-medallas { display: flex; gap: 0.5rem; justify-content: space-around; margin-top: 0.6rem; padding: 0.5rem 0.3rem; border: 1px solid var(--borde); border-radius: 12px; }
+  .medalla { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; flex: 1 1 0; min-width: 0; font-size: 0.78rem; color: var(--gris); text-align: center; }
+  .medalla svg { width: 28px; height: 28px; }
+  .medalla svg circle { fill: none; stroke: var(--borde); stroke-width: 2.5; }
+  .medalla svg path { fill: none; stroke: var(--borde); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .medalla.conseguida { color: var(--texto); font-weight: 600; }
+  .medalla.conseguida svg circle { fill: var(--verde); stroke: var(--verde); }
+  .medalla.conseguida svg path { stroke: #fff; }
+  .hoy-semana { margin: 0.5rem 0 0; font-size: 0.9rem; }
+  #medallas-aviso { position: fixed; left: 50%; bottom: 5.5rem; transform: translateX(-50%); background: var(--verde); color: #fff; padding: 0.55rem 1rem; border-radius: 999px; font-weight: 600; z-index: 60; box-shadow: 0 4px 14px rgba(0,0,0,.18); transition: opacity .3s, transform .3s; max-width: calc(100vw - 32px); }
+  #medallas-aviso[hidden] { display: block; opacity: 0; transform: translate(-50%, 0.6rem); pointer-events: none; visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) { #medallas-aviso { transition: none; } #medallas-aviso[hidden] { transform: translateX(-50%); } }
+  .medallas-semanas { list-style: none; padding: 0; margin: 0.4rem 0 0.8rem; }
+  .medallas-semanas li { padding: 0.45rem 0; border-bottom: 1px solid var(--borde); font-size: 0.92rem; }
+  .medallas-semanas li:last-child { border-bottom: 0; }
+  .medallas-interruptor { display: flex; gap: 0.5rem; align-items: center; }
   #panel-perfil:not([data-vista="menu"]) #perfil-menu { display: none; }
   #perfil-menu { padding: 0.3rem 1rem; }
   .perfil-fila { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 52px; padding: 0.7rem 0; border: 0; border-bottom: 1px solid var(--borde); background: none; color: var(--texto); font-size: 1rem; font-weight: 600; text-align: left; }
@@ -1195,6 +1212,7 @@
 
     <section class="panel-app" id="panel-hoy" role="tabpanel" aria-labelledby="tab-hoy">
       <div class="tarjeta" id="hoy-ahora" aria-live="polite"></div>
+      <div id="medallas-aviso" role="status" hidden></div>
     <details class="tarjeta" id="resumen-dia">
       <summary><h2>Resumen del día</h2></summary>
       <div class="dias-chips" id="dias-chips" role="group" aria-label="Elegir día"></div>
@@ -1340,6 +1358,7 @@
         <button type="button" class="perfil-fila" data-ir="competiciones"><span>Mis competiciones</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="alertas" hidden><span>Alertas para Pablo</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="nube" hidden><span>Que Pablo vea mis datos</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="perfil-fila" data-ir="medallas" hidden><span>Mis medallas</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" id="btn-tutorial"><span>Ver el tutorial otra vez</span><span aria-hidden="true">›</span></button>
       </div>
       <button type="button" class="btn-texto" id="perfil-atras" hidden>← Perfil</button>
@@ -1380,6 +1399,11 @@
       <p class="subt">Así la tienes como un icono en la pantalla de inicio y abre aunque no haya cobertura.</p>
       <p class="subt"><strong>iPhone:</strong> en Safari, pulsa Compartir y luego «Añadir a pantalla de inicio». <strong>Android:</strong> en el menú del navegador, «Instalar app».</p>
       <button type="button" class="btn-secundario" id="instalar-boton" hidden>Instalar ahora</button>
+    </div>
+    <div class="tarjeta" id="tarjeta-medallas" data-sub="medallas" hidden>
+      <h2>Mis medallas</h2>
+      <div id="medallas-perfil"></div>
+      <label class="medallas-interruptor"><input type="checkbox" id="medallas-ver" checked> Enseñar las medallas</label>
     </div>
     <details class="tarjeta" id="tarjeta-alertas" data-sub="alertas" hidden open>
       <summary><h2>Alertas para Pablo</h2></summary>
@@ -1501,12 +1525,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=89de252"></script>
-<script src="fuentes.js?v=89de252"></script>
-<script src="motor.bundle.js?v=89de252"></script>
-<script src="cuestionario.js?v=89de252"></script>
-<script src="nube.js?v=89de252"></script>
-<script src="pwa.js?v=89de252"></script>
+<script src="novedades.js?v=6e517db"></script>
+<script src="fuentes.js?v=6e517db"></script>
+<script src="motor.bundle.js?v=6e517db"></script>
+<script src="cuestionario.js?v=6e517db"></script>
+<script src="nube.js?v=6e517db"></script>
+<script src="pwa.js?v=6e517db"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>
