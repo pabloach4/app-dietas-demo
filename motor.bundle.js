@@ -1671,6 +1671,8 @@ var Motor = (() => {
       nombresSoloAlergia: ["leche"],
       alimentos: [
         "leche",
+        "l\xE1cteo",
+        "l\xE1ctea",
         "yogur",
         "queso",
         "nata",
@@ -1700,9 +1702,7 @@ var Motor = (() => {
         "lactoglobulina",
         "lactoalb\xFAmina",
         "caseinato"
-      ],
-      // #227: las alternativas vegetales («yogur de soja», «bebida vegetal de avena») no son lácteo. Su soja o su fruto seco va por su categoría.
-      noSon: ["soja", "vegetal", "avena", "almendra", "arroz", "coco"]
+      ]
     },
     {
       clave: "huevo",
@@ -1827,8 +1827,7 @@ var Motor = (() => {
       nombres: cat.nombres.map(raizAlimento),
       soloAlergia: (cat.nombresSoloAlergia ?? []).map(raizAlimento),
       etiquetas: cat.etiquetas.map(raizAlimento),
-      alimentos: cat.alimentos.map(raizAlimento),
-      noSon: (cat.noSon ?? []).map(raizAlimento)
+      alimentos: cat.alimentos.map(raizAlimento)
     }]));
     return indiceCategorias;
   }
@@ -1863,13 +1862,13 @@ var Motor = (() => {
     if ((receta.alergenos ?? []).some((a2) => c2.etiquetas.includes(raizAlimento(a2)))) return `lleva ${cat.rotulo}`;
     const ingrediente = receta.ingredientes.find((ing) => {
       const nombre = raizAlimento(ing.nombre);
-      return c2.alimentos.some((a2) => contienePalabras(nombre, a2)) && !c2.noSon.some((x) => contienePalabras(nombre, x));
+      return c2.alimentos.some((a2) => contienePalabras(nombre, a2)) && !(cat.clave === "lacteos" && esAlternativaVegetal(ing.nombre));
     });
     if (ingrediente) return `lleva "${ingrediente.nombre}" (${cat.rotulo})`;
     if (esAlergia && cat.aptitud && receta.aptitudes && receta.aptitudes[cat.aptitud] !== "si") return `no consta como apta sin ${cat.rotulo} (pendiente de ficha)`;
     return void 0;
   }
-  var LACTEOS = ["leche", "yogur", "queso", "nata", "mantequilla", "kefir", "cuajada"];
+  var LACTEOS = ["leche", "lacteo", "lactea", "yogur", "queso", "nata", "mantequilla", "kefir", "cuajada"];
   var CARNE_PESCADO = [
     "pollo",
     "pavo",
@@ -1899,13 +1898,19 @@ var Motor = (() => {
     "caballa"
   ];
   var OTROS_NO_VEGANOS = ["huevo", "miel"];
-  var NO_SON_LACTEO = ["soja", "vegetal", "avena", "almendra", "arroz", "coco"];
+  var ALTERNATIVAS_ANOTADAS = /* @__PURE__ */ new Set(["leche de coco"]);
+  function esAlternativaVegetal(nombre) {
+    const n = normalizar3(nombre).replace(/\s+/g, " ").trim();
+    if (ALTERNATIVAS_ANOTADAS.has(n)) return true;
+    if (/\b(con|y)\b/.test(n)) return false;
+    if (/^bebida( |$)/.test(n)) return !/\b(leche|lacte[ao]s?|yogur|kefir|nata|queso)\b/.test(n);
+    return /^(yogur|leche|nata|queso|postre)( vegetal( de [a-z]+)?| de (soja|avena|almendras?|arroz))$/.test(n);
+  }
   function buscarIngrediente(ingredientes, palabras) {
     for (const ing of ingredientes) {
       const n = raizAlimento(ing.nombre);
-      const esLacteo = LACTEOS.some((p) => contienePalabras(n, raizAlimento(p)));
-      if (esLacteo && NO_SON_LACTEO.some((x) => contienePalabras(n, raizAlimento(x))) && !palabras.some((p) => !LACTEOS.includes(p) && contienePalabras(n, raizAlimento(p)))) continue;
-      if (palabras.some((p) => contienePalabras(n, raizAlimento(p)))) return ing.nombre;
+      const lista = esAlternativaVegetal(ing.nombre) ? palabras.filter((p) => !LACTEOS.includes(p)) : palabras;
+      if (lista.some((p) => contienePalabras(n, raizAlimento(p)))) return ing.nombre;
     }
     return void 0;
   }
@@ -3370,6 +3375,13 @@ tortilla de trigo,nevera,si,Criterio de compra indicado por Pablo; no validaci\x
 yogur griego,nevera,no,"No recomendado para conservar textura de yogur al natural; t\xE9cnicamente congelable para batidos/cocina, no prohibici\xF3n sanitaria.",https://ask.fsis.usda.gov/article/How-long-can-you-keep-dairy-products-like-yogurt-milk-and-cheese-in-the-refrigerator;https://www.hogarmania.com/cocina/actualidad/congelar-yogur_1_1155642.html,no
 yogur natural,nevera,no,"No recomendado para conservar textura de yogur al natural; t\xE9cnicamente congelable para batidos/cocina, no prohibici\xF3n sanitaria.",https://ask.fsis.usda.gov/article/How-long-can-you-keep-dairy-products-like-yogurt-milk-and-cheese-in-the-refrigerator;https://www.hogarmania.com/cocina/actualidad/congelar-yogur_1_1155642.html,no
 zanahoria,nevera,si,Se interpreta verdura fresca; preparar/escaldar o cocinar antes de congelar seg\xFAn la verdura; mejor para uso cocinado.,https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/la-congelacion-y-seguridad;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+bebida de soja,despensa,no,"Se supone bebida vegetal UHT estable cerrada; tras abrir, nevera y consumir en pocos d\xEDas seg\xFAn etiqueta. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+yogur de soja,nevera,no,"No recomendado para conservar la textura; t\xE9cnicamente congelable para batidos o cocina, no prohibici\xF3n sanitaria.",https://ask.fsis.usda.gov/article/How-long-can-you-keep-dairy-products-like-yogurt-milk-and-cheese-in-the-refrigerator,no
+soja texturizada,despensa,no,"Seca y bien cerrada, en lugar fresco y seco; puede enranciarse por su residuo graso; revisar etiqueta y estado. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+quinoa,despensa,no,"Seca; guardar cerrada en lugar fresco y seco. Una vez cocida requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+compota de manzana,despensa,si,"Se supone conserva estable cerrada; tras abrir, nevera seg\xFAn etiqueta. Congelar solo fuera del envase y en porciones si la etiqueta lo permite.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+semillas de calabaza,despensa,no,"Secas y bien cerradas; pueden enranciarse; revisar etiqueta y estado. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+semillas de girasol,despensa,no,"Secas y bien cerradas; pueden enranciarse; revisar etiqueta y estado. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
 `;
 
   // src/motor/limites-ingredientes-datos.ts
@@ -3466,6 +3478,13 @@ pi\xF1a,60,240,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S21
 cacao puro en polvo,2,10,condimento,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Peso a\xF1adido neto; propuesta culinaria para una persona, NO m\xEDnimo nutricional ni obligaci\xF3n de a\xF1adirlo. Ajo: referencia diente5g; cacao: cucharada caf\xE94g/postre9g; especias por dosis peque\xF1a de condimento. No escalar para completar kcal. Canela sin especie verificada: no usar m\xE1ximo como umbral toxicol\xF3gico. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 mel\xF3n,125,375,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Crudo neto sin partes no comestibles; propuesta de porci\xF3n peque\xF1a/grande alrededor de tabla4, no l\xEDmites cl\xEDnicos. Pl\xE1tano media unidad; kiwi una unidad; fresas50g como complemento de bol (no raci\xF3n completa); otras frutas admiten media unidad/raci\xF3n. Fresas sin equivalencia de unidades por tama\xF1o variable. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 sand\xEDa,125,375,fruta,"https://scielo.isciii.es/scielo.php?lng=es&nrm=iso&pid=S2174-51452019000400002&script=sci_arttext | Crudo neto sin partes no comestibles; propuesta de porci\xF3n peque\xF1a/grande alrededor de tabla4, no l\xEDmites cl\xEDnicos. Pl\xE1tano media unidad; kiwi una unidad; fresas50g como complemento de bol (no raci\xF3n completa); otras frutas admiten media unidad/raci\xF3n. Fresas sin equivalencia de unidades por tama\xF1o variable. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+bebida de soja,100,500,bebida_vegetal,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Tal cual; m\xEDnimo 100 g como media taza de acompa\xF1amiento; tope 500 g conservado del m\xE9todo (familia \xABBebida vegetal / leche\xBB, tope duro 500 g). Raci\xF3n habitual de uso 200 g. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+yogur de soja,60,250,yogur,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Tal cual; misma banda que yogur natural y yogur griego del cat\xE1logo: m\xEDnimo 60 g como media unidad y tope 250 g del m\xE9todo (familia yogur). Unidad comercial 125 g. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+soja texturizada,30,80,proteina_vegetal_seca,"Sin fuente oficial de raci\xF3n (estimaci\xF3n propia). | Seco, tal cual se pesa antes de hidratar. Referencia nutricional USDA 174275 (harina de soja desgrasada como equivalente aproximado): 50 g secos aportan ~26 g de prote\xEDna; m\xEDnimo 30 g como media raci\xF3n proteica y m\xE1ximo 80 g (~41 g de prote\xEDna, plato muy proteico). Sin tope previo del m\xE9todo. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+quinoa,30,150,cereal_seco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Seco sin cocer, como el arroz: m\xEDnimo 30 g como media raci\xF3n y tope 150 g conservado del m\xE9todo (familia \xABCereal crudo\xBB, tope duro 150 g en crudo). | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+compota de manzana,50,200,fruta_procesada,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Tal cual; m\xEDnimo 50 g como complemento de un bol; m\xE1ximo 200 g como equivalente aproximado a una raci\xF3n de fruta en pur\xE9 (m\xE1s denso que la pieza). Sin tope previo del m\xE9todo. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+semillas de calabaza,10,40,semilla,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Neto sin c\xE1scara; misma banda que los frutos secos del cat\xE1logo (almendra y nueces 10-40 g): m\xEDnimo 10 g culinario para completar un bol, m\xE1ximo 40 g como raci\xF3n grasa del d\xEDa. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+semillas de girasol,10,40,semilla,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Neto sin c\xE1scara; misma banda que los frutos secos del cat\xE1logo (almendra y nueces 10-40 g): m\xEDnimo 10 g culinario para completar un bol, m\xE1ximo 40 g como raci\xF3n grasa del d\xEDa. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 `;
 
   // src/motor/limites-ingredientes.ts
@@ -5552,7 +5571,64 @@ R180,Yogur con cacao puro (acompa\xF1amiento),comida;cena,88,5.3,4.7,8.7,EJEMPLO
 R181,Yogur con miel (acompa\xF1amiento),comida;cena,107,4.4,4.1,14.1,EJEMPLO | fibra base \u22643g,postre,0.02,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
 R182,Tostada blanca con aceite (acompa\xF1amiento),comida;cena,151,3.5,6.3,19.8,EJEMPLO | fibra base \u22643g,postre,1.08,,pan,gluten,si,pendiente_ficha,pendiente_ficha,no,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
 R183,Tostada integral con tomate y aceite (acompa\xF1amiento),comida;cena,156,5.5,6.5,19.4,EJEMPLO | fibraAlta,postre,3.12,,pan,gluten,si,pendiente_ficha,pendiente_ficha,no,no,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
-R184,Almendras y nueces (acompa\xF1amiento),comida;cena,123,3.6,11.5,3.5,EJEMPLO | fibra base \u22643g,postre,1.92,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal`;
+R184,Almendras y nueces (acompa\xF1amiento),comida;cena,123,3.6,11.5,3.5,EJEMPLO | fibra base \u22643g,postre,1.92,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
+R300,Avena cocida en bebida de soja con pl\xE1tano y canela,desayuno;media_manana;merienda,354,13.0,6.5,64.1,EJEMPLO,unico,8.90,copos de avena,avena,gluten;soja,si,si,pendiente_ficha,no,no,10,nuevo,Cocer la avena en la bebida de soja. Servir con el pl\xE1tano en rodajas y la canela. Pesar la avena seca y la fruta en porci\xF3n comestible.,normal
+R301,"Avena con manzana, nueces y bebida de soja",desayuno;media_manana;merienda,410,14.3,16.1,55.5,EJEMPLO,unico,8.64,copos de avena,avena,frutos de c\xE1scara;gluten;soja,si,si,pendiente_ficha,no,no,10,nuevo,Cocer la avena en la bebida de soja y servir con la manzana y las nueces. Pesar la avena seca y la fruta en porci\xF3n comestible.,normal
+R302,Tostada integral de hummus y tomate con yogur de soja,desayuno;media_manana;merienda,394,16.3,15.2,50.6,EJEMPLO,unico,8.60,hummus,pan,gluten;soja;s\xE9samo,si,si,pendiente_ficha,no,no,10,nuevo,"Tostar el pan, untar el hummus y cubrir con el tomate rallado. Servir con el yogur de soja.",normal
+R303,Pan integral con crema de cacahuete y pl\xE1tano,desayuno;media_manana;merienda,385,14.2,13.1,57.2,EJEMPLO,unico,7.80,crema de cacahuete,pan,cacahuete;gluten,si,si,pendiente_ficha,no,no,5,nuevo,"Tostar el pan, untar la crema de cacahuete y cubrir con el pl\xE1tano en rodajas.",normal
+R304,"Yogur de soja con avena, fresas y almendra",desayuno;media_manana;merienda,416,15.0,14.5,58.8,EJEMPLO,unico,8.41,yogur de soja,avena,frutos de c\xE1scara;gluten;soja,si,si,pendiente_ficha,no,no,5,nuevo,Mezclar el yogur con la avena y dejar reposar 10 minutos; servir con las fresas y la almendra picada.,normal
+R305,"Yogur de soja con kiwi, nueces y copos de avena",desayuno;media_manana;merienda,457,14.6,17.0,64.6,EJEMPLO,unico,8.54,yogur de soja,avena,frutos de c\xE1scara;gluten;soja,si,si,pendiente_ficha,no,no,5,nuevo,Mezclar el yogur con la avena y servir con el kiwi y las nueces.,normal
+R306,Avena cocida en bebida de soja con pera y almendra,desayuno;media_manana;merienda,403,15.3,13.7,58.1,EJEMPLO,unico,10.21,copos de avena,avena,frutos de c\xE1scara;gluten;soja,si,si,pendiente_ficha,no,no,10,nuevo,Cocer la avena en la bebida de soja y servir con la pera y la almendra picada.,normal
+R307,Tostada integral de aguacate y tomate con yogur de soja,desayuno;media_manana;merienda,332,12.6,11.8,45.9,EJEMPLO,unico,8.65,yogur de soja,pan,gluten;soja,si,si,pendiente_ficha,no,no,10,nuevo,Tostar el pan y cubrir con el aguacate y el tomate. Servir con el yogur de soja.,normal
+R308,"Avena con mandarina, yogur de soja y canela",desayuno;media_manana;merienda,366,12.3,7.1,65.5,EJEMPLO,unico,7.76,yogur de soja,avena,gluten;soja,si,si,pendiente_ficha,no,no,5,nuevo,"Mezclar el yogur con la avena, servir con la mandarina en gajos y la canela.",normal
+R309,Tostada integral de hummus y pepino con naranja,desayuno;media_manana;merienda,355,13.4,11.3,54.4,EJEMPLO,unico,10.45,hummus,pan,gluten;s\xE9samo,si,si,pendiente_ficha,no,no,5,nuevo,"Tostar el pan, untar el hummus y cubrir con el pepino en rodajas. Servir con la naranja.",normal
+R310,"Yogur de soja con pl\xE1tano, cacao y crema de cacahuete",desayuno;media_manana;merienda,362,12.6,13.5,55.0,EJEMPLO,unico,7.31,yogur de soja,,cacahuete;soja,si,si,pendiente_ficha,pendiente_ficha,no,5,nuevo,Mezclar el yogur con el cacao y servir con el pl\xE1tano y la crema de cacahuete.,normal
+R311,Tostada integral de tempeh a la plancha con tomate,desayuno;media_manana;merienda,329,20.5,13.8,34.1,EJEMPLO,unico,4.80,tempeh,pan,gluten;soja,si,si,pendiente_ficha,no,si,15,nuevo,"Dorar el tempeh en rodajas en la plancha. Tostar el pan, cubrir con el tomate rallado y el tempeh.",normal
+R312,Salteado de tofu con br\xF3coli y arroz,comida;cena,582,34.7,24.1,63.8,EJEMPLO,unico,8.24,tofu firme,cereal,soja,si,si,pendiente_ficha,pendiente_ficha,no,25,nuevo,Cocer el arroz. Saltear el tofu en dados con el br\xF3coli y el ajo; servir sobre el arroz. Pesar el arroz en seco.,normal
+R313,Salteado de tempeh con pimiento y arroz,comida;cena,609,31.0,23.9,73.7,EJEMPLO,unico,5.29,tempeh,cereal,soja,si,si,pendiente_ficha,pendiente_ficha,si,25,nuevo,Cocer el arroz. Saltear el tempeh en tiras con el pimiento y la cebolla; servir sobre el arroz. Pesar el arroz en seco.,normal
+R314,Lentejas estofadas con zanahoria y tomate,comida;cena,409,20.8,11.4,60.6,EJEMPLO | fibraAlta,unico,22.47,lenteja cocida,legumbre,,si,si,pendiente_ficha,pendiente_ficha,no,40,nuevo,"Sofre\xEDr la cebolla, la zanahoria y el ajo; a\xF1adir la lenteja cocida y el tomate triturado y cocer 15 minutos. Pesar la lenteja ya cocida.",normal
+R315,Garbanzos con espinacas al comino,comida;cena,442,21.4,15.9,59.2,EJEMPLO | fibraAlta,unico,19.09,garbanzo cocido,legumbre,,si,si,pendiente_ficha,pendiente_ficha,no,25,nuevo,"Sofre\xEDr el ajo, a\xF1adir las espinacas y luego el garbanzo cocido con el comino; cocer 10 minutos. Pesar el garbanzo ya cocido.",normal
+R316,Tofu a la plancha con boniato asado y jud\xEDa verde,comida;cena,523,31.8,23.5,54.9,EJEMPLO,unico,13.50,tofu firme,patata,soja,si,si,pendiente_ficha,pendiente_ficha,no,40,nuevo,Asar el boniato. Cocer la jud\xEDa verde y hacer el tofu a la plancha con el aceite.,normal
+R317,"Tempeh con calabac\xEDn, tomate y patata",comida;cena,555,32.2,23.9,61.4,EJEMPLO,unico,7.95,tempeh,patata,soja,si,si,pendiente_ficha,pendiente_ficha,no,35,nuevo,Cocer la patata. Saltear el tempeh con el calabac\xEDn y terminar con el tomate; servir con la patata.,normal
+R318,Salteado de soja texturizada con pimiento y arroz,comida;cena,533,32.2,11.3,79.4,EJEMPLO,unico,13.44,soja texturizada,cereal,soja,si,si,pendiente_ficha,pendiente_ficha,no,25,nuevo,Hidratar la soja texturizada. Cocer el arroz y saltear la soja con el pimiento y la cebolla; servir sobre el arroz. Pesar la soja y el arroz en seco.,normal
+R319,"Ensalada templada de lenteja, tomate y aguacate",comida;cena,433,20.6,18.4,52.0,EJEMPLO | fibraAlta,unico,20.85,lenteja cocida,legumbre,,si,si,si,pendiente_ficha,no,15,nuevo,"Mezclar la lenteja cocida con el tomate, el pepino y la cebolla; ali\xF1ar con el aceite y servir con el aguacate. Pesar la lenteja ya cocida.",normal
+R321,Revuelto de tofu con champi\xF1\xF3n y pan integral,comida;cena,539,43.5,28.3,37.2,EJEMPLO,unico,9.35,tofu firme,pan,gluten;soja,si,si,pendiente_ficha,no,no,20,nuevo,"Dorar el champi\xF1\xF3n con el ajo, a\xF1adir el tofu desmigado y cocinar 5 minutos; servir con el pan tostado.",normal
+R322,Alubia blanca guisada con pimiento y tomate,comida;cena,440,22.3,11.4,67.0,EJEMPLO | fibraAlta,unico,18.57,alubia blanca cocida,legumbre,,si,si,pendiente_ficha,pendiente_ficha,no,30,nuevo,"Sofre\xEDr el pimiento y la cebolla, a\xF1adir la alubia cocida y el tomate triturado; cocer 15 minutos. Pesar la alubia ya cocida.",normal
+R323,Guiso de soja texturizada con patata y guisantes,comida;cena,541,37.1,11.5,78.6,EJEMPLO | fibraAlta,unico,21.60,soja texturizada,patata,soja,si,si,pendiente_ficha,pendiente_ficha,no,35,nuevo,"Hidratar la soja texturizada. Sofre\xEDr la cebolla y el ajo, a\xF1adir la patata, la soja y el tomate triturado; cocer 20 minutos y terminar con los guisantes. Pesar la soja en seco.",normal
+R324,Quinoa con verduras asadas y tofu,comida;cena,577,37.2,27.5,53.4,EJEMPLO | fibraAlta,unico,11.25,tofu firme,cereal,soja,si,si,pendiente_ficha,pendiente_ficha,no,30,nuevo,"Cocer la quinoa. Asar el pimiento, el calabac\xEDn y la cebolla; dorar el tofu y servir todo sobre la quinoa. Pesar la quinoa en seco.",normal
+R325,Puchero vegano de garbanzos y verduras,comida;cena,511,19.7,15.3,78.9,EJEMPLO | fibraAlta,unico,20.78,garbanzo cocido,legumbre,,si,si,si,pendiente_ficha,no,60,nuevo,"Cocer la patata, la zanahoria y el puerro; a\xF1adir el garbanzo cocido al final y terminar con el aceite al servir. Pesar el garbanzo ya cocido.",normal
+R326,Pasta con soja texturizada al tomate,comida;cena,576,37.3,12.2,83.6,EJEMPLO,unico,16.15,soja texturizada,cereal,gluten;soja,si,si,pendiente_ficha,no,no,25,nuevo,"Hidratar la soja texturizada. Cocer la pasta en seco pesada. Sofre\xEDr la cebolla y el ajo, a\xF1adir la soja y el tomate triturado; mezclar con la pasta.",normal
+R327,Arroz con verduras y tofu a la plancha,comida;cena,631,36.0,24.3,74.7,EJEMPLO,unico,9.96,tofu firme,cereal,soja,si,si,pendiente_ficha,pendiente_ficha,no,30,nuevo,Cocer el arroz con el piment\xF3n. Saltear el br\xF3coli y el pimiento y hacer el tofu a la plancha; servir junto. Pesar el arroz en seco.,normal
+R328,"Quinoa con tempeh, berenjena y tomate",comida;cena,608,35.7,27.2,63.3,EJEMPLO,unico,11.40,tempeh,cereal,soja,si,si,pendiente_ficha,pendiente_ficha,no,30,nuevo,"Cocer la quinoa. Saltear la berenjena y el tempeh en dados, a\xF1adir el tomate al final; servir sobre la quinoa. Pesar la quinoa en seco.",normal
+R329,Alubia roja guisada con verduras,comida;cena,433,20.4,11.9,66.4,EJEMPLO | fibraAlta,unico,22.55,alubia roja cocida,legumbre,,si,si,pendiente_ficha,pendiente_ficha,no,30,nuevo,"Sofre\xEDr la cebolla, la zanahoria y el pimiento, a\xF1adir la alubia cocida y el tomate triturado; cocer 15 minutos. Pesar la alubia ya cocida.",normal
+R330,"Pasta con berenjena, tomate y almendra",comida;cena,509,15.4,19.3,72.5,EJEMPLO,unico,12.96,pasta,cereal,frutos de c\xE1scara;gluten,si,si,pendiente_ficha,no,no,30,nuevo,"Cocer la pasta. Saltear la berenjena, a\xF1adir el ajo y el tomate triturado; mezclar con la pasta y coronar con la almendra picada. Pesar la pasta en seco.",normal
+R331,Patata asada con ensalada y tofu marinado,comida;cena,565,34.0,23.7,62.8,EJEMPLO,unico,11.99,tofu firme,patata,soja,si,si,pendiente_ficha,pendiente_ficha,no,45,nuevo,Asar la patata. Marinar el tofu con el ajo y el perejil y dorarlo en la plancha; servir con la lechuga y el tomate ali\xF1ados.,normal
+R332,Yogur de soja con nueces y manzana,media_manana;merienda,282,7.8,13.5,35.2,EJEMPLO,unico,4.21,yogur de soja,,frutos de c\xE1scara;soja,si,si,pendiente_ficha,pendiente_ficha,si,5,nuevo,Mezclar el yogur con la manzana en dados y las nueces.,normal
+R333,Hummus con zanahoria y pepino,media_manana;merienda,198,6.2,11.0,22.2,EJEMPLO | fibraAlta,unico,6.60,hummus,legumbre,s\xE9samo,si,si,pendiente_ficha,pendiente_ficha,no,5,nuevo,Bastones de zanahoria y pepino con el hummus.,normal
+R334,Pan integral con crema de cacahuete y pl\xE1tano,media_manana;merienda,287,10.4,9.7,43.0,EJEMPLO,unico,5.83,crema de cacahuete,pan,cacahuete;gluten,si,si,pendiente_ficha,no,si,5,nuevo,Untar el pan con la crema de cacahuete y cubrir con el pl\xE1tano en rodajas.,normal
+R335,Yogur de soja con fresas y almendra,media_manana;merienda,222,8.1,8.8,29.2,EJEMPLO,unico,4.05,yogur de soja,,frutos de c\xE1scara;soja,si,si,pendiente_ficha,pendiente_ficha,si,5,nuevo,Servir el yogur con las fresas y la almendra picada.,normal
+R336,Tostada integral con tomate y aceite,media_manana;merienda,188,7.1,7.0,25.2,EJEMPLO,unico,4.20,pan integral,pan,gluten,si,si,pendiente_ficha,no,si,5,nuevo,Tostar el pan y cubrir con el tomate rallado y el aceite.,normal
+R337,Pera con nueces y yogur de soja,media_manana;merienda,287,7.9,13.4,36.7,EJEMPLO,unico,4.91,yogur de soja,,frutos de c\xE1scara;soja,si,si,pendiente_ficha,pendiente_ficha,si,5,nuevo,Servir el yogur con la pera en dados y las nueces.,normal
+R340,Tostada integral con tomate y aceite y una naranja,desayuno;media_manana;merienda,296,8.2,12.1,41.3,EJEMPLO | fibraAlta,unico,7.32,aceite de oliva,pan,gluten,si,pendiente_ficha,si,no,no,10,nuevo,"Tostar el pan, untar el tomate y a\xF1adir el aceite. La naranja entera, pelada. Pesar el pan tal cual y la fruta en porci\xF3n comestible.",normal
+R341,Bocadillo integral de pavo con tomate y un pl\xE1tano,desayuno;media_manana;merienda,465,33.4,5.5,72.2,EJEMPLO | fibraAlta,unico,9.92,pechuga de pavo asada,pan,gluten,no,no,si,no,no,10,nuevo,"Abrir el pan, poner el pavo y el tomate en rodajas. El pl\xE1tano de postre. Pesar el pan tal cual y la fruta en porci\xF3n comestible.",normal
+R342,Avena cocida en bebida de soja con pera y canela,desayuno;media_manana;merienda,350,12.4,6.3,64.1,EJEMPLO | fibraAlta,unico,10.95,bebida de soja,avena,gluten;soja,si,pendiente_ficha,si,no,no,10,nuevo,Cocer la avena en la bebida de soja. Servir con la pera en dados y la canela. Pesar la avena seca y la fruta en porci\xF3n comestible.,normal
+R343,Avena con compota de manzana y semillas de calabaza,desayuno;media_manana;merienda,461,19.1,14.9,66.1,EJEMPLO | fibraAlta,unico,9.26,bebida de soja,avena,gluten;soja,si,pendiente_ficha,si,no,no,10,nuevo,Cocer la avena en la bebida de soja. Servir con la compota y las semillas por encima. Pesar la avena seca.,normal
+R344,Tostada integral de at\xFAn y tomate con una mandarina,desayuno;media_manana;merienda,277,18.3,2.9,47.7,EJEMPLO | fibraAlta,unico,6.96,at\xFAn en lata,pan,gluten;pescado,no,no,si,no,no,10,nuevo,"Tostar el pan, untar el tomate y poner el at\xFAn escurrido. La mandarina de postre. Pesar el at\xFAn escurrido.",normal
+R345,Pan integral con hummus y tomate y un kiwi,desayuno;media_manana;merienda,453,17.8,14.6,67.4,EJEMPLO | fibraAlta,unico,13.02,hummus,pan,gluten;s\xE9samo,si,pendiente_ficha,si,no,no,10,nuevo,Untar el hummus en el pan y a\xF1adir el tomate en rodajas. El kiwi de postre. Pesar el pan tal cual.,normal
+R346,"Yogur de soja con avena, fresas y semillas de girasol",desayuno;media_manana;merienda,476,16.6,15.3,71.1,EJEMPLO | fibraAlta,unico,10.64,yogur de soja,avena,gluten;soja,si,pendiente_ficha,si,no,no,5,nuevo,Mezclar el yogur con la avena y dejar reposar 5 minutos. A\xF1adir las fresas y las semillas. Pesar la avena seca.,normal
+R347,"Tostada integral con aguacate, tomate y pavo",desayuno;media_manana;merienda,274,19.7,10.0,27.6,EJEMPLO | fibraAlta,unico,6.95,pechuga de pavo asada,pan,gluten,no,no,si,no,no,10,nuevo,"Tostar el pan, untar el aguacate y cubrir con el tomate y el pavo. Pesar el pan tal cual y el aguacate en porci\xF3n comestible.",normal
+R348,Bocadillo de pan blanco con pavo y tomate y un mel\xF3n,desayuno;media_manana;merienda,322,23.0,3.8,49.2,EJEMPLO,unico,3.96,pechuga de pavo asada,pan,gluten,no,no,si,no,si,10,nuevo,"Abrir el pan, poner el pavo y el tomate. El mel\xF3n de postre. Pesar el pan tal cual y la fruta en porci\xF3n comestible.",normal
+R349,"Avena con pl\xE1tano, cacao y bebida de soja",desayuno;media_manana;merienda,462,17.7,9.2,84.0,EJEMPLO | fibraAlta,unico,13.32,bebida de soja,avena,gluten;soja,si,pendiente_ficha,si,no,no,10,nuevo,Cocer la avena en la bebida de soja con el cacao. Servir con el pl\xE1tano en rodajas. Pesar la avena seca y la fruta en porci\xF3n comestible.,normal
+R350,Tostada de sardina con tomate y una naranja,desayuno;media_manana;merienda,470,34.1,13.4,54.1,EJEMPLO | fibraAlta,unico,9.12,sardina en lata,pan,gluten;pescado,no,no,si,no,no,10,nuevo,"Tostar el pan, untar el tomate y poner las sardinas escurridas. La naranja de postre. Pesar las sardinas escurridas.",normal
+R351,Yogur de soja con mel\xF3n y copos de avena,desayuno;media_manana;merienda,314,10.9,5.9,56.0,EJEMPLO,unico,5.63,yogur de soja,avena,gluten;soja,si,pendiente_ficha,si,no,si,5,nuevo,Servir el yogur con el mel\xF3n en dados y la avena por encima. Pesar la avena seca.,normal
+R352,Tostada integral con pavo y tomate,media_manana;merienda,208,21.7,2.9,23.3,EJEMPLO | fibraAlta,unico,3.60,pechuga de pavo asada,pan,gluten,no,no,si,no,no,5,nuevo,"Tostar el pan, untar el tomate y poner el pavo. Pesar el pan tal cual.",normal
+R353,Yogur de soja con fresas y semillas de girasol,media_manana;merienda,268,9.4,11.7,33.9,EJEMPLO,unico,5.09,yogur de soja,,soja,si,pendiente_ficha,si,pendiente_ficha,si,5,nuevo,Servir el yogur con las fresas y las semillas por encima.,normal
+R354,Pan integral con hummus y pepino,media_manana;merienda,203,8.4,8.6,24.9,EJEMPLO | fibraAlta,unico,4.85,hummus,pan,gluten;s\xE9samo,si,pendiente_ficha,si,no,no,5,nuevo,Untar el hummus en el pan y a\xF1adir el pepino en rodajas. Pesar el pan tal cual.,normal
+R355,Tostada blanca con tomate y aceite y una manzana,media_manana;merienda,211,3.5,6.4,37.5,EJEMPLO,unico,5.01,tomate,pan,gluten,si,pendiente_ficha,si,no,si,5,nuevo,"Tostar el pan, untar el tomate y a\xF1adir el aceite. La manzana entera. Pesar la fruta en porci\xF3n comestible.",normal
+R356,Mini bocadillo de at\xFAn con tomate,media_manana;merienda,180,16.8,2.3,23.3,EJEMPLO | fibraAlta,unico,3.60,at\xFAn en lata,pan,gluten;pescado,no,no,si,no,no,5,nuevo,"Abrir el pan, untar el tomate y poner el at\xFAn escurrido. Pesar el at\xFAn escurrido.",normal
+R357,Pera con yogur de soja y canela,media_manana;merienda,173,3.9,2.4,36.6,EJEMPLO,unico,6.21,yogur de soja,,soja,si,pendiente_ficha,si,pendiente_ficha,no,5,nuevo,Servir la pera en dados con el yogur y la canela. Pesar la fruta en porci\xF3n comestible.,normal
+R358,Pan integral con aguacate y tomate,media_manana;merienda,190,6.4,8.8,23.3,EJEMPLO | fibraAlta,unico,6.35,aguacate,pan,gluten,si,pendiente_ficha,si,no,no,5,nuevo,Untar el aguacate en el pan y a\xF1adir el tomate. Pesar el pan tal cual y el aguacate en porci\xF3n comestible.,normal
+R359,Tostada integral con compota de manzana y canela,media_manana;merienda,181,6.5,1.9,36.5,EJEMPLO | fibraAlta,unico,5.38,compota de manzana,pan,gluten,si,pendiente_ficha,si,no,no,5,nuevo,Tostar el pan y untar la compota con la canela. Pesar el pan tal cual.,normal`;
   var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
 R01,garbanzo cocido,140,base,173757,peso cocido,
 R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
@@ -6291,7 +6367,238 @@ R183,pan integral,40,base,172688,tal cual,
 R183,tomate,60,verdura,170457,crudo,
 R183,aceite de oliva,5,grasa,171413,peso a\xF1adido,
 R184,almendra,10,grasa,170567,tal cual,
-R184,nueces,10,grasa,170187,tal cual,`;
+R184,nueces,10,grasa,170187,tal cual,
+R300,copos de avena,40,base,173904,peso seco,
+R300,bebida de soja,200,fruta_lacteo,172446,tal cual,
+R300,pl\xE1tano,100,fruta_lacteo,173944,peso comestible,
+R300,canela,2,condimento,171320,tal cual,
+R301,copos de avena,40,base,173904,peso seco,
+R301,bebida de soja,200,fruta_lacteo,172446,tal cual,
+R301,manzana,100,fruta_lacteo,171688,peso comestible,
+R301,nueces,15,grasa,170187,tal cual,
+R302,pan integral,60,base,172688,tal cual,
+R302,hummus,60,base,174289,tal cual,
+R302,tomate,100,verdura,170457,peso crudo,
+R302,yogur de soja,125,fruta_lacteo,175227,tal cual,
+R303,pan integral,70,base,172688,tal cual,
+R303,crema de cacahuete,20,grasa,172470,tal cual,
+R303,pl\xE1tano,100,fruta_lacteo,173944,peso comestible,
+R304,yogur de soja,250,fruta_lacteo,175227,tal cual,
+R304,copos de avena,35,base,173904,peso seco,
+R304,fresas,100,fruta_lacteo,167762,peso comestible,
+R304,almendra,15,grasa,170567,tal cual,
+R305,yogur de soja,250,fruta_lacteo,175227,tal cual,
+R305,copos de avena,35,base,173904,peso seco,
+R305,kiwi,100,fruta_lacteo,168153,peso comestible,
+R305,nueces,15,grasa,170187,tal cual,
+R306,copos de avena,40,base,173904,peso seco,
+R306,bebida de soja,200,fruta_lacteo,172446,tal cual,
+R306,pera,100,fruta_lacteo,169118,peso comestible,
+R306,almendra,15,grasa,170567,tal cual,
+R307,pan integral,60,base,172688,tal cual,
+R307,aguacate,50,grasa,171705,peso comestible,
+R307,tomate,100,verdura,170457,peso crudo,
+R307,yogur de soja,125,fruta_lacteo,175227,tal cual,
+R308,yogur de soja,250,fruta_lacteo,175227,tal cual,
+R308,copos de avena,35,base,173904,peso seco,
+R308,mandarina,120,fruta_lacteo,169105,peso comestible,
+R308,canela,2,condimento,171320,tal cual,
+R309,pan integral,60,base,172688,tal cual,
+R309,hummus,50,base,174289,tal cual,
+R309,pepino,100,verdura,168409,peso crudo,
+R309,naranja,150,fruta_lacteo,169097,peso comestible,
+R310,yogur de soja,250,fruta_lacteo,175227,tal cual,
+R310,cacao puro en polvo,8,condimento,169593,tal cual,
+R310,pl\xE1tano,100,fruta_lacteo,173944,peso comestible,
+R310,crema de cacahuete,15,grasa,172470,tal cual,
+R311,pan integral,60,base,172688,tal cual,
+R311,tempeh,60,proteina,174272,tal cual,
+R311,tomate,100,verdura,170457,peso crudo,
+R311,aceite de oliva,5,grasa,171413,tal cual,
+R312,arroz,60,base,169756,peso seco,
+R312,tofu firme,150,proteina,172475,tal cual,
+R312,br\xF3coli,150,verdura,170379,peso crudo,
+R312,ajo,5,condimento,169230,peso crudo,
+R312,aceite de oliva,10,grasa,171413,tal cual,
+R313,arroz,60,base,169756,peso seco,
+R313,tempeh,120,proteina,174272,tal cual,
+R313,pimiento rojo,150,verdura,170108,peso crudo,
+R313,cebolla,80,aromatico,170000,peso crudo,
+R313,aceite de oliva,10,grasa,171413,tal cual,
+R314,lenteja cocida,200,base,172421,peso cocido,
+R314,zanahoria,100,verdura,170393,peso crudo,
+R314,tomate triturado,150,verdura,170051,peso crudo,
+R314,cebolla,60,aromatico,170000,peso crudo,
+R314,aceite de oliva,10,grasa,171413,tal cual,
+R315,garbanzo cocido,180,base,173757,peso cocido,
+R315,espinacas,150,verdura,168462,peso crudo,
+R315,tomate triturado,100,verdura,170051,peso crudo,
+R315,comino,2,condimento,170923,tal cual,
+R315,aceite de oliva,10,grasa,171413,tal cual,
+R316,boniato,200,base,168482,peso crudo,
+R316,tofu firme,150,proteina,172475,tal cual,
+R316,jud\xEDa verde,150,verdura,169961,peso crudo,
+R316,aceite de oliva,10,grasa,171413,tal cual,
+R317,patata,250,base,170026,peso crudo,
+R317,tempeh,120,proteina,174272,tal cual,
+R317,calabac\xEDn,150,verdura,169291,peso crudo,
+R317,tomate,100,verdura,170457,peso crudo,
+R317,aceite de oliva,10,grasa,171413,tal cual,
+R318,arroz,60,base,169756,peso seco,
+R318,soja texturizada,50,proteina,174275,peso seco,si
+R318,pimiento verde,150,verdura,170427,peso crudo,
+R318,cebolla,80,aromatico,170000,peso crudo,
+R318,aceite de oliva,10,grasa,171413,tal cual,
+R319,lenteja cocida,200,base,172421,peso cocido,
+R319,tomate,100,verdura,170457,peso crudo,
+R319,pepino,100,verdura,168409,peso crudo,
+R319,aguacate,50,grasa,171705,peso comestible,
+R319,aceite de oliva,10,grasa,171413,tal cual,
+R321,tofu firme,180,proteina,172475,tal cual,
+R321,champi\xF1\xF3n,150,verdura,169251,peso crudo,
+R321,pan integral,60,base,172688,tal cual,
+R321,ajo,5,condimento,169230,peso crudo,
+R321,aceite de oliva,10,grasa,171413,tal cual,
+R322,alubia blanca cocida,200,base,175203,peso cocido,
+R322,pimiento rojo,100,verdura,170108,peso crudo,
+R322,tomate triturado,150,verdura,170051,peso crudo,
+R322,cebolla,60,aromatico,170000,peso crudo,
+R322,aceite de oliva,10,grasa,171413,tal cual,
+R323,patata,250,base,170026,peso crudo,
+R323,soja texturizada,50,proteina,174275,peso seco,si
+R323,guisantes,100,verdura,170419,peso crudo,
+R323,tomate triturado,100,verdura,170051,peso crudo,
+R323,aceite de oliva,10,grasa,171413,tal cual,
+R324,quinoa,60,base,168874,peso seco,
+R324,tofu firme,150,proteina,172475,tal cual,
+R324,pimiento rojo,100,verdura,170108,peso crudo,
+R324,calabac\xEDn,150,verdura,169291,peso crudo,
+R324,aceite de oliva,10,grasa,171413,tal cual,
+R325,garbanzo cocido,180,base,173757,peso cocido,
+R325,zanahoria,100,verdura,170393,peso crudo,
+R325,puerro,100,aromatico,169246,peso crudo,
+R325,repollo,100,verdura,169975,peso crudo,
+R325,aceite de oliva,10,grasa,171413,tal cual,
+R326,pasta,70,base,168927,peso seco,
+R326,soja texturizada,50,proteina,174275,peso seco,si
+R326,tomate triturado,200,verdura,170051,peso crudo,
+R326,cebolla,80,aromatico,170000,peso crudo,
+R326,aceite de oliva,10,grasa,171413,tal cual,
+R327,arroz,70,base,169756,peso seco,
+R327,tofu firme,150,proteina,172475,tal cual,
+R327,br\xF3coli,150,verdura,170379,peso crudo,
+R327,pimiento verde,100,verdura,170427,peso crudo,
+R327,aceite de oliva,10,grasa,171413,tal cual,
+R328,quinoa,60,base,168874,peso seco,
+R328,tempeh,120,proteina,174272,tal cual,
+R328,berenjena,200,verdura,169228,peso crudo,
+R328,tomate,100,verdura,170457,peso crudo,
+R328,aceite de oliva,10,grasa,171413,tal cual,
+R329,alubia roja cocida,200,base,175194,peso cocido,
+R329,zanahoria,100,verdura,170393,peso crudo,
+R329,pimiento rojo,100,verdura,170108,peso crudo,
+R329,tomate triturado,150,verdura,170051,peso crudo,
+R329,aceite de oliva,10,grasa,171413,tal cual,
+R330,pasta,70,base,168927,peso seco,
+R330,berenjena,200,verdura,169228,peso crudo,
+R330,tomate triturado,150,verdura,170051,peso crudo,
+R330,almendra,15,grasa,170567,tal cual,
+R330,aceite de oliva,10,grasa,171413,tal cual,
+R331,patata,300,base,170026,peso crudo,
+R331,tofu firme,150,proteina,172475,tal cual,
+R331,lechuga hoja verde,80,verdura,169249,peso crudo,
+R331,tomate,100,verdura,170457,peso crudo,
+R331,aceite de oliva,10,grasa,171413,tal cual,
+R332,yogur de soja,200,fruta_lacteo,175227,tal cual,
+R332,manzana,100,fruta_lacteo,171688,peso comestible,
+R332,nueces,15,grasa,170187,tal cual,
+R333,hummus,60,base,174289,tal cual,
+R333,zanahoria,100,verdura,170393,peso crudo,
+R333,pepino,100,verdura,168409,peso crudo,
+R334,pan integral,50,base,172688,tal cual,
+R334,crema de cacahuete,15,grasa,172470,tal cual,
+R334,pl\xE1tano,80,fruta_lacteo,173944,peso comestible,
+R335,yogur de soja,200,fruta_lacteo,175227,tal cual,
+R335,fresas,100,fruta_lacteo,167762,peso comestible,
+R335,almendra,10,grasa,170567,tal cual,
+R336,pan integral,50,base,172688,tal cual,
+R336,tomate,100,verdura,170457,peso crudo,
+R336,aceite de oliva,5,grasa,171413,tal cual,
+R337,yogur de soja,200,fruta_lacteo,175227,tal cual,
+R337,pera,100,fruta_lacteo,169118,peso comestible,
+R337,nueces,15,grasa,170187,tal cual,
+R340,pan integral,50,base,172688,tal cual,
+R340,tomate,60,verdura,170457,crudo,
+R340,aceite de oliva,10,grasa,171413,tal cual,
+R340,naranja,150,fruta_lacteo,169097,peso comestible,
+R341,pan integral,110,base,172688,tal cual,
+R341,pechuga de pavo asada,60,proteina,171496,tal cual,
+R341,tomate,60,verdura,170457,crudo,
+R341,pl\xE1tano,100,fruta_lacteo,173944,peso comestible,
+R342,copos de avena,40,base,173904,peso seco,
+R342,bebida de soja,200,fruta_lacteo,172446,tal cual,
+R342,pera,150,fruta_lacteo,169118,peso comestible,
+R342,canela,2,condimento,171320,tal cual,
+R343,copos de avena,60,base,173904,peso seco,
+R343,bebida de soja,200,fruta_lacteo,172446,tal cual,
+R343,compota de manzana,100,fruta_lacteo,171695,tal cual,
+R343,semillas de calabaza,15,grasa,170556,tal cual,
+R344,pan integral,50,base,172688,tal cual,
+R344,at\xFAn en lata,52,proteina,173709,peso escurrido,
+R344,tomate,60,verdura,170457,crudo,
+R344,mandarina,180,fruta_lacteo,169105,peso comestible,
+R345,pan integral,90,base,172688,tal cual,
+R345,hummus,60,proteina,174289,tal cual,
+R345,tomate,60,verdura,170457,crudo,
+R345,kiwi,120,fruta_lacteo,168153,peso comestible,
+R346,yogur de soja,200,proteina,175227,tal cual,si
+R346,copos de avena,55,base,173904,peso seco,
+R346,fresas,150,fruta_lacteo,167762,peso comestible,
+R346,semillas de girasol,15,grasa,170562,tal cual,
+R347,pan integral,50,base,172688,tal cual,
+R347,aguacate,50,grasa,171705,crudo,
+R347,tomate,50,verdura,170457,crudo,
+R347,pechuga de pavo asada,40,proteina,171496,tal cual,
+R348,pan blanco,70,base,174924,tal cual,
+R348,pechuga de pavo asada,50,proteina,171496,tal cual,
+R348,tomate,60,verdura,170457,crudo,
+R348,mel\xF3n,150,fruta_lacteo,169092,peso comestible,
+R349,copos de avena,65,base,173904,peso seco,
+R349,bebida de soja,200,fruta_lacteo,172446,tal cual,
+R349,pl\xE1tano,100,fruta_lacteo,173944,peso comestible,
+R349,cacao puro en polvo,8,condimento,169593,tal cual,
+R350,pan integral,80,base,172688,tal cual,
+R350,sardina en lata,90,proteina,175139,peso escurrido,
+R350,tomate,60,verdura,170457,crudo,
+R350,naranja,150,fruta_lacteo,169097,peso comestible,
+R351,yogur de soja,200,proteina,175227,tal cual,si
+R351,mel\xF3n,200,fruta_lacteo,169092,peso comestible,
+R351,copos de avena,30,base,173904,peso seco,
+R352,pan integral,50,base,172688,tal cual,
+R352,pechuga de pavo asada,50,proteina,171496,tal cual,
+R352,tomate,50,verdura,170457,crudo,
+R353,yogur de soja,200,proteina,175227,tal cual,si
+R353,fresas,150,fruta_lacteo,167762,peso comestible,
+R353,semillas de girasol,15,grasa,170562,tal cual,
+R354,pan integral,40,base,172688,tal cual,
+R354,hummus,40,proteina,174289,tal cual,
+R354,pepino,50,verdura,168409,crudo,
+R355,pan blanco,30,base,174924,tal cual,
+R355,tomate,50,verdura,170457,crudo,
+R355,aceite de oliva,5,grasa,171413,tal cual,
+R355,manzana,150,fruta_lacteo,171688,peso comestible,
+R356,pan integral,50,base,172688,tal cual,
+R356,at\xFAn en lata,52,proteina,173709,peso escurrido,
+R356,tomate,50,verdura,170457,crudo,
+R357,pera,150,fruta_lacteo,169118,peso comestible,
+R357,yogur de soja,125,proteina,175227,tal cual,si
+R357,canela,2,condimento,171320,tal cual,
+R358,pan integral,40,base,172688,tal cual,
+R358,aguacate,50,grasa,171705,crudo,
+R358,tomate,50,verdura,170457,crudo,
+R359,pan integral,50,base,172688,tal cual,
+R359,compota de manzana,120,fruta_lacteo,171695,tal cual,
+R359,canela,2,condimento,171320,tal cual,`;
 
   // src/motor/coherencia-nutricional.ts
   var TOLERANCIA_RELATIVA = 0.1;
