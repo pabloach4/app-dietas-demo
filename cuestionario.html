@@ -983,6 +983,8 @@
 
   /* #208 parte 3: el Perfil es un menú de filas y cada una abre su subpantalla, con vuelta atrás. */
   #panel-perfil > [data-sub] { display: none; }
+  /* #255: campo que falta al pulsar «Siguiente». */
+  [aria-invalid="true"] { border-color: var(--peligro) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--peligro) 25%, transparent); }
   #panel-perfil[data-vista="datos"] > [data-sub="datos"], #panel-perfil[data-vista="alergias"] > [data-sub="alergias"], #panel-perfil[data-vista="competiciones"] > [data-sub="competiciones"],
   #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"], #panel-perfil[data-vista="medallas"] > [data-sub="medallas"] { display: block; }
   /* #253: medallas del día (sin rachas). Grises hasta que se consiguen; el aviso no se mueve con «reducir movimiento». */
@@ -1055,7 +1057,7 @@
           <div class="campo"><label for="edad">Edad</label><input id="edad" type="number" required></div>
         </div>
         <div class="campo"><label for="sexo">Sexo</label>
-          <select id="sexo"><option value="mujer">Mujer</option><option value="hombre">Hombre</option></select>
+          <select id="sexo" required><option value="">Elige…</option><option value="mujer">Mujer</option><option value="hombre">Hombre</option></select>
         </div>
         <label class="check"><input type="checkbox" id="grasa-conocida"> ¿Conoces tu % graso?</label>
         <div id="grasa-detalle" hidden>
@@ -1073,7 +1075,8 @@
       <div class="tarjeta">
         <h2>2. Objetivo y vida diaria</h2>
         <div class="campo"><label for="objetivo">¿Qué buscas?</label>
-          <select id="objetivo">
+          <select id="objetivo" required>
+            <option value="">Elige…</option>
             <option value="perder grasa">Perder grasa</option>
             <option value="mantener">Mantener el peso</option>
             <option value="rendimiento">Mejorar el rendimiento</option>
@@ -1525,12 +1528,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=68c4b64"></script>
-<script src="fuentes.js?v=68c4b64"></script>
-<script src="motor.bundle.js?v=68c4b64"></script>
-<script src="cuestionario.js?v=68c4b64"></script>
-<script src="nube.js?v=68c4b64"></script>
-<script src="pwa.js?v=68c4b64"></script>
+<script src="novedades.js?v=2779ab9"></script>
+<script src="fuentes.js?v=2779ab9"></script>
+<script src="motor.bundle.js?v=2779ab9"></script>
+<script src="cuestionario.js?v=2779ab9"></script>
+<script src="nube.js?v=2779ab9"></script>
+<script src="pwa.js?v=2779ab9"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

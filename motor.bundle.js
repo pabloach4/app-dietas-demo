@@ -783,6 +783,7 @@ var Motor = (() => {
     if (r.altura < 3) return { estado: "incompleto", falta: "altura", mensaje: "La altura va en cent\xEDmetros (por ejemplo, 175), no en metros." };
     if (!esPositivo(r.edad)) return { estado: "incompleto", falta: "edad", mensaje: vacio(r.edad) ? "Falta la edad." : "La edad tiene que ser un n\xFAmero mayor que 0." };
     if (r.sexo !== "hombre" && r.sexo !== "mujer") return { estado: "incompleto", falta: "sexo", mensaje: "Falta el sexo." };
+    if (typeof r.objetivo === "string" && r.objetivo.trim() === "") return { estado: "incompleto", falta: "objetivo", mensaje: "Falta el objetivo." };
     if (r.grasa != null && !(esPositivo(r.grasa) && r.grasa < 100)) {
       return { estado: "incompleto", falta: "grasa", mensaje: "El % graso tiene que ser un n\xFAmero entre 0 y 100. Si no lo sabes, d\xE9jalo sin marcar." };
     }

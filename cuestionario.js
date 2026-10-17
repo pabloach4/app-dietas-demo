@@ -266,7 +266,29 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
   }
 
+  // #255: lo imprescindible de cada paso. Un cuestionario nuevo los trae vacíos: «Siguiente» no avanza sin ellos y señala cuáles faltan.
+  const IMPRESCINDIBLES = { 1: [['peso', 'el peso'], ['altura', 'la altura'], ['edad', 'la edad'], ['sexo', 'el sexo']], 2: [['objetivo', 'el objetivo']] };
+  function faltanDelPaso(n) {
+    const faltan = (IMPRESCINDIBLES[n] || []).filter(([id]) => String(document.getElementById(id).value).trim() === '');
+    for (const [id] of IMPRESCINDIBLES[n] || []) document.getElementById(id).removeAttribute('aria-invalid');
+    for (const [id] of faltan) document.getElementById(id).setAttribute('aria-invalid', 'true');
+    if (!faltan.length) return false;
+    const e = document.getElementById('incompleto');
+    const nombres = faltan.map((x) => x[1]);
+    e.textContent = `Falta ${nombres.length > 1 ? `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}` : nombres[0]}.`;
+    e.hidden = false;
+    avisarIncompleto();
+    document.getElementById(faltan[0][0]).focus();
+    return true;
+  }
+  for (const id of ['peso', 'altura', 'edad', 'sexo', 'objetivo']) {
+    const el = document.getElementById(id);
+    const limpiar = () => { if (String(el.value).trim() !== '') el.removeAttribute('aria-invalid'); };
+    el.addEventListener('input', limpiar);
+    el.addEventListener('change', limpiar);
+  }
   document.getElementById('btn-siguiente').addEventListener('click', () => {
+    if (pasoActual < PASOS.length && faltanDelPaso(pasoActual)) return;
     if (pasoActual < PASOS.length) mostrarPaso(pasoActual + 1);
     else document.getElementById('form-cuestionario').requestSubmit();
   });
@@ -2255,11 +2277,17 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
   // #220 (revisión de coordinación): un cuestionario nuevo arranca con los datos de ejemplo de siempre pero SIN sesiones y sin
   // deporte principal elegido: las sesiones del ejemplo no son de la persona y el plan las usaría sin que lo sepa.
+  // #255 (prueba de campo): tampoco el peso, la altura, la edad, el sexo ni el objetivo del ejemplo: empiezan vacíos («Elige…»).
   function formularioNuevo() {
     cargarEjemplo('general');
     deporteElegido = '';
     marcarDeporte();
     pintarSesiones([]);
+    for (const id of ['peso', 'altura', 'edad', 'sexo', 'objetivo']) {
+      const el = document.getElementById(id);
+      el.value = '';
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
   }
 
   function cargarPerfilGuardadoSiHay() {
@@ -3811,7 +3839,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       document.getElementById('incompleto').hidden = false;
       document.getElementById('incompleto').textContent = resultado.mensaje;
       avisarIncompleto();
-      mostrarPaso(resultado.falta === 'sesiones' ? 3 : 1); // los datos básicos están en el paso 1; las sesiones, en el 3
+      mostrarPaso(resultado.falta === 'sesiones' ? 3 : resultado.falta === 'objetivo' ? 2 : 1); // datos básicos en el paso 1; objetivo en el 2; sesiones en el 3
       return;
     }
     if (resultado.estado === 'elegir_deporte') {
