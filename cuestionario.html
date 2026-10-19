@@ -835,6 +835,9 @@
   #novedades-lista li strong { font-weight: 400; color: var(--gris); font-variant-numeric: tabular-nums; }
   #novedades:focus { outline: none; }
   @media print { #novedades { display: none !important; } }
+  /* #256 (punto 2): nunca debajo del freno ni de la derivación. */
+  body:has(#freno-peso:not([hidden])) #novedades, body:has(#freno-peso:not([hidden])) #novedades-aviso,
+  body:has(#derivar:not([hidden])) #novedades, body:has(#derivar:not([hidden])) #novedades-aviso { display: none !important; }
   /* ===== Tema visual, parte 4 (#153): «Hoy» sencillo. Pablo, 08/10: a la vista, solo lo que toca comer y tres botones
      (receta, cantidades, cambiar); las cifras y las explicaciones, plegadas. Nada de letra pequeña en lo principal. ===== */
   .hoy-fecha { margin-bottom: 0.2rem; }
@@ -1141,14 +1144,17 @@
         <label class="check"><input type="checkbox" id="al-lactosa"> Intolerancia a la lactosa</label>
         <label class="check"><input type="checkbox" id="al-vegetariano"> Vegetariano/a</label>
         <label class="check"><input type="checkbox" id="al-vegano"> Vegano/a</label>
-        <label class="check"><input type="checkbox" id="al-pescado"> Alergia al pescado</label>
-        <div id="al-pescado-seguimiento" class="campo" style="margin-top:0.6rem" hidden>
-          <p style="margin:0 0 0.3rem"><strong>¿Eres alérgico también a los crustáceos (gambas, langostinos, cangrejo…) o a los moluscos (mejillones, almejas, sepia, calamar, pulpo…)?</strong></p>
-          <label class="check"><input type="checkbox" id="al-crustaceos"> Crustáceos (gambas, langostinos, cangrejo…)</label>
-          <label class="check"><input type="checkbox" id="al-moluscos"> Moluscos (mejillones, almejas, sepia, calamar, pulpo…)</label>
-          <div class="campo" style="margin-top:0.4rem"><label for="al-mas">¿A algo más? Indícalo</label><input id="al-mas" type="text" placeholder="p. ej. frutos secos, kiwi"></div>
-        </div>
-        <div class="campo" style="margin-top:0.6rem"><label for="al-otros">Otros alimentos a evitar</label><input id="al-otros" type="text" placeholder="p. ej. frutos secos, marisco, kiwi"></div>
+        <!-- #256 (punto 5): cada alergia con su casilla, siempre visible (antes crustáceos y moluscos solo salían al marcar el pescado). -->
+        <p style="margin:0.6rem 0 0.2rem"><strong>Alergias</strong></p>
+        <label class="check"><input type="checkbox" id="al-pescado"> Pescado</label>
+        <label class="check"><input type="checkbox" id="al-crustaceos"> Crustáceos (gambas, langostinos, cangrejo…)</label>
+        <label class="check"><input type="checkbox" id="al-moluscos"> Moluscos (mejillones, almejas, sepia, calamar, pulpo…)</label>
+        <label class="check"><input type="checkbox" id="al-huevo"> Huevo</label>
+        <label class="check"><input type="checkbox" id="al-frutos-cascara"> Frutos de cáscara (nueces, almendras, avellanas…)</label>
+        <label class="check"><input type="checkbox" id="al-cacahuete"> Cacahuete</label>
+        <label class="check"><input type="checkbox" id="al-soja"> Soja</label>
+        <label class="check"><input type="checkbox" id="al-sesamo"> Sésamo</label>
+        <div class="campo" style="margin-top:0.6rem"><label for="al-otros">Otros alimentos a evitar por alergia</label><input id="al-otros" type="text" placeholder="p. ej. kiwi, apio, mostaza"></div>
       </div>
 
       <div class="tarjeta">
@@ -1257,7 +1263,7 @@
       <ul class="avisos" id="r-avisos"></ul>
       </details>
     </div>
-    <div class="tarjeta" id="tarjeta-notas">
+    <div class="tarjeta" id="tarjeta-notas" hidden>
       <details class="plegable"><summary>Notas del plan</summary>
       <ul class="notas" id="r-notas"></ul>
       </details>
@@ -1528,12 +1534,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=2779ab9"></script>
-<script src="fuentes.js?v=2779ab9"></script>
-<script src="motor.bundle.js?v=2779ab9"></script>
-<script src="cuestionario.js?v=2779ab9"></script>
-<script src="nube.js?v=2779ab9"></script>
-<script src="pwa.js?v=2779ab9"></script>
+<script src="novedades.js?v=5e3e4a5"></script>
+<script src="fuentes.js?v=5e3e4a5"></script>
+<script src="motor.bundle.js?v=5e3e4a5"></script>
+<script src="cuestionario.js?v=5e3e4a5"></script>
+<script src="nube.js?v=5e3e4a5"></script>
+<script src="pwa.js?v=5e3e4a5"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

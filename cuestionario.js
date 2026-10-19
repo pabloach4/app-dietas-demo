@@ -86,7 +86,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // Catálogo de EJEMPLO: una sola fuente en el motor (src/motor/catalogo-ejemplo.ts), compartida con los tests (#66/#103).
   const RECETAS_EJEMPLO_CSV = Motor.RECETAS_CATALOGO_CSV; // catálogo EJEMPLO de 115 recetas (issue #135)
   const RECETAS_EJEMPLO_INGREDIENTES_CSV = Motor.RECETAS_CATALOGO_INGREDIENTES_CSV;
-  const RECETAS_EJEMPLO = Motor.parsearRecetas(RECETAS_EJEMPLO_CSV, RECETAS_EJEMPLO_INGREDIENTES_CSV);
+  // #256 (puntos 26 y 6): los nombres según el perfil (sin celiaquía, «pan»; con ella, «avena sin gluten»). Mismos ids y cifras.
+  const RECETAS_BASE = Motor.parsearRecetas(RECETAS_EJEMPLO_CSV, RECETAS_EJEMPLO_INGREDIENTES_CSV);
+  let RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, false);
   /** Catálogo + las comidas compuestas (primero y segundo) que usa un plan, para la compra y el detalle (issue #131). */
   const catalogoPlan = (asignaciones) => RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
 
@@ -120,21 +122,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
   // Issue #21: cada código de aviso del motor (calcular.ts) en español llano. Si aparece un código
   // nuevo que no está aquí, se cae al texto técnico original (sigue siendo Español, solo más largo).
-  const MENSAJE_LLANO = {
-    menor: '👦 Es menor de edad: esto lo tiene que ver Pablo en persona.',
-    vida_supuesta: '🚶 No se sabe cuánto te mueves en el día a día aparte de entrenar: de momento se ha supuesto poco (sedentario). Si te mueves más, dilo.',
-    ritmo_alto: '⚡ El ritmo de pérdida de peso pedido es alto para hacerlo sin que te lo revisen.',
-    deficit_alto: '⚠️ Con lo que entrenas, este recorte de calorías es grande: se puede perder músculo, no solo grasa.',
-    superavit_alto: '🍔 El extra de calorías para ganar músculo es alto: se gana sobre todo grasa. Conviene bajarlo.',
-    hidrato_bajo: '🔋 Poco hidrato de carbono para lo que entrenas ese día: puede costar rendir y recuperarte.',
-    grasa_baja: '🧈 La grasa de ese día se queda corta.',
-    disponibilidad_baja: '🚨 Muy pocas calorías libres para lo que gastas entrenando: esto hay que hablarlo con Pablo antes de seguir.',
-    disponibilidad_baja_estimada: '⚠️ Con tu % graso estimado (no medido), las calorías libres para lo que entrenas salen bajas: es una estimación, pero conviene comentarlo con Pablo.',
-    disponibilidad_baja_competicion: '🚨 El día de la prueba, con lo que gasta, las calorías libres salen muy bajas: hay que hablarlo con Pablo antes.',
-    disponibilidad_baja_competicion_estimada: '⚠️ El día de la prueba, con tu % graso estimado, las calorías libres salen bajas: es una estimación, pero conviene comentarlo con Pablo.',
-    kcal_bajas: '📉 La media de calorías de la semana es baja para llevarla sin que te la supervisen.',
-    revisar_con_pablo: '🚩 Con estos datos, la dieta bajaría del mínimo seguro. Esto lo tiene que revisar Pablo contigo antes de seguir.',
-  };
+  // #256 (punto 5): casillas de alergia y la palabra que entiende el filtro (la misma que si se escribiera en «Otros»).
+  const CASILLAS_ALERGIA = [['al-pescado', 'pescado'], ['al-crustaceos', 'crustáceos'], ['al-moluscos', 'moluscos'], ['al-huevo', 'huevo'], ['al-frutos-cascara', 'frutos de cáscara'], ['al-cacahuete', 'cacahuete'], ['al-soja', 'soja'], ['al-sesamo', 'sésamo']];
+  // #256 (punto 1): las frases amables de los avisos viven en el motor (Motor.avisosParaPersona); el texto técnico es para Pablo.
 
   const sesionesDiv = document.getElementById('sesiones');
   const franjasDiv = document.getElementById('franjas');
@@ -167,12 +157,6 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     });
   }
 
-  // #198: alergia al pescado → pregunta de seguimiento por marisco, moluscos y «¿a algo más?» (alérgenos distintos).
-  function mostrarSeguimientoPescado() {
-    document.getElementById('al-pescado-seguimiento').hidden = !(document.getElementById('al-pescado').checked || /pescad/i.test(document.getElementById('al-otros').value));
-  }
-  document.getElementById('al-pescado').addEventListener('change', mostrarSeguimientoPescado);
-  document.getElementById('al-otros').addEventListener('input', mostrarSeguimientoPescado);
 
   // --- Cribado de bajo peso y baja energía (#195): preguntas opcionales; si salta un disparador se guarda una alerta para Pablo ---
   // Sin correos ni avisos a nadie: la lista vive en este navegador (Perfil › Alertas para Pablo). A la persona solo se le dice, en neutro, que Pablo hablará con ella.
@@ -234,8 +218,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (freno) freno.textContent = `${Motor.TEXTO_ALERTA_PERSONA} ${llega}`;
   }
   /** ¿Está activa «Que Pablo vea mis datos»? (web/nube.js, solo con ?nube=1, guarda el consentimiento en app-dietas-nube). */
+  // #256 (punto 4): sin la nube ofrecida (sin ?nube=1) la opción no se ve y no se nombra: 'no_ofrecida'.
   function nubeActiva() {
-    if (!Motor.nubeOfrecida(location.search)) return false;
+    if (!Motor.nubeOfrecida(location.search)) return 'no_ofrecida';
     try { const g = JSON.parse(localStorage.getItem('app-dietas-nube') || '{}'); return Boolean(g && g.consentimiento); } catch { return false; }
   }
   /** Evalúa el cribado de lo que se acaba de enviar: guarda la alerta (si salta algún disparador) y deja el mensaje neutro para la persona. */
@@ -577,9 +562,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const alerg = ej.alergias ?? {};
     ['celiaquia', 'lactosa', 'vegetariano', 'vegano'].forEach((k) => { document.getElementById(`al-${k}`).checked = !!alerg[k]; });
     document.getElementById('al-otros').value = alerg.otros ?? '';
-    ['al-pescado', 'al-crustaceos', 'al-moluscos'].forEach((id) => { document.getElementById(id).checked = false; }); // #198: el pescado y su seguimiento no viajan entre ejemplos
-    document.getElementById('al-mas').value = '';
-    mostrarSeguimientoPescado();
+    CASILLAS_ALERGIA.forEach(([id]) => { document.getElementById(id).checked = false; }); // #198, #256.5: las casillas de alergia no viajan entre ejemplos
     document.getElementById('pref-gustan').value = (ej.preferencias ?? {}).gustan ?? '';
     document.getElementById('pref-evitas').value = (ej.preferencias ?? {}).evitan ?? '';
     fusionarEnListaNegra(partirAlimentos((ej.preferencias ?? {}).evitan)); // la lista negra guardada no se pierde: se suma y deja el campo con toda la lista
@@ -642,7 +625,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     });
     if (plan.avisos.length) {
       lineas.push('', 'Avisos:');
-      plan.avisos.forEach((a) => lineas.push(`- ${MENSAJE_LLANO[a.codigo] ?? a.texto}`));
+      Motor.avisosParaPersona(plan.avisos).forEach((t) => lineas.push(`- ${t}`));
     }
     return lineas.join('\n');
   }
@@ -1506,7 +1489,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
   function textoRestricciones(ap) {
     if (!ap) return 'Restricciones del perfil: aún no calculadas.';
-    const lista = [ap.celiaquia && 'celiaquía', ap.lactosa && 'lactosa', ap.vegetariano && 'vegetariano/a', ap.vegano && 'vegano/a', ...ap.evitados.map((e) => `evitas «${e}»`)].filter(Boolean);
+    const deAlergia = new Set(ap.deAlergia || []); // #256.5: una alergia se llama alergia, no «evitas»
+    const lista = [ap.celiaquia && 'celiaquía', ap.lactosa && 'lactosa', ap.vegetariano && 'vegetariano/a', ap.vegano && 'vegano/a', ...ap.evitados.map((e) => (deAlergia.has(e) ? `alergia a «${e}»` : `evitas «${e}»`))].filter(Boolean);
     return lista.length
       ? `Restricciones de tu perfil: ${lista.join(', ')}. Se aplican siempre; si no sale ninguna receta no se rebajan. Encontrar un ingrediente no garantiza que la receta sea segura para ti.`
       : 'Restricciones de tu perfil: ninguna indicada. Esto no garantiza seguridad alimentaria.';
@@ -2413,7 +2397,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         lactosa: document.getElementById('al-lactosa').checked,
         vegetariano: document.getElementById('al-vegetariano').checked,
         vegano: document.getElementById('al-vegano').checked,
-        otros: Motor.textoOtrasAlergias({ otros: document.getElementById('al-otros').value, pescado: document.getElementById('al-pescado').checked, crustaceos: document.getElementById('al-crustaceos').checked, moluscos: document.getElementById('al-moluscos').checked, mas: document.getElementById('al-mas').value }), // #198
+        otros: Motor.textoOtrasAlergias({ otros: document.getElementById('al-otros').value, marcadas: CASILLAS_ALERGIA.filter(([id]) => document.getElementById(id).checked).map(([, palabra]) => palabra) }), // #198, #256.5
       },
       preferencias: { gustan: document.getElementById('pref-gustan').value, evitan: document.getElementById('pref-evitas').value },
       vidaReal: { turnos: document.getElementById('turnos').checked, tiempoCocina: document.getElementById('tiempo-cocina').value },
@@ -3237,7 +3221,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const cambios = [...new Set([...la.keys(), ...ld.keys()])].map((n) => [n, (ld.get(n) ?? 0) - (la.get(n) ?? 0)]).filter(([, d]) => Math.abs(d) > 0.05)
       .map(([n, d]) => `<li>${escaparHtml(n)}: ${d > 0 ? '+' : '−'}${String(Math.abs(Math.round(d * 10) / 10)).replace('.', ',')} g</li>`).join('');
     const ings = Motor.ingredientesDeLaRacion(alt.receta, alt.racionAjustada, Motor.noSeReescala)
-      .map((i) => `<li>${escaparHtml(i.nombre)}: <strong>${String(i.gramosRacion).replace('.', ',')} g</strong>${i.protegido ? ' (no se escala)' : ''}</li>`).join('');
+      .map((i) => `<li>${escaparHtml(i.nombre)}: <strong>${String(i.gramosRacion).replace('.', ',')} g</strong>${i.protegido ? ' (no se escala)' : ''}${avisoGlutenHtml(i.nombre)}</li>`).join(''); // #256.6: el sello, también aquí
     document.getElementById('alt-previa').innerHTML = `
       <div class="cambio-zona" style="margin-top:0.8rem" tabindex="-1" id="alt-previa-caja">
         <strong>Así quedaría: ${escaparHtml(alt.receta.nombre)} (EJEMPLO, ración ${Math.round(alt.racionAjustada * 100)} %)</strong>
@@ -3368,6 +3352,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
     const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
+    RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, Boolean(respuestas.alergias && respuestas.alergias.celiaquia)); // #256.26
     // #189: la próxima dieta guardada se vuelve a comprobar con las restricciones de ahora: lo que ya no vale se quita y se dice.
     if (siguiente) {
       const rev = Motor.revisarSiguienteGuardada(siguiente.recetas, RECETAS_EJEMPLO, alergiasPreferencias);
@@ -3684,6 +3669,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       dias: plan.dias.map((d) => ({ dia: d.dia, tipo: d.tipo, kcal: d.kcal, proteinaG: d.proteinaG, grasaG: d.grasaG, hidratoG: d.hidratoG })),
       asignaciones: asignacionSemana.asignaciones.map((a) => ({ dia: a.dia, franja: a.franja, receta: a.receta, racionAjustada: a.racionAjustada, kcalResultante: a.kcalResultante })),
       huecos: asignacionSemana.huecos.length,
+      // #256 (punto 1): avisos y notas técnicos del cálculo, para Pablo (la persona solo ve las frases amables).
+      avisos: plan.avisos.map((a) => ({ codigo: a.codigo, texto: a.texto })), notas: [...plan.notas],
       // #207: lo que Pablo necesita para editar con seguridad (NO las respuestas del cribado: esas viajan como alertas).
       restricciones: { alergias: respuestas.alergias, evitan: respuestas.preferencias.evitan, gustan: respuestas.preferencias.gustan, listaNegra: [...listaNegra] },
     } }));
@@ -3701,19 +3688,19 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (moluscoSuelto) avisosAlergias.unshift(escaparHtml(moluscoSuelto));
     avisosAlergiasHoy = avisosAlergias; // #189: también se ven al entrar en «Hoy»
     if (panelActual === 'hoy') pintarHoy();
-    document.getElementById('r-avisos').innerHTML = (plan.avisos.length || avisosReparto.length || avisosAlergias.length)
+    const avisosPersona = Motor.avisosParaPersona(plan.avisos);
+    document.getElementById('r-avisos').innerHTML = (avisosPersona.length || avisosReparto.length || avisosAlergias.length)
       ? [
         ...avisosAlergias.map((a) => `<li>${a}<br><small style="opacity:.55">alergias</small></li>`),
-        ...plan.avisos.map((a) => `<li>${MENSAJE_LLANO[a.codigo] ?? a.texto}<br><small style="opacity:.55">${a.codigo}: ${a.texto}</small></li>`),
+        ...Motor.avisosParaPersona(plan.avisos).map((t) => `<li>${t}</li>`),
         ...avisosReparto.map((a) => `<li>${escaparHtml(a)}<br><small style="opacity:.55">reparto</small></li>`),
       ].join('')
       : '<li>Ninguno.</li>';
-    document.getElementById('r-notas').innerHTML = plan.notas.length
-      ? plan.notas.map((n) => `<li>${n}</li>`).join('') : '<li>Ninguna.</li>';
+    // #256 (punto 1): las notas del cálculo (D10, IOC, regla 16bis…) son para Pablo: suben con el plan y la persona no las ve.
+    document.getElementById('tarjeta-notas').hidden = true;
     // Issue #119: avisos y notas van plegados (con su recuento) para no saturar la pantalla; si algún aviso exige revisar con Pablo, se abre solo.
-    document.querySelector('#tarjeta-avisos summary').textContent = `Avisos del plan (${plan.avisos.length + avisosReparto.length + avisosAlergias.length})`;
+    document.querySelector('#tarjeta-avisos summary').textContent = `Avisos del plan (${avisosPersona.length + avisosReparto.length + avisosAlergias.length})`;
     document.querySelector('#tarjeta-avisos details').open = avisosAlergias.length > 0 || plan.avisos.some((a) => ['revisar_con_pablo', 'disponibilidad_baja', 'disponibilidad_baja_estimada', 'disponibilidad_baja_competicion', 'disponibilidad_baja_competicion_estimada', 'menor'].includes(a.codigo)); // los que piden hablar con Pablo no pueden quedar plegados (#168)
-    document.querySelector('#tarjeta-notas summary').textContent = `Notas del plan (${plan.notas.length})`;
 
     // Texto legible en vez de volcar el JSON (issue #13): además de verse mal, desbordaba en móvil.
     const al = respuestas.alergias;
@@ -3831,7 +3818,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       descartarPlanAnterior(); // la pantalla de derivación no deja ningún plan anterior visible ni exportable (#99)
       ocultarFormulario();
       document.getElementById('derivar').hidden = false;
-      nubeAlFreno(); document.getElementById('derivar-texto').textContent = '😔 ' + resultado.mensaje;
+      // #256 (punto 3): la derivación deja aviso a Pablo (como el freno) y el texto dice qué pasa ahora, sin cara triste.
+      const alertaDer = Motor.alertaDerivacion({ motivo: resultado.motivo, salud: respuestas.salud || [], edad: respuestas.edad }, new Date().toISOString());
+      if (alertaDer) { guardarAlertas(Motor.anadirAlerta(leerAlertas(), alertaDer)); pintarAlertas(); }
+      nubeAlFreno(); document.getElementById('derivar-texto').textContent = `${resultado.mensaje} ${Motor.TEXTO_ALERTA_PERSONA} ${Motor.textoLlegaAPablo(nubeActiva())}`;
       document.getElementById('derivar').focus();
       return;
     }
@@ -4022,7 +4012,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 })();
 
 // Novedades: la demo publicada trae en novedades.js cuándo se publicó y los últimos cambios, para ver los avances al abrirla.
+// #256 (punto 2): son notas de programador para Pablo: solo con ?novedades=1 en la dirección, nunca para la persona.
 (() => {
+  if (new URLSearchParams(location.search).get('novedades') !== '1') return;
   const n = window.NOVEDADES;
   const caja = document.getElementById('novedades');
   const aviso = document.getElementById('novedades-aviso');

@@ -50,6 +50,8 @@ var Motor = (() => {
     MENSAJE_CELIAQUIA_HOY: () => MENSAJE_CELIAQUIA_HOY,
     MENSAJE_CRIBADO_NEUTRO: () => MENSAJE_CRIBADO_NEUTRO,
     MENSAJE_CRIBADO_PRIORITARIO: () => MENSAJE_CRIBADO_PRIORITARIO,
+    MENSAJE_DERIVACION_SALUD: () => MENSAJE_DERIVACION_SALUD,
+    MENSAJE_LLANO_AVISOS: () => MENSAJE_LLANO_AVISOS,
     MENSAJE_SUELO: () => MENSAJE_SUELO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
     NOTA_PAUTA: () => NOTA_PAUTA,
@@ -84,10 +86,12 @@ var Motor = (() => {
     aMinutos: () => aMinutos2,
     accionReintentoNube: () => accionReintentoNube,
     actividadesDesconocidas: () => actividadesDesconocidas,
+    adaptarNombresGluten: () => adaptarNombresGluten,
     adherenciaSemana: () => adherenciaSemana,
     agruparPorPersona: () => agruparPorPersona,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
     alertaCeliaquia: () => alertaCeliaquia,
+    alertaDerivacion: () => alertaDerivacion,
     alertaFreno: () => alertaFreno,
     alertaParaPablo: () => alertaParaPablo,
     alertaSuelo: () => alertaSuelo,
@@ -108,6 +112,7 @@ var Motor = (() => {
     avisoFinDeLaDieta: () => avisoFinDeLaDieta,
     avisoMoluscoSuelto: () => avisoMoluscoSuelto,
     avisoSoloPescado: () => avisoSoloPescado,
+    avisosParaPersona: () => avisosParaPersona,
     avisosVolumen: () => avisosVolumen,
     bandaPesoServido: () => bandaPesoServido,
     borrarCompeticion: () => borrarCompeticion,
@@ -714,6 +719,23 @@ var Motor = (() => {
     return [nueva, ...resto].slice(0, 30);
   }
 
+  // src/motor/derivacion.ts
+  var MENSAJE_DERIVACION_SALUD = "Con lo que nos cuentas de tu salud, tu plan lo prepara Pablo contigo, en persona, para tener en cuenta todo lo tuyo.";
+  function alertaDerivacion(d, fechaISO) {
+    if (d.motivo === "cribado") return void 0;
+    const declarado = d.salud.map((s) => String(s).trim()).filter(Boolean).join(", ").slice(0, 200);
+    const se\u00F1al = d.motivo === "salud" ? `Derivaci\xF3n por salud: declara \xAB${declarado}\xBB. Sin plan autom\xE1tico: el plan se prepara en consulta.` : `Derivaci\xF3n por edad: ${d.edad ?? "?"} a\xF1os (menor de 18). Sin plan autom\xE1tico: el plan se prepara en consulta.`;
+    return {
+      fecha: fechaISO,
+      prioritaria: true,
+      derivacion: true,
+      disparadores: [{ pregunta: 0, etiqueta: d.motivo === "salud" ? "condicion_salud" : "menor", se\u00F1al }],
+      contexto: [],
+      sinInterpretar: [],
+      firma: `D|${d.motivo}|${d.motivo === "salud" ? declarado.toLowerCase() : d.edad}`
+    };
+  }
+
   // src/motor/perfil-cuestionario.ts
   var EDAD_MINIMA = 18;
   var SIN_CONDICION = /* @__PURE__ */ new Set(["no", "nada", "ninguna", "ninguno", "ningun", "no tengo", "no tengo nada", "no tengo ninguna", "ninguna condicion", "n a", "na"]);
@@ -771,12 +793,9 @@ var Motor = (() => {
   }
   function perfilDesdeCuestionario(r) {
     if (declaraCondicion(r.salud)) {
-      return {
-        estado: "derivar",
-        mensaje: "Esto lo tiene que valorar Pablo en consulta; la app no genera protocolo cl\xEDnico autom\xE1tico."
-      };
+      return { estado: "derivar", motivo: "salud", mensaje: MENSAJE_DERIVACION_SALUD };
     }
-    if (evaluarCribado(r.cribado).derivaPlan) return { estado: "derivar", mensaje: MENSAJE_CRIBADO_PRIORITARIO };
+    if (evaluarCribado(r.cribado).derivaPlan) return { estado: "derivar", motivo: "cribado", mensaje: MENSAJE_CRIBADO_PRIORITARIO };
     const vacio = (v) => v == null || typeof v === "number" && Number.isNaN(v);
     if (!esPositivo(r.peso)) return { estado: "incompleto", falta: "peso", mensaje: vacio(r.peso) ? "Falta el peso." : "El peso tiene que ser un n\xFAmero mayor que 0, en kilos." };
     if (!esPositivo(r.altura)) return { estado: "incompleto", falta: "altura", mensaje: vacio(r.altura) ? "Falta la talla." : "La altura tiene que ser un n\xFAmero mayor que 0, en cent\xEDmetros." };
@@ -788,7 +807,7 @@ var Motor = (() => {
       return { estado: "incompleto", falta: "grasa", mensaje: "El % graso tiene que ser un n\xFAmero entre 0 y 100. Si no lo sabes, d\xE9jalo sin marcar." };
     }
     if (r.edad < EDAD_MINIMA) {
-      return { estado: "derivar", mensaje: `La app es para mayores de ${EDAD_MINIMA} a\xF1os. Si eres menor, tu plan lo tiene que hacer Pablo contigo en consulta.` };
+      return { estado: "derivar", motivo: "edad", mensaje: `La app es para mayores de ${EDAD_MINIMA} a\xF1os. Si eres menor, tu plan lo tiene que hacer Pablo contigo en consulta.` };
     }
     const sesiones = [];
     for (const s of r.sesiones ?? []) {
@@ -2080,7 +2099,7 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
     return { apta: conGluten.length === 0, conGluten, riesgo, sinFila };
   }
   var AVISO_ETIQUETA_GLUTEN = "compra la versi\xF3n con el sello sin gluten";
-  var MENSAJE_CELIAQUIA_HOY = "Pablo revisar\xE1 tu plan personalmente; mientras, en la compra f\xEDjate en las etiquetas marcadas.";
+  var MENSAJE_CELIAQUIA_HOY = "Pablo revisar\xE1 tu plan personalmente. Mientras, en los productos marcados de la compra busca el sello \xABsin gluten\xBB o la espiga barrada.";
   function alertaCeliaquia(fechaISO) {
     return {
       fecha: fechaISO,
@@ -2091,6 +2110,19 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
       sinInterpretar: [],
       firma: "C|celiaquia"
     };
+  }
+  var quitarSinGluten = (t2) => t2.replace(/\s+sin gluten\b/gi, "");
+  var avenaSinGluten = (t2) => t2.replace(/\bavena\b(?!\s+sin gluten)/gi, (m) => `${m} sin gluten`);
+  function adaptarNombresGluten(recetas, celiaquia) {
+    return recetas.map((r) => {
+      if (celiaquia) {
+        const conAvena = r.ingredientes.some((i) => /\bavena\b/i.test(i.nombre));
+        if (!conAvena) return r;
+        return { ...r, nombre: avenaSinGluten(r.nombre), ingredientes: r.ingredientes.map((i) => ({ ...i, nombre: avenaSinGluten(i.nombre) })) };
+      }
+      if (!/sin gluten/i.test(r.nombre) && !r.ingredientes.some((i) => /sin gluten/i.test(i.nombre))) return r;
+      return { ...r, nombre: quitarSinGluten(r.nombre), ingredientes: r.ingredientes.map((i) => ({ ...i, nombre: quitarSinGluten(i.nombre) })) };
+    });
   }
 
   // src/motor/filtro-alergias.ts
@@ -2292,7 +2324,7 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
     return lecturas;
   }
   function textoOtrasAlergias(c2) {
-    return [c2.otros, c2.pescado ? "pescado" : "", c2.crustaceos ? "crust\xE1ceos" : "", c2.moluscos ? "moluscos" : "", c2.mas].map((t2) => (t2 ?? "").trim()).filter(Boolean).join(", ");
+    return [c2.otros, c2.pescado ? "pescado" : "", c2.crustaceos ? "crust\xE1ceos" : "", c2.moluscos ? "moluscos" : "", c2.mas, ...c2.marcadas ?? []].map((t2) => (t2 ?? "").trim()).filter(Boolean).join(", ");
   }
   var RE_PESCADO = /\bpescad/;
   var RE_MARISCO_O_MOLUSCO = /marisc|crust|molusc|cefalop|sepia|calamar|pulpo|chipiron|gamba|langostin|mejillon|almeja|berberech|cigala|bogavante|nécora|necora|ostra|vieira|navaja|centollo/;
@@ -7580,15 +7612,42 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
   // src/motor/alertas-persona.ts
   var TEXTO_ALERTA_PERSONA = "Pablo revisar\xE1 tus respuestas y hablar\xE1 contigo.";
   var TEXTO_NUBE_ACTIVA = "Pablo ya lo tiene.";
-  var TEXTO_NUBE_INACTIVA = "Cuando actives \xABQue Pablo vea mis datos\xBB, le llegar\xE1 a Pablo.";
-  function textoLlegaAPablo(nubeActiva) {
-    return nubeActiva ? TEXTO_NUBE_ACTIVA : TEXTO_NUBE_INACTIVA;
+  var TEXTO_NUBE_INACTIVA = "Cuando actives \xABQue Pablo vea mis datos\xBB (en Perfil), le llegar\xE1 a Pablo.";
+  var TEXTO_NUBE_NO_OFRECIDA = "Com\xE9ntaselo a Pablo cuando habl\xE9is.";
+  function textoLlegaAPablo(nube) {
+    if (nube === "no_ofrecida") return TEXTO_NUBE_NO_OFRECIDA;
+    return nube ? TEXTO_NUBE_ACTIVA : TEXTO_NUBE_INACTIVA;
+  }
+  function fechaLocal(iso) {
+    if (typeof iso !== "string") return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : "";
+    return `${String(d.getFullYear()).padStart(4, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
   function lineasAlertasPersona(alertas, nubeActiva) {
     return alertas.map((a2) => ({
-      fecha: typeof a2.fecha === "string" ? a2.fecha.slice(0, 10) : "",
+      fecha: fechaLocal(a2.fecha),
       texto: `${TEXTO_ALERTA_PERSONA} ${textoLlegaAPablo(nubeActiva)}`
     }));
+  }
+  var MENSAJE_LLANO_AVISOS = {
+    menor: "\u{1F466} Es menor de edad: esto lo tiene que ver Pablo en persona.",
+    vida_supuesta: "\u{1F6B6} No se sabe cu\xE1nto te mueves en el d\xEDa a d\xEDa aparte de entrenar: de momento se ha supuesto poco (sedentario). Si te mueves m\xE1s, dilo.",
+    ritmo_alto: "\u26A1 El ritmo de p\xE9rdida de peso pedido es alto para hacerlo sin que te lo revisen.",
+    deficit_alto: "\u26A0\uFE0F Con lo que entrenas, este recorte de calor\xEDas es grande: se puede perder m\xFAsculo, no solo grasa.",
+    superavit_alto: "\u{1F354} El extra de calor\xEDas para ganar m\xFAsculo es alto: se gana sobre todo grasa. Conviene bajarlo.",
+    hidrato_bajo: "\u{1F50B} Poco hidrato de carbono para lo que entrenas alg\xFAn d\xEDa: puede costar rendir y recuperarte.",
+    grasa_baja: "\u{1F9C8} La grasa de alg\xFAn d\xEDa se queda corta.",
+    disponibilidad_baja: "\u{1F6A8} Muy pocas calor\xEDas libres para lo que gastas entrenando: esto hay que hablarlo con Pablo antes de seguir.",
+    disponibilidad_baja_estimada: "\u26A0\uFE0F Las calor\xEDas libres para lo que entrenas salen bajas (es una estimaci\xF3n): conviene comentarlo con Pablo.",
+    disponibilidad_baja_competicion: "\u{1F6A8} El d\xEDa de la prueba, con lo que gastas, las calor\xEDas libres salen muy bajas: hay que hablarlo con Pablo antes.",
+    disponibilidad_baja_competicion_estimada: "\u26A0\uFE0F El d\xEDa de la prueba las calor\xEDas libres salen bajas (es una estimaci\xF3n): conviene comentarlo con Pablo.",
+    kcal_bajas: "\u{1F4C9} La media de calor\xEDas de la semana es baja para llevarla sin que te la supervisen.",
+    revisar_con_pablo: "\u{1F6A9} Con estos datos, la dieta bajar\xEDa del m\xEDnimo seguro. Esto lo tiene que revisar Pablo contigo antes de seguir.",
+    dia_muy_alto: "\u{1F4C8} Alg\xFAn d\xEDa come bastante m\xE1s que el resto: lo explica el entreno de ese d\xEDa."
+  };
+  function avisosParaPersona(avisos) {
+    return [...new Set(avisos.map((a2) => MENSAJE_LLANO_AVISOS[a2.codigo]).filter((x) => Boolean(x)))];
   }
 
   // src/motor/logros.ts
@@ -7728,7 +7787,8 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
     cribado: "Cribado",
     freno: "Freno de \xABperder grasa\xBB",
     suelo: "Suelo de kcal",
-    celiaquia: "Celiaqu\xEDa"
+    celiaquia: "Celiaqu\xEDa",
+    derivacion: "Derivaci\xF3n (salud o edad)"
   };
   var datosDe = (a2) => a2.datos && typeof a2.datos === "object" ? a2.datos : {};
   function clasificarAlerta(a2) {
@@ -7736,6 +7796,7 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
     if (d.freno === true) return "freno";
     if (d.suelo === true) return "suelo";
     if (d.celiaquia === true) return "celiaquia";
+    if (d.derivacion === true) return "derivacion";
     return "cribado";
   }
   function motivosAlerta(a2) {
