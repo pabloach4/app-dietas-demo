@@ -2669,6 +2669,11 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     const fijadasPorSlot = /* @__PURE__ */ new Map();
     const catalogoPorId = new Map(recetas.map((r) => [r.id, r]));
     const vecesFijadas = /* @__PURE__ */ new Map();
+    const preferidasPorSlot = /* @__PURE__ */ new Map();
+    for (const p of opciones.preferir ?? []) {
+      const rp = recetaDeId(catalogoPorId, p.receta);
+      if (rp) preferidasPorSlot.set(claveSlotSiOSi(p), rp);
+    }
     for (const p of opciones.fijadas ?? []) {
       const slot = slots.find((s) => s.dia === p.dia && s.franja === p.franja);
       const receta = recetaDeId(catalogoPorId, p.receta);
@@ -2836,8 +2841,13 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       const clave2 = (desv, dist, falta = 0) => desv > slot.kcalObjetivo * 0.1 ? 1e9 + desv : dist * 1e5 + desv + 4 * falta;
       const fijada = fijadasPorSlot.get(claveSlotSiOSi(slot));
       const reservada = fijada ? void 0 : reservas.get(claveSlotSiOSi(slot));
-      let res = fijada ? { elegido: fijada } : reservada ? { elegido: reservada } : intentar(recetas.filter((r) => esUnico(r) && !idsPedidos.has(r.id)), true);
-      if (!fijada && !reservada && (slot.franja === "comida" || slot.franja === "cena") && (!!slot.bandaPeso || !alcanza(res.elegido))) {
+      const preferida = fijada || reservada ? void 0 : preferidasPorSlot.get(claveSlotSiOSi(slot));
+      const conservada = preferida && vale(preferida) && !idsPedidos.has(preferida.id) && !idsDe(preferida).some((id) => evitarIds.has(id)) ? (() => {
+        const e = intentarBase([preferida], false);
+        return e.elegido && alcanza(e.elegido) ? e : void 0;
+      })() : void 0;
+      let res = fijada ? { elegido: fijada } : reservada ? { elegido: reservada } : conservada ?? intentar(recetas.filter((r) => esUnico(r) && !idsPedidos.has(r.id)), true);
+      if (!fijada && !reservada && !conservada && (slot.franja === "comida" || slot.franja === "cena") && (!!slot.bandaPeso || !alcanza(res.elegido))) {
         const primeros = recetas.filter((r) => r.tipoPlato === "primero" && vale(r) && (!limitada || usosDe(r) < maxRep));
         const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
         const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));

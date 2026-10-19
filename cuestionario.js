@@ -531,6 +531,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   }
 
   function cargarEjemplo(clave) {
+    // #259.27: otro ejemplo es otra persona: no se conservan los platos del plan de antes.
+    asignacionSemanaActual = { asignaciones: [], huecos: [], avisos: [] }; ultimaFirmaRespuestas = ''; avisoCambiosVigente = '';
     exigirRevisionPerfil(false); // un ejemplo trae sus propias alergias/salud: no hay nada pendiente de revisar
     rellenarFormulario(EJEMPLOS[clave]);
   }
@@ -2303,6 +2305,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   // #257 (punto 9): empezar de cero (o con otro perfil) borra también las comidas marcadas como hechas: eran del plan anterior y la
   // persona nueva no veía su desayuno en Hoy.
   function olvidarComidasHechas() {
+    asignacionSemanaActual = { asignaciones: [], huecos: [], avisos: [] }; ultimaFirmaRespuestas = ''; avisoCambiosVigente = ''; // #259.27: otra persona
     comidasHechas = { fecha: '', franjas: [], dias: {} };
     porValorar = null;
     try { localStorage.removeItem(CLAVE_HECHAS); } catch { falloAlmacenamiento(); }
@@ -2399,6 +2402,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   let historialMovimientos = []; // issue #38: días afectados de cada movimiento, en el mismo orden que semana.historial (para el mensaje de "Deshacer")
   let mensajeDeshacer = ''; // issue #38: confirmación tras deshacer, con etiquetas de día legibles
   let filasPlanCSV = []; // issue #31: última tabla día/franja calculada, lista para descargar en CSV
+  let ultimaFirmaRespuestas = ''; let avisoCambiosVigente = ''; // #259.27: qué cambió al recalcular con datos nuevos
   let asignacionSemanaActual = { asignaciones: [], huecos: [], avisos: [] }; // issue #35: única asignación de recetas de la semana, compartida por las tarjetas de día y la lista de la compra
   let diasIncluidosCompra = new Set(DIAS); // issue #33: qué días se siguen; por defecto, todos
   let marcadosEnCasa = new Map(); // issue #34/#76: ingrediente → gramos de la dieta cuando se marcó «comprado / ya en casa» (null = marca antigua sin cantidad)
@@ -3447,7 +3451,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       fijadasDePablo = revP.validas;
       quitadasPablo = revP.quitadas;
     }
-    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias) };
+    // #259 (punto 27): al recalcular (por ejemplo, tras cambiar el peso), cada comida conserva su plato si sigue valiendo.
+    const previa = asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta }));
+    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias), ...(previa.length ? { preferir: previa } : {}) };
     const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador);
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
@@ -3477,11 +3483,22 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     }
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     const asignacionSemana = { ...aplicadas.resultado, asignaciones: cuadrado.asignaciones, avisos: [...aplicadas.resultado.avisos, ...cuadrado.avisos] };
+    // #259 (punto 27): al recalcular se dice qué ha cambiado (antes no salía nada y la compra tachada dejaba de servir sin saberlo).
+    const NOMBRE_CAMBIO = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
+    const cambiadas = previa.length ? asignacionSemana.asignaciones.filter((a) => { const x = previa.find((y) => y.dia === a.dia && y.franja === a.franja); return !x || x.receta !== a.receta; }) : [];
+    const firmaRespuestas = JSON.stringify(respuestas);
+    const datosNuevos = Boolean(ultimaFirmaRespuestas) && ultimaFirmaRespuestas !== firmaRespuestas; // un repintado (abrir un horario…) no es un cambio
+    if (datosNuevos || !ultimaFirmaRespuestas) avisoCambiosVigente = '';
+    ultimaFirmaRespuestas = firmaRespuestas;
+    const avisoCambiosPlan = !previa.length || !datosNuevos ? avisoCambiosVigente
+      : !cambiadas.length ? 'Con tus datos nuevos se mantienen todos los platos: solo se ajustan las cantidades.'
+        : `Con tus datos nuevos cambian ${cambiadas.length} de ${asignacionSemana.asignaciones.length} comidas (${cambiadas.slice(0, 6).map((a) => `${NOMBRE_DIA_LARGO[a.dia] ?? a.dia} ${NOMBRE_CAMBIO[a.franja] ?? a.franja}`).join(', ')}${cambiadas.length > 6 ? '…' : ''}); el resto mantiene su plato y solo ajusta las cantidades.`;
+    avisoCambiosVigente = avisoCambiosPlan;
     // #164: la dieta siguiente = la misma semana, procurando no repetir los platos de la actual (mismo cuadre del día).
     dietaSiguienteFn = () => {
       const porId = new Map(RECETAS_EJEMPLO.map((r) => [r.id, r]));
       const evitar = [...new Set(asignacionSemana.asignaciones.flatMap((a) => { const r = Motor.recetaDeId(porId, a.receta); return r ? (r.platos ?? [r.id]) : [a.receta]; }))];
-      const base = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { ...opcionesAsignador, fijadas: fijasPropias, evitar });
+      const base = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { ...opcionesAsignador, preferir: undefined, fijadas: fijasPropias, evitar });
       const rc = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(base.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
       return { ...base, asignaciones: Motor.cuadrarDias(base.asignaciones, slotsSemana, rc, { noMover: enCompeticion, admite: admitePostre }).asignaciones };
     };
@@ -3765,8 +3782,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     avisosAlergiasHoy = avisosAlergias; // #189: también se ven al entrar en «Hoy»
     if (panelActual === 'hoy') pintarHoy();
     const avisosPersona = Motor.avisosParaPersona(plan.avisos);
-    document.getElementById('r-avisos').innerHTML = (avisosPersona.length || avisosReparto.length || avisosAlergias.length)
+    document.getElementById('r-avisos').innerHTML = (avisoCambiosPlan || avisosPersona.length || avisosReparto.length || avisosAlergias.length)
       ? [
+        ...(avisoCambiosPlan ? [`<li id="aviso-cambios-plan">${escaparHtml(avisoCambiosPlan)}</li>`] : []),
         ...avisosAlergias.map((a) => `<li>${a}<br><small style="opacity:.55">alergias</small></li>`),
         ...Motor.avisosParaPersona(plan.avisos).map((t) => `<li>${t}</li>`),
         ...Motor.agruparAvisosPorDia(avisosReparto).map((a) => `<li>${escaparHtml(a)}</li>`), // #259.25: el mismo aviso de varios días, una vez
