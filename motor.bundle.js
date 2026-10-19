@@ -229,6 +229,7 @@ var Motor = (() => {
     lunesDe: () => lunesDe,
     lunesDeLaSemana: () => lunesDeLaSemana,
     lunesDelInicio: () => lunesDelInicio,
+    macrosConRacion: () => macrosConRacion,
     marcarYaEnCasa: () => marcarYaEnCasa,
     medallasDia: () => medallasDia,
     medallasNuevas: () => medallasNuevas,
@@ -255,6 +256,7 @@ var Motor = (() => {
     planDiaCompeticion: () => planDiaCompeticion,
     planPabloAplicable: () => planPabloAplicable,
     plegarLineaIcs: () => plegarLineaIcs,
+    racionEnPalabras: () => racionEnPalabras,
     racionRealistaMinima: () => racionRealistaMinima,
     raizAlimento: () => raizAlimento,
     recetaDeId: () => recetaDeId,
@@ -2376,7 +2378,15 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
     if (!(gramos > 0)) return void 0;
     const suyas = medidas.filter((m) => mismoNombre(m.ingrediente, ingrediente)).sort((a2, b) => b.gramos - a2.gramos);
     if (!suyas.length) return void 0;
-    const texto = (n, m) => `\u2248 ${FRACCIONES[n] ?? String(n)} \xD7 ${m.medida}`;
+    const texto = (n, m) => {
+      const media = /^media\s+(.+)$/i.exec(m.medida);
+      if (!media) return `\u2248 ${FRACCIONES[n] ?? String(n)} \xD7 ${m.medida}`;
+      const u = n / 2;
+      if (u === 0.25) return `\u2248 \xBC de ${media[1]}`;
+      if (u === 0.5) return `\u2248 media ${media[1]}`;
+      if (u === 0.75) return `\u2248 \xBE de ${media[1]}`;
+      return `\u2248 ${FRACCIONES[u] ?? String(u)} \xD7 ${media[1]}`;
+    };
     const [mayor, ...resto] = suyas;
     for (const m of [mayor, ...resto.reverse()]) {
       const n = gramos / m.gramos;
@@ -2391,6 +2401,15 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
       return texto(Math.min(4, Math.round(n * 2) / 2), m);
     }
     return void 0;
+  }
+  function racionEnPalabras(factor) {
+    const c2 = Math.max(1, Math.round(factor * 4));
+    const enteras = Math.floor(c2 / 4);
+    const resto = c2 % 4;
+    const NUM = ["", "una", "dos", "tres", "cuatro"];
+    if (enteras === 0) return resto === 1 ? "un cuarto de raci\xF3n" : resto === 2 ? "media raci\xF3n" : "tres cuartos de raci\xF3n";
+    const base = enteras === 1 ? "una raci\xF3n" : `${NUM[enteras] ?? String(enteras)} raciones`;
+    return resto === 0 ? base : `${base} y ${resto === 1 ? "cuarto" : resto === 2 ? "media" : "tres cuartos"}`;
   }
 
   // src/motor/medidas-caseras-datos.ts
@@ -2915,6 +2934,18 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       (hay("base") ? 4 * receta.hidrato : 0) + (hay("proteina") ? 4 * receta.proteina : 0) + 9 * palancas.filter((i) => rolIngrediente(i.nombre) === "grasa").reduce((t2, i) => t2 + i.gramos, 0)
     );
     return Math.round(receta.kcal + kcalPalancas * (factor - 1));
+  }
+  function macrosConRacion(receta, factor) {
+    const palancas = receta.ingredientes.filter((i) => esPalanca(i.nombre));
+    const hay = (rol) => palancas.some((i) => rolIngrediente(i.nombre) === rol);
+    const grasaPalanca = palancas.filter((i) => rolIngrediente(i.nombre) === "grasa").reduce((t2, i) => t2 + i.gramos, 0);
+    const r12 = (n) => Math.round(n * 10) / 10;
+    if (factor === 1) return { proteina: receta.proteina, grasa: receta.grasa, hidrato: receta.hidrato };
+    return {
+      proteina: r12(receta.proteina * (hay("proteina") ? factor : 1)),
+      grasa: r12(receta.grasa + grasaPalanca * (factor - 1)),
+      hidrato: r12(receta.hidrato * (hay("base") ? factor : 1))
+    };
   }
 
   // src/motor/lista-compra.ts
@@ -4443,9 +4474,10 @@ Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g
       ]
     };
   }
-  function lineasAjuste(plan) {
+  function lineasAjuste(plan, objetivoElegido) {
     const a2 = plan.detalle.ajuste;
     const obj = NOMBRE_OBJETIVO[a2.objetivo] ?? a2.objetivo;
+    if (a2.objetivo === "mantener" && /rendimiento/i.test(objetivoElegido ?? "")) return ["Objetivo \xABmejorar el rendimiento\xBB: para rendir comes lo que gastas; no se a\xF1ade ni se quita nada al gasto."];
     if (a2.objetivo === "mantener") return [`Objetivo \xAB${obj}\xBB: no se a\xF1ade ni se quita nada al gasto.`];
     if (a2.objetivo === "perder_grasa") {
       const l = [
@@ -4458,7 +4490,7 @@ Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g
     if (a2.objetivo === "recomposicion") return [`Objetivo \xAB${obj}\xBB: d\xE9ficit suave del ${f(a2.porcentaje ?? 0)} % del gasto medio = ${f(-a2.kcal)} kcal al d\xEDa.`];
     return [`Objetivo \xAB${obj}\xBB: super\xE1vit del ${f(a2.porcentaje ?? 0, 1)} % del gasto medio = ${f(a2.kcal)} kcal al d\xEDa.`];
   }
-  function explicarKcalMedia(plan) {
+  function explicarKcalMedia(plan, opts = {}) {
     const d = plan.detalle;
     const diferencia = plan.kcalMedia - plan.gastoMedio;
     const sentido = diferencia < -0.5 ? "menos" : diferencia > 0.5 ? "m\xE1s" : "lo mismo";
@@ -4468,7 +4500,7 @@ Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g
         `Diferencia entre las kcal prescritas y tu gasto medio: ${f(diferencia)} kcal/d\xEDa. Sale del ajuste de tu objetivo (${f(d.ajuste.kcal)} kcal/d\xEDa al calcular) m\xE1s el efecto de los l\xEDmites por d\xEDa y del redondeo.`,
         `Gasto de un d\xEDa sin entreno = gasto en reposo (${f(plan.basal.kcal)}) \xD7 actividad diaria ${f(d.pal, 2)} (${d.vidaSupuesta ? "no indicada: se supone sedentaria" : NOMBRE_VIDA[d.vida] ?? d.vida}) = ${f(d.gastoBase)} kcal.`,
         `Cada entreno suma solo el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta, porque el cuerpo compensa el resto durante el d\xEDa.`,
-        ...lineasAjuste(plan),
+        ...lineasAjuste(plan, opts.objetivoElegido),
         `Despu\xE9s se aplican dos l\xEDmites por d\xEDa: ${d.oscilacion.modo === "compresion" ? `las diferencias entre d\xEDas se comprimen hasta ${f(d.oscilacion.maxKcal ?? 0)} kcal` : d.oscilacion.modo === "tope" ? `ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media (tope de seguridad, provisional pendiente del OK de Pablo)` : "sin entrenos no hay diferencias entre d\xEDas que limitar"}, y el suelo de seguridad de ${f(d.suelo)} kcal.`,
         `Las cifras se redondean a decenas de kcal.`
       ]

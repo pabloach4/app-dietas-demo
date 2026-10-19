@@ -124,6 +124,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   // nuevo que no está aquí, se cae al texto técnico original (sigue siendo Español, solo más largo).
   // #256 (punto 5): casillas de alergia y la palabra que entiende el filtro (la misma que si se escribiera en «Otros»).
   const CASILLAS_ALERGIA = [['al-pescado', 'pescado'], ['al-crustaceos', 'crustáceos'], ['al-moluscos', 'moluscos'], ['al-huevo', 'huevo'], ['al-frutos-cascara', 'frutos de cáscara'], ['al-cacahuete', 'cacahuete'], ['al-soja', 'soja'], ['al-sesamo', 'sésamo']];
+  // #257 (punto 8): al marcar «¿Conoces tu % graso?» aparecen el campo y el método (solo se abrían al cargar un perfil o un ejemplo).
+  document.getElementById('grasa-conocida').addEventListener('change', (e) => { document.getElementById('grasa-detalle').hidden = !e.target.checked; });
   // #256 (punto 1): las frases amables de los avisos viven en el motor (Motor.avisosParaPersona); el texto técnico es para Pablo.
 
   const sesionesDiv = document.getElementById('sesiones');
@@ -777,7 +779,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <div class="tarjeta">
           <h3>${nombre}</h3>
           <div class="stat"><div class="n">${plan.kcalMedia}</div><div class="l">kcal media/día (${plan.basal.ecuacion})</div></div>
-          ${porqueHtml(`cmp-${nombre.startsWith('Escenario A') ? 'A' : 'B'}-kcal`, Motor.explicarKcalMedia(plan), '¿Por qué estas kcal?')}
+          ${porqueHtml(`cmp-${nombre.startsWith('Escenario A') ? 'A' : 'B'}-kcal`, Motor.explicarKcalMedia(plan, { objetivoElegido: respuestasActuales && respuestasActuales.objetivo }), '¿Por qué estas kcal?')}
           ${porqueHtml(`cmp-${nombre.startsWith('Escenario A') ? 'A' : 'B'}-ecuacion`, Motor.explicarEcuacion(plan, nombre.startsWith('Escenario A') ? perfilA : perfilB), '¿Por qué esta ecuación?')}
           ${plan.dias.map((d, i) => {
             const otro = otroPlan.dias[i];
@@ -946,7 +948,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <div class="campo" style="margin:0"><label for="periodo-semanas">Esta dieta dura</label>
           <select id="periodo-semanas">${[1, 2, 3, 4].map((n) => `<option value="${n}"${n === periodoDieta.semanas ? ' selected' : ''}>${n} semana${n === 1 ? '' : 's'}</option>`).join('')}</select></div>
         <div class="campo" style="margin:0"><label for="periodo-inicio">Empiezo el</label>
-          <input id="periodo-inicio" type="date" value="${periodoDieta.inicio}"></div>
+          <input id="periodo-inicio" type="date" value="${periodoDieta.inicio}" aria-describedby="periodo-inicio-ayuda"><small class="subt" id="periodo-inicio-ayuda" style="display:block">El día que empezaste esta dieta (por ejemplo, el lunes de esta semana).</small></div>
       </div>
       ${fin ? `<p class="una-linea" id="periodo-fin">Termina el ${fechaLegible(fin)}${hoy ? ` · hoy es la semana ${hoy.semana} de ${hoy.de}` : ''}.</p>` : ''}`;
   }
@@ -1661,7 +1663,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const comidasHtml = reparto.franjas.length ? reparto.franjas.map((f) => {
       const conflicto = reparto.conflictos.filter((c) => c.franja === f.franja).map((c) => `<span class="error-inline">⚠️ ${escaparHtml(textoConflicto(c))}</span>`).join('');
       const asignada = vistaSemana.recetaPorSlot.get(`${dia}|${f.franja}`);
-      const cabecera = `<strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong><span class="fila-sub">${horaFranja(f.franja)}~${f.kcalAprox} kcal</span>`;
+      // #257 (punto 10): las kcal de lo que se come (las del plato), no las del objetivo de la comida.
+      const cabecera = `<strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong><span class="fila-sub">${horaFranja(f.franja)}~${asignada ? asignada.kcalResultante : f.kcalAprox} kcal</span>`;
       return asignada
         ? `<li class="fila"><span class="fila-icono ic-comida" aria-hidden="true"></span><div class="fila-texto">${cabecera}<span class="fila-sub">EJEMPLO: ${asignada.receta.nombre} (${Math.round(asignada.racionAjustada * 100)} %)</span>${conflicto}</div>${botonVerComida(dia, f.franja)}</li>`
         : `<li class="fila hueco"><span class="fila-icono ic-aviso" aria-hidden="true"></span><div class="fila-texto">${cabecera}<span class="fila-aviso">Sin receta de ejemplo que encaje.</span>${conflicto}</div>${botonVerComida(dia, f.franja)}</li>`;
@@ -2241,9 +2244,17 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     try { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(leerFormularioComoEjemplo())); } catch { falloAlmacenamiento(); /* modo privado, etc.: no pasa nada */ }
   }
 
+  // #257 (punto 9): empezar de cero (o con otro perfil) borra también las comidas marcadas como hechas: eran del plan anterior y la
+  // persona nueva no veía su desayuno en Hoy.
+  function olvidarComidasHechas() {
+    comidasHechas = { fecha: '', franjas: [], dias: {} };
+    porValorar = null;
+    try { localStorage.removeItem(CLAVE_HECHAS); } catch { falloAlmacenamiento(); }
+  }
   function borrarPerfilGuardado() {
     try { localStorage.removeItem(CLAVE_GUARDADO); } catch { falloAlmacenamiento(); /* nada que borrar */ }
     document.getElementById('aviso-guardado').hidden = true;
+    olvidarComidasHechas();
     formularioNuevo();
   }
   document.getElementById('empezar-de-cero').addEventListener('click', borrarPerfilGuardado);
@@ -2905,7 +2916,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <li class="dc-ing">
           <span class="dc-ing-nombre">${escaparHtml(i.nombre)}${i.protegido ? ' <small class="dc-ing-nota">no se escala</small>' : ''}${avisoGlutenHtml(i.nombre)}</span>
           <span class="dc-ing-gramos">${String(i.gramosRacion).replace('.', ',')} g${medidaAlLado(i.nombre, i.gramosRacion)}${c ?` <small class="dc-cocido">≈ ${c.gramos} g cocido</small>` : ''}</span>
-          <span class="dc-ing-compra">compra: ${enCompra ? escaparHtml(comprados.get(i.nombre) ?? '—') : 'día fuera de la compra'}</span>
+          <span class="dc-ing-compra">${enCompra ? `en la compra de la semana: ${escaparHtml(comprados.get(i.nombre) ?? '—')}` : 'día fuera de la compra'}</span>
         </li>`;
       }).join('');
       const pasos = Motor.elaboracionEjemplo(asignada.receta.id, asignada.receta);
@@ -2915,20 +2926,22 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         ${verCocido ? '<p class="dc-chiste">Los pesos son en seco. Lo único que tendrías que hacer es sacar el móvil y multiplicar por el factor (arroz ×2,5, pasta ×2,25…), pero tranquilo: para trabajar ya estamos nosotros.</p>' : ''}` : '';
       const vistas = `<div class="dc-vistas" role="group" aria-label="Qué quieres ver de este plato">${[['cantidades', 'Cantidades'], ['receta', 'Receta']].map(([v, t]) => `<button type="button" data-vista="${v}" aria-pressed="${vistaDetalle === v}">${t}</button>`).join('')}</div>`;
       const fila = (letra, clase, objetivo, deLaReceta) => `<tr><th><span class="chip chip-${clase}">${letra}</span></th><td>${objetivo}</td><td>${deLaReceta}</td></tr>`;
+      // #257 (punto 15): se compara con lo que lleva la ración que se come (antes, los macros de la receta base).
+      const servido = Motor.macrosConRacion(asignada.receta, asignada.racionAjustada);
       const cuadre = `
         <table class="dc-cuadre">
-          <thead><tr><th></th><th>Tu objetivo</th><th>Receta de ejemplo</th></tr></thead>
+          <thead><tr><th></th><th>Tu objetivo</th><th>Tu ración</th></tr></thead>
           <tbody>
             <tr class="dc-cuadre-kcal"><th>kcal</th><td><strong>~${f.kcalAprox}</strong></td><td><strong>~${asignada.kcalResultante}</strong></td></tr>
-            ${fila('P', 'p', `${f.proteina} g`, `${nf(asignada.receta.proteina)} g base`)}
-            ${fila('G', 'g', `${f.grasa} g`, `${nf(asignada.receta.grasa)} g base`)}
-            ${fila('H', 'h', `${f.hidrato} g`, `${nf(asignada.receta.hidrato)} g base`)}
+            ${fila('P', 'p', `${f.proteina} g`, `~${nf(servido.proteina)} g`)}
+            ${fila('G', 'g', `${f.grasa} g`, `~${nf(servido.grasa)} g`)}
+            ${fila('H', 'h', `${f.hidrato} g`, `~${nf(servido.hidrato)} g`)}
           </tbody>
         </table>
         ${asignada.ajusteDia ? `<p class="dc-nota">⚖️ ${escaparHtml(asignada.ajusteDia.motivo)}</p>` : ''}
         <p class="dc-nota">La receta usa valores declarados (ración base ${asignada.receta.kcal} kcal), no medidos: sirve para acercarse a las kcal, no para clavar los macros.${asignada.protegidosSinEscalar && asignada.protegidosSinEscalar.length ? ` ${escaparHtml(asignada.protegidosSinEscalar.join(', '))} no se reescala${asignada.protegidosSinEscalar.length > 1 ? 'n' : ''}, así que las cifras son aproximadas.` : ''}</p>`;
       receta = `
-        <h3 class="dc-plato">${escaparHtml(asignada.receta.nombre)} <span class="etq-ejemplo">EJEMPLO</span> <span class="dc-racion">ración ${Math.round(asignada.racionAjustada * 100)} %</span></h3>
+        <h3 class="dc-plato">${escaparHtml(asignada.receta.nombre)} <span class="etq-ejemplo">EJEMPLO</span> <span class="dc-racion">${escaparHtml(Motor.racionEnPalabras(asignada.racionAjustada))}</span></h3>
         ${vistas}
         <div class="dc-parte" data-parte="cantidades"${vistaDetalle === 'cantidades' ? '' : ' hidden'}>
         <div class="dc-ings-cab"><span>Ingrediente</span><span>Lo que comes</span><span>Lo que compras</span></div>
@@ -3224,7 +3237,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       .map((i) => `<li>${escaparHtml(i.nombre)}: <strong>${String(i.gramosRacion).replace('.', ',')} g</strong>${i.protegido ? ' (no se escala)' : ''}${avisoGlutenHtml(i.nombre)}</li>`).join(''); // #256.6: el sello, también aquí
     document.getElementById('alt-previa').innerHTML = `
       <div class="cambio-zona" style="margin-top:0.8rem" tabindex="-1" id="alt-previa-caja">
-        <strong>Así quedaría: ${escaparHtml(alt.receta.nombre)} (EJEMPLO, ración ${Math.round(alt.racionAjustada * 100)} %)</strong>
+        <strong>Así quedaría: ${escaparHtml(alt.receta.nombre)} (EJEMPLO, ${escaparHtml(Motor.racionEnPalabras(alt.racionAjustada))})</strong>
         <p style="margin:0.3rem 0">Ingredientes de esta comida:</p><ul class="resumen-lista">${ings}</ul>
         <p style="margin:0.3rem 0">Efecto en la compra (días elegidos, gramos de la dieta antes de redondear): ${cambios ? '' : 'sin cambios.'}</p>
         ${cambios ? `<ul class="resumen-lista">${cambios}</ul>` : ''}
@@ -3303,7 +3316,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('r-kcalmedia').textContent = plan.kcalMedia;
     document.getElementById('porque-semana').innerHTML =
       porqueHtml('semana-ecuacion', Motor.explicarEcuacion(plan, semana.perfil), '¿Por qué esta ecuación?')
-      + porqueHtml('semana-kcal', Motor.explicarKcalMedia(plan), '¿Por qué estas kcal?');
+      + porqueHtml('semana-kcal', Motor.explicarKcalMedia(plan, { objetivoElegido: respuestas.objetivo }), '¿Por qué estas kcal?'); // #257.16
 
     // Issue #12: que un día con sesión se note a simple vista, aunque el reparto de kcal sea parecido
     // al de descanso (caso "solo fuerza" o actividades que no cuentan como carga, como caminar rápido).
@@ -3762,6 +3775,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   });
   document.getElementById('derivar-reiniciar').addEventListener('click', () => {
     document.getElementById('derivar').hidden = true;
+    olvidarComidasHechas(); // #257.9
     formularioNuevo();
     const peso = document.getElementById('peso');
     if (peso) peso.focus();
