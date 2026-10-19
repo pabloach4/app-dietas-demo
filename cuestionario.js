@@ -411,13 +411,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     fila.innerHTML = `
       ${bloqueDia ? '<select class="s-tipo" aria-label="Tipo de sesión"></select>' : ''}
       <div class="fila2"${bloqueDia ? ' hidden' : ''}>
-        <select class="s-dia">${DIAS.map((d) => `<option value="${d}">${d}</option>`).join('')}</select>
-        <select class="s-deporte">${opcionesDeporteRapido()}</select>
+        <label class="campo-mini"><span>Día</span><select class="s-dia">${DIAS.map((d) => `<option value="${d}">${NOMBRE_DIA_LARGO[d] ?? d}</option>`).join('')}</select></label>
+        <label class="campo-mini"><span>Actividad</span><select class="s-deporte">${opcionesDeporteRapido()}</select></label>
       </div>
-      <select class="s-actividad-completa" hidden>${opcionesActividadCompleta()}</select>
+      <label class="campo-mini campo-completa"><span>Elige la actividad de la lista</span><select class="s-actividad-completa" hidden>${opcionesActividadCompleta()}</select></label>
       <div class="fila2">
-        <input class="s-hora" type="time" title="hora de inicio (para colocar la toma pre/post)">
-        <input class="s-minutos" type="number" min="1" step="1" placeholder="minutos">
+        <!-- #260 (punto 33): etiquetas a la vista (antes la hora no tenía título y solo una ayuda invisible en el móvil). -->
+        <label class="campo-mini"><span>Hora de inicio (opcional)</span><input class="s-hora" type="time"></label>
+        <label class="campo-mini"><span>Minutos</span><input class="s-minutos" type="number" min="1" step="1" placeholder="Ej.: 60"></label>
       </div>
       <div class="campo" style="margin:0.4rem 0 0"><input class="s-nota" type="text" maxlength="120" aria-label="Nombre o estructura de la sesión (opcional)" placeholder="Nombre o estructura (opcional): «4×6 min progresivos, 12,9 km»"></div>
       <button type="button" class="quitar">✕ Quitar esta sesión</button>

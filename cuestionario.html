@@ -393,6 +393,9 @@
   .chip-p { background: var(--macro-p); } .chip-g { background: var(--macro-g); } .chip-h { background: var(--macro-h); }
   /* #260 (punto 41): nada de lo que hay que leer por debajo de 12 px (antes, pestañas a 10,6 px y «EJEMPLO» a 10,4 px). */
   small { font-size: max(0.75rem, 0.83em); }
+  .campo-mini { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.875rem; color: var(--gris); min-width: 0; }
+  .campo-mini > span { font-weight: 600; }
+  .campo-completa:has(> select[hidden]) { display: none; } /* «Otro»: el título solo con la lista completa a la vista */
   .etq-ejemplo { display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--aviso); color: var(--texto-aviso); vertical-align: middle; }
   .etq-fase { display: inline-block; font-weight: 700; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--aviso); color: var(--texto-aviso); font-size: 0.75rem; }
   .etq-pedido { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--acento-suave); color: var(--acento-fuerte); vertical-align: middle; white-space: normal; }
@@ -1537,12 +1540,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=b47615d"></script>
-<script src="fuentes.js?v=b47615d"></script>
-<script src="motor.bundle.js?v=b47615d"></script>
-<script src="cuestionario.js?v=b47615d"></script>
-<script src="nube.js?v=b47615d"></script>
-<script src="pwa.js?v=b47615d"></script>
+<script src="novedades.js?v=058358a"></script>
+<script src="fuentes.js?v=058358a"></script>
+<script src="motor.bundle.js?v=058358a"></script>
+<script src="cuestionario.js?v=058358a"></script>
+<script src="nube.js?v=058358a"></script>
+<script src="pwa.js?v=058358a"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>
