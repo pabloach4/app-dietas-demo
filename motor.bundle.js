@@ -3928,6 +3928,7 @@ copos de avena sin gluten,20,150,avena,"https://www.bda.uk.com/resource/food-fac
     }
     return fallos;
   }
+  var CADENA_BAR = "Ejemplo acotado de bar";
   var PALABRAS_VACIAS = /* @__PURE__ */ new Set(["un", "una", "uno", "unos", "unas", "de", "del", "la", "el", "los", "las", "en", "al", "a", "me", "he", "comido", "tomado", "bebido", "con", "y", "mas"]);
   var NUMEROS = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, media: 0.5, medio: 0.5 };
   var TAMANOS_PIZZA = ["familiar", "grande", "individual", "pequena", "mediana", "xl"];
@@ -3991,38 +3992,69 @@ copos de avena sin gluten,20,150,avena,"https://www.bda.uk.com/resource/food-fac
     const cadenas = [...new Set(tabla2.map((f2) => f2.cadena))].map((c2) => ({ c: c2, alias: normalizarTexto2(c2).replace(/ espana$/, "") }));
     const lineas = [];
     const sinReconocer = [];
+    let cadenaPrevia;
     for (const trozo of trozos) {
       const toks = trozo.split(" ").filter(Boolean);
+      const numeroEscrito = toks.some((t2) => /^\d+([.,]\d+)?x?$/.test(t2) && Number(t2.replace(",", ".").replace("x", "")) <= 20) || toks.some((t2) => t2 in NUMEROS && !["un", "una", "uno"].includes(t2));
       const { cantidad, resto } = cantidadDe(toks.filter((t2) => !PALABRAS_VACIAS.has(t2) || t2 in NUMEROS || t2 === "con"));
       const utiles = resto.filter((t2) => !PALABRAS_VACIAS.has(t2));
-      const cadena = cadenas.find((x) => ` ${utiles.join(" ")} `.includes(` ${x.alias} `));
-      const delTrozo = new Set(utiles.map((t2) => t2.replace(/s$/, "")).concat(utiles));
-      const candidatas = tabla2.filter((f2) => !cadena || f2.cadena === cadena.c);
-      let mejor = [];
-      let mejorPuntos = 0;
-      let otras = [];
-      for (const f2 of candidatas) {
-        let p = 0;
-        for (const a2 of aliasesDe(f2).map(normalizarTexto2)) {
-          const ts = a2.split(" ").filter((t2) => t2 && !PALABRAS_VACIAS.has(t2));
-          if (ts.length && ts.every((t2) => delTrozo.has(t2) || delTrozo.has(t2.replace(/s$/, "")))) p = Math.max(p, ts.length);
+      let cadena = cadenas.find((x) => ` ${utiles.join(" ")} `.includes(` ${x.alias} `));
+      let delTrozo = new Set(utiles.map((t2) => t2.replace(/s$/, "")).concat(utiles));
+      const delTrozoEscrito = delTrozo;
+      const puntuar = (candidatas2, del, conCadena) => {
+        let mejor2 = [];
+        let mejorPuntos = 0;
+        for (const f2 of candidatas2) {
+          let p = 0;
+          const deLaCadena = new Set(normalizarTexto2(f2.cadena).replace(/ espana$/, "").split(" "));
+          for (const a2 of aliasesDe(f2).map(normalizarTexto2)) {
+            const ts = a2.split(" ").filter((t2) => t2 && !PALABRAS_VACIAS.has(t2));
+            const delPlato = ts.filter((t2) => !deLaCadena.has(t2)).length || (ts.every((t2) => delTrozoEscrito.has(t2)) ? 0.5 : 0);
+            if (ts.length && delPlato && ts.every((t2) => del.has(t2) || del.has(t2.replace(/s$/, "")))) p = Math.max(p, delPlato);
+          }
+          if (p === 0) continue;
+          if (f2.estado === "estimacion" && esPizza(f2) && !conCadena && !del.has("pizza")) continue;
+          const deSuNombre = new Set(normalizarTexto2(f2.plato).split(" "));
+          for (const t2 of normalizarTexto2(f2.tamano).split(" ")) if (t2.length > 3 && del.has(t2) && !deSuNombre.has(t2)) p += 0.5;
+          if (p > mejorPuntos) {
+            mejorPuntos = p;
+            mejor2 = [{ f: f2, puntos: p }];
+          } else if (p === mejorPuntos) mejor2.push({ f: f2, puntos: p });
         }
-        if (p === 0) continue;
-        if (f2.estado === "estimacion" && esPizza(f2) && !cadena && !delTrozo.has("pizza")) continue;
-        const deSuNombre = new Set(normalizarTexto2(f2.plato).split(" "));
-        for (const t2 of normalizarTexto2(f2.tamano).split(" ")) if (t2.length > 3 && delTrozo.has(t2) && !deSuNombre.has(t2)) p += 0.5;
-        if (p > mejorPuntos) {
-          mejorPuntos = p;
-          mejor = [{ f: f2, puntos: p }];
-        } else if (p === mejorPuntos) mejor.push({ f: f2, puntos: p });
+        return mejor2;
+      };
+      let mejor = [];
+      if (!cadena && cadenaPrevia) {
+        const conPrevia = /* @__PURE__ */ new Set([...delTrozo, ...cadenaPrevia.alias.split(" ")]);
+        const m = puntuar(tabla2.filter((f2) => f2.cadena === cadenaPrevia.c), conPrevia, true);
+        if (m.length === 1 || m.length > 1 && m.every((x) => x.f.plato === m[0].f.plato)) {
+          mejor = m;
+          cadena = cadenaPrevia;
+          delTrozo = conPrevia;
+        }
+      }
+      const candidatas = tabla2.filter((f2) => !cadena || f2.cadena === cadena.c);
+      if (!mejor.length) mejor = puntuar(candidatas, delTrozo, Boolean(cadena));
+      let otras = [];
+      if (!cadena && mejor.length > 1) {
+        const deBar = mejor.filter((m) => m.f.cadena === CADENA_BAR);
+        if (deBar.length && deBar.length < mejor.length) mejor = deBar;
       }
       if (mejor.length === 0 && !delTrozo.has("pizza")) {
         const marca = utiles.filter((t2) => t2.length >= 4 && !(cadena && cadena.alias.split(" ").includes(t2)) && !FORMATOS.has(t2));
         const familia = marca.length ? candidatas.filter((f2) => f2.estado === "oficial" && (() => {
-          const ts = new Set([f2.plato, ...f2.sinonimos].flatMap((a2) => normalizarTexto2(a2).split(" ")));
+          const ts = new Set([f2.plato, ...f2.sinonimos].map((a2) => normalizarTexto2(a2).split(" ")[0]));
           return marca.every((m) => ts.has(m) || ts.has(m.replace(/s$/, "")));
         })()) : [];
-        if (familia.length) {
+        const deBar = !cadena && marca.length === 1 ? tabla2.filter((f2) => f2.cadena === CADENA_BAR && normalizarTexto2(f2.plato).split(" ")[0] === marca[0].replace(/s$/, "")) : [];
+        if (deBar.length) {
+          mejor = [{ f: deBar[0], puntos: 1 }];
+          otras = deBar.slice(1).map((f2) => f2.plato);
+        } else if (familia.length && !cadena && new Set(familia.map((f2) => f2.cadena)).size > 1) {
+          const donde = [...new Set(familia.map((f2) => f2.cadena.replace(/ España$/, "")))];
+          sinReconocer.push(`${trozo} (dime de d\xF3nde: ${donde.join(", ")})`);
+          continue;
+        } else if (familia.length) {
           const elegida = familia.find((f2) => !/zero|sin/.test(normalizarTexto2(f2.plato))) ?? familia[0];
           mejor = [{ f: elegida, puntos: 1 }];
           otras = familia.filter((f2) => f2 !== elegida).map((f2) => f2.plato);
@@ -4050,25 +4082,37 @@ copos de avena sin gluten,20,150,avena,"https://www.bda.uk.com/resource/food-fac
           sinReconocer.push(`${trozo} (la pizza individual no tiene datos: dime los gramos o las calor\xEDas)`);
           continue;
         }
-        const comoMinimo = f2.estado === "estimacion" && esPizza(f2) && tamPedido !== void 0 && tamPedido !== "mediana";
+        const comoMinimo = f2.estado === "estimacion" && esPizza(f2) && tamPedido !== void 0 && tamPedido !== "mediana" && !normalizarTexto2(f2.tamano).split(" ").includes(tamPedido);
         const supuesto = f2.estado === "oficial" && f2.tamano && !normalizarTexto2(f2.tamano).split(" ").some((t2) => t2.length > 3 && delTrozo.has(t2));
         const notas = [];
         if (comoMinimo) notas.push(`\xAB${tamPedido}\xBB no tiene dato propio: la cifra es como m\xEDnimo la de una mediana (${f2.pesoMin} g, sin inventar el peso de la ${tamPedido}). Dime cu\xE1ntas porciones o cu\xE1nto pesaba y aj\xFAstalo.`);
-        else if (f2.estado === "estimacion") notas.push(`${esPizza(f2) ? "Peso" : "Cantidad"} estimad${esPizza(f2) ? "o" : "a"} (${f2.pesoMin}-${f2.pesoMax} ${unidadPeso(f2)}): la cifra es un rango. Si sabes ${unidadPeso(f2) === "ml" ? "cu\xE1nto has tomado" : "cu\xE1nto pesaba o cu\xE1nto comiste"}, aj\xFAstalo.`);
+        else if (f2.estado === "estimacion" && f2.pesoMin !== void 0 && f2.pesoMax !== void 0) notas.push(`${esPizza(f2) ? "Peso" : "Cantidad"} estimad${esPizza(f2) ? "o" : "a"} (${f2.pesoMin}-${f2.pesoMax} ${unidadPeso(f2)}): la cifra es un rango. Si sabes ${unidadPeso(f2) === "ml" ? "cu\xE1nto has tomado" : "cu\xE1nto pesaba o cu\xE1nto comiste"}, aj\xFAstalo.`);
+        else if (f2.estado === "estimacion") notas.push("Cifra aproximada (no es de la informaci\xF3n oficial de la cadena). Si sabes las calor\xEDas, aj\xFAstalo.");
         if (supuesto) notas.push(`He supuesto ${f2.tamano}.`);
         const nombreCompleto = [f2.plato, ...f2.sinonimos].some((a2) => normalizarTexto2(a2).split(" ").filter((t2) => t2 && !PALABRAS_VACIAS.has(t2)).every((t2) => delTrozo.has(t2) || delTrozo.has(t2.replace(/s$/, ""))));
         if (f2.estado === "estimacion" && !nombreCompleto) notas.push(`He usado \xAB${f2.plato}\xBB (${f2.tamano}), la cifra de ese tipo m\xE1s general que tengo; si fue otra cosa, aj\xFAstalo.`);
+        const enUnidades = /(\d+)(?:\s*-\s*(\d+))?\s+unidades/.exec(normalizarTexto2(f2.tamano));
+        let min = r.min * cantidad;
+        let max = r.max * cantidad;
+        if (enUnidades && numeroEscrito) {
+          const nMin = Number(enUnidades[1]);
+          const nMax = Number(enUnidades[2] ?? enUnidades[1]);
+          min = r.min / nMax * cantidad;
+          max = r.max / nMin * cantidad;
+          notas.push(`Cuento ${String(cantidad).replace(".", ",")} unidad${cantidad === 1 ? "" : "es"} (la cifra de la tabla es de ${f2.tamano.split(";")[0].trim()}).`);
+        }
         lineas.push({
           nombre: `${f2.plato}${f2.tamano ? ` (${f2.tamano})` : ""}`,
           cadena: f2.cadena,
           cantidad,
-          kcalMin: Math.round(r.min * cantidad),
-          kcalMax: comoMinimo ? Math.round(r.min * cantidad) : Math.round(r.max * cantidad),
+          kcalMin: Math.round(min),
+          kcalMax: comoMinimo ? Math.round(min) : Math.round(max),
           estado: f2.estado,
           ...comoMinimo ? { comoMinimo: true } : {},
           ...notas.length ? { nota: notas.join(" ") } : {},
           ...otras.length ? { opciones: otras } : {}
         });
+        cadenaPrevia = cadenas.find((x) => x.c === f2.cadena && x.c !== CADENA_BAR);
         continue;
       }
       const quierePizza = delTrozo.has("pizza") && cadena !== void 0;
@@ -4172,6 +4216,129 @@ Ejemplo acotado de bar,Refresco de cola Coca-Cola original en vaso sin hielo,vas
 Ejemplo acotado de bar,Tercio de cerveza Mahou Cinco Estrellas,botella 330 ml de peso fijo; ejemplo Mahou 49 kcal/100 ml,tercio;un tercio;tercio de cerveza,,49,330,,,estimacion,https://www.somosnexho.com/mahou-sanmiguel/productos/mahou-5-estrellas,2026-10-14
 Ejemplo acotado de bar,Tostada con tomate y aceite (ejemplo receta Dietfarma),pieza fija 105 g: pan60g + tomate40g + aceite5g; 196.6 kcal/100 g calculada de la receta (206.44 kcal),tostada con tomate y aceite;pan con tomate;una tostada con tomate;tostada,,196.6,105,,,estimacion,https://www.dietfarma.com/receta/tostada-con-aceite-y-tomate,2026-10-14
 Ejemplo acotado de bar,Bocadillo de jam\xF3n serrano (ejemplo fijo),unidad 200 g: pan120g + jam\xF3n80g; sin aceite ni queso; densidad por ingredientes FEN,bocadillo de jamon;bocata de jamon;bocadillo de jamon serrano;un bocadillo de jamon,,262.6,200,,,estimacion,https://fen.org.es/MercadoAlimentosFEN/pdfs/panblanco.pdf;https://fen.org.es/MercadoAlimentosFEN/pdfs/jamonserrano.pdf,2026-10-14
+KFC Espa\xF1a,3 tiras de pechuga original,3 unidades,tiras de pechuga;tiras de pollo;tiritas de pollo,250.8,209,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,5 tiras de pechuga original,5 unidades,5 tiras;tiras 5,418,209,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,Pieza de pollo original,1 unidad,pieza de pollo;muslo de pollo frito;pollo kfc,233.77,241,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,2 piezas de pollo original,2 unidades,2 piezas de pollo;dos piezas de pollo,467.54,241,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,3 alitas picantes,3 unidades,alitas;alitas picantes;alitas de pollo,267.96,319,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,Coronel Simple,unidad,coronel;hamburguesa coronel;burguer coronel,534.13,214.25,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,BBQ Cheese Burger,unidad,bbq cheese burger;hamburguesa bbq,522.25,261.65,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,Wrap Cl\xE1sico,unidad,wrap clasico;wrap de pollo;wrap kfc,748.05,242.64,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,Patatas fritas,medianas,patatas medianas;patatas fritas medianas,264.96,288,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,Patatas fritas,grandes,patatas grandes;patatas fritas grandes,278.13,219,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,Popcorn de pollo,10 unidades,popcorn;popcorn pollo;palomitas de pollo,245.7,351,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,Ensalada Original,unidad,ensalada;ensalada kfc,530.33,220.05,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,Kentucky Shake Oreo con nata,unidad,shake oreo;batido oreo;kentucky shake,439.7,157.04,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,Chick&Share 9 tiras de pechuga original,9 unidades para compartir,chick&share;cubo tiras;cubo de tiras,752.4,209,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+KFC Espa\xF1a,Mazorca de ma\xEDz,unidad,mazorca;maiz;mazorca de maiz,83.82,106.1,,,,oficial,https://static.kfc.es/pdf/contenido-nutricional.pdf,2026-10-16
+Burger King Espa\xF1a,Triple Whopper,unidad,triple whopper,1143,,467,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,Steakhouse,unidad,steakhouse,825,,296,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,Big King XXL,unidad,big king xxl,980,,379,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,Doble Cheeseburger,unidad,doble cheeseburger;hamburguesa doble con queso,387,,152,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,Chicken Burger,unidad,chicken burger;hamburguesa de pollo,443,,144,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,Big Fish,unidad,big fish;hamburguesa de pescado,617,,228,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,Long Vegetal,unidad,long vegetal;hamburguesa vegetal,612,,212,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,Alitas de pollo,3 unidades,alitas de pollo;alitas 3,238,,117,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,King Nuggets,9 unidades,nuggets 9;nuggets,407,,162,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,Chicken Fries,6 unidades,chicken fries;palitos de pollo,175,,72,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,King Aros de Cebolla,7 unidades,aros de cebolla;aros cebolla,199,,82,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,Patatas Supreme,medianas,patatas supreme;patatas supreme medianas,323,,159,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Burger King Espa\xF1a,Chilli Cheese Bites,6 unidades,chilli cheese bites;bocados de queso picantes,303,,105,,,oficial,https://eu-west-3-146514239214-prod-bk-fz.s3.eu-west-3.amazonaws.com/en-ES/2026/MANTEL+NUTRICIONAL+ESP+ING+08+SEPTIEMBRE+2026.pdf,2026-10-16
+Starbucks Espa\xF1a,Croissant horneado,unidad,croissant;croissant starbucks,289.4,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Croissant horneado mixto,unidad,croissant mixto;croissant jamon y queso,405.6,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Muffin de ar\xE1ndanos,unidad,muffin arandanos;muffin;magdalena arandanos,456.3,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Muffin de chocolate,unidad,muffin chocolate;muffin de chocolate,557.2,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Cookie Chocolate Chunk,unidad,cookie;galleta con chocolate;cookie chocolate,415.65,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Brownie Ube,unidad,brownie,372,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Bocadillo de jam\xF3n y manchego con tomate rallado,unidad,bocadillo jamon y manchego;bocadillo jamon manchego,450.75,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Bocadillo Pulled Pork,unidad,bocadillo pulled pork;pulled pork,496,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Tostada con jam\xF3n tomate y aceite,unidad,tostada con jamon;tostada jamon tomate y aceite,438.22,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Asian Bowl,unidad,asian bowl;bowl,365.65,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Gourmet Cheesecake,porci\xF3n,cheesecake;tarta de queso,254.7,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Cake de chocolate,porci\xF3n,cake de chocolate;bizcocho de chocolate,639,,,,,oficial,https://www.starbucks.es/sites/starbucks-es-pwa/files/2026-05/informacion-nutricional-summer26-es.pdf,2026-10-16
+Starbucks Espa\xF1a,Caffe Latte con leche semidesnatada,vaso Tall ~354 ml; kcal/100 ml oficial,caffe latte;latte; cafe latte,,44,354,,,estimacion,https://www.starbucks.es/sites/starbucks-es-pwa/files/2025-06/Info%20Nutri%20web%20bebidas%20Spring%202024%20V1%20-ESP.pdf,2026-10-16
+Starbucks Espa\xF1a,Cappuccino con leche semidesnatada,vaso Tall ~354 ml; kcal/100 ml oficial,cappuccino;capuchino,,43,354,,,estimacion,https://www.starbucks.es/sites/starbucks-es-pwa/files/2025-06/Info%20Nutri%20web%20bebidas%20Spring%202024%20V1%20-ESP.pdf,2026-10-16
+Starbucks Espa\xF1a,Caramel Macchiato con leche semidesnatada,vaso Tall ~354 ml; kcal/100 ml oficial,caramel macchiato;macchiato caramelo,,57,354,,,estimacion,https://www.starbucks.es/sites/starbucks-es-pwa/files/2025-06/Info%20Nutri%20web%20bebidas%20Spring%202024%20V1%20-ESP.pdf,2026-10-16
+Starbucks Espa\xF1a,Mocha con leche semidesnatada,vaso Tall ~354 ml; kcal/100 ml oficial,mocha;moca,,83,354,,,estimacion,https://www.starbucks.es/sites/starbucks-es-pwa/files/2025-06/Info%20Nutri%20web%20bebidas%20Spring%202024%20V1%20-ESP.pdf,2026-10-16
+Starbucks Espa\xF1a,White Mocha con leche semidesnatada,vaso Tall ~354 ml; kcal/100 ml oficial,white mocha;mocha blanco,,101,354,,,estimacion,https://www.starbucks.es/sites/starbucks-es-pwa/files/2025-06/Info%20Nutri%20web%20bebidas%20Spring%202024%20V1%20-ESP.pdf,2026-10-16
+Starbucks Espa\xF1a,Classic Hot Chocolate con leche semidesnatada,vaso Tall ~354 ml; kcal/100 ml oficial,chocolate caliente;hot chocolate,,90,354,,,estimacion,https://www.starbucks.es/sites/starbucks-es-pwa/files/2025-06/Info%20Nutri%20web%20bebidas%20Spring%202024%20V1%20-ESP.pdf,2026-10-16
+Starbucks Espa\xF1a,Cold Brew,vaso Tall ~354 ml; kcal/100 ml oficial,cold brew;cafe frio,,10,354,,,estimacion,https://www.starbucks.es/sites/starbucks-es-pwa/files/2025-06/Info%20Nutri%20web%20bebidas%20Spring%202024%20V1%20-ESP.pdf,2026-10-16
+Starbucks Espa\xF1a,Latte Macchiato con leche semidesnatada,vaso Tall ~354 ml; kcal/100 ml oficial,latte macchiato;macchiato,,44,354,,,estimacion,https://www.starbucks.es/sites/starbucks-es-pwa/files/2025-06/Info%20Nutri%20web%20bebidas%20Spring%202024%20V1%20-ESP.pdf,2026-10-16
+Papa John's Espa\xF1a,Pizza Pepperoni Estelar,mediana; kcal/100 g oficial; peso estimado,pizza pepperoni estelar;pepperoni estelar,,192.84,,350,410,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,Pizza Vaquera BBQ,mediana; kcal/100 g oficial; peso estimado,pizza vaquera;vaquera bbq,,158,,350,410,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,Pizza Rodeo Peppers,mediana; kcal/100 g oficial; peso estimado,pizza rodeo peppers;rodeo peppers,,161.54,,350,410,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,Pizza Margarita,mediana; kcal/100 g oficial; peso estimado,pizza margarita;margarita,,228.37,,350,410,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,Pizza BBQ Bacon,mediana; kcal/100 g oficial; peso estimado,pizza bbq bacon;bbq bacon,,224.24,,350,410,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,Pizza Pollo y bacon,mediana; kcal/100 g oficial; peso estimado,pizza pollo y bacon;pollo y bacon,,207.45,,350,410,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,Alitas de pollo,porci\xF3n; kcal/100 g oficial; peso estimado,alitas de pollo;alitas,,210,,180,220,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,Aros de cebolla,porci\xF3n; kcal/100 g oficial; peso estimado,aros de cebolla,,243,,120,180,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,Muslitos de pollo picantes,porci\xF3n; kcal/100 g oficial; peso estimado,muslitos de pollo;muslitos picantes,,225,,180,220,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,Papa Rolls Pepperoni,porci\xF3n; kcal/100 g oficial; peso estimado,papa rolls pepperoni;papa rolls,,274.96,,130,170,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,Papa Rolls Crispy Bacon,porci\xF3n; kcal/100 g oficial; peso estimado,papa rolls crispy bacon,,243.43,,130,170,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Papa John's Espa\xF1a,ChocoCookie,unidad; kcal/100 g oficial; peso estimado,chococookie;galleta chocolate,,451,,80,100,estimacion,https://cdn.new.papajohns.es/Alergenos+Espa%C3%B1a/Inf_NutricionalEspa%C3%B1a+Ed+27.pdf,2026-10-16
+Telepizza,Barbacoa,familiar masa cl\xE1sica; kcal/100 g oficial; peso estimado,barbacoa familiar;pizza barbacoa familiar,,213,,750,1000,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-16
+Telepizza,Carbonara (cebolla),familiar masa cl\xE1sica; kcal/100 g oficial; peso estimado,carbonara familiar;pizza carbonara familiar,,211,,750,1000,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-16
+Telepizza,4 quesos,familiar masa cl\xE1sica; kcal/100 g oficial; peso estimado,4 quesos familiar;pizza 4 quesos familiar,,224,,750,1000,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-16
+Telepizza,Hawaiana,familiar masa cl\xE1sica; kcal/100 g oficial; peso estimado,hawaiana familiar;pizza hawaiana familiar,,197,,750,1000,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-16
+Telepizza,Pepe Pepperoni,familiar masa cl\xE1sica; kcal/100 g oficial; peso estimado,pepe pepperoni familiar;pepperoni familiar,,258,,750,1000,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-16
+Telepizza,Burger,familiar masa cl\xE1sica; kcal/100 g oficial; peso estimado,burger familiar;pizza burger familiar,,243,,750,1000,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-16
+Telepizza,Formaggio,familiar masa cl\xE1sica; kcal/100 g oficial; peso estimado,formaggio familiar;pizza formaggio familiar,,241,,750,1000,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-16
+Telepizza,La Furiosa,familiar masa cl\xE1sica; kcal/100 g oficial; peso estimado,la furiosa familiar;furiosa familiar,,226,,750,1000,estimacion,https://www.telepizza.es/on/demandware.static/-/Sites-TelepizzaES-Library/default/dw50cfa1dc/documents/nutricion.pdf,2026-10-16
+McDonald's Espa\xF1a,McPollo,unidad,mcpollo;hamburguesa de pollo mcdonalds,427,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/mcpollo/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,Big Mac,unidad,big mac,544,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/big-mac/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,Cuarto de Libra con Queso,unidad,cuarto de libra;cuarto de libra con queso,547,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/cuarto-de-libra/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,Cheeseburger,unidad,cheeseburger;hamburguesa con queso mcdonalds,306,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/cheeseburger/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,Hamburguesa sencilla,unidad,hamburguesa mcdonalds;hamburguesa sencilla,258,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/hamburguesa/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,Double Cheeseburger,unidad,double cheeseburger;doble cheeseburger mcdonalds,457,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/double-cheeseburger/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,CBO,unidad,cbo;cbo mcdonalds,618,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/cbo/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,McExtreme Bacon,unidad,mcextreme;mcextreme bacon,787,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/mcextreme-bacon/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,Patatas fritas,medianas,patatas medianas mcdonalds;patatas fritas medianas mcdonalds,330,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/patatas-fritas-medianas/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,Patatas fritas,grandes,patatas grandes mcdonalds;patatas fritas grandes mcdonalds,434,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/patatas-fritas-grandes/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,Patatas Deluxe,medianas,patatas deluxe;patatas deluxe medianas,220,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/patatas-deluxe-medianas/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,6 Chicken McNuggets,6 unidades,mcnuggets;nuggets mcdonalds,265,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/6-mcnuggets-de-pollo/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,McFlurry Oreo,unidad,mcflurry;mcflurry oreo,410,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/mcflurry-oreo/1-porci%C3%B3n,2026-10-16
+McDonald's Espa\xF1a,Cono de helado,unidad,cono de helado;helado de cucurucho mcdonalds,157,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/mcdonalds/cono-de-helado/1-porci%C3%B3n,2026-10-16
+Pans & Company,Bocadillo de pechuga de pollo,unidad,bocadillo pechuga de pollo;bocadillo de pollo pans,596,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/bocadillo-pechuga-de-pollo/1-bocadillo,2026-10-16
+Pans & Company,Bocadillo de tortilla de patata,unidad,bocadillo de tortilla;bocadillo tortilla de patata,670,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/bocadillo-de-tortilla-de-patata/1-bocadillo,2026-10-16
+Pans & Company,Bocadillo vegetal de at\xFAn,unidad,bocadillo vegetal de atun;bocadillo atun vegetal,567,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/bocadillo-vegetal-de-at%C3%BAn/1-bocadillo,2026-10-16
+Pans & Company,Bocadillo de jam\xF3n serrano,unidad,bocadillo jamon serrano pans,480,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/bocadillo-jamon-serrano/1-bocadillo,2026-10-16
+Pans & Company,Bocadillo British Bacon,unidad,british bacon;bocadillo british bacon,619,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/bocadillo-british-bacon/1-bocadillo,2026-10-16
+Pans & Company,Bocadillo Pollo Supreme,unidad,pollo supreme;bocadillo pollo supreme,754,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/bocadillo-pollo-supreme/1-bocadillo,2026-10-16
+Pans & Company,Bocadillo Noruego,unidad,bocadillo noruego;noruego,424,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/bocadillo-noruego/1-bocadillo,2026-10-16
+Pans & Company,Bocadillo Mediterranneo,unidad,bocadillo mediterraneo;mediterranneo,423,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/bocadillo-mediterranneo/1-bocadillo,2026-10-16
+Pans & Company,Bocadillo Griego,unidad,bocadillo griego;griego,501,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/bocadillo-griego/1-bocadillo,2026-10-16
+Pans & Company,Patatas fritas,raci\xF3n,patatas fritas pans,194,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/patatas-fritas/1-raci%C3%B3n,2026-10-16
+Pans & Company,Ensalada Mediterr\xE1nea,plato,ensalada mediterranea pans,206,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/ensalada-mediterr%C3%A1nea/1-plato,2026-10-16
+Pans & Company,Bocadillo Extreme\xF1o,unidad,bocadillo extremeno;extremeno,658,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/pans-company/bocadillo-extreme%C3%B1o/1-bocadillo,2026-10-16
+Ejemplo acotado de bar,Tortilla de patatas,raci\xF3n 125-200 g; kcal/100 g FatSecret gen\xE9rico,tortilla de patatas;tortilla espanola;pincho de tortilla,,126,,125,200,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/tortilla-de-patatas,2026-10-16
+Ejemplo acotado de bar,Patatas bravas,1 taza ~200 g (FatSecret gen\xE9rico),patatas bravas;bravas,258,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/patatas-bravas,2026-10-16
+Ejemplo acotado de bar,Ensaladilla rusa,raci\xF3n 150-200 g; kcal/100 g FatSecret gen\xE9rico,ensaladilla rusa;ensaladilla,,122,,150,200,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/ensaladilla-rusa,2026-10-16
+Ejemplo acotado de bar,Gazpacho casero,1 porci\xF3n ~250 ml (FatSecret gen\xE9rico),gazpacho,143,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/gazpacho-casero,2026-10-16
+Ejemplo acotado de bar,Salmorejo,cuenco 200-250 g; kcal/100 g FatSecret gen\xE9rico,salmorejo,,70,,200,250,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/salmorejo,2026-10-16
+Ejemplo acotado de bar,Paella,raci\xF3n 300-400 g; kcal/100 g FatSecret gen\xE9rico,paella,,158,,300,400,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/paella,2026-10-16
+Ejemplo acotado de bar,Guiso de lentejas,1 plato (FatSecret gen\xE9rico),lentejas;guiso de lentejas;lentejas estofadas,380,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/guiso-de-lentejas,2026-10-16
+Ejemplo acotado de bar,Cocido completo,1 porci\xF3n (FatSecret gen\xE9rico),cocido;cocido completo;cocido madrileno,509,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/cocido-completo,2026-10-16
+Ejemplo acotado de bar,Fabada,plato 250-350 g; kcal/100 g FatSecret gen\xE9rico,fabada;fabada asturiana,,162,,250,350,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/fabada,2026-10-16
+Ejemplo acotado de bar,Pollo asado,1/4 de pollo 200-300 g; kcal/100 g FatSecret gen\xE9rico,pollo asado;cuarto de pollo asado,,237,,200,300,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/pollo-asado,2026-10-16
+Ejemplo acotado de bar,Merluza,filete 150-200 g; kcal/100 g FatSecret gen\xE9rico,merluza;filete de merluza,,132,,150,200,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/merluza,2026-10-16
+Ejemplo acotado de bar,Dorada,unidad 250-350 g; kcal/100 g FatSecret gen\xE9rico,dorada;dorada a la plancha,,85,,250,350,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/dorada,2026-10-16
+Ejemplo acotado de bar,Ensalada mixta,1 taza ~150 g (FatSecret gen\xE9rico),ensalada mixta;ensalada,135,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/ensalada-mixta,2026-10-16
+Ejemplo acotado de bar,Pechuga de pollo empanada,filete 150-200 g; kcal/100 g FatSecret gen\xE9rico,pechuga empanada;filete empanado;pollo empanado,,297,,150,200,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/pechuga-de-pollo-empanada,2026-10-16
+Ejemplo acotado de bar,Flan de huevo,1 unidad (FatSecret gen\xE9rico),flan;flan de huevo,204,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/flan-de-huevo,2026-10-16
+Ejemplo acotado de bar,Arroz con leche,cuenco 150-200 g; kcal/100 g FatSecret gen\xE9rico,arroz con leche,,142,,150,200,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/arroz-con-leche,2026-10-16
+Ejemplo acotado de bar,Tarta de queso,1 porci\xF3n (FatSecret gen\xE9rico),tarta de queso;porcion de tarta de queso,397,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/tarta-de-queso,2026-10-16
+Ejemplo acotado de bar,Gambas al ajillo,raci\xF3n 100-150 g; kcal/100 g FatSecret gen\xE9rico,gambas al ajillo;gambas al ajillo racion,,304,,100,150,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/gambas-al-ajillo,2026-10-16
+Ejemplo acotado de bar,Pulpo (a la gallega),raci\xF3n 150-200 g; kcal/100 g FatSecret gen\xE9rico,pulpo;pulpo a la gallega;pulpo a feira,,82,,150,200,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/pulpo,2026-10-16
+Ejemplo acotado de bar,Pimientos de Padr\xF3n,raci\xF3n 100-150 g; kcal/100 g FatSecret gen\xE9rico,pimientos de padron;pimientos del padron,,21,,100,150,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/pimientos-de-padr%C3%B3n,2026-10-16
+Ejemplo acotado de bar,Huevo frito,1 unidad grande (FatSecret gen\xE9rico),huevo frito;un huevo frito,89,,,,,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/huevo-frito,2026-10-16
+Ejemplo acotado de bar,Callos,plato 250-350 g; kcal/100 g FatSecret gen\xE9rico,callos;callos a la madrilena,,89,,250,350,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/callos,2026-10-16
+Ejemplo acotado de bar,Migas,raci\xF3n 150-250 g; kcal/100 g FatSecret gen\xE9rico,migas;migas de pastor,,403,,150,250,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/migas,2026-10-16
+Ejemplo acotado de bar,Rabo de toro,plato 250-350 g; kcal/100 g FatSecret gen\xE9rico,rabo de toro;rabo de buey,,133,,250,350,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/rabo-de-toro,2026-10-16
+Ejemplo acotado de bar,Pisto,raci\xF3n 150-200 g; kcal/100 g FatSecret gen\xE9rico,pisto;pisto manchego,,72,,150,200,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/pisto,2026-10-16
+Ejemplo acotado de bar,Calamares fritos,raci\xF3n 150-200 g; kcal/100 g FatSecret gen\xE9rico,calamares fritos;calamares a la romana;calamares,,125,,150,200,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/calamares-fritos,2026-10-17
+Ejemplo acotado de bar,Croquetas de jam\xF3n,raci\xF3n 150-200 g (4-6 unidades); kcal/100 g FatSecret gen\xE9rico,croqueta de jamon;croquetas;croquetas de jamon,,241,,150,200,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/croquetas-de-jam%C3%B3n,2026-10-17
+Ejemplo acotado de bar,Alb\xF3ndigas de carne,raci\xF3n 180-250 g con salsa; kcal/100 g FatSecret gen\xE9rico,albondiga;albondigas;albondigas de carne,,202,,180,250,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/alb%C3%B3ndigas-de-carne,2026-10-17
+Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g FatSecret gen\xE9rico,churro;churros;churros con chocolate,,443,,100,150,estimacion,https://www.fatsecret.es/calor%C3%ADas-nutrici%C3%B3n/gen%C3%A9rico/churros,2026-10-17
 `;
 
   // src/motor/sobras.ts

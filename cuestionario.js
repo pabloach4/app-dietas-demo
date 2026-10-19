@@ -1082,7 +1082,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const mas = (id, titulo, cuerpo) => (cuerpo ? `<details class="hoy-mas" data-mas="${id}"${abiertos.has(id) ? ' open' : ''}><summary>${titulo}</summary>${cuerpo}</details>` : '');
     const numeros = `${dHoy ? `<p class="hoy-tipo">Tipo de día: <span class="dia-tipo">${escaparHtml(dHoy.tipo)}</span></p>
       <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
-      <p class="hoy-nota">${escaparHtml(nota)}</p>`;
+      ${dHoy && fueraHoy.some((x) => x.kcal !== undefined) && cuadreHoy ? `<p class="hoy-nota" id="hoy-numeros-fuera">Con lo que has comido fuera, hoy suma ~${Math.round(cuadreHoy.servido / 10) * 10} kcal (el plan preveía ${dHoy.kcal}).</p>` : ''}
+      <p class="hoy-nota">${escaparHtml(nota)}</p>`; // #258 (punto 13): las cifras de arriba son las del plan; esta línea, lo de hoy con lo comido fuera
     const avisoAlergiaHtml = avisosAlergiasHoy.length ? `<div class="hoy-bloque" id="aviso-alergia-hoy" role="status"><p style="margin:0">${avisosAlergiasHoy[0]}${avisosAlergiasHoy.length > 1 ? ` (y ${avisosAlergiasHoy.length - 1} más en los avisos del plan)` : ''}</p></div>` : '';
     const avisoPabloHtml = avisoPabloHoy ? `<div class="hoy-bloque" id="aviso-plan-pablo" role="status"><p style="margin:0">${avisoPabloHoy}</p></div>` : '';
     const avisoCribadoHtml = (avisoCribadoHoy ? `<div class="hoy-bloque" id="aviso-cribado" role="status"><p style="margin:0">${escaparHtml(avisoCribadoHoy)}</p></div>` : '')
@@ -1675,6 +1676,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const comidasHtml = reparto.franjas.length ? reparto.franjas.map((f) => {
       const conflicto = reparto.conflictos.filter((c) => c.franja === f.franja).map((c) => `<span class="error-inline">⚠️ ${escaparHtml(textoConflicto(c))}</span>`).join('');
       const asignada = vistaSemana.recetaPorSlot.get(`${dia}|${f.franja}`);
+      // #258 (punto 13): hoy, una comida apuntada como «He comido fuera» sale como tal en el resumen, no como lo previsto.
+      const fuera = dia === diaDeHoy() ? comidasFuera.find((x) => x.fecha === Motor.fechaLocalISO(new Date()) && x.franja === f.franja) : undefined;
+      if (fuera) return `<li class="fila fila-fuera"><span class="fila-icono ic-comida" aria-hidden="true"></span><div class="fila-texto"><strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong><span class="fila-sub">${horaFranja(f.franja)}${fuera.kcal !== undefined ? `~${fuera.kcal} kcal` : 'kcal sin apuntar'}</span><span class="fila-sub">Comida fuera: ${escaparHtml(fuera.texto)}</span></div></li>`;
       // #257 (punto 10): las kcal de lo que se come (las del plato), no las del objetivo de la comida.
       const cabecera = `<strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong><span class="fila-sub">${horaFranja(f.franja)}~${asignada ? asignada.kcalResultante : f.kcalAprox} kcal</span>`;
       return asignada
@@ -3146,7 +3150,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       <button type="button" class="btn-secundario" id="fuera-calcular" style="margin:0 0 0.6rem">Calcular las calorías</button>
       <div id="fuera-desglose" aria-live="polite"></div>
       <div class="campo"><label for="fuera-kcal">Calorías aproximadas, si las sabes</label><input id="fuera-kcal" type="number" inputmode="numeric" min="0" max="5000" step="10" placeholder="Ej.: 850"></div>
-      <p class="una-linea">Tu plan preveía ~${f.kcalAprox} kcal para esta comida. Si apuntas las calorías, el resto del día se ajusta solo.</p>
+      <p class="una-linea">Tu plan preveía ~${f.kcalAprox} kcal para esta comida. Si apuntas las calorías, el resto del día se ajusta solo. Vale solo para hoy.</p>
       <p class="error-inline" id="fuera-error" role="alert" hidden></p>
       <div class="dc-acciones">
         <button type="button" class="btn-principal" id="fuera-guardar">Guardar</button>
@@ -3173,7 +3177,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <li class="item-compra fuera-linea" data-k="${k}">
           <div style="flex:1;min-width:0"><strong>${escaparHtml(it.linea.nombre)}</strong> · ${it.linea.comoMinimo ? `como mínimo ${miles(it.unidadMin * it.cantidad)} kcal` : rangoTxt(it.unidadMin * it.cantidad, it.unidadMax * it.cantidad)} <span class="etq-ejemplo">${it.linea.comoMinimo ? 'COMO MÍNIMO' : it.linea.estado === 'oficial' ? 'OFICIAL' : 'ESTIMADA'}</span>${it.linea.nota && it.linea.estado === 'oficial' ? `<br><span class="una-linea">${escaparHtml(it.linea.nota)}</span>` : ''}
             ${it.linea.nota && it.linea.estado !== 'oficial' ? `<details${it.linea.comoMinimo ? ' open' : ''}><summary>Por qué ${it.linea.comoMinimo ? 'solo un mínimo' : 'un rango'}</summary><p class="una-linea">${escaparHtml(it.linea.nota)}</p></details>` : ''}
-            ${it.linea.opciones ? `<label class="una-linea" for="fuera-var-${k}">¿Cuál? (para afinar)</label><select id="fuera-var-${k}" class="fuera-variedad" data-k="${k}" style="font-size:16px"><option value="">Sin elegir</option>${it.linea.opciones.map((o) => `<option>${escaparHtml(o)}</option>`).join('')}</select>` : ''}
+            ${it.linea.opciones ? `<label class="una-linea" for="fuera-var-${k}">¿Cuál? (para afinar)</label><select id="fuera-var-${k}" class="fuera-variedad" data-k="${k}" style="font-size:16px"><option value="">Sin elegir</option>${[...new Set(it.linea.opciones)].map((o) => `<option>${escaparHtml(o)}</option>`).join('')}</select>` : ''}
           </div>
           <div class="fuera-cantidad" style="display:flex;align-items:center;gap:0.3rem">
             <button type="button" class="btn-texto fuera-menos" data-k="${k}" aria-label="Menos cantidad de ${escaparHtml(it.linea.nombre)}">−</button>
@@ -3184,10 +3188,12 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       desglose.innerHTML = `
         ${items.length ? `<ul class="resumen-lista">${lineas}</ul>
         <p><strong>Total: ${items.some((i) => i.linea.comoMinimo) ? `como mínimo ${miles(t.min)} kcal` : rangoTxt(t.min, t.max)}</strong>${t.min === t.max ? '' : ` · para ajustar el día se usa el punto medio (${miles((t.min + t.max) / 2)} kcal)`}${items.some((i) => i.linea.comoMinimo) ? ' · para ajustar el día se usa ese mínimo' : ''}</p>` : ''}
-        ${sinReconocer.length ? `<p class="una-linea" id="fuera-no-reconocido">No he reconocido: ${sinReconocer.map(escaparHtml).join('; ')}. Si sabes sus calorías, súmalas tú en el campo de abajo.</p>` : ''}
+        ${sinReconocer.length ? `<p class="una-linea" id="fuera-no-reconocido">No lo encuentro: ${sinReconocer.map(escaparHtml).join('; ')}. Pon las kcal del total si las sabes, o escríbelo de otra forma (por ejemplo, «ración de croquetas»).</p>` : ''}
         ${!items.length && !sinReconocer.length ? '<p class="una-linea">No he reconocido nada: escribe las calorías tú.</p>' : ''}`;
       if (!items.length && campoKcal.value === kcalAuto) { campoKcal.value = ''; kcalAuto = ''; } // nada reconocido: no queda la cifra del cálculo anterior (#189)
-      if (items.length) campoKcal.value = String(items.some((i) => i.linea.comoMinimo) ? Math.round(t.min / 10) * 10 : Math.round((t.min + t.max) / 20) * 10); if (items.length) kcalAuto = campoKcal.value;
+      // #258 (punto 12): si falta algo por encontrar, no se deja puesta una cifra parcial (al guardar parecería el total de la comida).
+      if (sinReconocer.length && campoKcal.value === kcalAuto) { campoKcal.value = ''; kcalAuto = ''; }
+      if (items.length && !sinReconocer.length) { campoKcal.value = String(items.some((i) => i.linea.comoMinimo) ? Math.round(t.min / 10) * 10 : Math.round((t.min + t.max) / 20) * 10); kcalAuto = campoKcal.value; }
       desglose.querySelectorAll('.fuera-menos, .fuera-mas').forEach((b) => b.addEventListener('click', () => {
         const it = items[Number(b.dataset.k)];
         it.cantidad = Math.max(0.5, Math.min(20, it.cantidad + (b.classList.contains('fuera-mas') ? 0.5 : -0.5)));
