@@ -1071,7 +1071,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const compiteHoy = otraSemana ? [] : compiteEseDia(dia);
     const bloqueEntreno = compiteHoy.length ? `<div class="hoy-bloque"><h3>Hoy compites</h3><div class="titulo">${escaparHtml(compiteHoy.map((c) => c.nombre).join(' y '))}: la prueba sustituye al entreno habitual de hoy.</div></div>` // #257.14
       : entrenos.length ? entrenos.map((s) => {
-      const nombre = (Motor.ACTIVIDADES[s.actividad] && Motor.ACTIVIDADES[s.actividad].nombre) || s.actividad;
+      const nombre = nombreSesion(s);
       let estado = 'hora sin indicar';
       if (s.horaInicio !== undefined) {
         const fin = s.horaInicio + s.minutos / 60;
@@ -1096,7 +1096,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // Lo que no hace falta para saber qué toca se queda plegado; lo que estaba abierto sigue abierto al repintar (cada minuto).
     const abiertos = new Set([...cont.querySelectorAll('details.hoy-mas[open]')].map((x) => x.dataset.mas));
     const mas = (id, titulo, cuerpo) => (cuerpo ? `<details class="hoy-mas" data-mas="${id}"${abiertos.has(id) ? ' open' : ''}><summary>${titulo}</summary>${cuerpo}</details>` : '');
-    const numeros = `${dHoy ? `<p class="hoy-tipo">Tipo de día: <span class="dia-tipo">${escaparHtml(dHoy.tipo)}</span></p>
+    const numeros = `${dHoy ? `<p class="hoy-tipo">Tipo de día: <span class="dia-tipo" data-tipo="${escaparHtml(dHoy.tipo)}">${escaparHtml(nombreTipoDia(dHoy, hayEntrenoEl(dHoy.dia)))}</span></p>
       <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
       ${dHoy && fueraHoy.some((x) => x.kcal !== undefined) && cuadreHoy ? `<p class="hoy-nota" id="hoy-numeros-fuera">Con lo que has comido fuera, hoy suma ~${Math.round(cuadreHoy.servido / 10) * 10} kcal (el plan preveía ${dHoy.kcal}).</p>` : ''}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`; // #258 (punto 13): las cifras de arriba son las del plan; esta línea, lo de hoy con lo comido fuera
@@ -1698,9 +1698,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const d = planActual.dias.find((x) => x.dia === dia);
     const { reparto } = vistaSemana.repartosPorDia.find((r) => r.dia.dia === dia);
     // La hora de inicio no viaja en el perfil del motor: está en ultimasSesiones, en el mismo orden.
-    const sesiones = sesionesSemana.map((s, i) => ({ ...s, horaInicio: (ultimasSesiones[i] ?? {}).horaInicio, nota: (ultimasSesiones[i] ?? {}).nota })).filter((s) => s.dia === dia);
+    const sesiones = sesionesSemana.map((s, i) => ({ ...s, horaInicio: (ultimasSesiones[i] ?? {}).horaInicio, nota: (ultimasSesiones[i] ?? {}).nota, deporte: (ultimasSesiones[i] ?? {}).deporte })).filter((s) => s.dia === dia);
     let entrenosHtml = sesiones.length
-      ? sesiones.map((s) => `<li class="fila entreno"><span class="fila-icono" aria-hidden="true">${iconoActividad(s.actividad)}</span><div class="fila-texto"><strong>${(Motor.ACTIVIDADES[s.actividad] && Motor.ACTIVIDADES[s.actividad].nombre) || s.actividad}${notaSesionHtml(s)}</strong><span class="fila-sub">${s.minutos}'${s.horaInicio !== undefined ? ` · ${horaDecimalATexto(s.horaInicio)}` : ' · hora sin indicar'}</span></div></li>`).join('')
+      ? sesiones.map((s) => `<li class="fila entreno"><span class="fila-icono" aria-hidden="true">${iconoActividad(s.actividad)}</span><div class="fila-texto"><strong>${escaparHtml(nombreSesion(s))}${notaSesionHtml(s)}</strong><span class="fila-sub">${s.minutos}'${s.horaInicio !== undefined ? ` · ${horaDecimalATexto(s.horaInicio)}` : ' · hora sin indicar'}</span></div></li>`).join('')
       : '<li>Día sin entreno: hoy los músculos se recuperan solos, tú solo tienes que comer bien.</li>';
     // #257 (punto 14): el día de la carrera, la prueba sustituye al entreno habitual (así lo cuenta el plan): ni «Día sin entreno» ni la tirada.
     const compite = compiteEseDia(dia);
@@ -1743,7 +1743,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const { d, entrenosHtml, comidasHtml } = construirDetalleDia(diaResumen);
 
     document.getElementById('resumen-dia-contenido').innerHTML = `
-      <p class="dia-resumen-titulo">${NOMBRE_DIA_LARGO[diaResumen] ?? diaResumen}${diaResumen === diaDeHoy() ? ' (hoy)' : ''} · ${d.tipo}</p>
+      <p class="dia-resumen-titulo">${NOMBRE_DIA_LARGO[diaResumen] ?? diaResumen}${diaResumen === diaDeHoy() ? ' (hoy)' : ''} · ${nombreTipoDia(d, hayEntrenoEl(d.dia))}</p>
       <p class="dia-resumen-kcal">${d.kcal} <small style="font-size:0.5em;font-weight:400">kcal</small></p>
       <div class="dia-macros" style="font-size:0.82rem;color:var(--gris)">P ${d.proteinaG} g · G ${d.grasaG} g · H ${d.hidratoG} g</div>
       ${porqueDiaHtml(`res-dia-${diaResumen}`, diaResumen)}
@@ -1980,7 +1980,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       // La competición solo se nombra el día que la hay (Pablo, 08/10: «todos los días no te apuntas a una competición»).
       const compHtml = delDia.map((c) => `<li class="entreno">🏁 <strong>${escaparHtml(c.nombre)}</strong> · ${escaparHtml(resumenCompeticion(c))}</li>`).join('');
       detalle.innerHTML = `
-        <p class="dia-resumen-titulo">${NOMBRE_DIA_LARGO[diaCal]}${fecha ? ` · ${fechaLegible(fecha)}` : ''} · ${d.tipo}</p>
+        <p class="dia-resumen-titulo">${NOMBRE_DIA_LARGO[diaCal]}${fecha ? ` · ${fechaLegible(fecha)}` : ''} · ${nombreTipoDia(d, hayEntrenoEl(d.dia))}</p>
         <p class="dia-resumen-kcal">${d.kcal} <small style="font-size:0.5em;font-weight:400">kcal</small></p>
         ${compHtml ? `<h3 style="margin-top:1rem">Competición</h3><ul class="dia-resumen-lista">${compHtml}</ul>` : ''}
         <h3 style="margin-top:1rem">Entrenos</h3><ul class="dia-resumen-lista">${entrenosHtml}</ul>
@@ -2965,8 +2965,20 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   }
 
   function entrenosDelDia(dia) {
-    return (semanaActual.perfil.sesiones ?? []).map((s, i) => ({ ...s, horaInicio: (ultimasSesiones[i] ?? {}).horaInicio, nota: (ultimasSesiones[i] ?? {}).nota })).filter((s) => s.dia === dia);
+    return (semanaActual.perfil.sesiones ?? []).map((s, i) => ({ ...s, horaInicio: (ultimasSesiones[i] ?? {}).horaInicio, nota: (ultimasSesiones[i] ?? {}).nota, deporte: (ultimasSesiones[i] ?? {}).deporte })).filter((s) => s.dia === dia);
   }
+  // #260 (punto 32): la sesión con las palabras de la persona («Pádel», «Cardio»), no con el nombre técnico de la tabla de actividades.
+  function nombreSesion(s) {
+    const suyo = String(s.deporte ?? '').trim();
+    const t = suyo || (Motor.ACTIVIDADES[s.actividad] && Motor.ACTIVIDADES[s.actividad].nombre) || s.actividad;
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+  // #260 (puntos 32 y 30): el tipo de día en palabras («día de carga», no «carga_alta»); un día con entreno no se llama «descanso».
+  function nombreTipoDia(d, conEntreno) {
+    const N = { fuerza: 'día de fuerza', suave: 'día suave', duro: 'día exigente', carga_alta: 'día de carga' };
+    return d.tipo === 'descanso' ? (conEntreno ? 'día suave' : 'día sin entreno') : (N[d.tipo] ?? d.tipo);
+  }
+  const hayEntrenoEl = (dia) => (semanaActual && (semanaActual.perfil.sesiones ?? []).some((s) => s.dia === dia));
 
   let verCocido = false; // interruptor del detalle: el peso por defecto es en seco, el cocido es opcional
   let vistaDetalle = 'cantidades'; // qué parte del plato enseña la hoja: «cantidades» (ingredientes y gramos) o «receta» (elaboración)
@@ -3050,7 +3062,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const contexto = `
       ${reparto.conflictos.filter((c) => c.franja === franja).map((c) => `<p class="error-inline">⚠️ ${escaparHtml(textoConflicto(c))}</p>`).join('')}
       <details class="dc-notas"><summary>¿Por qué estas cifras?</summary>
-        <p class="dc-nota">${NOMBRE_DIA_LARGO[dia]} (${d.tipo}) · ${NOMBRE[franja] ?? franja}${hora ? ` a las ${hora}` : ''}.</p>
+        <p class="dc-nota" data-tipo="${d.tipo}">${NOMBRE_DIA_LARGO[dia]} (${nombreTipoDia(d, hayEntrenoEl(d.dia))}) · ${NOMBRE[franja] ?? franja}${hora ? ` a las ${hora}` : ''}.</p>
         ${cuerpoPorque(Motor.explicarComida(f0, { tipoDia: d.tipo, pesoRef: planActual.proteina.pesoReferencia, proteinaDia: d.proteinaG, hidratoDia: d.hidratoG, grasaDia: d.grasaG }))}
         ${asignada ? cuerpoPorque(Motor.explicarRacion({ kcalReceta: asignada.receta.kcal, kcalObjetivo: f0.kcalAprox, racion: asignada.racionAjustada, kcalResultante: asignada.kcalResultante, protegidos: Motor.ingredientesDeLaRacion(asignada.receta, asignada.racionAjustada, Motor.noSeReescala).filter((i) => i.protegido).map((i) => i.nombre) })) : ''}
       </details>`;
@@ -3608,7 +3620,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <div class="dia-sesiones">
           ${sesionesDelDia.map((s) => `
             <div class="sesion-mover">
-              <span>${(Motor.ACTIVIDADES[s.actividad] && Motor.ACTIVIDADES[s.actividad].nombre) || s.actividad} · ${s.minutos}'${notaSesionHtml({ nota: (ultimasSesiones[s.i] ?? {}).nota })}</span>
+              <span>${escaparHtml(nombreSesion({ ...s, deporte: (ultimasSesiones[s.i] ?? {}).deporte }))} · ${s.minutos}'${notaSesionHtml({ nota: (ultimasSesiones[s.i] ?? {}).nota })}</span>
               <label>mover a
                 <select class="mover-select" data-indice="${s.i}">
                   ${DIAS.map((dd) => `<option value="${dd}" ${dd === d.dia ? 'selected' : ''}>${dd}</option>`).join('')}
@@ -3662,7 +3674,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
           <div class="dia-cabecera">
             <div>
               <div class="dia-nombre">${diasConSesion.has(d.dia) ? `<span aria-hidden="true">${iconosDelDia(sesiones, d.dia)}</span> ` : ''}${NOMBRE_DIA_LARGO[d.dia] ?? d.dia}</div>
-              <div class="dia-tipo">${d.tipo}${compPorDia.get(d.dia)?.fase ? ` · <span class="etq-fase">${Motor.ETIQUETA_FASE[compPorDia.get(d.dia).fase]}</span>` : ''}</div>
+              <div class="dia-tipo" data-tipo="${d.tipo}">${nombreTipoDia(d, hayEntrenoEl(d.dia))}${compPorDia.get(d.dia)?.fase ? ` · <span class="etq-fase">${Motor.ETIQUETA_FASE[compPorDia.get(d.dia).fase]}</span>` : ''}</div>
             </div>
             <div class="dia-kcal">${d.kcal}<small style="font-size:0.55em;font-weight:400"> kcal</small></div>
           </div>
