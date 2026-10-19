@@ -88,6 +88,7 @@ var Motor = (() => {
     actividadesDesconocidas: () => actividadesDesconocidas,
     adaptarNombresGluten: () => adaptarNombresGluten,
     adherenciaSemana: () => adherenciaSemana,
+    agruparAvisosPorDia: () => agruparAvisosPorDia,
     agruparPorPersona: () => agruparPorPersona,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
     alertaCeliaquia: () => alertaCeliaquia,
@@ -122,6 +123,7 @@ var Motor = (() => {
     cambiarHoraSesion: () => cambiarHoraSesion,
     cargaDeHidratos: () => cargaDeHidratos,
     categoriasDeTexto: () => categoriasDeTexto,
+    choquesHorario: () => choquesHorario,
     claseGluten: () => claseGluten,
     clasificarAlerta: () => clasificarAlerta,
     claveSlot: () => claveSlot,
@@ -944,7 +946,7 @@ var Motor = (() => {
       const gMin = redondear(p.bordePrimeraHora.hidrato_rapido_g_kg_min * peso, 1);
       const gMax = redondear(p.bordePrimeraHora.hidrato_rapido_g_kg_max * peso, 1);
       avisos.push(
-        `Sesi\xF3n antes de las ${p.bordePrimeraHora.sesion_antes_de_h}:00 sin comida principal cerca: se sugiere una toma ligera ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes (${gMin}-${gMax} g de hidrato r\xE1pido). Es solo una sugerencia: no se ha reservado ni descontado nada del reparto del d\xEDa, las comidas ya suman el total del d\xEDa.` + (desayunoForzadoPost ? " El desayuno se trata como POST porque empieza despu\xE9s de acabar el entreno." : "")
+        `Entrenas antes de las ${p.bordePrimeraHora.sesion_antes_de_h}:00 sin una comida principal cerca: si te sienta bien, toma algo ligero ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes, por ejemplo un pl\xE1tano o una tostada con mermelada (unos ${Math.round(gMin)}-${Math.round(gMax)} g de hidrato). Es solo una sugerencia: no se ha reservado ni descontado nada del reparto del d\xEDa, las comidas ya suman el total del d\xEDa.` + (desayunoForzadoPost ? " El desayuno cuenta como la comida de despu\xE9s del entreno, con m\xE1s hidrato." : "")
       );
     }
     const pPrincipalCap = p.proteinaPrincipal.g_kg_max * e.pesoRef;
@@ -1069,7 +1071,7 @@ var Motor = (() => {
           restadoDe: [...restado].filter(([, g]) => g > 0).map(([franja, hidrato]) => ({ franja, hidrato: redondear(hidrato, 1) }))
         };
         const donde = tomaLigera.restadoDe.map((r) => `${NOMBRE_FRANJA[r.franja]?.toLowerCase() ?? r.franja} \u2212${r.hidrato} g`).join(", ");
-        const ya = avisos.findIndex((a2) => a2.startsWith("Sesi\xF3n antes de las"));
+        const ya = avisos.findIndex((a2) => a2.startsWith("Entrenas antes de las"));
         const texto = e.tomaLigera === "pautada" ? `Toma ligera pautada antes del entreno (${reservado} g de hidrato r\xE1pido, ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes): cuenta como una comida y se resta un poco de cada comida del d\xEDa (${donde}). El total del d\xEDa no cambia.` : `Toma ligera imprevista antes del entreno (${reservado} g de hidrato r\xE1pido): cuenta como una merienda y se resta de la cena (${donde}). El total del d\xEDa no cambia.`;
         if (ya >= 0) avisos[ya] = texto;
         else avisos.push(texto);
@@ -1087,6 +1089,50 @@ var Motor = (() => {
       );
     }
     return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {} };
+  }
+  function agruparAvisosPorDia(avisos) {
+    const NOMBRE2 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
+    const grupos = /* @__PURE__ */ new Map();
+    const sueltos = [];
+    const orden = [];
+    for (const a2 of avisos) {
+      const m = /^([LMXJVSD]): (.+)$/s.exec(a2);
+      if (!m) {
+        orden.push(`\0${sueltos.length}`);
+        sueltos.push(a2);
+        continue;
+      }
+      if (!grupos.has(m[2])) {
+        grupos.set(m[2], []);
+        orden.push(m[2]);
+      }
+      if (!grupos.get(m[2]).includes(m[1])) grupos.get(m[2]).push(m[1]);
+    }
+    return orden.map((k) => {
+      if (k.startsWith("\0")) return sueltos[Number(k.slice(1))];
+      const dias = grupos.get(k);
+      if (dias.length === 1) return `${dias[0]}: ${k}`;
+      const n = dias.map((d) => NOMBRE2[d]);
+      const lista = `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
+      return `${lista.charAt(0).toUpperCase()}${lista.slice(1)}: ${k}`;
+    });
+  }
+  function choquesHorario(franjas, sesiones, nombre = (f2) => f2) {
+    const hh = (h) => `${String(Math.floor(h + 1e-9) % 24).padStart(2, "0")}:${String(Math.round(h % 1 * 60) % 60).padStart(2, "0")}`;
+    const conHora = franjas.filter((f2) => typeof f2.hora === "number").sort((a2, b) => a2.hora - b.hora);
+    const choques = [];
+    for (let i = 1; i < conHora.length; i++) {
+      const a2 = conHora[i - 1];
+      const b = conHora[i];
+      const dif = b.hora - a2.hora;
+      if (Math.abs(dif) < 1e-6) choques.push({ tipo: "misma_hora", franjas: [a2.franja, b.franja], hora: a2.hora, texto: `${nombre(a2.franja)} y ${nombre(b.franja)} est\xE1n a la misma hora (${hh(a2.hora)}).` });
+      else if (dif < 1) choques.push({ tipo: "pegadas", franjas: [a2.franja, b.franja], hora: b.hora, texto: `${nombre(a2.franja)} (${hh(a2.hora)}) y ${nombre(b.franja)} (${hh(b.hora)}) quedan muy pegadas: menos de una hora entre las dos.` });
+    }
+    for (const f2 of conHora) {
+      const s = sesiones.find((x) => f2.hora >= x.inicio && f2.hora < x.fin);
+      if (s) choques.push({ tipo: "en_entreno", franjas: [f2.franja], hora: f2.hora, texto: `${nombre(f2.franja)} (${hh(f2.hora)}) cae dentro del entreno de ${hh(s.inicio)} a ${hh(s.fin)}.` });
+    }
+    return choques;
   }
 
   // src/motor/validador-plato.ts
@@ -5166,7 +5212,14 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       }
     }
     alternativas.sort((a2, b) => a2.desviacion - b.desviacion || a2.receta.id.localeCompare(b.receta.id));
-    return { alternativas, descartadas };
+    const vistos = /* @__PURE__ */ new Set();
+    const unicas = alternativas.filter((a2) => {
+      const k = a2.receta.nombre.trim().toLowerCase();
+      if (vistos.has(k)) return false;
+      vistos.add(k);
+      return true;
+    });
+    return { alternativas: unicas, descartadas };
   }
   function aplicarSustituciones(resultado, slots, recetas, sustituciones, opciones = {}) {
     let asignaciones = resultado.asignaciones.map((a2) => ({ ...a2 }));

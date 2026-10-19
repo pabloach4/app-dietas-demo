@@ -1052,6 +1052,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     }
 
     const entrenos = entrenosDelDia(dia);
+    // #259 (punto 29): comidas de hoy a la misma hora, muy pegadas o dentro de un entreno: aviso y botón para cambiar la hora.
+    const NOMBRE_CHOQUE = { desayuno: 'El desayuno', media_manana: 'La media mañana', comida: 'La comida', merienda: 'La merienda', cena: 'La cena' };
+    const choques = Motor.choquesHorario(horas, entrenos.filter((s) => s.horaInicio !== undefined).map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 })), (f) => NOMBRE_CHOQUE[f] ?? f);
+    const avisoHorarioHtml = choques.length ? `<div class="hoy-bloque" id="hoy-choques" role="status"><h3>Revisa el horario de hoy</h3>${choques.map((c) => `<p style="margin:0 0 0.3rem">${escaparHtml(c.texto)}</p>`).join('')}<button type="button" class="btn-secundario" id="hoy-cambiar-hora" data-dia="${dia}">Cambiar la hora</button></div>` : '';
     const compiteHoy = otraSemana ? [] : compiteEseDia(dia);
     const bloqueEntreno = compiteHoy.length ? `<div class="hoy-bloque"><h3>Hoy compites</h3><div class="titulo">${escaparHtml(compiteHoy.map((c) => c.nombre).join(' y '))}: la prueba sustituye al entreno habitual de hoy.</div></div>` // #257.14
       : entrenos.length ? entrenos.map((s) => {
@@ -1112,12 +1116,28 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ${avisoOtraSemanaHtml}
       ${otraSemana ? '' : previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${bloqueComida}
+      ${avisoHorarioHtml}
       ${medallasHoyHtml(dia, iso)}
       ${bloqueFuera}
       ${bloqueEntreno}
       ${otraSemana ? '' : cardCompeticionHtml(dia)}
       ${mas('numeros', 'Tus números de hoy', numeros)}
       ${mas('agua', 'Agua', '<p class="hoy-nota" id="hoy-agua">' + TEXTO_AGUA + '</p>')}`;
+    const cambiarHora = document.getElementById('hoy-cambiar-hora');
+    if (cambiarHora) cambiarHora.addEventListener('click', () => { // abre el horario de este día en Semana › Plan
+      const d = cambiarHora.dataset.dia;
+      diasHorarioAbiertos.add(d);
+      mostrarPanel('semana');
+      document.querySelector('#panel-calendario .sub-plan')?.click();
+      mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
+      const panel = document.getElementById(`panel-horario-${d}`);
+      if (!panel) return;
+      // La tarjeta del día puede estar plegada (en el móvil lo está): se despliega para que el horario se vea.
+      document.querySelectorAll('#r-dias .dia-toggle').forEach((t) => { const c = document.getElementById(t.getAttribute('aria-controls')); if (c && c.contains(panel) && t.getAttribute('aria-expanded') !== 'true') t.click(); });
+      const visible = document.getElementById(`panel-horario-${d}`);
+      for (let det = visible && visible.closest('details'); det; det = det.parentElement && det.parentElement.closest('details')) det.open = true; // «Más opciones de este día»
+      if (visible) { visible.scrollIntoView({ block: 'center' }); const campo = visible.querySelector('.hor-campo'); if (campo) campo.focus(); }
+    });
     const volverSemana = document.getElementById('hoy-volver-semana');
     if (volverSemana) volverSemana.addEventListener('click', () => document.getElementById('cal-lunes-actual').click());
     const btnFin = document.getElementById('aviso-fin-compra');
@@ -3108,8 +3128,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     });
     const h = franjasDelDia(dia).find((x) => x.franja === franja);
     document.getElementById('dc-titulo').textContent = `Cambiar receta · ${nombreSlot(clave)}${h && h.hora !== undefined ? ` · ${horaDecimalATexto(h.hora)}` : ''}`;
+    // #259 (punto 28): primero las 8 que mejor encajan con las kcal de esta comida; el resto, con «Ver más».
+    const PRIMERAS_ALT = 8;
     const tarjetas = alternativas.map((a, i) => `
-      <li class="alt-card">
+      <li class="alt-card"${i >= PRIMERAS_ALT ? ' hidden data-mas-alt' : ''}>
         <div class="titulo">${escaparHtml(a.receta.nombre)} <span class="rec-etiqueta">EJEMPLO</span></div>
         <div class="dato">~${a.kcalResultante} kcal</div>
         ${a.avisos.length ? `<details class="saber-mas"><summary>Aviso sobre este plato</summary>${a.avisos.map((x) => `<div class="aviso">⚠️ ${escaparHtml(x)}.</div>`).join('')}</details>` : ''}
@@ -3122,13 +3144,15 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('dc-cuerpo').innerHTML = `
       <p>${actual ? `Ahora: <strong>${escaparHtml(actual.receta.nombre)}</strong>.` : `Ahora: sin receta de ejemplo${hueco ? ` (${escaparHtml(hueco.motivo)})` : ''}.`}</p>
       ${dia === LETRA_DIA_JS[new Date().getDay()] ? '<button type="button" class="btn-secundario" id="alt-fuera">He comido fuera</button>' : ''}
-      ${alternativas.length ? `<ul class="alt-lista">${tarjetas}</ul>` : `<p class="error-inline">No hay ninguna receta de ejemplo compatible para esta comida${bloqueadasPorVariedad.length ? ' que respete el límite de variedad' : ''}. No se cambia nada ni se rebajan tus restricciones.</p>`}
+      ${alternativas.length ? `<ul class="alt-lista">${tarjetas}</ul>${alternativas.length > PRIMERAS_ALT ? `<button type="button" class="btn-texto" id="alt-ver-mas">Ver más (${alternativas.length - PRIMERAS_ALT})</button>` : ''}` : `<p class="error-inline">No hay ninguna receta de ejemplo compatible para esta comida${bloqueadasPorVariedad.length ? ' que respete el límite de variedad' : ''}. No se cambia nada ni se rebajan tus restricciones.</p>`}
       ${motivos}
       <details class="saber-mas"><summary>Saber más</summary><p>Cambia solo esta comida: no añade otra ni registra que la hayas tomado, y el resto de la semana y tus objetivos no se tocan. Las opciones <strong>no son equivalentes nutricionales</strong>: solo cumplen tus restricciones, el validador de platos, la variedad semanal en comidas y cenas (máx. 2 veces el mismo plato) y la franja. Las kcal y macros de las recetas de ejemplo son aproximados.</p></details>
       <div id="alt-previa"></div>
       <div class="dc-acciones"><button type="button" class="btn-texto" id="alt-cancelar">Cancelar y volver al detalle</button></div>`;
     document.getElementById('dc-cuerpo').querySelectorAll('.alt-previsualizar').forEach((b) => b.addEventListener('click', () => previsualizarAlternativa(dia, franja, alternativas[Number(b.dataset.i)], slot, b)));
     document.getElementById('alt-cancelar').addEventListener('click', () => abrirDetalleComida(dia, franja));
+    const verMasAlt = document.getElementById('alt-ver-mas');
+    if (verMasAlt) verMasAlt.addEventListener('click', () => { document.querySelectorAll('[data-mas-alt]').forEach((li) => { li.hidden = false; }); verMasAlt.remove(); });
     const botonFuera = document.getElementById('alt-fuera');
     if (botonFuera) botonFuera.addEventListener('click', () => abrirComidaFuera(dia, franja));
     const dlg = document.getElementById('detalle-comida');
@@ -3744,13 +3768,13 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ? [
         ...avisosAlergias.map((a) => `<li>${a}<br><small style="opacity:.55">alergias</small></li>`),
         ...Motor.avisosParaPersona(plan.avisos).map((t) => `<li>${t}</li>`),
-        ...avisosReparto.map((a) => `<li>${escaparHtml(a)}<br><small style="opacity:.55">reparto</small></li>`),
+        ...Motor.agruparAvisosPorDia(avisosReparto).map((a) => `<li>${escaparHtml(a)}</li>`), // #259.25: el mismo aviso de varios días, una vez
       ].join('')
       : '<li>Ninguno.</li>';
     // #256 (punto 1): las notas del cálculo (D10, IOC, regla 16bis…) son para Pablo: suben con el plan y la persona no las ve.
     document.getElementById('tarjeta-notas').hidden = true;
     // Issue #119: avisos y notas van plegados (con su recuento) para no saturar la pantalla; si algún aviso exige revisar con Pablo, se abre solo.
-    document.querySelector('#tarjeta-avisos summary').textContent = `Avisos del plan (${avisosPersona.length + avisosReparto.length + avisosAlergias.length})`;
+    document.querySelector('#tarjeta-avisos summary').textContent = `Avisos del plan (${avisosPersona.length + Motor.agruparAvisosPorDia(avisosReparto).length + avisosAlergias.length})`;
     document.querySelector('#tarjeta-avisos details').open = avisosAlergias.length > 0 || plan.avisos.some((a) => ['revisar_con_pablo', 'disponibilidad_baja', 'disponibilidad_baja_estimada', 'disponibilidad_baja_competicion', 'disponibilidad_baja_competicion_estimada', 'menor'].includes(a.codigo)); // los que piden hablar con Pablo no pueden quedar plegados (#168)
 
     // Texto legible en vez de volcar el JSON (issue #13): además de verse mal, desbordaba en móvil.
