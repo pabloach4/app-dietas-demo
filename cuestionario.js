@@ -1533,7 +1533,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   function textoRestricciones(ap) {
     if (!ap) return 'Restricciones del perfil: aún no calculadas.';
     const deAlergia = new Set(ap.deAlergia || []); // #256.5: una alergia se llama alergia, no «evitas»
-    const lista = [ap.celiaquia && 'celiaquía', ap.lactosa && 'lactosa', ap.vegetariano && 'vegetariano/a', ap.vegano && 'vegano/a', ...ap.evitados.map((e) => (deAlergia.has(e) ? `alergia a «${e}»` : `evitas «${e}»`))].filter(Boolean);
+    // #260 (punto 37): cada restricción una vez (lo del cuestionario y la lista negra se juntaban repetido).
+    const lista = [...new Set([ap.celiaquia && 'celiaquía', ap.lactosa && 'lactosa', ap.vegetariano && 'vegetariano/a', ap.vegano && 'vegano/a', ...ap.evitados.map((e) => (deAlergia.has(e) ? `alergia a «${e}»` : `evitas «${e}»`))].filter(Boolean))];
     return lista.length
       ? `Restricciones de tu perfil: ${lista.join(', ')}. Se aplican siempre; si no sale ninguna receta no se rebajan. Encontrar un ingrediente no garantiza que la receta sea segura para ti.`
       : 'Restricciones de tu perfil: ninguna indicada. Esto no garantiza seguridad alimentaria.';
@@ -2571,8 +2572,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   // Issue #30: lista de la compra de la semana, con el catálogo de recetas de EJEMPLO y el asignador
   // de #23 + el generador de #19. Los huecos (franja sin receta que encaje) se muestran, no se esconden.
   const NOMBRE_SECCION = {
-    verdura: '🥦 Verdura', fruta: '🍎 Fruta', carne_pescado: '🍗 Carne y pescado',
-    lacteos: '🥛 Lácteos y huevos', despensa: '🥫 Despensa', congelados: '🧊 Congelados', otros: '📦 Otros',
+    verdura: '🥦 Verdura', fruta: '🍎 Fruta', carne_pescado: '🍗 Carne y pescado', proteina_vegetal: '🫘 Legumbres y proteína vegetal',
+    vegetal_lacteo: '🌱 Bebidas y yogures vegetales', lacteos: '🥛 Lácteos y huevos', despensa: '🥫 Despensa', congelados: '🧊 Congelados', otros: '📦 Otros',
   };
 
   function pintarListaCompra(asignacionSemana) {

@@ -3052,7 +3052,10 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       "sardina",
       "caballa"
     ]],
-    ["lacteos", ["yogur", "queso", "leche", "bebida vegetal", "huevo"]],
+    // #260 (punto 38): la proteína del vegano no va a «Otros», y lo vegetal no va con los lácteos (antes de «lacteos» para que gane).
+    ["proteina_vegetal", ["tofu", "tempeh", "soja texturizada", "seitan", "heura", "edamame", "garbanzo", "lenteja", "alubia", "guisante", "hummus", "azuki"]],
+    ["vegetal_lacteo", ["bebida vegetal", "bebida de soja", "bebida de avena", "bebida de almendra", "yogur de soja", "yogur vegetal", "postre de soja"]],
+    ["lacteos", ["yogur", "queso", "leche", "huevo"]],
     ["fruta", [
       "platano",
       "manzana",
@@ -3082,7 +3085,19 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       "fruto seco",
       "aceituna",
       "encurtido",
-      "cafe"
+      "cafe",
+      "almendra",
+      "nuez",
+      "nueces",
+      "avellana",
+      "anacardo",
+      "pistacho",
+      "cacahuete",
+      "semilla",
+      "chia",
+      "sesamo",
+      "pipa",
+      "crema de cacahuete"
     ]],
     ["verdura", [
       "judia",
@@ -3172,6 +3187,8 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     verdura: "Verdura",
     fruta: "Fruta",
     carne_pescado: "Carne y pescado",
+    proteina_vegetal: "Legumbres y prote\xEDna vegetal",
+    vegetal_lacteo: "Bebidas y yogures vegetales",
     lacteos: "L\xE1cteos y huevos",
     despensa: "Despensa",
     congelados: "Congelados",
