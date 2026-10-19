@@ -965,6 +965,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const fechaTxt = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
     let nota = 'Día y hora de este dispositivo; el plan se muestra por día de la semana. No está conectado a ningún calendario ni sabe lo que has hecho.';
     if (calInicio && !Motor.diaDeLaFecha(calInicio, iso)) nota = `Hoy queda fuera de la semana con fechas que elegiste en el calendario (lunes ${calInicio}). ${nota}`;
+    // #257 (punto 7): con el calendario en otra semana, «Hoy» no anuncia su competición («MAÑANA COMPITES» a 29 días): se dice qué
+    // semana se está mirando y se ofrece volver a esta. (Que Hoy tenga además el plan de la semana real va aparte: #257, punto 7, parte 2.)
+    const otraSemana = Boolean(calInicio) && !Motor.diaDeLaFecha(calInicio, iso);
+    const avisoOtraSemanaHtml = otraSemana ? `<div class="hoy-bloque" id="hoy-otra-semana" role="status"><p style="margin:0 0 0.4rem">En el calendario estás mirando la semana del ${escaparHtml(fechaLegible(calInicio, false))}: lo de esa semana (como una competición) no se enseña aquí.</p><button type="button" class="btn-secundario" id="hoy-volver-semana">Volver a esta semana</button></div>` : '';
 
     const { reparto } = vistaSemana.repartosPorDia.find((r) => r.dia.dia === dia);
     const NOMBRE = { desayuno: 'Desayuno', media_manana: 'Media mañana', comida: 'Comida', merienda: 'Merienda', cena: 'Cena' };
@@ -1048,7 +1052,9 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     }
 
     const entrenos = entrenosDelDia(dia);
-    const bloqueEntreno = entrenos.length ? entrenos.map((s) => {
+    const compiteHoy = otraSemana ? [] : compiteEseDia(dia);
+    const bloqueEntreno = compiteHoy.length ? `<div class="hoy-bloque"><h3>Hoy compites</h3><div class="titulo">${escaparHtml(compiteHoy.map((c) => c.nombre).join(' y '))}: la prueba sustituye al entreno habitual de hoy.</div></div>` // #257.14
+      : entrenos.length ? entrenos.map((s) => {
       const nombre = (Motor.ACTIVIDADES[s.actividad] && Motor.ACTIVIDADES[s.actividad].nombre) || s.actividad;
       let estado = 'hora sin indicar';
       if (s.horaInicio !== undefined) {
@@ -1102,14 +1108,17 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ${avisoCribadoHtml}
       ${avisoPabloHtml}
       ${avisoFinHtml}${avisoTerminadaHtml}
-      ${previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
+      ${avisoOtraSemanaHtml}
+      ${otraSemana ? '' : previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${bloqueComida}
       ${medallasHoyHtml(dia, iso)}
       ${bloqueFuera}
       ${bloqueEntreno}
-      ${cardCompeticionHtml(dia)}
+      ${otraSemana ? '' : cardCompeticionHtml(dia)}
       ${mas('numeros', 'Tus números de hoy', numeros)}
       ${mas('agua', 'Agua', '<p class="hoy-nota" id="hoy-agua">' + TEXTO_AGUA + '</p>')}`;
+    const volverSemana = document.getElementById('hoy-volver-semana');
+    if (volverSemana) volverSemana.addEventListener('click', () => document.getElementById('cal-lunes-actual').click());
     const btnFin = document.getElementById('aviso-fin-compra');
     if (btnFin) btnFin.addEventListener('click', () => { proxima.abierta = true; renderizarListaCompra(); mostrarPanel('compra'); });
   }
@@ -1656,9 +1665,12 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const { reparto } = vistaSemana.repartosPorDia.find((r) => r.dia.dia === dia);
     // La hora de inicio no viaja en el perfil del motor: está en ultimasSesiones, en el mismo orden.
     const sesiones = sesionesSemana.map((s, i) => ({ ...s, horaInicio: (ultimasSesiones[i] ?? {}).horaInicio, nota: (ultimasSesiones[i] ?? {}).nota })).filter((s) => s.dia === dia);
-    const entrenosHtml = sesiones.length
+    let entrenosHtml = sesiones.length
       ? sesiones.map((s) => `<li class="fila entreno"><span class="fila-icono" aria-hidden="true">${iconoActividad(s.actividad)}</span><div class="fila-texto"><strong>${(Motor.ACTIVIDADES[s.actividad] && Motor.ACTIVIDADES[s.actividad].nombre) || s.actividad}${notaSesionHtml(s)}</strong><span class="fila-sub">${s.minutos}'${s.horaInicio !== undefined ? ` · ${horaDecimalATexto(s.horaInicio)}` : ' · hora sin indicar'}</span></div></li>`).join('')
       : '<li>Día sin entreno: hoy los músculos se recuperan solos, tú solo tienes que comer bien.</li>';
+    // #257 (punto 14): el día de la carrera, la prueba sustituye al entreno habitual (así lo cuenta el plan): ni «Día sin entreno» ni la tirada.
+    const compite = compiteEseDia(dia);
+    if (compite.length) entrenosHtml = `<li class="fila entreno"><span class="fila-icono" aria-hidden="true">🏁</span><div class="fila-texto"><strong>Hoy compites: ${escaparHtml(compite.map((c) => c.nombre).join(' y '))}</strong><span class="fila-sub">La prueba sustituye al entreno habitual de este día.</span></div></li>`;
     const horaFranja = (f) => { const x = franjasDelDia(dia).find((y) => y.franja === f); return x && x.hora !== undefined ? `${horaDecimalATexto(x.hora)} · ` : ''; };
     const comidasHtml = reparto.franjas.length ? reparto.franjas.map((f) => {
       const conflicto = reparto.conflictos.filter((c) => c.franja === f.franja).map((c) => `<span class="error-inline">⚠️ ${escaparHtml(textoConflicto(c))}</span>`).join('');
@@ -1713,6 +1725,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   // --- Issue #125: día de competición. Línea de tiempo, combustible de carrera y reorganización de las tomas alrededor de la
   // hora de salida. Ofrece, no impone: el horario por día solo cambia al pulsar el botón (y se deshace con «Volver al horario general»). ---
   const NOMBRE_TOMA = { desayuno: 'Desayuno', media_manana: 'Media mañana', comida: 'Comida', merienda: 'Merienda', cena: 'Cena' };
+  /** #257 (punto 14): competiciones de ese día de la semana del calendario ([] sin calendario). */
+  function compiteEseDia(dia) {
+    return calInicio ? Motor.competicionesDelDia(competiciones, calInicio, dia) : [];
+  }
   function competicionDelDia(dia) {
     if (!calInicio || !planActual || !respuestasActuales) return null;
     const fecha = Motor.fechaDelDia(calInicio, dia);
@@ -1941,16 +1957,32 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const lista = document.getElementById('cal-lista-comp');
     lista.innerHTML = competiciones.length ? competiciones.map((c) => {
       const dia = calInicio ? Motor.diaDeLaFecha(calInicio, c.fecha) : undefined;
+      // #257 (punto 14): cuántos días faltan y un botón para ver la semana de la carrera (antes había que adivinar el lunes).
+      const hoyIso = Motor.fechaLocalISO(new Date());
+      const utc = (f) => Date.UTC(Number(f.slice(0, 4)), Number(f.slice(5, 7)) - 1, Number(f.slice(8, 10)));
+      const faltan = Math.round((utc(c.fecha) - utc(hoyIso)) / 86400000);
+      const cuando = faltan === 0 ? 'hoy' : faltan === 1 ? 'mañana' : faltan > 1 ? `faltan ${faltan} días` : '';
+      const lunesComp = Motor.lunesDeLaSemana(c.fecha);
       return `
         <li class="comp-item">
-          <span><strong>${escaparHtml(c.nombre)}</strong><br><span style="color:var(--gris)">${escaparHtml(resumenCompeticion(c))}${dia ? ` · esta semana (${NOMBRE_DIA_LARGO[dia]})` : ''}</span></span>
+          <span><strong>${escaparHtml(c.nombre)}</strong>${cuando ? ` <span class="comp-faltan">· ${cuando}</span>` : ''}<br><span style="color:var(--gris)">${escaparHtml(resumenCompeticion(c))}${dia ? ` · esta semana (${NOMBRE_DIA_LARGO[dia]})` : ''}</span></span>
           <span class="acciones">
+            ${faltan >= 0 && calInicio !== lunesComp ? `<button type="button" class="btn-texto" data-accion="semana" data-lunes="${lunesComp}" aria-label="Ver la semana de ${escaparHtml(c.nombre)}">Ver esa semana</button>` : ''}
             <button type="button" class="btn-texto" data-accion="editar" data-id="${c.id}" aria-label="Editar ${escaparHtml(c.nombre)}">Editar</button>
             <button type="button" class="btn-texto" data-accion="borrar" data-id="${c.id}" aria-label="Borrar ${escaparHtml(c.nombre)}" style="color:var(--peligro)">Borrar</button>
           </span>
         </li>`;
     }).join('') : '<li style="color:var(--gris)">Todavía no has anotado ninguna competición.</li>';
     lista.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+      if (b.dataset.accion === 'semana') {
+        calInicio = b.dataset.lunes;
+        sincronizarInicioDieta();
+        document.getElementById('cal-inicio-error').hidden = true;
+        document.getElementById('cal-inicio').value = calInicio;
+        guardarCalendarioLocal();
+        pintarCalendario();
+        return;
+      }
       if (b.dataset.accion === 'borrar') {
         competiciones = Motor.borrarCompeticion(competiciones, b.dataset.id);
         if (editandoCompId === b.dataset.id) salirDeEdicionCompeticion();
