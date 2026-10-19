@@ -7711,6 +7711,36 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
           resto = objetivo - sumar();
         }
       }
+      if (opciones.admite && objetivo - sumar() > margen) {
+        const postres = recetas.filter((x) => x.tipoPlato === "postre" && opciones.admite(x));
+        for (const fr of ["comida", "cena"]) {
+          const falta = objetivo - sumar();
+          if (falta <= margen) break;
+          const a2 = mias.find((x) => x.franja === fr);
+          if (!a2 || opciones.noMover?.(dia, fr)) continue;
+          const base = recetaDeId(porId, a2.receta);
+          const slot = delDia.find((x) => x.franja === fr);
+          if (!base || !slot) continue;
+          const platos = base.platos ? base.platos.map((id) => porId.get(id)).filter((x) => !!x) : [base];
+          if (platos.some((x) => x.tipoPlato === "postre")) continue;
+          let mejor;
+          for (const po of postres.filter((x) => x.franjas.includes(fr))) {
+            const comp = componerComida([...platos, po]);
+            const kcal = kcalConRacion(comp, a2.racionAjustada);
+            const delta = kcal - a2.kcalResultante;
+            if (delta <= 0 || delta > falta + margen) continue;
+            if (incumplimientosRacion(fr, comp, a2.racionAjustada, { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+            if (validarPlatoGenerado(fr, gramosEscalados(comp, a2.racionAjustada), { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+            if (!mejor || Math.abs(falta - delta) < Math.abs(falta - mejor.delta)) mejor = { comp, kcal, delta };
+          }
+          if (!mejor) continue;
+          porId.set(mejor.comp.id, mejor.comp);
+          a2.receta = mejor.comp.id;
+          a2.kcalResultante = mejor.kcal;
+          const postre = recetaDeId(porId, mejor.comp.platos[mejor.comp.platos.length - 1]);
+          a2.ajusteDia = { kcal: (a2.ajusteDia?.kcal ?? 0) + mejor.delta, motivo: `Hoy esta comida lleva de postre ${postre ? postre.nombre.toLowerCase() : "un postre"} (${mejor.delta} kcal) para llegar a las kcal del d\xEDa con cantidades normales.` };
+        }
+      }
       const servido = sumar();
       const cuadrado = Math.abs(objetivo - servido) <= margen || objetivo === 0;
       const aviso = cuadrado ? void 0 : `${dia}: ${objetivo - servido > 0 ? "faltan" : "sobran"} ${Math.abs(Math.round(objetivo - servido))} kcal del d\xEDa (objetivo ${Math.round(objetivo)}, servido ${Math.round(servido)}) con cantidades normales. Se puede repartir en otra toma, cerrar con un postre o cambiar alg\xFAn plato; no se infla nada.`;

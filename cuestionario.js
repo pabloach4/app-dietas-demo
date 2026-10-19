@@ -3427,6 +3427,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
     const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
+    const admitePostre = (r) => Motor.evaluarCompatibilidad(r, alergiasPreferencias).compatible; // #259.11: el postre de cierre, con las mismas restricciones
     RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, Boolean(respuestas.alergias && respuestas.alergias.celiaquia)); // #256.26
     // #189: la próxima dieta guardada se vuelve a comprobar con las restricciones de ahora: lo que ya no vale se quita y se dice.
     if (siguiente) {
@@ -3453,7 +3454,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // Issue #145: lo que no cabe en una comida con cantidades normales se reparte entre las otras comidas del día (sin inflar nada).
     const recetasCuadre = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(aplicadas.resultado.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
     const enCompeticion = (dia) => Boolean(compPorDia.get(dia) && compPorDia.get(dia).fase === 'competicion');
-    let cuadrado = Motor.cuadrarDias(aplicadas.resultado.asignaciones, slotsSemana, recetasCuadre, { noMover: enCompeticion });
+    let cuadrado = Motor.cuadrarDias(aplicadas.resultado.asignaciones, slotsSemana, recetasCuadre, { noMover: enCompeticion, admite: admitePostre }); // #259.11: y si hace falta, postre
     // «He comido fuera» (Pablo, 08/10): «igual que si come otra cosa en su casa y cambia, si sale fuera debería regularse también».
     // Hoy esa comida cuenta con las kcal apuntadas y una segunda pasada del mismo cuadre regula las comidas que van DESPUÉS de ella
     // (las anteriores ya han pasado y no se tocan), con los mismos topes de cantidades normales. Al día siguiente deja de aplicarse.
@@ -3482,7 +3483,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const evitar = [...new Set(asignacionSemana.asignaciones.flatMap((a) => { const r = Motor.recetaDeId(porId, a.receta); return r ? (r.platos ?? [r.id]) : [a.receta]; }))];
       const base = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { ...opcionesAsignador, fijadas: fijasPropias, evitar });
       const rc = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(base.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
-      return { ...base, asignaciones: Motor.cuadrarDias(base.asignaciones, slotsSemana, rc, { noMover: enCompeticion }).asignaciones };
+      return { ...base, asignaciones: Motor.cuadrarDias(base.asignaciones, slotsSemana, rc, { noMover: enCompeticion, admite: admitePostre }).asignaciones };
     };
     proxima.dieta = null; // el plan se ha recalculado: la dieta siguiente preparada antes ya no vale
     if (proxima.resultado) proxima.obsoleta = true; // #192: la lista ya preparada se rehace con las restricciones de ahora al pintar la compra
