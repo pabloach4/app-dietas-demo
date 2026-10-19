@@ -172,7 +172,7 @@
   /* Issue #37: contexto de vida real por día (turno, táper...). Solo anotación, no cambia el cálculo. */
   .contexto-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
   .contexto-badge {
-    font-size: 0.72rem; font-weight: 600; color: var(--verde); background: var(--verde-suave);
+    font-size: 0.75rem; font-weight: 600; color: var(--verde); background: var(--verde-suave);
     border: 1px solid var(--acento-borde); border-radius: 999px; padding: 0.2rem 0.55rem;
   }
   .contexto-toggle, .horario-toggle {
@@ -307,7 +307,7 @@
   .rec-img span { display: block; font-size: 1.6rem; }
   .rec-cuerpo { padding: 0.7rem 0.8rem; display: flex; flex-direction: column; gap: 0.3rem; flex: 1; }
   .rec-nombre { font-weight: 700; overflow-wrap: normal; }
-  .rec-etiqueta { align-self: flex-start; font-size: 0.7rem; font-weight: 700; background: var(--aviso); border: 1px solid var(--aviso-borde); border-radius: 999px; padding: 0.1rem 0.5rem; }
+  .rec-etiqueta { align-self: flex-start; font-size: 0.75rem; font-weight: 700; background: var(--aviso); border: 1px solid var(--aviso-borde); border-radius: 999px; padding: 0.1rem 0.5rem; }
   .rec-dato { font-size: 0.82rem; color: var(--gris); }
   .rec-incompat { font-size: 0.82rem; color: var(--peligro); font-weight: 600; }
   .rec-acciones { display: flex; gap: 0.4rem; margin-top: 0.3rem; }
@@ -357,7 +357,7 @@
   .dia-resumen-lista li.entreno { background: var(--verde-suave); border-color: var(--acento-borde); }
   .dia-resumen-lista li.hueco { color: var(--peligro); }
   .error-inline { color: var(--peligro); font-weight: 600; font-size: 0.88rem; margin: 0.4rem 0; }
-  .dias-chips button small { display: block; font-weight: 400; font-size: 0.68rem; color: var(--gris); }
+  .dias-chips button small { display: block; font-weight: 400; font-size: 0.75rem; color: var(--gris); }
   .dias-chips button .marca-comp { color: var(--ambar-fuerte); }
   .comp-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; border: 1px solid var(--borde); border-radius: 10px; padding: 0.55rem 0.7rem; background: var(--tarjeta); }
   .comp-item .acciones { display: flex; gap: 0.3rem; }
@@ -391,22 +391,24 @@
   :root { --macro-p: #1d5fb8; --macro-g: #a86400; --macro-h: #2f7d4a; }
   .chip { display: inline-block; min-width: 1.6rem; text-align: center; font-weight: 700; font-size: 0.78rem; padding: 0.1rem 0.4rem; border-radius: 999px; color: #fff; }
   .chip-p { background: var(--macro-p); } .chip-g { background: var(--macro-g); } .chip-h { background: var(--macro-h); }
-  .etq-ejemplo { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--aviso); color: var(--texto-aviso); vertical-align: middle; }
+  /* #260 (punto 41): nada de lo que hay que leer por debajo de 12 px (antes, pestañas a 10,6 px y «EJEMPLO» a 10,4 px). */
+  small { font-size: max(0.75rem, 0.83em); }
+  .etq-ejemplo { display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--aviso); color: var(--texto-aviso); vertical-align: middle; }
   .etq-fase { display: inline-block; font-weight: 700; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--aviso); color: var(--texto-aviso); font-size: 0.75rem; }
-  .etq-pedido { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--acento-suave); color: var(--acento-fuerte); vertical-align: middle; white-space: normal; }
+  .etq-pedido { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--acento-suave); color: var(--acento-fuerte); vertical-align: middle; white-space: normal; }
   .receta-dato { font-size: 0.82rem; color: var(--gris); margin-top: 0.1rem; }
   .franja-reparto-card .macros strong { font-size: 1.1rem; color: var(--texto); }
   #dc-cuerpo h3 { font-size: 0.95rem; margin: 1.1rem 0 0.4rem; padding-bottom: 0.2rem; border-bottom: 2px solid var(--verde-suave); }
   #dc-cuerpo h3.dc-plato { font-size: 1.05rem; border-bottom: 0; margin-top: 0.3rem; }
   .dc-racion { font-size: 0.78rem; font-weight: 600; color: var(--verde); margin-left: 0.2rem; }
-  .dc-ings-cab { display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gris); padding: 0 0.7rem; }
+  .dc-ings-cab { display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gris); padding: 0 0.7rem; }
   .dc-ings-cab span:nth-child(2), .dc-ings-cab span:nth-child(3) { text-align: right; }
   .dc-ings { list-style: none; margin: 0.25rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
   .dc-ing { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 0.1rem 0.6rem; padding: 0.45rem 0.7rem; border-radius: 8px; background: var(--tarjeta-suave); }
   .dc-ing-nombre { font-weight: 600; overflow-wrap: normal; word-break: normal; }
   .dc-ing-nota { font-weight: 400; color: var(--gris); }
   .dc-ing-gramos { font-weight: 800; font-size: 1.02rem; text-align: right; white-space: nowrap; }
-  .dc-ing-gramos .dc-cocido { display: block; font-weight: 500; font-size: 0.72rem; color: var(--verde); }
+  .dc-ing-gramos .dc-cocido { display: block; font-weight: 500; font-size: 0.75rem; color: var(--verde); }
   .dc-ing-compra { font-size: 0.78rem; color: var(--gris); text-align: right; min-width: 4.5rem; }
   /* #156: a 375 px la medida casera («≈ 1½ × cucharada sopera rasa») va en su línea, bajo los gramos, y no ensancha la hoja. */
   .dc-ing { grid-template-columns: minmax(0, 1fr) auto auto; }
@@ -417,7 +419,7 @@
   .dc-pasos { padding-left: 1.2rem; } .dc-pasos li { margin-bottom: 0.3rem; }
   .dc-cuadre { width: 100%; border-collapse: collapse; }
   .dc-cuadre th, .dc-cuadre td { padding: 0.3rem 0.5rem; text-align: left; border-bottom: 1px solid var(--borde); }
-  .dc-cuadre thead th { font-size: 0.72rem; text-transform: uppercase; color: var(--gris); }
+  .dc-cuadre thead th { font-size: 0.75rem; text-transform: uppercase; color: var(--gris); }
   .dc-cuadre-kcal th, .dc-cuadre-kcal td { font-size: 1rem; }
   .dc-nota { font-size: 0.8rem; color: var(--gris); margin: 0.4rem 0; }
   details.dc-notas { margin-top: 0.9rem; border-top: 1px solid var(--borde); padding-top: 0.5rem; }
@@ -485,7 +487,7 @@
   /* Tarjetas: blancas, sin borde, con aire. Lo que va dentro de una tarjeta es gris muy claro, no otra caja con borde. */
   .tarjeta { border: 0; border-radius: var(--radio); padding: 1.15rem; margin-bottom: 0.85rem; box-shadow: var(--sombra); }
   .tarjeta h2 { font-size: 1.125rem; line-height: 1.25; font-weight: 650; letter-spacing: -0.01em; margin-bottom: 0.8rem; }
-  .tarjeta h3, .hoy-bloque h3 { font-size: 0.72rem; line-height: 1.3; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--acento-fuerte); }
+  .tarjeta h3, .hoy-bloque h3 { font-size: 0.75rem; line-height: 1.3; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--acento-fuerte); }
   .sesion-card, .franja-card, .dia-card, .hoy-bloque, .stat, .franja-reparto-card, .alt-card, .comp-item, .dia-resumen-lista li,
   .coste-estimado, .exp-preview-lista { border: 0; border-radius: var(--radio-medio); background: var(--tarjeta-suave); }
   .franja-reparto-card, .sesion-mover, .dia-toggle, .contexto-toggle, .horario-toggle { border: 0; border-radius: var(--radio-chico); background: var(--tarjeta); }
@@ -495,7 +497,7 @@
   .hoy-bloque { padding: 0.9rem 1rem; }
   .stat .n, .dia-card .dia-kcal, .dia-resumen-kcal, .dc-ing-gramos, .franja-reparto-card .macros strong { font-variant-numeric: tabular-nums; }
   .dia-resumen-kcal, .dia-card .dia-kcal { letter-spacing: -0.02em; }
-  .stat .l { font-size: 0.7rem; }
+  .stat .l { font-size: 0.75rem; }
   .avisos li, .notas li, .rec-restricciones, .dc-chiste { border: 0; border-radius: var(--radio-chico); }
   #incompleto, #derivar, #freno-peso, #elegir-deporte { border: 0; }
   .contexto-badge, .etq-pedido { border: 0; background: var(--acento-suave); color: var(--acento-fuerte); }
@@ -581,7 +583,7 @@
   .tabs-app button {
     flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
     padding: 6px 2px; min-height: 52px; border: 0; border-radius: 22px; background: transparent;
-    color: var(--gris); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.01em;
+    color: var(--gris); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.01em;
   }
   .tabs-app button::before {
     content: ""; width: 22px; height: 22px; background: currentColor;
@@ -624,7 +626,7 @@
     font-size: 0.82rem; text-decoration: none;
   }
   .ver-comida::after, .hor-ir::after { content: "›"; margin-left: 0.4rem; font-size: 1.1rem; line-height: 1; }
-  #dc-cuerpo h3 { margin: 1.3rem 0 0.5rem; padding-bottom: 0; border-bottom: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--acento-fuerte); }
+  #dc-cuerpo h3 { margin: 1.3rem 0 0.5rem; padding-bottom: 0; border-bottom: 0; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--acento-fuerte); }
   #dc-cuerpo h3.dc-plato { margin-top: 0.3rem; font-size: 1.15rem; line-height: 1.25; font-weight: 650; letter-spacing: -0.01em; text-transform: none; color: var(--texto); }
   .dc-ing { padding: 0.6rem 0.8rem; border-radius: var(--radio-chico); background: var(--tarjeta-suave); }
 
@@ -654,7 +656,7 @@
   body.vista-resultado header.top { padding-bottom: 0.1rem; }
   body.vista-resultado header.top h1 { margin-bottom: 0.7rem; }
   body.vista-resultado #ejemplos-titulo { display: none; }
-  .antetitulo { margin: 0 0 0.4rem; font-size: 0.72rem; line-height: 1.3; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--acento-fuerte); }
+  .antetitulo { margin: 0 0 0.4rem; font-size: 0.75rem; line-height: 1.3; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--acento-fuerte); }
   header.top #ejemplos-titulo { margin-top: 1rem; }
   .ejemplos { padding-top: 0; }
   /* Los nombres de actividades y comidas vienen en minúscula del motor: en títulos de fila empiezan con mayúscula. */
@@ -666,12 +668,12 @@
   #hoy-ahora h2 { margin-bottom: 0.7rem; }
   .dia-tipo {
     display: inline-block; margin-left: 0.25rem; padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--acento-suave);
-    color: var(--acento-fuerte); font-size: 0.72rem; font-weight: 600; letter-spacing: 0; vertical-align: middle;
+    color: var(--acento-fuerte); font-size: 0.75rem; font-weight: 600; letter-spacing: 0; vertical-align: middle;
   }
   .casillas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; margin: 0 0 0.3rem; }
   .casilla { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 0.6rem 0.55rem; border-radius: var(--radio-chico); background: var(--tarjeta-suave); }
   .casilla .n { font-size: 1.06rem; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .casilla .l { font-size: 0.69rem; color: var(--gris); }
+  .casilla .l { font-size: 0.75rem; color: var(--gris); }
   @media (max-width: 359px) { .casillas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .hoy-bloque { margin-top: 0.7rem; }
   .hoy-bloque .titulo { font-size: 1rem; font-weight: 650; letter-spacing: -0.01em; }
@@ -797,7 +799,7 @@
   }
   .rec-cuerpo { min-width: 0; padding: 0; gap: 0.2rem; }
   .rec-nombre { font-size: 0.97rem; font-weight: 600; line-height: 1.3; }
-  .rec-etiqueta { border: 0; font-size: 0.66rem; letter-spacing: 0.04em; }
+  .rec-etiqueta { border: 0; font-size: 0.75rem; letter-spacing: 0.04em; }
   .rec-acciones { margin-top: 0.5rem; }
   .rec-acciones button { border-radius: 999px; font-size: 0.85rem; }
   .rec-acciones .rec-ver { flex: 0 1 auto; padding: 0 1.1rem; background: var(--acento-suave); color: var(--acento-fuerte); }
@@ -809,7 +811,7 @@
   #rec-buscar::-webkit-search-cancel-button { display: none; } /* ya hay un botón propio para borrar */
 
   /* Compra: secciones con antetítulo y artículos en filas con casilla grande. */
-  #lista-compra h3 { margin: 1.3rem 0 0.2rem !important; font-size: 0.72rem !important; color: var(--acento-fuerte) !important; }
+  #lista-compra h3 { margin: 1.3rem 0 0.2rem !important; font-size: 0.75rem !important; color: var(--acento-fuerte) !important; }
   #lista-compra .resumen-lista li.item-compra { margin: 0; padding: 0.1rem 0; border-top: 1px solid var(--borde); }
   #lista-compra .resumen-lista li.item-compra:first-child { border-top: 0; }
   .item-compra label { gap: 0.7rem; min-height: 48px; font-size: 0.9rem; color: var(--texto); }
@@ -1534,12 +1536,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=b3d6df5"></script>
-<script src="fuentes.js?v=b3d6df5"></script>
-<script src="motor.bundle.js?v=b3d6df5"></script>
-<script src="cuestionario.js?v=b3d6df5"></script>
-<script src="nube.js?v=b3d6df5"></script>
-<script src="pwa.js?v=b3d6df5"></script>
+<script src="novedades.js?v=b34cdca"></script>
+<script src="fuentes.js?v=b34cdca"></script>
+<script src="motor.bundle.js?v=b34cdca"></script>
+<script src="cuestionario.js?v=b34cdca"></script>
+<script src="nube.js?v=b34cdca"></script>
+<script src="pwa.js?v=b34cdca"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

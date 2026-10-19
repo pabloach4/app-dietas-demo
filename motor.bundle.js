@@ -1898,6 +1898,21 @@ var Motor = (() => {
         "huevas"
       ]
     },
+    // #260 (punto 36): grupos que la gente escribe en la lista negra («pescado azul» tiene que quitar el atún). Dentro de «pescado».
+    {
+      clave: "pescado_azul",
+      rotulo: "pescado azul",
+      etiquetas: ["pescado azul"],
+      nombres: ["pescado azul"],
+      alimentos: ["at\xFAn", "bonito", "sardina", "caballa", "salm\xF3n", "boquer\xF3n", "anchoa", "jurel", "melva", "arenque", "emperador", "pez espada", "anguila", "trucha"]
+    },
+    {
+      clave: "pescado_blanco",
+      rotulo: "pescado blanco",
+      etiquetas: ["pescado blanco"],
+      nombres: ["pescado blanco"],
+      alimentos: ["merluza", "pescadilla", "bacalao", "lubina", "dorada", "lenguado", "rape", "gallo", "rodaballo", "panga", "perca", "mero", "besugo", "abadejo", "flet\xE1n", "tilapia", "caz\xF3n"]
+    },
     {
       clave: "crustaceos",
       rotulo: "crust\xE1ceos",

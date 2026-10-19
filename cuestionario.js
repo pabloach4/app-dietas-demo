@@ -190,6 +190,15 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         <div class="campo"><label for="cribado-peso-ahora">Peso ahora (kg, opcional)</label><input id="cribado-peso-ahora" type="number" step="0.1" inputmode="decimal"></div>
         <div class="campo"><label for="cribado-peso-habitual">Tu peso habitual (kg, opcional)</label><input id="cribado-peso-habitual" type="number" step="0.1" inputmode="decimal"></div></div>` : ''}`).join('');
     document.querySelector('.cribado-sel[data-n="1"]').addEventListener('change', (ev) => { document.getElementById('cribado-pesos').hidden = ev.target.value !== 'si'; });
+    // #260 (punto 33, decisión de coordinación): la pregunta de la regla no se hace a los hombres (y su respuesta, si la había, se borra).
+    const reglaSegunSexo = () => {
+      const hombre = document.getElementById('sexo').value === 'hombre';
+      const p6 = document.querySelector('.cribado-sel[data-n="6"]');
+      p6.closest('.campo').hidden = hombre;
+      if (hombre) p6.value = '';
+    };
+    document.getElementById('sexo').addEventListener('change', reglaSegunSexo);
+    reglaSegunSexo();
   })();
   function leerCribado() {
     const respuestas = {};
