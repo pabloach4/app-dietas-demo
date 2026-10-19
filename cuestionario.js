@@ -311,6 +311,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   }
   function ocultarFormulario() {
     document.body.classList.add('vista-resultado');
+    document.getElementById('btn-cancelar-edicion').hidden = true; // #260.34
     document.getElementById('form-cuestionario').hidden = true;
     document.getElementById('barra-pasos').hidden = true;
     document.getElementById('progreso').hidden = true;
@@ -2276,6 +2277,16 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     document.getElementById('resultado').hidden = true;
     mostrarFormulario();
     mostrarPaso(1);
+    // #260 (punto 34): con un plan ya hecho, «Editar perfil» se puede cancelar y volver al plan sin repetir los pasos.
+    document.getElementById('btn-cancelar-edicion').hidden = !planActual;
+  });
+  document.getElementById('btn-cancelar-edicion').addEventListener('click', () => {
+    // Lo que se haya tocado en el formulario no se aplica: vuelve el perfil guardado, tal cual estaba.
+    try { const g = JSON.parse(localStorage.getItem(CLAVE_GUARDADO) || 'null'); if (g && typeof g === 'object') rellenarFormulario(g, { conservarSustituciones: true }); } catch { /* sin perfil guardado: se queda el formulario como esté */ }
+    ocultarFormulario();
+    document.getElementById('resultado').hidden = false;
+    mostrarPanel('perfil');
+    window.scrollTo(0, 0);
   });
 
   // --- Recordar el último perfil (issue #20). Solo en este navegador (localStorage); si falla (modo
