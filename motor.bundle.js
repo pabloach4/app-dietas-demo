@@ -4690,42 +4690,44 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     mantener: "mantener el peso",
     ganar_musculo: "ganar m\xFAsculo"
   };
+  var NOMBRE_FORMULA = { mifflin: "la f\xF3rmula general", ten_haaf: "la f\xF3rmula para deportistas", cunningham: "la f\xF3rmula con tu masa libre de grasa" };
   function explicarEcuacion(plan, perfil) {
     const { ecuacion, kcal, valores } = plan.basal;
     const m = plan.detalle.basalMotivo;
     const entradas = `${perfil.sexo === "hombre" ? "hombre" : "mujer"}, ${perfil.edad} a\xF1os, ${f(perfil.peso, 1)} kg, ${f(perfil.altura, 1)} cm`;
+    const N = NOMBRE_FORMULA;
     if (ecuacion === "mifflin") {
       const noCumple = [];
       if (m.sesionesNoSuaves < 3) noCumple.push(`necesita al menos 3 sesiones de entreno que no sean suaves (tienes ${m.sesionesNoSuaves})`);
       if (m.imc >= 30) noCumple.push(`IMC menor de 30 (el tuyo es ${f(m.imc, 1)})`);
       if (m.edad >= 50) noCumple.push(`menos de 50 a\xF1os (tienes ${m.edad})`);
       return {
-        resumen: `Mifflin-St Jeor estima lo que gastas en reposo (sin moverte) a partir de tu edad, sexo, peso y talla: ${f(kcal)} kcal al d\xEDa.`,
+        resumen: `Lo que gastas en reposo (sin moverte), calculado con ${N.mifflin} a partir de tu edad, sexo, peso y talla: ${f(kcal)} kcal al d\xEDa.`,
         detalle: [
           `Datos usados: ${entradas}.`,
-          noCumple.length ? `Se elige Mifflin, la ecuaci\xF3n general, porque no se cumple lo que pide Ten Haaf (la de deportistas): ${noCumple.join("; ")}.` : "Se elige Mifflin, la ecuaci\xF3n general.",
-          ...valores.ten_haaf !== void 0 ? [`Para comparar, Ten Haaf habr\xEDa dado ${f(valores.ten_haaf)} kcal (no aplicable a tu perfil).`] : []
+          noCumple.length ? `Se usa ${N.mifflin} porque no se cumple lo que pide ${N.ten_haaf}: ${noCumple.join("; ")}.` : `Se usa ${N.mifflin}.`,
+          ...valores.ten_haaf !== void 0 ? [`Para comparar, ${N.ten_haaf} habr\xEDa dado ${f(valores.ten_haaf)} kcal (no aplicable a tu perfil).`] : []
         ]
       };
     }
     if (ecuacion === "cunningham") {
       const mlg = perfil.grasa !== void 0 ? perfil.peso * (1 - perfil.grasa / 100) : void 0;
       return {
-        resumen: `Cunningham estima tu gasto en reposo a partir de tu masa libre de grasa${mlg !== void 0 ? ` (${f(mlg, 1)} kg)` : ""}: ${f(kcal)} kcal al d\xEDa.`,
+        resumen: `Lo que gastas en reposo, calculado con tu masa libre de grasa${mlg !== void 0 ? ` (${f(mlg, 1)} kg)` : ""}: ${f(kcal)} kcal al d\xEDa.`,
         detalle: [
           `Datos usados: ${entradas}${perfil.grasa !== void 0 ? `, ${f(perfil.grasa, 1)} % graso indicado` : ""}.`,
-          `Cumples lo de deportista (al menos 3 sesiones que no son suaves, IMC menor de 30 y menos de 50 a\xF1os) y al conocer tu % graso se comparan Ten Haaf (${f(valores.ten_haaf ?? 0)} kcal) y Cunningham (${f(kcal)} kcal): se toma la m\xE1s prudente, es decir, la m\xE1s baja.`,
-          `Para comparar, Mifflin habr\xEDa dado ${f(valores.mifflin ?? 0)} kcal.`
+          `Cumples lo de deportista (al menos 3 sesiones que no son suaves, IMC menor de 30 y menos de 50 a\xF1os) y, como conoces tu % graso, se comparan ${N.ten_haaf} (${f(valores.ten_haaf ?? 0)} kcal) y ${N.cunningham} (${f(kcal)} kcal): se toma la m\xE1s prudente, la m\xE1s baja.`,
+          `Para comparar, ${N.mifflin} habr\xEDa dado ${f(valores.mifflin ?? 0)} kcal.`
         ]
       };
     }
     return {
-      resumen: `Ten Haaf estima tu gasto en reposo con una ecuaci\xF3n validada en deportistas: ${f(kcal)} kcal al d\xEDa.`,
+      resumen: `Lo que gastas en reposo, calculado con ${N.ten_haaf} (validada en gente que entrena): ${f(kcal)} kcal al d\xEDa.`,
       detalle: [
         `Datos usados: ${entradas}.`,
-        `Se elige porque cumples lo de deportista: al menos 3 sesiones que no son suaves (tienes ${m.sesionesNoSuaves}), IMC menor de 30 (${f(m.imc, 1)}) y menos de 50 a\xF1os (${m.edad}).`,
-        m.conGrasaMedida ? `Como conoces tu % graso se compar\xF3 con Cunningham (${f(valores.cunningham ?? 0)} kcal) y Ten Haaf sali\xF3 igual o m\xE1s baja, as\xED que se queda Ten Haaf.` : "Sin % graso medido no se puede usar Cunningham.",
-        `Para comparar, Mifflin habr\xEDa dado ${f(valores.mifflin ?? 0)} kcal.`
+        `Se usa porque cumples lo de deportista: al menos 3 sesiones que no son suaves (tienes ${m.sesionesNoSuaves}), IMC menor de 30 (${f(m.imc, 1)}) y menos de 50 a\xF1os (${m.edad}).`,
+        m.conGrasaMedida ? `Como conoces tu % graso se compar\xF3 con ${N.cunningham} (${f(valores.cunningham ?? 0)} kcal) y ${N.ten_haaf} sali\xF3 igual o m\xE1s baja, as\xED que se queda esta.` : `Sin % graso medido no se puede usar ${N.cunningham}.`,
+        `Para comparar, ${N.mifflin} habr\xEDa dado ${f(valores.mifflin ?? 0)} kcal.`
       ]
     };
   }
@@ -4856,9 +4858,10 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const lineas = [
       esPrincipal ? `Prote\xEDna (${f(franja.proteina)} g): las comidas principales (desayuno, comida y cena) se reparten la del d\xEDa (${f(contexto.proteinaDia)} g). La referencia orientativa es 0,25-0,4 g/kg por principal (hasta ${f(0.4 * contexto.pesoRef, 1)} g); no es un m\xE1ximo absoluto.` : `Prote\xEDna (${f(franja.proteina)} g): media ma\xF1ana y merienda se reparten lo que sobra tras las principales, con un tope de 25 g cada una.`,
       ...d.proteinaTopeSecundaria ? [esPrincipal ? `Las tomas secundarias (media ma\xF1ana y merienda) llegaron a su tope de 25 g y el sobrante volvi\xF3 a las comidas principales: por eso ${franja.proteina > 0.4 * contexto.pesoRef ? `esta principal pasa de los ${f(0.4 * contexto.pesoRef, 1)} g de referencia` : "esta principal lleva m\xE1s que sin ese tope"}.` : "Esta toma secundaria lleg\xF3 al tope de 25 g y el exceso se movi\xF3 a las comidas principales."] : [],
-      `Hidrato (${f(franja.hidrato)} g): ${f(contexto.hidratoDia)} g del d\xEDa \xD7 (peso de la franja ${f(d.pesoBase)} \xD7 factor ${f(d.factor, 1)}) \xF7 ${f(d.sumaPesoContextual, 1)} (suma de pesos de las comidas del d\xEDa) = ${f(franja.hidrato)} g.`,
-      franja.rol !== "normal" ? TEXTO_ROL[franja.rol] : sinCarga ? `Factor 1: ${contexto.tipoDia === "fuerza" ? "la fuerza sola no cuenta como entreno de carga" : "es un d\xEDa de descanso"}, as\xED que ninguna comida lleva multiplicador pre/post.` : "Factor 1: esta comida no cae en la ventana pre ni post de ning\xFAn entreno de carga.",
-      `Grasa (${f(franja.grasa, 1)} g): reparto proporcional al peso de la franja (${f(d.pesoBase)} de ${f(d.sumaPesoBase)}).`,
+      // #260 (punto 30): en palabras («su parte del hidrato del día»), sin «peso de la franja × factor».
+      `Hidrato (${f(franja.hidrato)} g): de los ${f(contexto.hidratoDia)} g del d\xEDa, a esta comida le toca su parte${d.factor !== 1 ? `, con un extra (\xD7${f(d.factor, 1)}) por el entreno` : ""}: ${f(franja.hidrato)} g.`,
+      franja.rol !== "normal" ? TEXTO_ROL[franja.rol] : sinCarga ? `Sin extra de hidrato: ${contexto.tipoDia === "fuerza" ? "la fuerza sola no cuenta como entreno de carga" : "es un d\xEDa de descanso"}, as\xED que ninguna comida lleva un extra por el entreno.` : "Sin extra de hidrato: esta comida no cae justo antes ni justo despu\xE9s de un entreno de carga.",
+      `Grasa (${f(franja.grasa, 1)} g): la parte de la grasa del d\xEDa que le toca a esta comida.`,
       ...d.grasaTopeAplicado ? ["La grasa se limit\xF3 a 15 g porque es una toma de menos de 2 h antes de un entreno de carga (comodidad digestiva); el exceso pas\xF3 a otras comidas."] : [],
       ...d.grasaExcesoRecibido > 0 ? [`Recibe ${f(d.grasaExcesoRecibido, 1)} g de grasa que otra toma no pudo llevar por el tope pre-entreno.`] : [],
       // #260.30: la nota «Parámetros provisionales… pendientes de revisión de Pablo» es para Pablo, no para la persona.
@@ -4876,8 +4879,8 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       resumen: `La raci\xF3n (${f(datos.racion * 100)} %) es cu\xE1nto crecen o bajan solo la base (arroz, pasta, patata, pan, legumbre), la prote\xEDna y el aceite de la receta para acercarla a las kcal objetivo de esta comida: no baja de 80 % y ning\xFAn ingrediente pasa de su raci\xF3n normal. Verdura, cebolla, condimentos, fruta y l\xE1cteos se quedan en sus gramos.`,
       detalle: [
         `Objetivo de la comida ${f(datos.kcalObjetivo)} kcal \xF7 kcal de la receta base ${f(datos.kcalReceta)} \u2248 ${f(ideal * 100)} %.`,
-        dentro ? `Est\xE1 dentro de 80-120 %, as\xED que se usa tal cual: ${f(datos.kcalResultante)} kcal.` : ideal > 1.2 ? datos.kcalResultante >= datos.kcalObjetivo * 0.97 ? `Pasa de 120 %, pero el plato escalado sigue dentro de los topes del m\xE9todo, as\xED que se sube hasta ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: llega al objetivo.` : `Queda fuera de 80-120 % y no se puede subir m\xE1s: se queda en ${f(datos.racion * 100)} % (pasar de ah\xED har\xEDa que un ingrediente pasara de su raci\xF3n normal) y la receta aporta ${f(datos.kcalResultante)} kcal: por debajo del objetivo (no llega a ${f(datos.kcalObjetivo)}). Faltan ${f(datos.kcalObjetivo - datos.kcalResultante)} kcal. No cabe en una raci\xF3n normal y no se infla nada: puedes repartir lo que falta en otra toma del d\xEDa, cerrar con un postre (fruta o yogur) o cambiar el plato.` : `Queda fuera de 80-120 %, as\xED que se limita a ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: por encima del objetivo (supera los ${f(datos.kcalObjetivo)} aunque es la raci\xF3n m\xEDnima).`,
-        datos.protegidos && datos.protegidos.length ? `Entre los \xABprotegidos\xBB (los que no se reescalan: todo lo que no es base, prote\xEDna ni aceite, como fruta, verdura, l\xE1cteos o condimentos), aqu\xED ${datos.protegidos.join(", ")} mantiene${datos.protegidos.length > 1 ? "n" : ""} sus gramos base. Como no hay composici\xF3n nutricional fiable de la receta de ejemplo, ${f(datos.kcalResultante)} kcal es una cifra aproximada: no se asegura que la raci\xF3n alcance exactamente las kcal ni los macros del objetivo.` : "En esta receta ninguno es de los \xABprotegidos\xBB (los que no se reescalan: todo lo que no es base, prote\xEDna ni aceite); solo crecen la base, la prote\xEDna y el aceite, y las kcal son aproximadas.",
+        dentro ? `Est\xE1 dentro de 80-120 %, as\xED que se usa tal cual: ${f(datos.kcalResultante)} kcal.` : ideal > 1.2 ? datos.kcalResultante >= datos.kcalObjetivo * 0.97 ? `Pasa de 120 %, pero el plato sigue dentro de las cantidades normales, as\xED que se sube hasta ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: llega al objetivo.` : `Queda fuera de 80-120 % y no se puede subir m\xE1s: se queda en ${f(datos.racion * 100)} % (pasar de ah\xED har\xEDa que un ingrediente pasara de su raci\xF3n normal) y la receta aporta ${f(datos.kcalResultante)} kcal: por debajo del objetivo (no llega a ${f(datos.kcalObjetivo)}). Faltan ${f(datos.kcalObjetivo - datos.kcalResultante)} kcal. No cabe en una raci\xF3n normal y no se infla nada: puedes repartir lo que falta en otra toma del d\xEDa, cerrar con un postre (fruta o yogur) o cambiar el plato.` : `Queda fuera de 80-120 %, as\xED que se limita a ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: por encima del objetivo (supera los ${f(datos.kcalObjetivo)} aunque es la raci\xF3n m\xEDnima).`,
+        datos.protegidos && datos.protegidos.length ? `Algunos ingredientes van en cantidad fija (no crecen con la raci\xF3n: lo que no es base, prote\xEDna ni aceite, como fruta, verdura, l\xE1cteos o condimentos); aqu\xED ${datos.protegidos.join(", ")} mantiene${datos.protegidos.length > 1 ? "n" : ""} sus gramos. Como no hay composici\xF3n nutricional fiable de la receta de ejemplo, ${f(datos.kcalResultante)} kcal es una cifra aproximada: no se asegura que la raci\xF3n alcance exactamente las kcal ni los macros del objetivo.` : "Al cambiar la raci\xF3n solo crecen la base, la prote\xEDna y el aceite; lo dem\xE1s va en cantidad fija. Las kcal son aproximadas.",
         "La receta es de EJEMPLO, no una receta real."
       ]
     };
