@@ -852,6 +852,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   const LETRA_DIA_JS = ['D', 'L', 'M', 'X', 'J', 'V', 'S']; // Date.getDay(): 0 = domingo
   const diaDeHoy = () => LETRA_DIA_JS[new Date().getDay()]; // se lee del reloj cada vez: con la página abierta pasada la medianoche «hoy» cambia (#105)
   let diaResumen = diaDeHoy();
+  let vistaHoyReal = null; // #262: { dia, reparto, recetaPorSlot } de hoy sin los ajustes de la semana que mira el calendario
   let vistaSemana = null; // {repartosPorDia, recetaPorSlot, huecoPorSlot, franjas}: lo que ya calculó mostrarResultado
   let panelActual = 'hoy';
 
@@ -985,7 +986,10 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const otraSemana = Boolean(calInicio) && !Motor.diaDeLaFecha(calInicio, iso);
     const avisoOtraSemanaHtml = otraSemana ? `<div class="hoy-bloque" id="hoy-otra-semana" role="status"><p style="margin:0 0 0.4rem">En el calendario estás mirando la semana del ${escaparHtml(fechaLegible(calInicio, false))}: lo de esa semana (como una competición) no se enseña aquí.</p><button type="button" class="btn-secundario" id="hoy-volver-semana">Volver a esta semana</button></div>` : '';
 
-    const { reparto } = vistaSemana.repartosPorDia.find((r) => r.dia.dia === dia);
+    // #262: con el calendario en otra semana, el día de hoy es el del plan sin los ajustes de esa semana (calculado aparte).
+    const hoyReal = vistaHoyReal && vistaHoyReal.dia.dia === dia ? vistaHoyReal : null;
+    const { reparto } = hoyReal ? hoyReal : vistaSemana.repartosPorDia.find((r) => r.dia.dia === dia);
+    const recetaHoy = (clave) => (hoyReal ? hoyReal.recetaPorSlot.get(clave) : vistaSemana.recetaPorSlot.get(clave));
     const NOMBRE = { desayuno: 'Desayuno', media_manana: 'Media mañana', comida: 'Comida', merienda: 'Merienda', cena: 'Cena' };
     const horas = franjasDelDia(dia);
     const comidas = reparto.franjas.map((f) => {
@@ -1015,8 +1019,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
           <div class="hoy-valorar-pie"><button type="button" class="btn-texto hoy-valorar-saltar">Ahora no</button><button type="button" class="btn-texto hoy-hecha-deshacer">Deshacer</button></div>
         </div>`;
     } else if (siguiente) {
-      const asignada = vistaSemana.recetaPorSlot.get(`${dia}|${siguiente.f.franja}`);
-      const hueco = vistaSemana.huecoPorSlot.get(`${dia}|${siguiente.f.franja}`);
+      const asignada = recetaHoy(`${dia}|${siguiente.f.franja}`);
+      const hueco = hoyReal ? undefined : vistaSemana.huecoPorSlot.get(`${dia}|${siguiente.f.franja}`);
       // A la vista, solo lo que toca comer y tres botones (Pablo, 08/10): las cifras y los porqués van dentro de la hoja o plegados.
       const nombreComida = NOMBRE[siguiente.f.franja] ?? siguiente.f.franja;
       const partesPlato = asignada ? asignada.receta.nombre.split(' · ') : []; // «Primero: … · Segundo: …» va en una línea por plato
@@ -1033,7 +1037,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const resto = conHora.slice(conHora.indexOf(siguiente) + 1).filter((c) => !hechas.includes(c.f.franja));
       if (resto.length) {
         bloqueComida += `<div class="hoy-bloque hoy-despues"><h3>Después</h3>${resto.map((c) => {
-          const r = vistaSemana.recetaPorSlot.get(`${dia}|${c.f.franja}`);
+          const r = recetaHoy(`${dia}|${c.f.franja}`);
           const n = NOMBRE[c.f.franja] ?? c.f.franja;
           return `<button type="button" class="hoy-fila-comida" data-dia="${dia}" data-franja="${c.f.franja}" data-vista="cantidades" aria-label="Ver ${n.toLowerCase()} de hoy"><span class="hora">${horaDecimalATexto(c.hora)}</span><span class="texto"><strong>${n}</strong>${r ? escaparHtml(r.receta.nombre) : 'Sin receta de ejemplo'}</span></button>`;
         }).join('')}</div>`;
@@ -1086,7 +1090,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     }).join('') : '<div class="hoy-bloque"><h3>Entreno de hoy</h3><div class="titulo">Sin entreno previsto hoy. Descansar también es parte del plan (y de los buenos).</div></div>';
 
     // Las casillas son cifras del PLAN de hoy (lo que toca), nunca lo comido: la app no registra ingesta.
-    const dHoy = planActual.dias.find((x) => x.dia === dia);
+    const dHoy = hoyReal ? hoyReal.dia : planActual.dias.find((x) => x.dia === dia);
     const casilla = (n, l) => `<div class="casilla"><span class="n">${n}</span><span class="l">${l}</span></div>`;
     const fueraHoy = comidasFuera.filter((x) => x.fecha === iso && comidas.some((c) => c.f.franja === x.franja));
     const previstas = (franja) => comidas.find((c) => c.f.franja === franja).f.kcalAprox;
@@ -3781,6 +3785,27 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     });
 
     filasPlanCSV = filasCSV;
+    // #262: si hoy queda fuera de la semana del calendario y ese día de la semana está ajustado por una competición, hoy se calcula
+    // con el plan sin esos ajustes (mismo reparto y mismas opciones; se conservan los platos que sigan valiendo).
+    vistaHoyReal = null;
+    const isoHoyReal = Motor.fechaLocalISO(new Date());
+    const diaHoyReal = LETRA_DIA_JS[new Date().getDay()];
+    if (calInicio && !Motor.diaDeLaFecha(calInicio, isoHoyReal) && compPorDia.get(diaHoyReal) && compPorDia.get(diaHoyReal).fase) {
+      const dB = planBase.dias.find((x) => x.dia === diaHoyReal);
+      if (dB) {
+        const repB = Motor.repartirComidas({
+          kcal: dB.kcal, proteina: dB.proteinaG, grasa: dB.grasaG, hidrato: dB.hidratoG,
+          pesoRef: planBase.proteina.pesoReferencia, peso: respuestas.peso, tipoDia: dB.tipo,
+          sesiones: franjaADia(dB.dia, franjasDelDia(dB.dia), sesionesConActividad),
+          sesionesTodas: sesionesTodasDelDia(dB.dia, sesionesConActividad),
+          franjas: franjasDelDia(dB.dia),
+        });
+        const slotsB = repB.franjas.map((f) => ({ dia: dB.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: dB.tipo === 'carga_alta' }));
+        const asigB = Motor.asignarRecetas(slotsB, RECETAS_EJEMPLO, { alergiasPreferencias, preferir: asignacionSemana.asignaciones.filter((a) => a.dia === dB.dia) });
+        const conRecB = Motor.combinarConRecetas(asigB.asignaciones, RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(asigB.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO)));
+        vistaHoyReal = { dia: dB, reparto: repB, recetaPorSlot: new Map(conRecB.map((a) => [`${a.dia}|${a.franja}`, a])) };
+      }
+    }
     vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana, asignaciones: asignacionSemana.asignaciones, compPorDia, cuadreDias: new Map(cuadrado.dias.map((x) => [x.dia, x])) };
     pintarFija(); // ya con la vista y la asignación de esta semana (issue #142: opciones para las fijaciones que no valen)
     pintarZonaSustituciones();
