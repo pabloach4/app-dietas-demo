@@ -4756,7 +4756,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
         `Gasto de un d\xEDa sin entreno = gasto en reposo (${f(plan.basal.kcal)}) \xD7 actividad diaria ${f(d.pal, 2)} (${d.vidaSupuesta ? "no indicada: se supone sedentaria" : NOMBRE_VIDA[d.vida] ?? d.vida}) = ${f(d.gastoBase)} kcal.`,
         `Cada entreno suma solo el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta, porque el cuerpo compensa el resto durante el d\xEDa.`,
         ...lineasAjuste(plan, opts.objetivoElegido),
-        `Despu\xE9s se aplican dos l\xEDmites por d\xEDa: ${d.oscilacion.modo === "compresion" ? `las diferencias entre d\xEDas se comprimen hasta ${f(d.oscilacion.maxKcal ?? 0)} kcal` : d.oscilacion.modo === "tope" ? `ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media (tope de seguridad, provisional pendiente del OK de Pablo)` : "sin entrenos no hay diferencias entre d\xEDas que limitar"}, y el suelo de seguridad de ${f(d.suelo)} kcal.`,
+        `Despu\xE9s se aplican dos l\xEDmites por d\xEDa: ${d.oscilacion.modo === "compresion" ? `las diferencias entre d\xEDas se comprimen hasta ${f(d.oscilacion.maxKcal ?? 0)} kcal` : d.oscilacion.modo === "tope" ? `ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media (tope de seguridad)` : "sin entrenos no hay diferencias entre d\xEDas que limitar"}, y el suelo de seguridad de ${f(d.suelo)} kcal.`,
         `Las cifras se redondean a decenas de kcal.`
       ]
     };
@@ -4772,7 +4772,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     let resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son lo que gastas ese d\xEDa (${f(dia.gasto)}) m\xE1s el ajuste de tu objetivo.`;
     if (dia.limitadoPor === "oscilacion") {
       resumen = `Las ${f(dia.kcal)} kcal del ${nombre} salen del gasto del d\xEDa y del objetivo, acercadas a la media de la semana por el l\xEDmite de oscilaci\xF3n.`;
-      detalle.push(d.oscilacion.modo === "compresion" ? `Se aplic\xF3 el l\xEDmite de oscilaci\xF3n: las diferencias entre d\xEDas se comprimen para que no pasen de ${f(d.oscilacion.maxKcal ?? 0)} kcal. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)}.` : `Se aplic\xF3 el tope de seguridad: ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media de la semana (provisional pendiente del OK de Pablo). El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)}.`);
+      detalle.push(d.oscilacion.modo === "compresion" ? `Se aplic\xF3 el l\xEDmite de oscilaci\xF3n: las diferencias entre d\xEDas se comprimen para que no pasen de ${f(d.oscilacion.maxKcal ?? 0)} kcal. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)}.` : `Se aplic\xF3 el tope de seguridad: ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media de la semana. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)}.`);
     } else if (dia.limitadoPor === "suelo") {
       resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son el suelo de seguridad: el c\xE1lculo daba menos.`;
       detalle.push(`El c\xE1lculo daba ${f(dia.kcalSinLimites)} kcal, por debajo del suelo de ${f(d.suelo)} kcal: se prescribe el suelo y hay que revisarlo con Pablo antes de seguir.`);
@@ -4861,7 +4861,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       `Grasa (${f(franja.grasa, 1)} g): reparto proporcional al peso de la franja (${f(d.pesoBase)} de ${f(d.sumaPesoBase)}).`,
       ...d.grasaTopeAplicado ? ["La grasa se limit\xF3 a 15 g porque es una toma de menos de 2 h antes de un entreno de carga (comodidad digestiva); el exceso pas\xF3 a otras comidas."] : [],
       ...d.grasaExcesoRecibido > 0 ? [`Recibe ${f(d.grasaExcesoRecibido, 1)} g de grasa que otra toma no pudo llevar por el tope pre-entreno.`] : [],
-      "Par\xE1metros provisionales: los pesos por franja (25/5/35/5/30) y los factores pre/post est\xE1n pendientes de revisi\xF3n de Pablo.",
+      // #260.30: la nota «Parámetros provisionales… pendientes de revisión de Pablo» es para Pablo, no para la persona.
       "Es el objetivo de la comida, no lo que lleva una receta: una receta de ejemplo puede tener otros macros; solo se ajusta su raci\xF3n para acercarse a las kcal."
     ];
     return {

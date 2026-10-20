@@ -126,6 +126,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   const CASILLAS_ALERGIA = [['al-pescado', 'pescado'], ['al-crustaceos', 'crustáceos'], ['al-moluscos', 'moluscos'], ['al-huevo', 'huevo'], ['al-frutos-cascara', 'frutos de cáscara'], ['al-cacahuete', 'cacahuete'], ['al-soja', 'soja'], ['al-sesamo', 'sésamo']];
   // #257 (punto 8): al marcar «¿Conoces tu % graso?» aparecen el campo y el método (solo se abrían al cargar un perfil o un ejemplo).
   document.getElementById('grasa-conocida').addEventListener('change', (e) => { document.getElementById('grasa-detalle').hidden = !e.target.checked; });
+  // #260 (punto 30): el papel de una comida en palabras («antes de entrenar», no «PRE»).
+  const nombreRol = (rol) => ({ PRE: 'antes de entrenar', POST: 'después de entrenar', toma_ligera: 'toma ligera' }[rol] ?? String(rol).replace(/_/g, ' ').toLowerCase());
   // #256 (punto 1): las frases amables de los avisos viven en el motor (Motor.avisosParaPersona); el texto técnico es para Pablo.
 
   const sesionesDiv = document.getElementById('sesiones');
@@ -634,7 +636,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
       });
       reparto.franjas.forEach((f) => {
-        const rol = f.rol !== 'normal' ? ` (${f.rol.replace(/_/g, ' ')})` : '';
+        const rol = f.rol !== 'normal' ? ` (${nombreRol(f.rol)})` : '';
         lineas.push(`  · ${NOMBRE_FRANJA[f.franja] ?? f.franja}${rol}: P ${f.proteina} · G ${f.grasa} · H ${f.hidrato} g`);
       });
     });
@@ -976,7 +978,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const horaAct = ahora.getHours() + ahora.getMinutes() / 60;
     const iso = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
     const fechaTxt = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-    let nota = 'Día y hora de este dispositivo; el plan se muestra por día de la semana. No está conectado a ningún calendario ni sabe lo que has hecho.';
+    let nota = 'El plan va por días de la semana, con la hora de tu móvil.'; // #260.30: sin la nota técnica
     if (calInicio && !Motor.diaDeLaFecha(calInicio, iso)) nota = `Hoy queda fuera de la semana con fechas que elegiste en el calendario (lunes ${calInicio}). ${nota}`;
     // #257 (punto 7): con el calendario en otra semana, «Hoy» no anuncia su competición («MAÑANA COMPITES» a 29 días): se dice qué
     // semana se está mirando y se ofrece volver a esta. (Que Hoy tenga además el plan de la semana real va aparte: #257, punto 7, parte 2.)
@@ -3008,7 +3010,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         const c = verCocido && Motor.pesoCocido(i.nombre, i.gramosRacion);
         return `
         <li class="dc-ing">
-          <span class="dc-ing-nombre">${escaparHtml(i.nombre)}${i.protegido ? ' <small class="dc-ing-nota">no se escala</small>' : ''}${avisoGlutenHtml(i.nombre)}</span>
+          <span class="dc-ing-nombre">${escaparHtml(i.nombre)}${i.protegido ? ' <small class="dc-ing-nota">cantidad fija</small>' : ''}${avisoGlutenHtml(i.nombre)}</span>
           <span class="dc-ing-gramos">${String(i.gramosRacion).replace('.', ',')} g${medidaAlLado(i.nombre, i.gramosRacion)}${c ?` <small class="dc-cocido">≈ ${c.gramos} g cocido</small>` : ''}</span>
           <span class="dc-ing-compra">${enCompra ? `en la compra de la semana: ${escaparHtml(comprados.get(i.nombre) ?? '—')}` : 'día fuera de la compra'}</span>
         </li>`;
@@ -3411,8 +3413,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     respuestasActuales = respuestas;
     franjasActuales = franjasBloque7;
 
-    document.getElementById('r-ecuacion').textContent = plan.basal.ecuacion;
-    document.getElementById('r-basal').textContent = plan.basal.kcal;
+    document.getElementById('r-basal').textContent = plan.basal.kcal; // #260.30: sin el nombre de la fórmula («ten_haaf»)
     document.getElementById('r-kcalmedia').textContent = plan.kcalMedia;
     document.getElementById('porque-semana').innerHTML =
       porqueHtml('semana-ecuacion', Motor.explicarEcuacion(plan, semana.perfil), '¿Por qué esta ecuación?')
@@ -3604,7 +3605,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
             <div class="franja-reparto-cabecera">
               <div>
                 <div class="nombre">${NOMBRE_FRANJA[f.franja] ?? f.franja}${(() => { const x = franjasDelDia(d.dia).find((y) => y.franja === f.franja); return x && x.hora !== undefined ? ` <small style="font-weight:400;color:var(--gris)">· ${horaDecimalATexto(x.hora)}</small>` : ''; })()}</div>
-                ${f.rol !== 'normal' ? `<div class="rol">${f.rol.replace(/_/g, ' ')}</div>` : ''}
+                ${f.rol !== 'normal' ? `<div class="rol">${escaparHtml(nombreRol(f.rol))}</div>` : ''}
               </div>
               <div class="macros"><strong>~${f.kcalAprox}</strong> kcal<div class="franja-barra-pct">${pct} % del día</div></div>
             </div>
