@@ -968,6 +968,7 @@
 <section class="env" id="consentimiento" aria-labelledby="consentimiento-titulo" hidden>
   <div class="tarjeta">
     <h2 id="consentimiento-titulo">Antes de empezar: tus datos de salud</h2>
+    <p class="resumen-consentimiento" id="consentimiento-resumen"><strong>En corto:</strong> te pido datos de salud (peso, entrenos, alergias…) solo para prepararte el plan. Se guardan en este navegador y no le llegan a nadie salvo que tú lo actives. Puedes retirar tu permiso cuando quieras. Abajo tienes el texto completo.</p>
     <p>Para prepararte una alimentación a tu medida, necesito pedirte datos sobre tu salud: tu peso y altura, tu porcentaje de grasa si lo conoces, tu actividad y entrenamientos, tus alergias e intolerancias, si tienes molestias digestivas o intestinales y unas preguntas opcionales sobre tu energía y tu salud (cambios de peso, forma de comer, la regla, lesiones de hueso, cansancio y rendimiento). También usaré tu peso y estatura para comprobar que tu plan no te deja por debajo de un nivel seguro.</p>
     <p><strong>Para qué los uso:</strong> solo para calcular y ajustar tus menús, cantidades y lista de la compra, y para avisarte si algo pide hablar con un profesional. Si alguna de tus respuestas lo aconseja, me llega un aviso a mí para que hable contigo. No los uso para publicidad ni los vendo ni los cedo con fines comerciales.</p>
     <p><strong>Qué no hace esta app:</strong> no es un servicio médico, no diagnostica ni trata ninguna enfermedad y no sustituye el consejo de tu médico o dietista-nutricionista. Si indicas un problema de salud (molestias intestinales, diabetes, peso muy bajo...), la app no te dará una dieta clínica: te propondrá hablar conmigo, que soy quien lleva esos casos. Si tienes una enfermedad, estás embarazada, eres menor de 18 años o tomas medicación que afecte a tu alimentación, consulta primero con tu médico.</p>
@@ -994,7 +995,9 @@
   /* #255: campo que falta al pulsar «Siguiente». */
   [aria-invalid="true"] { border-color: var(--peligro) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--peligro) 25%, transparent); }
   #panel-perfil[data-vista="datos"] > [data-sub="datos"], #panel-perfil[data-vista="alergias"] > [data-sub="alergias"], #panel-perfil[data-vista="competiciones"] > [data-sub="competiciones"],
-  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"], #panel-perfil[data-vista="medallas"] > [data-sub="medallas"] { display: block; }
+  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"], #panel-perfil[data-vista="medallas"] > [data-sub="medallas"], #panel-perfil[data-vista="instalar"] > [data-sub="instalar"] { display: block; }
+  .resumen-consentimiento { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: 12px; padding: 0.7rem 0.8rem; }
+  .pasos-instalar { margin: 0.3rem 0 0.8rem; padding-left: 1.3rem; } .pasos-instalar li { margin: 0.25rem 0; }
   /* #253: medallas del día (sin rachas). Grises hasta que se consiguen; el aviso no se mueve con «reducir movimiento». */
   .hoy-medallas { display: flex; gap: 0.5rem; justify-content: space-around; margin-top: 0.6rem; padding: 0.5rem 0.3rem; border: 1px solid var(--borde); border-radius: 12px; }
   .medalla { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; flex: 1 1 0; min-width: 0; font-size: 0.78rem; color: var(--gris); text-align: center; }
@@ -1372,6 +1375,7 @@
         <button type="button" class="perfil-fila" data-ir="competiciones"><span>Mis competiciones</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="alertas" hidden><span>Alertas para Pablo</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="nube" hidden><span>Que Pablo vea mis datos</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="perfil-fila" data-ir="instalar"><span>Instalar en el móvil</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="medallas" hidden><span>Mis medallas</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" id="btn-tutorial"><span>Ver el tutorial otra vez</span><span aria-hidden="true">›</span></button>
       </div>
@@ -1408,10 +1412,14 @@
       <p class="subt" id="ln-vacio">Todavía no has añadido ninguno. ¡Aquí no se juzga a nadie!</p>
       <div id="perfil-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
     </div>
-    <div class="tarjeta" id="instalar" data-sub="datos">
+    <div class="tarjeta" id="instalar" data-sub="instalar">
       <h2>Instálala en tu móvil</h2>
       <p class="subt">Así la tienes como un icono en la pantalla de inicio y abre aunque no haya cobertura.</p>
-      <p class="subt"><strong>iPhone:</strong> en Safari, pulsa Compartir y luego «Añadir a pantalla de inicio». <strong>Android:</strong> en el menú del navegador, «Instalar app».</p>
+      <!-- #260 (punto 40): pasos a la vista, en su propio apartado del Perfil (antes era una línea dentro de «Mis datos y recetas»). -->
+      <h3>iPhone (Safari)</h3>
+      <ol class="pasos-instalar"><li>Abre esta página en <strong>Safari</strong>.</li><li>Pulsa el botón <strong>Compartir</strong> <span aria-hidden="true">(el cuadrado con la flecha hacia arriba ⬆️)</span>.</li><li>Baja y elige <strong>«Añadir a pantalla de inicio»</strong>.</li><li>Pulsa <strong>«Añadir»</strong>: te sale el icono como una app más.</li></ol>
+      <h3>Android (Chrome)</h3>
+      <ol class="pasos-instalar"><li>Abre esta página en <strong>Chrome</strong>.</li><li>Pulsa el menú <strong>⋮</strong> de arriba a la derecha.</li><li>Elige <strong>«Instalar app»</strong> (o «Añadir a pantalla de inicio»).</li></ol>
       <button type="button" class="btn-secundario" id="instalar-boton" hidden>Instalar ahora</button>
     </div>
     <div class="tarjeta" id="tarjeta-medallas" data-sub="medallas" hidden>
@@ -1540,12 +1548,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=058358a"></script>
-<script src="fuentes.js?v=058358a"></script>
-<script src="motor.bundle.js?v=058358a"></script>
-<script src="cuestionario.js?v=058358a"></script>
-<script src="nube.js?v=058358a"></script>
-<script src="pwa.js?v=058358a"></script>
+<script src="novedades.js?v=6a83e49"></script>
+<script src="fuentes.js?v=6a83e49"></script>
+<script src="motor.bundle.js?v=6a83e49"></script>
+<script src="cuestionario.js?v=6a83e49"></script>
+<script src="nube.js?v=6a83e49"></script>
+<script src="pwa.js?v=6a83e49"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>
