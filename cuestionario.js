@@ -249,6 +249,68 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   }
   queueMicrotask(pintarAlertas); // tras cargar todo el script (usa funciones de fecha definidas más abajo)
 
+  // #265 parte A (Pablo, 19–20/10): «Hablar con Pablo» en Perfil, en el freno y en la derivación: correo y «Pedir cita»; el WhatsApp
+  // solo DESPUÉS de pedir cita. Con la nube activa, la petición viaja como alerta `cita` prioritaria; sin ella, se abre un correo ya escrito.
+  const CLAVE_CITA = 'app-dietas-cita-pedida';
+  function leerCita() {
+    try { const c = JSON.parse(localStorage.getItem(CLAVE_CITA) || 'null'); return c && typeof c.fecha === 'string' ? c : null; } catch { return null; }
+  }
+  function pintarHablarPablo() {
+    const cita = leerCita();
+    const wa = Motor.whatsappPablo(Boolean(cita));
+    const dias = Motor.DIAS_CITA.map((d) => `<label class="hp-op"><input type="checkbox" name="hp-dia" value="${d}"> ${d}</label>`).join('');
+    const franjas = Object.entries(Motor.FRANJAS_CITA).map(([k, v], i) => `<label class="hp-op"><input type="radio" name="hp-franja" value="${k}"${i === 2 ? ' checked' : ''}> ${v}</label>`).join('');
+    document.querySelectorAll('.hablar-pablo').forEach((caja, n) => {
+      caja.innerHTML = `<h3 class="hp-titulo">Hablar con Pablo</h3>
+        <a class="btn-secundario hp-correo" href="${escaparHtml(Motor.enlaceCorreoPablo())}">✉️ Escribir un correo</a>
+        <button type="button" class="btn-secundario hp-cita-abrir" aria-expanded="false" style="margin-top:0.5rem">📅 Pedir cita</button>
+        <form class="hp-cita" hidden>
+          <fieldset><legend>¿Qué días te vienen bien?</legend>${dias.replace(/name="hp-dia"/g, `name="hp-dia-${n}"`)}</fieldset>
+          <fieldset><legend>¿A qué hora?</legend>${franjas.replace(/name="hp-franja"/g, `name="hp-franja-${n}"`)}</fieldset>
+          <label class="hp-motivo-l">Motivo (si quieres)<textarea class="hp-motivo" rows="3" maxlength="${Motor.MAX_MOTIVO_CITA}"></textarea></label>
+          <button type="submit" class="btn-principal">Enviar la petición</button>
+        </form>
+        <p class="subt hp-estado" aria-live="polite">${cita ? escaparHtml(`Pediste cita el ${fechaLegible(cita.fecha.slice(0, 10))}. Pablo te contestará para cerrarla.`) : ''}</p>
+        ${!wa ? '' : wa.href
+    ? `<a class="btn-secundario hp-whatsapp" href="${escaparHtml(wa.href)}" target="_blank" rel="noopener">💬 Escribir a Pablo por WhatsApp para cerrar la cita</a>`
+    : `<button type="button" class="btn-secundario hp-whatsapp">💬 Escribir a Pablo por WhatsApp para cerrar la cita</button><p class="subt hp-wa-nota" hidden>${escaparHtml(wa.nota)}</p>`}`;
+    });
+  }
+  document.addEventListener('click', (e) => {
+    const abrir = e.target.closest && e.target.closest('.hp-cita-abrir');
+    if (abrir) {
+      const f = abrir.parentElement.querySelector('.hp-cita');
+      f.hidden = !f.hidden; abrir.setAttribute('aria-expanded', String(!f.hidden));
+      return;
+    }
+    const wa = e.target.closest && e.target.closest('button.hp-whatsapp');
+    if (wa) { const nota = wa.parentElement.querySelector('.hp-wa-nota'); if (nota) nota.hidden = false; }
+  });
+  document.addEventListener('submit', (e) => {
+    const f = e.target.closest && e.target.closest('.hp-cita');
+    if (!f) return;
+    e.preventDefault();
+    const peticion = {
+      dias: [...f.querySelectorAll('input[type="checkbox"]:checked')].map((x) => x.value),
+      franja: (f.querySelector('input[type="radio"]:checked') || {}).value || 'indiferente',
+      motivo: f.querySelector('.hp-motivo').value,
+    };
+    const ahora = new Date().toISOString();
+    let estado;
+    if (nubeActiva() === true) {
+      guardarAlertas(Motor.anadirAlerta(leerAlertas(), Motor.alertaCita(peticion, ahora)));
+      document.querySelector('#nube-subir')?.click(); // la sube ya, por el mismo camino que las demás (web/nube.js)
+      estado = 'Petición enviada. Pablo te contestará para cerrar la cita.';
+    } else {
+      location.href = Motor.correoCita(peticion);
+      estado = 'Se ha abierto tu correo con la petición: envíalo y Pablo te contestará para cerrar la cita.';
+    }
+    try { localStorage.setItem(CLAVE_CITA, JSON.stringify({ fecha: ahora })); } catch { falloAlmacenamiento(); }
+    pintarHablarPablo();
+    document.querySelectorAll('.hp-estado').forEach((p) => { p.textContent = estado; });
+  });
+  queueMicrotask(pintarHablarPablo);
+
   // --- Recorrido por pasos (issue #13) ---
   const PASOS = [1, 2, 3, 4];
   const NOMBRE_PASO = { 1: 'Paso 1 de 4 · Tus datos', 2: 'Paso 2 de 4 · Objetivo y vida diaria', 3: 'Paso 3 de 4 · Sesiones de la semana', 4: 'Paso 4 de 4 · Salud y algo más' };
@@ -3922,6 +3984,27 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (peso) peso.focus();
   });
 
+  // #265 parte B (Pablo, 19–20/10: «Recetas y consejos»): quien queda derivado ve recetas (ingredientes y pasos, sin gramos ni kcal)
+  // filtradas por sus alergias y restricciones, y consejos generales. Nada de plan, kcal ni cantidades.
+  let apDerivado = null;
+  function pintarDerivadoExtra(respuestas) {
+    if (respuestas) {
+      apDerivado = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias && respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
+      RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, Boolean(respuestas.alergias && respuestas.alergias.celiaquia));
+    }
+    if (!apDerivado) return;
+    const NOMBRE = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
+    const lista = Motor.recetasParaDerivado(RECETAS_EJEMPLO, apDerivado, document.getElementById('der-buscar').value);
+    document.getElementById('der-estado').textContent = lista.length ? `${lista.length} receta${lista.length === 1 ? '' : 's'} que encajan con tus restricciones.` : 'Ninguna receta encaja con esa búsqueda y tus restricciones.';
+    document.getElementById('der-recetas').innerHTML = lista.slice(0, 40).map((r) => `
+      <li><details class="plegable"><summary>${escaparHtml(r.nombre)} <small style="color:var(--gris)">· ${r.franjas.map((f) => NOMBRE[f] ?? f).join(', ')}</small></summary>
+        <p><strong>Ingredientes:</strong> ${r.ingredientes.map(escaparHtml).join(', ')}.</p>
+        ${r.pasos.length ? `<ol>${r.pasos.map((p) => `<li>${escaparHtml(p)}</li>`).join('')}</ol>` : '<p>Esta receta no tiene pasos en su ficha.</p>'}
+      </details></li>`).join('');
+    document.getElementById('der-consejos').innerHTML = Motor.CONSEJOS_DERIVADO.map((c) => `<p><strong>${escaparHtml(c.tema)}.</strong> ${escaparHtml(c.texto)}${c.fuente ? ` <a href="${c.fuente}" target="_blank" rel="noopener">Fuente</a>` : ''}</p>`).join('');
+  }
+  document.getElementById('der-buscar').addEventListener('input', () => pintarDerivadoExtra());
+
   function descartarPlanAnterior() {
     diasSuelo = [];
     pintarAvisoSuelo();
@@ -3976,6 +4059,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       // #256 (punto 3): la derivación deja aviso a Pablo (como el freno) y el texto dice qué pasa ahora, sin cara triste.
       const alertaDer = Motor.alertaDerivacion({ motivo: resultado.motivo, salud: respuestas.salud || [], edad: respuestas.edad }, new Date().toISOString());
       if (alertaDer) { guardarAlertas(Motor.anadirAlerta(leerAlertas(), alertaDer)); pintarAlertas(); }
+      pintarDerivadoExtra(respuestas); // #265 parte B: recetas y consejos, sin plan ni cifras
       nubeAlFreno(); document.getElementById('derivar-texto').textContent = `${resultado.mensaje} ${Motor.TEXTO_ALERTA_PERSONA} ${Motor.textoLlegaAPablo(nubeActiva())}`;
       document.getElementById('derivar').focus();
       return;

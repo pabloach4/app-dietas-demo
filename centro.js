@@ -161,7 +161,7 @@
     const clase = Motor.clasificarAlerta(a);
     return `<div class="tarjeta cc-alerta ${a.prioritaria ? 'prioritaria' : ''}" data-id="${a.id}" data-tipo="${esc(clase)}">
       <div class="fila" style="justify-content:space-between"><label style="display:flex;gap:0.4rem;align-items:center;flex:0 0 auto">${conMarca ? `<input type="checkbox" class="cc-marca" data-id="${a.id}"${marcadas.has(a.id) ? ' checked' : ''} aria-label="Seleccionar esta alerta">` : ''}<strong>${esc(fecha(a.creada))}</strong></label>
-        <span>${a.prioritaria ? '<span class="chip rojo">REVISIÓN PRIORITARIA · valoración sanitaria</span> ' : ''}<span class="chip cc-tipo">${esc(Motor.TIPOS_ALERTA[clase])}</span> <span class="chip">${esc(ESTADOS[g.estado] || 'Nueva')}</span></span></div>
+        <span>${a.prioritaria ? (clase === 'cita' ? '<span class="chip rojo">CONTESTAR · pide cita</span> ' : '<span class="chip rojo">REVISIÓN PRIORITARIA · valoración sanitaria</span> ') : ''}<span class="chip cc-tipo">${esc(Motor.TIPOS_ALERTA[clase])}</span> <span class="chip">${esc(ESTADOS[g.estado] || 'Nueva')}</span></span></div>
       <p class="subt"><a href="mailto:${esc(contactoDe(a.usuario))}">${esc(contactoDe(a.usuario))}</a> · <a href="#" class="cc-ver" data-u="${esc(a.usuario)}">ver ficha</a></p>
       <ul class="cc-motivos">${senales}</ul>
       ${d.perdidaKg !== undefined ? `<p class="subt">Pérdida declarada: ${esc(d.perdidaKg)} kg en 3 meses.</p>` : ''}

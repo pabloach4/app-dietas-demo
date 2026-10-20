@@ -995,7 +995,13 @@
   /* #255: campo que falta al pulsar «Siguiente». */
   [aria-invalid="true"] { border-color: var(--peligro) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--peligro) 25%, transparent); }
   #panel-perfil[data-vista="datos"] > [data-sub="datos"], #panel-perfil[data-vista="alergias"] > [data-sub="alergias"], #panel-perfil[data-vista="competiciones"] > [data-sub="competiciones"],
-  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"], #panel-perfil[data-vista="medallas"] > [data-sub="medallas"], #panel-perfil[data-vista="instalar"] > [data-sub="instalar"] { display: block; }
+  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"], #panel-perfil[data-vista="medallas"] > [data-sub="medallas"], #panel-perfil[data-vista="instalar"] > [data-sub="instalar"], #panel-perfil[data-vista="hablar"] > [data-sub="hablar"] { display: block; }
+  .hablar-pablo { margin-top: 0.8rem; } .hablar-pablo .hp-titulo { margin: 0 0 0.5rem; }
+  a.btn-secundario { text-align: center; text-decoration: none; box-sizing: border-box; }
+  .hp-cita { margin-top: 0.6rem; } .hp-cita fieldset { border: 1px solid var(--borde); border-radius: 10px; margin: 0 0 0.6rem; padding: 0.4rem 0.7rem; }
+  .hp-op { display: inline-flex; align-items: center; gap: 0.3rem; margin: 0.25rem 0.8rem 0.25rem 0; }
+  .hp-motivo-l { display: block; margin-bottom: 0.6rem; } .hp-motivo { display: block; width: 100%; box-sizing: border-box; margin-top: 0.3rem; font: inherit; }
+  .hp-whatsapp { margin-top: 0.5rem; }
   .resumen-consentimiento { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: 12px; padding: 0.7rem 0.8rem; }
   .pasos-instalar { margin: 0.3rem 0 0.8rem; padding-left: 1.3rem; } .pasos-instalar li { margin: 0.25rem 0; }
   /* #253: medallas del día (sin rachas). Grises hasta que se consiguen; el aviso no se mueve con «reducir movimiento». */
@@ -1203,7 +1209,17 @@
   <div id="incompleto" hidden></div>
   <div id="derivar" hidden tabindex="-1">
     <p id="derivar-texto" style="margin:0 0 0.8rem"></p>
-    <button type="button" class="btn-secundario" id="derivar-volver">← Volver a mis respuestas</button>
+    <div class="hablar-pablo" data-donde="derivar"></div>
+    <section id="derivar-extra" style="text-align:left;font-weight:400;color:inherit;margin-top:1rem">
+      <h2 style="font-size:1.05rem">Mientras tanto: recetas y consejos</h2>
+      <p class="subt">Recetas de ejemplo con sus ingredientes y pasos, ya filtradas por tus alergias y restricciones. Las cantidades te las da Pablo.</p>
+      <div class="campo"><label for="der-buscar">Buscar por nombre o ingrediente</label><input id="der-buscar" type="search" autocomplete="off" placeholder="p. ej. pollo, lentejas"></div>
+      <p class="subt" id="der-estado" role="status" aria-live="polite"></p>
+      <ul id="der-recetas" style="list-style:none;padding:0;margin:0"></ul>
+      <h3 style="font-size:1rem">Consejos generales</h3>
+      <div id="der-consejos"></div>
+    </section>
+    <button type="button" class="btn-secundario" id="derivar-volver" style="margin-top:0.8rem">← Volver a mis respuestas</button>
     <button type="button" class="btn-texto" id="derivar-reiniciar" style="margin-top:0.4rem">Empezar con otro perfil</button>
   </div>
   <div id="freno-peso" hidden tabindex="-1">
@@ -1211,6 +1227,7 @@
     <p style="margin:0 0 0.8rem">Mientras tanto, puedes tener un plan para:</p>
     <button type="button" class="btn-principal" data-objetivo="mantener">Ver un plan para mantener mi peso</button>
     <button type="button" class="btn-secundario" data-objetivo="ganar músculo" style="margin-top:0.5rem">Ver un plan para ganar músculo</button>
+    <div class="hablar-pablo" data-donde="freno"></div>
     <button type="button" class="btn-texto" id="freno-volver" style="margin-top:0.4rem">← Volver a mis respuestas</button>
   </div>
   <div id="elegir-deporte" hidden></div>
@@ -1375,6 +1392,7 @@
         <button type="button" class="perfil-fila" data-ir="competiciones"><span>Mis competiciones</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="alertas" hidden><span>Alertas para Pablo</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="nube" hidden><span>Que Pablo vea mis datos</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="perfil-fila" data-ir="hablar"><span>Hablar con Pablo</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="instalar"><span>Instalar en el móvil</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="medallas" hidden><span>Mis medallas</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" id="btn-tutorial"><span>Ver el tutorial otra vez</span><span aria-hidden="true">›</span></button>
@@ -1412,6 +1430,7 @@
       <p class="subt" id="ln-vacio">Todavía no has añadido ninguno. ¡Aquí no se juzga a nadie!</p>
       <div id="perfil-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
     </div>
+    <div class="tarjeta" data-sub="hablar"><div class="hablar-pablo" data-donde="perfil"></div></div>
     <div class="tarjeta" id="instalar" data-sub="instalar">
       <h2>Instálala en tu móvil</h2>
       <p class="subt">Así la tienes como un icono en la pantalla de inicio y abre aunque no haya cobertura.</p>
@@ -1548,12 +1567,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=4e46a4b"></script>
-<script src="fuentes.js?v=4e46a4b"></script>
-<script src="motor.bundle.js?v=4e46a4b"></script>
-<script src="cuestionario.js?v=4e46a4b"></script>
-<script src="nube.js?v=4e46a4b"></script>
-<script src="pwa.js?v=4e46a4b"></script>
+<script src="novedades.js?v=5034590"></script>
+<script src="fuentes.js?v=5034590"></script>
+<script src="motor.bundle.js?v=5034590"></script>
+<script src="cuestionario.js?v=5034590"></script>
+<script src="nube.js?v=5034590"></script>
+<script src="pwa.js?v=5034590"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>
