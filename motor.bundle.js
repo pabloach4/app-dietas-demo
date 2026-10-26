@@ -71,6 +71,7 @@ var Motor = (() => {
     OPCIONES_GELES: () => OPCIONES_GELES,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
+    PORCION_COMESTIBLE_CSV: () => PORCION_COMESTIBLE_CSV,
     PRECIOS_CSV: () => PRECIOS_CSV,
     PREGUNTAS_CRIBADO: () => PREGUNTAS_CRIBADO,
     RACION_MAX: () => RACION_MAX,
@@ -163,6 +164,7 @@ var Motor = (() => {
     comprobarGlutenCsv: () => comprobarGlutenCsv,
     comprobarLimitesIngredientesCsv: () => comprobarLimitesIngredientesCsv,
     comprobarMedidasCsv: () => comprobarMedidasCsv,
+    comprobarPorcionComestible: () => comprobarPorcionComestible,
     comprobarPrecios: () => comprobarPrecios,
     conLimitesIngredientes: () => conLimitesIngredientes,
     conflictosComidaEntreno: () => conflictosComidaEntreno,
@@ -234,6 +236,7 @@ var Motor = (() => {
     finUltimaPruebaH: () => finUltimaPruebaH,
     firmaPlan: () => firmaPlan,
     formatearListaPendiente: () => formatearListaPendiente,
+    fraccionesDesdeCsv: () => fraccionesDesdeCsv,
     frenoBajoPeso: () => frenoBajoPeso,
     frenoLogros: () => frenoLogros,
     gastoDePrueba: () => gastoDePrueba,
@@ -3839,6 +3842,25 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     return { ingrediente, gramosTotales: g, seccion: clasificar(ingrediente), comprar: redondearCompra(ingrediente, g) };
   }
 
+  // src/motor/porcion-comestible-datos.ts
+  var PORCION_COMESTIBLE_CSV = `ingrediente,fraccion,que_se_quita,fuente,pasaje,estado
+aguacate,0.6,piel y hueso,"https://www.bedca.net/bdpub/ (ficha \xABAguacate\xBB, f_id 2216)",Parte comestible (%): 60,texto completo le\xEDdo
+calabaza,0.7,piel y semillas,"https://www.bedca.net/bdpub/ (ficha \xABCalabaza, cruda\xBB, f_id 2378)",Parte comestible (%): 70,texto completo le\xEDdo
+fresas,0.95,ped\xFAnculo y hojas,"https://www.bedca.net/bdpub/ (ficha \xABFresa\xBB, f_id 2225)",Parte comestible (%): 95,texto completo le\xEDdo
+kiwi,0.85,piel,"https://www.bedca.net/bdpub/ (ficha \xABKiwi\xBB, f_id 2228)",Parte comestible (%): 85,texto completo le\xEDdo
+mandarina,0.72,piel,"https://www.bedca.net/bdpub/ (ficha \xABMandarina\xBB, f_id 2229)",Parte comestible (%): 72,texto completo le\xEDdo
+manzana,0.84,piel y coraz\xF3n,"https://www.bedca.net/bdpub/ (ficha \xABManzana\xBB, f_id 2231)",Parte comestible (%): 84,texto completo le\xEDdo
+mejill\xF3n,0.2,concha,"https://www.bedca.net/bdpub/ (ficha \xABMejill\xF3n, hervido\xBB, f_id 824)",Parte comestible (%): 20,texto completo le\xEDdo
+mel\xF3n,0.6,corteza y semillas,"https://www.bedca.net/bdpub/ (ficha \xABMel\xF3n\xBB, f_id 2234)",Parte comestible (%): 60,texto completo le\xEDdo
+naranja,0.73,piel,"https://www.bedca.net/bdpub/ (ficha \xABNaranja\xBB, f_id 2235)",Parte comestible (%): 73,texto completo le\xEDdo
+patata,0.81,piel,"https://www.bedca.net/bdpub/ (ficha \xABPatata, cruda\xBB, f_id 2403)",Parte comestible (%): 81,texto completo le\xEDdo
+pera,0.87,piel y coraz\xF3n,"https://www.bedca.net/bdpub/ (ficha \xABPera\xBB, f_id 2241)",Parte comestible (%): 87,texto completo le\xEDdo
+pi\xF1a,0.57,corteza y corona,"https://www.bedca.net/bdpub/ (ficha \xABPi\xF1a\xBB, f_id 2242)",Parte comestible (%): 57,texto completo le\xEDdo
+pl\xE1tano,0.66,piel,"https://www.bedca.net/bdpub/ (ficha \xABPl\xE1tano\xBB, f_id 2245)",Parte comestible (%): 66,texto completo le\xEDdo
+sand\xEDa,0.52,corteza,"https://www.bedca.net/bdpub/ (ficha \xABSand\xEDa\xBB, f_id 2247)",Parte comestible (%): 52,texto completo le\xEDdo
+pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www.ars.usda.gov/ARSUserFiles/80400525/data/retn/usda_cookingyields_meatpoultry.pdf,"USDA Table of Cooking Yields for Meat and Poultry (2014): \xABChicken, broiler-fryer, breast \u2014 Roasted, baked or unspecified\xBB, yield 72 (rango 61-82), a\xF1o 1975",texto completo le\xEDdo
+`;
+
   // src/motor/estimador-coste.ts
   var COLUMNAS3 = ["ingrediente", "unidad", "precio_medio", "nota", "fuente", "fecha_consulta"];
   var UNIDADES_VALIDAS = ["kg", "l", "unidad"];
@@ -3930,10 +3952,37 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     }
     return fallos;
   }
+  var ESTADOS_FUENTE = ["texto completo le\xEDdo", "acceso parcial"];
+  function fraccionesDesdeCsv(csv) {
+    const m = /* @__PURE__ */ new Map();
+    for (const r of registros(csv)) {
+      const f2 = Number(r.fraccion);
+      if (r.ingrediente && f2 > 0 && f2 <= 1) m.set(normalizar5(r.ingrediente), f2);
+    }
+    return m;
+  }
+  function comprobarPorcionComestible(csv, precios) {
+    const conPrecio = new Set(precios.map((p) => normalizar5(p.ingrediente)));
+    const vistos = /* @__PURE__ */ new Set();
+    const fallos = [];
+    for (const r of registros(csv)) {
+      const n = r.ingrediente ?? "";
+      const f2 = Number(r.fraccion);
+      if (vistos.has(normalizar5(n))) fallos.push(`${n}: repetido`);
+      vistos.add(normalizar5(n));
+      if (!conPrecio.has(normalizar5(n))) fallos.push(`${n}: sin precio en la tabla de precios`);
+      if (!(f2 > 0 && f2 <= 1)) fallos.push(`${n}: fracci\xF3n ${r.fraccion} fuera de (0, 1]`);
+      if (!r.fuente) fallos.push(`${n}: sin fuente`);
+      if (!r.pasaje) fallos.push(`${n}: sin pasaje`);
+      if (!ESTADOS_FUENTE.includes(r.estado ?? "")) fallos.push(`${n}: estado \xAB${r.estado ?? ""}\xBB (vale ${ESTADOS_FUENTE.join(" o ")})`);
+    }
+    return fallos;
+  }
+  var FRACCIONES2 = fraccionesDesdeCsv(PORCION_COMESTIBLE_CSV);
   function redondear2(n) {
     return Math.round(n * 100) / 100;
   }
-  function estimarCoste(lista, precios) {
+  function estimarCoste(lista, precios, fracciones = FRACCIONES2) {
     const porNombre = new Map(precios.map((p) => [normalizar5(p.ingrediente), p]));
     let total = 0;
     const porSeccion = {};
@@ -3945,10 +3994,11 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         continue;
       }
       let coste;
+      const comprados = item.gramosTotales / (fracciones.get(normalizar5(precio.ingrediente)) ?? 1);
       if (precio.unidad === "kg") {
-        coste = item.gramosTotales / 1e3 * precio.precioMedio;
+        coste = comprados / 1e3 * precio.precioMedio;
       } else if (precio.unidad === "l") {
-        coste = item.gramosTotales / (GRAMOS_POR_ML[normalizar5(precio.ingrediente)] ?? 1) / 1e3 * precio.precioMedio;
+        coste = comprados / (GRAMOS_POR_ML[normalizar5(precio.ingrediente)] ?? 1) / 1e3 * precio.precioMedio;
       } else {
         const gramos = gramosPorUnidad(precio.ingrediente);
         if (!gramos) {
