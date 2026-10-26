@@ -51,8 +51,10 @@ var Motor = (() => {
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
     HORA_ENTRENO_NOCHE: () => HORA_ENTRENO_NOCHE,
     LIMITES_INGREDIENTES_CSV: () => LIMITES_INGREDIENTES_CSV,
+    LIMITE_AFINIDAD: () => LIMITE_AFINIDAD,
     LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
     MAX_BAJADA_COMIDA: () => MAX_BAJADA_COMIDA,
+    MAX_DUELOS: () => MAX_DUELOS,
     MAX_INSTANTANEA: () => MAX_INSTANTANEA,
     MAX_KG_PERDIDOS_CREIBLE: () => MAX_KG_PERDIDOS_CREIBLE,
     MAX_MOTIVO_CITA: () => MAX_MOTIVO_CITA,
@@ -65,6 +67,7 @@ var Motor = (() => {
     MENSAJE_DERIVACION_SALUD: () => MENSAJE_DERIVACION_SALUD,
     MENSAJE_LLANO_AVISOS: () => MENSAJE_LLANO_AVISOS,
     MENSAJE_SUELO: () => MENSAJE_SUELO,
+    MIN_DUELOS: () => MIN_DUELOS,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
     NOTA_PAUTA: () => NOTA_PAUTA,
     NOTA_PAUTA_ORIENTATIVA: () => NOTA_PAUTA_ORIENTATIVA,
@@ -106,6 +109,7 @@ var Motor = (() => {
     acuseValoracion: () => acuseValoracion,
     adaptarNombresGluten: () => adaptarNombresGluten,
     adherenciaSemana: () => adherenciaSemana,
+    afinidadesDe: () => afinidadesDe,
     agruparAvisosPorDia: () => agruparAvisosPorDia,
     agruparPorPersona: () => agruparPorPersona,
     alergiasPreferenciasDesdeTexto: () => alergiasPreferenciasDesdeTexto,
@@ -191,6 +195,7 @@ var Motor = (() => {
     deshacer: () => deshacer,
     diaDeLaFecha: () => diaDeLaFecha,
     diasConSuelo: () => diasConSuelo,
+    duelosTerminados: () => duelosTerminados,
     editarCompeticion: () => editarCompeticion,
     elaboracionEjemplo: () => elaboracionEjemplo,
     encimasDe: () => encimasDe,
@@ -244,6 +249,7 @@ var Motor = (() => {
     generarListaCompra: () => generarListaCompra,
     glutenDesdeCsv: () => glutenDesdeCsv,
     grupoDeFranja: () => grupoDeFranja,
+    gustosPorReceta: () => gustosPorReceta,
     hambreCenaValida: () => hambreCenaValida,
     hambresDeLaSemana: () => hambresDeLaSemana,
     historialPlanes: () => historialPlanes,
@@ -295,9 +301,12 @@ var Motor = (() => {
     planPabloAplicable: () => planPabloAplicable,
     plegarLineaIcs: () => plegarLineaIcs,
     preferenciaDesayunoValida: () => preferenciaDesayunoValida,
+    puntuacionGusto: () => puntuacionGusto,
     racionEnPalabras: () => racionEnPalabras,
     racionRealistaMinima: () => racionRealistaMinima,
     raizAlimento: () => raizAlimento,
+    rankingGustos: () => rankingGustos,
+    rasgosDeReceta: () => rasgosDeReceta,
     recetaDeId: () => recetaDeId,
     recetasCompuestas: () => recetasCompuestas,
     recetasParaDerivado: () => recetasParaDerivado,
@@ -314,6 +323,7 @@ var Motor = (() => {
     semanaDeLaDieta: () => semanaDeLaDieta,
     semanasValidas: () => semanasValidas,
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
+    siguienteDuelo: () => siguienteDuelo,
     sinFilaDeGluten: () => sinFilaDeGluten,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
     textoCita: () => textoCita,
@@ -2996,6 +3006,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   var MIN_LEGUMBRE = 2;
   var MAX_BASE = 4;
   var PESO_VIOLACION_E2 = 300;
+  var PESO_GUSTO = 40;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
@@ -3273,6 +3284,8 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const idsDe = (r) => r.platos ?? [r.id];
     const evitarIds = new Set(opciones.evitar ?? []);
     const usosDe = (r) => Math.max(...idsDe(r).map((id) => usos.get(id) ?? 0));
+    const gustos = opciones.gustos;
+    const gusto = (r) => gustos?.size ? idsDe(r).reduce((s, id) => s + (gustos.get(id) ?? 0), 0) / idsDe(r).length : 0;
     const otraComidaDelDia = (slot) => {
       const otra = slot.franja === "comida" ? "cena" : slot.franja === "cena" ? "comida" : void 0;
       if (!otra) return void 0;
@@ -3355,7 +3368,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
             continue;
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
-          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r);
+          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) - PESO_GUSTO / 4 * gusto(r);
           if (!mejor || clave2(desviacion, dist, falta) < clave2(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
@@ -4571,6 +4584,111 @@ r43,cocido,guiso,cuchara_caliente,no
       m.set(id, { metodos: met.split(";").map((x) => x.trim()).filter(Boolean), estilo, servicio, picante });
     }
     return m;
+  }
+
+  // src/motor/gustos.ts
+  var LIMITE_AFINIDAD = 3;
+  var MIN_DUELOS = 12;
+  var MAX_DUELOS = 20;
+  var TOP_RANKING = 20;
+  var VENTANA_PARADA = 3;
+  var CAMBIOS_TOLERADOS = 2;
+  var PASO = { elegido: 1, ambos: 0.5, ninguno: -0.5 };
+  var FRANJAS_MOMENTO = { principal: ["comida", "cena"], manana: ["desayuno", "media_manana", "merienda"] };
+  function rasgosDeReceta(r, atributos) {
+    const rasgos = [];
+    if (r.proteinaPrincipal && r.proteinaPrincipal !== "unico") rasgos.push(`proteina=${r.proteinaPrincipal}`);
+    for (const b of r.baseHidrato ?? []) rasgos.push(`base=${b}`);
+    const a2 = atributos.get(r.id);
+    if (a2) {
+      for (const m of a2.metodos) rasgos.push(`metodo=${m}`);
+      rasgos.push(`estilo=${a2.estilo}`, `servicio=${a2.servicio}`, `picante=${a2.picante}`);
+    }
+    return [...new Set(rasgos)];
+  }
+  var acotar = (x) => Math.max(-LIMITE_AFINIDAD, Math.min(LIMITE_AFINIDAD, x));
+  function afinidadesDe(historial, recetas, atributos) {
+    const porId = new Map(recetas.map((r) => [r.id, r]));
+    const af = {};
+    const mover = (rasgos, d) => {
+      for (const k of rasgos) af[k] = acotar((af[k] ?? 0) + d);
+    };
+    for (const d of historial) {
+      const ra = porId.get(d.a), rb = porId.get(d.b);
+      if (!ra || !rb) continue;
+      const a2 = rasgosDeReceta(ra, atributos), b = rasgosDeReceta(rb, atributos);
+      const soloA = a2.filter((k) => !b.includes(k)), soloB = b.filter((k) => !a2.includes(k));
+      if (d.respuesta === "a") {
+        mover(soloA, PASO.elegido);
+        mover(soloB, -PASO.elegido);
+      } else if (d.respuesta === "b") {
+        mover(soloB, PASO.elegido);
+        mover(soloA, -PASO.elegido);
+      } else mover([.../* @__PURE__ */ new Set([...a2, ...b])], d.respuesta === "ambos" ? PASO.ambos : PASO.ninguno);
+    }
+    return af;
+  }
+  function puntuacionGusto(r, afinidades, atributos) {
+    const rasgos = rasgosDeReceta(r, atributos);
+    if (!rasgos.length) return 0;
+    return rasgos.reduce((s, k) => s + (afinidades[k] ?? 0), 0) / rasgos.length / LIMITE_AFINIDAD;
+  }
+  function gustosPorReceta(recetas, historial, atributos) {
+    const m = /* @__PURE__ */ new Map();
+    if (!historial.length) return m;
+    const af = afinidadesDe(historial, recetas, atributos);
+    for (const r of recetas) {
+      const p = puntuacionGusto(r, af, atributos);
+      if (p) m.set(r.id, p);
+    }
+    return m;
+  }
+  var delMomento = (r, m) => r.tipoPlato !== "postre" && r.franjas.some((f2) => FRANJAS_MOMENTO[m].includes(f2));
+  function rankingGustos(recetas, afinidades, atributos) {
+    return recetas.filter((r) => atributos.has(r.id) && r.tipoPlato !== "postre").map((r) => ({ id: r.id, p: puntuacionGusto(r, afinidades, atributos) })).sort((x, y) => y.p - x.p || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0)).map((x) => x.id);
+  }
+  function siguienteDuelo(recetas, historial, atributos, ap) {
+    const vistos = new Set(historial.flatMap((d) => [d.a, d.b]));
+    const porId = new Map(recetas.map((r) => [r.id, r]));
+    const veces = /* @__PURE__ */ new Map();
+    for (const id of vistos) {
+      const r = porId.get(id);
+      if (r) for (const k of rasgosDeReceta(r, atributos)) veces.set(k, (veces.get(k) ?? 0) + 1);
+    }
+    const orden = historial.length % 3 === 2 ? ["manana", "principal"] : ["principal", "manana"];
+    for (const momento of orden) {
+      const cand = recetas.filter((r) => atributos.has(r.id) && !vistos.has(r.id) && delMomento(r, momento) && (!ap || evaluarCompatibilidad(r, ap).compatible)).sort((x, y) => x.id < y.id ? -1 : x.id > y.id ? 1 : 0);
+      const rasgos = cand.map((r) => new Set(rasgosDeReceta(r, atributos)));
+      let mejor, mejorValor = -1;
+      for (let i = 0; i < cand.length; i++) {
+        for (let j = i + 1; j < cand.length; j++) {
+          let distintos = 0, valor = 0;
+          for (const k of rasgos[i]) if (!rasgos[j].has(k)) {
+            distintos++;
+            valor += 1 / (1 + (veces.get(k) ?? 0));
+          }
+          for (const k of rasgos[j]) if (!rasgos[i].has(k)) {
+            distintos++;
+            valor += 1 / (1 + (veces.get(k) ?? 0));
+          }
+          if (distintos >= 3 && valor > mejorValor) {
+            mejorValor = valor;
+            mejor = [i, j];
+          }
+        }
+      }
+      if (mejor) return [cand[mejor[0]], cand[mejor[1]]];
+    }
+    return void 0;
+  }
+  function duelosTerminados(recetas, historial, atributos) {
+    if (historial.length >= MAX_DUELOS) return true;
+    if (historial.length < MIN_DUELOS) return false;
+    const top = (h) => new Set(rankingGustos(recetas, afinidadesDe(h, recetas, atributos), atributos).slice(0, TOP_RANKING));
+    const antes = top(historial.slice(0, historial.length - VENTANA_PARADA)), ahora = top(historial);
+    let cambios = 0;
+    for (const id of ahora) if (!antes.has(id)) cambios++;
+    return cambios <= CAMBIOS_TOLERADOS;
   }
 
   // src/motor/contexto-dia.ts
