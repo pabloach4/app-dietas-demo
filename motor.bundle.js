@@ -252,10 +252,12 @@ var Motor = (() => {
     gustosPorReceta: () => gustosPorReceta,
     hambreCenaValida: () => hambreCenaValida,
     hambresDeLaSemana: () => hambresDeLaSemana,
+    historialGustosValido: () => historialGustosValido,
     historialPlanes: () => historialPlanes,
     horaDeGuardado: () => horaDeGuardado,
     idAlerta: () => idAlerta,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
+    ingredientesPrincipales: () => ingredientesPrincipales,
     inicioDeLaSiguiente: () => inicioDeLaSiguiente,
     instantaneaLocal: () => instantaneaLocal,
     itemDesdeGramos: () => itemDesdeGramos,
@@ -4690,6 +4692,17 @@ r43,cocido,guiso,cuchara_caliente,no
     for (const id of ahora) if (!antes.has(id)) cambios++;
     return cambios <= CAMBIOS_TOLERADOS;
   }
+  function ingredientesPrincipales(r, n = 3) {
+    const vale = (nombre) => !/^(aceite|sal)\b/i.test(nombre.trim()) && rolIngrediente(nombre) !== "condimento";
+    const elegidos = r.ingredientes.filter((i) => vale(i.nombre)).sort((x, y) => y.gramos - x.gramos).slice(0, n);
+    return (elegidos.length ? elegidos : [...r.ingredientes].sort((x, y) => y.gramos - x.gramos).slice(0, 1)).map((i) => i.nombre);
+  }
+  function historialGustosValido(crudo, recetas) {
+    if (!Array.isArray(crudo)) return [];
+    const ids = new Set(recetas.map((r) => r.id));
+    const respuestas = ["a", "b", "ambos", "ninguno"];
+    return crudo.filter((d) => Boolean(d) && typeof d === "object" && ids.has(d.a) && ids.has(d.b) && respuestas.includes(d.respuesta)).map(({ a: a2, b, respuesta }) => ({ a: a2, b, respuesta })).slice(0, MAX_DUELOS);
+  }
 
   // src/motor/contexto-dia.ts
   function contextoDiaPorDefecto() {
@@ -9040,7 +9053,9 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
     "app-dietas-calendario",
     "app-dietas-sustituciones",
     "app-dietas-lista-compra-manual",
-    "app-dietas-alertas-pablo"
+    "app-dietas-alertas-pablo",
+    "app-dietas-gustos"
+    // #261 C
   ];
   var VERSION_CONSENTIMIENTO_NUBE = "2026-10-14-nube-3";
   var MAX_INSTANTANEA = 4e5;

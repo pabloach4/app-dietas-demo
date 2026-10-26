@@ -998,7 +998,16 @@
   /* #255: campo que falta al pulsar «Siguiente». */
   [aria-invalid="true"] { border-color: var(--peligro) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--peligro) 25%, transparent); }
   #panel-perfil[data-vista="datos"] > [data-sub="datos"], #panel-perfil[data-vista="alergias"] > [data-sub="alergias"], #panel-perfil[data-vista="competiciones"] > [data-sub="competiciones"],
-  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"], #panel-perfil[data-vista="medallas"] > [data-sub="medallas"], #panel-perfil[data-vista="instalar"] > [data-sub="instalar"], #panel-perfil[data-vista="hablar"] > [data-sub="hablar"] { display: block; }
+  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"], #panel-perfil[data-vista="medallas"] > [data-sub="medallas"], #panel-perfil[data-vista="instalar"] > [data-sub="instalar"], #panel-perfil[data-vista="hablar"] > [data-sub="hablar"], #panel-perfil[data-vista="gustos"] > [data-sub="gustos"] { display: block; }
+  /* #261 C: «Mis gustos», dos platos lado a lado (uno encima del otro en pantallas estrechas). */
+  .duelo-avance { margin: 0 0 0.5rem; color: var(--gris); font-size: 0.9rem; }
+  .duelo-par { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.6rem; }
+  .duelo-plato { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; padding: 0.8rem; border: 1px solid var(--borde); border-radius: 14px; background: var(--tarjeta-suave, var(--tarjeta)); color: var(--texto); overflow-wrap: anywhere; }
+  .duelo-plato .subt { margin: 0; font-size: 0.85rem; }
+  .duelo-plato .btn-secundario { margin-top: auto; padding: 0.6rem; }
+  .duelo-icono { font-size: 1.8rem; line-height: 1; }
+  .duelo-otras { display: flex; gap: 0.6rem; margin-top: 0.6rem; }
+  .duelo-otras .btn-secundario { flex: 1; padding: 0.6rem; }
   .hablar-pablo { margin-top: 0.8rem; } .hablar-pablo .hp-titulo { margin: 0 0 0.5rem; }
   a.btn-secundario { text-align: center; text-decoration: none; box-sizing: border-box; }
   .hp-cita { margin-top: 0.6rem; } .hp-cita fieldset { border: 1px solid var(--borde); border-radius: 10px; margin: 0 0 0.6rem; padding: 0.4rem 0.7rem; }
@@ -1404,6 +1413,7 @@
       <div class="tarjeta" id="perfil-menu">
         <button type="button" class="perfil-fila" data-ir="datos"><span>Mis datos y recetas</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="alergias"><span>Alergias y lista negra</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="perfil-fila" data-ir="gustos"><span>Mis gustos</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="competiciones"><span>Mis competiciones</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="alertas" hidden><span>Alertas para Pablo</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="nube" hidden><span>Que Pablo vea mis datos</span><span aria-hidden="true">›</span></button>
@@ -1456,6 +1466,16 @@
       <ul class="ln-chips" id="ln-lista" aria-live="polite"></ul>
       <p class="subt" id="ln-vacio">Todavía no has añadido ninguno. ¡Aquí no se juzga a nadie!</p>
       <div id="perfil-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
+    </div>
+    <div class="tarjeta" id="tarjeta-gustos" data-sub="gustos">
+      <h2>Mis gustos</h2>
+      <p class="una-linea">Elige entre dos platos y tu plan tendrá más de los que te gustan.</p>
+      <details class="saber-mas"><summary>Saber más</summary><p>Es opcional y puedes parar cuando quieras con «Ya está». Tus gustos solo deciden entre platos que ya te encajan: no cambian tus calorías ni tus cantidades, y nunca saltan tus alergias ni tu lista negra. Se guardan en este navegador.</p></details>
+      <p class="subt" id="gustos-estado" aria-live="polite"></p>
+      <div id="gustos-duelo"></div>
+      <button type="button" class="btn-principal" id="gustos-empezar">Empezar</button>
+      <button type="button" class="btn-secundario" id="gustos-ya" style="margin-top:0.6rem" hidden>Ya está</button>
+      <button type="button" class="btn-texto" id="gustos-borrar" style="margin-top:0.4rem;color:var(--peligro)" hidden>Borrar mis gustos</button>
     </div>
     <div class="tarjeta" data-sub="hablar"><div class="hablar-pablo" data-donde="perfil"></div></div>
     <div class="tarjeta" id="instalar" data-sub="instalar">
@@ -1594,12 +1614,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </section>
-<script src="novedades.js?v=77d96d4"></script>
-<script src="fuentes.js?v=77d96d4"></script>
-<script src="motor.bundle.js?v=77d96d4"></script>
-<script src="cuestionario.js?v=77d96d4"></script>
-<script src="nube.js?v=77d96d4"></script>
-<script src="pwa.js?v=77d96d4"></script>
+<script src="novedades.js?v=b978059"></script>
+<script src="fuentes.js?v=b978059"></script>
+<script src="motor.bundle.js?v=b978059"></script>
+<script src="cuestionario.js?v=b978059"></script>
+<script src="nube.js?v=b978059"></script>
+<script src="pwa.js?v=b978059"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

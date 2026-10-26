@@ -925,6 +925,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       b.hidden = Boolean(tarjeta && tarjeta.hidden) || (b.dataset.ir === 'nube' && !tarjeta);
     });
     document.getElementById('perfil-atras').hidden = vista === 'menu';
+    if (vista === 'gustos') pintarGustos();
     if (vista !== 'menu') window.scrollTo({ top: 0 });
   }
   document.querySelectorAll('#perfil-menu [data-ir]').forEach((b) => b.addEventListener('click', () => irPerfilSub(b.dataset.ir)));
@@ -1631,6 +1632,77 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   let favoritasRecetas = [];
   try { favoritasRecetas = Motor.favoritasValidas(JSON.parse(localStorage.getItem(CLAVE_FAVORITAS) || 'null'), RECETAS_EJEMPLO); } catch { /* sin almacenamiento o dato corrupto: sin favoritas */ }
   function guardarFavoritas() { try { localStorage.setItem(CLAVE_FAVORITAS, JSON.stringify(favoritasRecetas)); } catch { falloAlmacenamiento(); /* solo dura esta sesión */ } }
+
+  // --- #261 C (idea de Pablo del 19/10, decidida el 20/10): «Mis gustos» en Perfil, opcional. Dos platos del mismo momento, «Me gusta
+  // este», «Los dos» o «Ninguno»; al terminar se recalcula el plan sin conservar los platos de antes (#259.27), o los gustos no se
+  // notarían. El gusto solo desempata en el asignador. Se guardan las respuestas; las afinidades salen de ellas. ---
+  const CLAVE_GUSTOS = 'app-dietas-gustos';
+  const ATRIBUTOS_RECETAS = Motor.atributosDesdeCsv(Motor.ATRIBUTOS_CSV);
+  const ICONO_ESTILO = { arroz_plato: '🍚', batido: '🥤', bocadillo_tostada: '🥪', bol_desayuno: '🥣', cereal_plato: '🌾', crema: '🥣', dulce_cuchara: '🍮', ensalada: '🥗', fruta: '🍎', guiso: '🍲', huevo_plato: '🍳', pasta: '🍝', plato_combinado: '🍽️', snack: '🥨', sopa: '🍜', verduras_plato: '🥦', yogur_fruta: '🍓' };
+  let historialGustos = [];
+  try { historialGustos = Motor.historialGustosValido(JSON.parse(localStorage.getItem(CLAVE_GUSTOS) || 'null'), RECETAS_BASE); } catch { /* sin almacenamiento o dato corrupto: sin gustos */ }
+  let duelosEnCurso = null; // mientras se juega; null fuera de los duelos
+  let gustosHecho = '';
+  let preferirUnaVez; // #261 C: al aplicar o borrar los gustos, con qué platos de antes se recalcula (en vez de los de ahora)
+  let planAntesGustos = null; // el plan de antes de aplicar los gustos, para que «Borrar mis gustos» lo devuelva
+  function guardarGustos() { try { localStorage.setItem(CLAVE_GUSTOS, JSON.stringify(historialGustos)); } catch { falloAlmacenamiento(); } }
+  const listaY = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}` : xs.join(''));
+  function tarjetaDueloHtml(r, lado) {
+    const at = ATRIBUTOS_RECETAS.get(r.id);
+    return `<div class="duelo-plato"><span class="duelo-icono" aria-hidden="true">${ICONO_ESTILO[at && at.estilo] || '🍽️'}</span><strong>${escaparHtml(r.nombre)}</strong>`
+      + `<span class="subt">Lleva: ${escaparHtml(listaY(Motor.ingredientesPrincipales(r).map((n) => n.toLowerCase())))}</span>`
+      + `<button type="button" class="btn-secundario" data-gusto="${lado}">Me gusta este</button></div>`;
+  }
+  function recalcularConGustos(preferir) {
+    preferirUnaVez = preferir;
+    if (vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
+    preferirUnaVez = undefined;
+  }
+  function terminarDuelos() {
+    const nuevos = duelosEnCurso || [];
+    duelosEnCurso = null;
+    if (nuevos.length && JSON.stringify(nuevos) !== JSON.stringify(historialGustos)) {
+      if (!historialGustos.length) planAntesGustos = asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta }));
+      historialGustos = nuevos;
+      guardarGustos();
+      recalcularConGustos([]);
+      gustosHecho = 'Tu plan tendrá más platos parecidos a los que te gustan.';
+    }
+    pintarGustos();
+  }
+  function pintarGustos() {
+    const caja = document.getElementById('gustos-duelo');
+    if (!caja) return;
+    const estado = document.getElementById('gustos-estado');
+    const enCurso = Array.isArray(duelosEnCurso);
+    const par = enCurso && restriccionesActuales ? Motor.siguienteDuelo(RECETAS_EJEMPLO, duelosEnCurso, ATRIBUTOS_RECETAS, restriccionesActuales) : undefined;
+    if (enCurso && (!par || Motor.duelosTerminados(RECETAS_EJEMPLO, duelosEnCurso, ATRIBUTOS_RECETAS))) { terminarDuelos(); return; }
+    caja.innerHTML = par ? `<p class="duelo-avance">${duelosEnCurso.length + 1} de unos ${duelosEnCurso.length < 15 ? 15 : Motor.MAX_DUELOS}</p>`
+      + `<div class="duelo-par" data-a="${escaparHtml(par[0].id)}" data-b="${escaparHtml(par[1].id)}">${tarjetaDueloHtml(par[0], 'a')}${tarjetaDueloHtml(par[1], 'b')}</div>`
+      + '<div class="duelo-otras"><button type="button" class="btn-secundario" data-gusto="ambos">Los dos</button><button type="button" class="btn-secundario" data-gusto="ninguno">Ninguno</button></div>' : '';
+    caja.querySelectorAll('[data-gusto]').forEach((b) => b.addEventListener('click', () => {
+      duelosEnCurso = [...duelosEnCurso, { a: par[0].id, b: par[1].id, respuesta: b.dataset.gusto }];
+      pintarGustos();
+    }));
+    const sinPlan = !restriccionesActuales;
+    estado.textContent = sinPlan ? 'Primero calcula tu plan: así solo te enseñamos platos que puedes comer.'
+      : enCurso ? '' : gustosHecho || (historialGustos.length ? `Tu plan ya tiene en cuenta tus gustos (${historialGustos.length} elecciones).` : '');
+    const empezar = document.getElementById('gustos-empezar');
+    empezar.hidden = enCurso || sinPlan || Motor.duelosTerminados(RECETAS_EJEMPLO, historialGustos, ATRIBUTOS_RECETAS);
+    empezar.textContent = historialGustos.length ? 'Seguir eligiendo' : 'Empezar';
+    document.getElementById('gustos-ya').hidden = !enCurso;
+    document.getElementById('gustos-borrar').hidden = enCurso || !historialGustos.length;
+  }
+  document.getElementById('gustos-empezar').addEventListener('click', () => { gustosHecho = ''; duelosEnCurso = [...historialGustos]; pintarGustos(); });
+  document.getElementById('gustos-ya').addEventListener('click', terminarDuelos);
+  document.getElementById('gustos-borrar').addEventListener('click', () => {
+    historialGustos = [];
+    try { localStorage.removeItem(CLAVE_GUSTOS); } catch { /* nada guardado */ }
+    recalcularConGustos(planAntesGustos || []);
+    planAntesGustos = null;
+    gustosHecho = 'Gustos borrados: tu plan vuelve a ser el de antes.';
+    pintarGustos();
+  });
 
   // --- #265 E3 (Pablo: «que todos los días quiera desayunar "pan con…" que tenga opciones para eso»): desayuno variado, siempre el
   // mismo o siempre pan con… Al final del cuestionario (opcional) y en Perfil, con el mismo estado. Es un gusto, no un dato de salud:
@@ -3674,6 +3746,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
     pintarDesayunoPref(); // #265 E3: la lista de «siempre el mismo», con las restricciones de ahora
     pintarHambreCena(); // #265 F: la pregunta, solo si esta semana algún entreno acaba de noche con la cena después
+    if (!Array.isArray(duelosEnCurso)) pintarGustos(); // #261 C: los duelos, con las restricciones de ahora
     const admitePostre = (r) => Motor.evaluarCompatibilidad(r, alergiasPreferencias).compatible; // #259.11: el postre de cierre, con las mismas restricciones
     RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, Boolean(respuestas.alergias && respuestas.alergias.celiaquia)); // #256.26
     // #189: la próxima dieta guardada se vuelve a comprobar con las restricciones de ahora: lo que ya no vale se quita y se dice.
@@ -3695,8 +3768,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       quitadasPablo = revP.quitadas;
     }
     // #259 (punto 27): al recalcular (por ejemplo, tras cambiar el peso), cada comida conserva su plato si sigue valiendo.
-    const previa = asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta }));
-    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias), ...(previa.length ? { preferir: previa } : {}), desayuno: prefDesayuno };
+    const previa = preferirUnaVez ?? asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta })); // #261 C: al aplicar o borrar los gustos, no se conservan los platos de ahora
+    const gustos = Motor.gustosPorReceta(RECETAS_EJEMPLO, historialGustos, ATRIBUTOS_RECETAS); // #261 C: solo desempata; sin gustos, vacío
+    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias), ...(previa.length ? { preferir: previa } : {}), desayuno: prefDesayuno, ...(gustos.size ? { gustos } : {}) };
     const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador);
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
