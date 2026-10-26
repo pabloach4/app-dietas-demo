@@ -409,6 +409,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // se elige entre los tipos de ese deporte (Motor.DEPORTES_PRINCIPALES, cada uno ya traducido a una actividad del motor); «Otra
   // actividad…» abre la lista completa. Con «Otro» o «Ninguno en concreto», las filas de siempre. Las sesiones que llegan al motor
   // tienen la misma forma que antes.
+  const MINUTOS_SESION_NUEVA = 45; // #274: también al añadir desde el desplegable del día (antes quedaba vacía y el cálculo fallaba)
   const DIA_LARGO = { L: 'Lunes', M: 'Martes', X: 'Miércoles', J: 'Jueves', V: 'Viernes', S: 'Sábado', D: 'Domingo' };
   let deporteElegido = 'otro';
   const tiposDelDeporte = () => (Motor.deportePrincipal(deporteElegido) || { tipos: [] }).tipos;
@@ -432,7 +433,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         sel.addEventListener('change', () => {
           if (sel.value === '') return;
           const t = tiposDelDeporte()[Number(sel.value)];
-          nuevaFilaSesion(d, '', '', undefined, t ? t.actividad : undefined, t ? t.nombre : undefined, t ? t.nombre : '__otra__');
+          nuevaFilaSesion(d, '', MINUTOS_SESION_NUEVA, undefined, t ? t.actividad : undefined, t ? t.nombre : undefined, t ? t.nombre : '__otra__'); // #274
         });
         sesionesDiv.appendChild(bloque);
       });
@@ -517,7 +518,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (bloqueDia) rotularDias();
   }
 
-  document.getElementById('add-sesion').addEventListener('click', () => nuevaFilaSesion('L', 'fuerza', 45));
+  document.getElementById('add-sesion').addEventListener('click', () => nuevaFilaSesion('L', 'fuerza', MINUTOS_SESION_NUEVA));
 
   function leerSesiones() {
     return Array.from(sesionesDiv.querySelectorAll('.sesion')).map((fila) => {
@@ -4253,8 +4254,20 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   }
 
   let esperandoNube = false; // #211: un segundo toque en «Ver mi plan» mientras sale la ventana del correo no abre otra
+  // #274: cualquier error del cálculo sale aquí, en lenguaje de cliente; antes se quedaba en la consola y la pantalla no cambiaba.
+  function avisarErrorCalculo(e) {
+    console.error(e);
+    esperandoNube = false;
+    const aviso = document.getElementById('incompleto');
+    aviso.hidden = false;
+    aviso.textContent = 'No hemos podido calcular tu plan con estos datos. Revisa tus datos (paso 1) y los minutos y la actividad de cada sesión (paso 3). Si sigue sin salir, díselo a Pablo.';
+    avisarIncompleto();
+  }
   document.getElementById('form-cuestionario').addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    try { await verMiPlan(); } catch (e) { avisarErrorCalculo(e); }
+  });
+  async function verMiPlan() {
     if (esperandoNube) return; // ya está esperando la ventana del correo
     if (!leerFranjas().length) { // issue #61
       ocultarPantallas();
@@ -4302,6 +4315,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       document.getElementById('incompleto').textContent = resultado.mensaje;
       avisarIncompleto();
       mostrarPaso(resultado.falta === 'sesiones' ? 3 : resultado.falta === 'objetivo' ? 2 : 1); // datos básicos en el paso 1; objetivo en el 2; sesiones en el 3
+      if (resultado.falta === 'sesiones') { // #274: el foco en el campo que falta
+        const campo = [...sesionesDiv.querySelectorAll('.s-minutos')].find((c) => !(Number(c.value) > 0) || c.value.trim() === '');
+        if (campo) { campo.scrollIntoView({ block: 'center' }); campo.focus(); }
+      }
       return;
     }
     if (resultado.estado === 'elegir_deporte') {
@@ -4327,15 +4344,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     avisoFrenoHoy = objetivoPorFreno ? `Pablo prefiere verlo contigo antes de un plan para perder grasa. Mientras tanto tienes un plan para ${objetivoPorFreno === 'mantener' ? 'mantener tu peso' : 'ganar músculo'}.` : '';
     objetivoPorFreno = '';
 
-    let plan;
-    try {
-      plan = Motor.calcular(resultado.perfil);
-    } catch (e) {
-      document.getElementById('incompleto').hidden = false;
-      document.getElementById('incompleto').textContent = e.message;
-      avisarIncompleto();
-      return;
-    }
+    const plan = Motor.calcular(resultado.perfil); // si falla, lo enseña avisarErrorCalculo (#274)
     // #230: si el suelo de kcal (D11) cambió algún día, la persona lo ve sin desplegar nada y Pablo recibe una alerta (una por plan).
     diasSuelo = Motor.diasConSuelo(plan).map((d) => d.dia);
     const alertaSuelo = Motor.alertaSuelo(plan, new Date().toISOString());
@@ -4354,7 +4363,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     guardarPerfilLocal(); // issue #20: para precargarlo la próxima vez que se abra la demo
     mostrarResultado(Motor.crearSemana(resultado.perfil), plan, respuestas, leerFranjas());
     if (!tutorialVisto()) abrirTutorial(); // #219: la primera vez que se llega al plan
-  });
+  }
 
   // #219 (Pablo, 15/10): la primera vez que la persona llega a su plan sale un tutorial corto con lo básico del día a día, señalando
   // el sitio real de la pantalla. Una sola vez (localStorage; si no se puede guardar, solo se recuerda en esta visita). Se vuelve a ver

@@ -1777,8 +1777,8 @@ zumo de lim\xF3n,sin_gluten_natural,no,"fruta fresca exprimida, sin gluten por n
     }
     const sesiones = [];
     for (const s of r.sesiones ?? []) {
-      if (!Number.isFinite(s.minutos) || s.minutos < 0) {
-        return { estado: "incompleto", falta: "sesiones", mensaje: `Revisa los minutos de \xAB${s.deporte}\xBB: tienen que ser un n\xFAmero, no pueden quedar vac\xEDos ni en negativo.` };
+      if (!Number.isFinite(s.minutos) || s.minutos <= 0) {
+        return { estado: "incompleto", falta: "sesiones", mensaje: `Revisa los minutos de \xAB${s.deporte}\xBB: tienen que ser un n\xFAmero mayor que 0, no pueden quedar vac\xEDos.` };
       }
       const resuelto = resolverActividad(s);
       if ("opciones" in resuelto) {
