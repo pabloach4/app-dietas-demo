@@ -3836,6 +3836,25 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
   var UNIDADES_VALIDAS = ["kg", "l", "unidad"];
   var GRAMOS_POR_ML = { "aceite de oliva": 0.92 };
   var MEDIDAS2 = medidasDesdeCsv(MEDIDAS_CASERAS_CSV);
+  var SINONIMOS = {
+    pollo: "pechuga de pollo",
+    pavo: "pechuga de pavo",
+    ternera: "ternera magra (solomillo de aguja)",
+    espinaca: "espinacas",
+    "judias verdes": "jud\xEDa verde",
+    champinones: "champi\xF1\xF3n",
+    esparragos: "esp\xE1rrago",
+    "garbanzos cocidos": "garbanzo cocido",
+    avena: "copos de avena",
+    "avena sin gluten": "copos de avena sin gluten",
+    pimiento: "pimiento rojo",
+    pan: "pan blanco",
+    lechuga: "lechuga romana"
+  };
+  function clavePrecio(ingrediente) {
+    const n = normalizar5(ingrediente);
+    return normalizar5(SINONIMOS[n] ?? n);
+  }
   function gramosPorUnidad(ingrediente) {
     return MEDIDAS2.find((m) => normalizar5(m.ingrediente) === normalizar5(ingrediente) && /^unidad\b/i.test(m.medida))?.gramos;
   }
@@ -3899,7 +3918,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       }
     }
     for (const [clave2, rol] of rolDe) {
-      if (!vistos.has(clave2)) fallos.push(`${catalogo.find((c2) => normalizar5(c2.ingrediente) === clave2).ingrediente} (${rol}): sin precio`);
+      if (!vistos.has(clavePrecio(clave2))) fallos.push(`${catalogo.find((c2) => normalizar5(c2.ingrediente) === clave2).ingrediente} (${rol}): sin precio`);
     }
     return fallos;
   }
@@ -3912,7 +3931,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     const porSeccion = {};
     const sinPrecio = [];
     for (const item of lista) {
-      const precio = porNombre.get(normalizar5(item.ingrediente));
+      const precio = porNombre.get(clavePrecio(item.ingrediente));
       if (!precio) {
         sinPrecio.push(item.ingrediente);
         continue;
@@ -3921,9 +3940,9 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       if (precio.unidad === "kg") {
         coste = item.gramosTotales / 1e3 * precio.precioMedio;
       } else if (precio.unidad === "l") {
-        coste = item.gramosTotales / (GRAMOS_POR_ML[normalizar5(item.ingrediente)] ?? 1) / 1e3 * precio.precioMedio;
+        coste = item.gramosTotales / (GRAMOS_POR_ML[normalizar5(precio.ingrediente)] ?? 1) / 1e3 * precio.precioMedio;
       } else {
-        const gramos = gramosPorUnidad(item.ingrediente);
+        const gramos = gramosPorUnidad(precio.ingrediente);
         if (!gramos) {
           sinPrecio.push(item.ingrediente);
           continue;
@@ -4047,6 +4066,13 @@ yogur de soja,kg,3.00,"postre de soja natural Hacendado, pack",Mercadona: https:
 yogur griego,kg,1.93,"griego natural Hacendado, pack 6",Mercadona: https://tienda.mercadona.es/product/20559/yogur-griego-natural-hacendado-pack-6,2026-10-20
 yogur natural,kg,1.33,"natural Hacendado, pack 6",Mercadona: https://tienda.mercadona.es/product/22313/yogur-natural-hacendado-pack-6,2026-10-20
 zanahoria,kg,1.00,paquete 1 kg,Mercadona: https://tienda.mercadona.es/product/69586/zanahorias-paquete,2026-10-20
+gazpacho,l,1.60,"tradicional Hacendado, botella 1 l; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/15604/gazpacho-tradicional-hacendado-botella,2026-10-26
+jam\xF3n cocido,kg,10.00,"extra Hacendado, finas lonchas; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/60329/jamon-cocido-extra-hacendado-finas-lonchas-paquete,2026-10-26
+pechuga de pavo en embutido,kg,10.22,"pechuga de pavo Hacendado, finas lonchas; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/17775/pechuga-pavo-hacendado-finas-lonchas-paquete,2026-10-26
+queso curado,kg,11.40,"curado mezcla Hacendado, pieza; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/50965/queso-curado-mezcla-hacendado-pieza,2026-10-26
+can\xF3nigos,kg,9.60,"lavados, paquete 125 g; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/69719/canonigos-paquete,2026-10-26
+legumbre seca,kg,2.15,"media de lenteja seca (1.85) y alubia blanca seca (2.45) de esta tabla; el garbanzo seco no est\xE1 en ella; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/5330/lenteja-pardina-hacendado-categoria-extra-paquete ; https://tienda.mercadona.es/product/5124/alubia-blanca-hacendado-categoria-extra-paquete,2026-10-26
+legumbre cocida,kg,2.04,"media de lenteja cocida (2.25), garbanzo cocido (2.00) y alubia blanca cocida (1.88) de esta tabla; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/26030/lenteja-cocida-hacendado-tarro ; https://tienda.mercadona.es/product/26029/garbanzo-cocido-hacendado-tarro ; https://tienda.mercadona.es/product/26019/alubia-cocida-blanca-hacendado-tarro,2026-10-26
 `;
 
   // src/motor/contexto-dia.ts
@@ -6708,23 +6734,23 @@ R310,"Yogur de soja con pl\xE1tano, cacao y crema de cacahuete",desayuno;media_m
 R311,Tostada integral de tempeh a la plancha con tomate,desayuno;media_manana;merienda,329,20.5,13.8,34.1,EJEMPLO,unico,4.80,tempeh,pan,gluten;soja,si,si,si,no,si,15,nuevo,"Dorar el tempeh en rodajas en la plancha. Tostar el pan, cubrir con el tomate rallado y el tempeh.",normal
 R312,Salteado de tofu con br\xF3coli y arroz,comida;cena,582,34.7,24.1,63.8,EJEMPLO,unico,8.24,tofu firme,cereal,soja,si,si,si,pendiente_ficha,no,25,nuevo,Cocer el arroz. Saltear el tofu en dados con el br\xF3coli y el ajo; servir sobre el arroz. Pesar el arroz en seco.,normal
 R313,Salteado de tempeh con pimiento y arroz,comida;cena,609,31.0,23.9,73.7,EJEMPLO,unico,5.29,tempeh,cereal,soja,si,si,si,pendiente_ficha,si,25,nuevo,Cocer el arroz. Saltear el tempeh en tiras con el pimiento y la cebolla; servir sobre el arroz. Pesar el arroz en seco.,normal
-R314,Lentejas estofadas con zanahoria y tomate,comida;cena,409,20.8,11.4,60.6,EJEMPLO | fibraAlta,unico,22.47,lenteja cocida,legumbre,,si,si,si,pendiente_ficha,no,40,nuevo,Sofre\xEDr la cebolla y la zanahoria (5 min a fuego medio); a\xF1adir la lenteja cocida y el tomate triturado y cocer 15 minutos. Pesar la lenteja ya cocida.,normal
-R315,Garbanzos con espinacas al comino,comida;cena,442,21.4,15.9,59.2,EJEMPLO | fibraAlta,unico,19.09,garbanzo cocido,legumbre,,si,si,si,pendiente_ficha,no,25,nuevo,"Rehogar las espinacas (2-3 min), a\xF1adir el garbanzo cocido con el comino y cocer 10 minutos. Pesar el garbanzo ya cocido.",normal
+R314,Lentejas estofadas con zanahoria y tomate,comida;cena,416,21.1,11.4,62.3,EJEMPLO | fibraAlta,unico,22.57,lenteja cocida,legumbre,,si,si,si,pendiente_ficha,no,40,nuevo,Sofre\xEDr el ajo picado, la cebolla y la zanahoria (5 min a fuego medio); a\xF1adir la lenteja cocida y el tomate triturado y cocer 15 minutos. Pesar la lenteja ya cocida.,normal
+R315,Garbanzos con espinacas al comino,comida;cena,449,21.7,15.9,60.9,EJEMPLO | fibraAlta,unico,19.20,garbanzo cocido,legumbre,,si,si,si,pendiente_ficha,no,25,nuevo,"Dorar el ajo laminado (1 min) y rehogar las espinacas (2-3 min), a\xF1adir el garbanzo cocido con el comino y cocer 10 minutos. Pesar el garbanzo ya cocido.",normal
 R316,Tofu a la plancha con boniato asado y jud\xEDa verde,comida;cena,523,31.8,23.5,54.9,EJEMPLO,unico,13.50,tofu firme,patata,soja,si,si,si,pendiente_ficha,no,40,nuevo,Asar el boniato. Cocer la jud\xEDa verde y hacer el tofu a la plancha con el aceite.,normal
 R317,"Tempeh con calabac\xEDn, tomate y patata",comida;cena,555,32.2,23.9,61.4,EJEMPLO,unico,7.95,tempeh,patata,soja,si,si,si,pendiente_ficha,no,35,nuevo,Cocer la patata. Saltear el tempeh con el calabac\xEDn y terminar con el tomate; servir con la patata.,normal
 R318,Salteado de soja texturizada con pimiento y arroz,comida;cena,533,32.2,11.3,79.4,EJEMPLO,unico,13.44,soja texturizada,cereal,soja,si,si,si,pendiente_ficha,no,25,nuevo,Hidratar la soja texturizada. Cocer el arroz y saltear la soja con el pimiento y la cebolla; servir sobre el arroz. Pesar la soja y el arroz en seco.,normal
 R319,"Ensalada templada de lenteja, tomate y aguacate",comida;cena,433,20.6,18.4,52.0,EJEMPLO | fibraAlta,unico,20.85,lenteja cocida,legumbre,,si,si,si,pendiente_ficha,no,15,nuevo,Mezclar la lenteja cocida con el tomate y el pepino; ali\xF1ar con el aceite y servir con el aguacate. Listo en 5 min. Pesar la lenteja ya cocida.,normal
 R321,Revuelto de tofu con champi\xF1\xF3n y pan integral,comida;cena,539,43.5,28.3,37.2,EJEMPLO,unico,9.35,tofu firme,pan,gluten;soja,si,si,si,no,no,20,nuevo,"Dorar el champi\xF1\xF3n con el ajo, a\xF1adir el tofu desmigado y cocinar 5 minutos; servir con el pan tostado.",normal
 R322,Alubia blanca guisada con pimiento y tomate,comida;cena,440,22.3,11.4,67.0,EJEMPLO | fibraAlta,unico,18.57,alubia blanca cocida,legumbre,,si,si,si,pendiente_ficha,no,30,nuevo,"Sofre\xEDr el pimiento y la cebolla, a\xF1adir la alubia cocida y el tomate triturado; cocer 15 minutos. Pesar la alubia ya cocida.",normal
-R323,Guiso de soja texturizada con patata y guisantes,comida;cena,541,37.1,11.5,78.6,EJEMPLO | fibraAlta,unico,21.60,soja texturizada,patata,soja,si,si,si,pendiente_ficha,no,35,nuevo,Hidratar la soja texturizada (15 min). Cocer la patata con el tomate triturado (20 min); a\xF1adir la soja y los guisantes y cocer 5 minutos m\xE1s. Pesar la soja en seco.,normal
+R323,Guiso de soja texturizada con patata y guisantes,comida;cena,548,37.4,11.5,80.3,EJEMPLO | fibraAlta,unico,21.71,soja texturizada,patata,soja,si,si,si,pendiente_ficha,no,35,nuevo,Hidratar la soja texturizada (15 min). Sofre\xEDr el ajo picado (1 min) y cocer la patata con el tomate triturado (20 min); a\xF1adir la soja y los guisantes y cocer 5 minutos m\xE1s. Pesar la soja en seco.,normal
 R324,Quinoa con verduras asadas y tofu,comida;cena,577,37.2,27.5,53.4,EJEMPLO | fibraAlta,unico,11.25,tofu firme,cereal,soja,si,si,si,pendiente_ficha,no,30,nuevo,Cocer la quinoa (12 min). Asar el pimiento y el calabac\xEDn (20 min a 200 \xBAC); dorar el tofu (5 min) y servir todo sobre la quinoa. Pesar la quinoa en seco.,normal
 R325,Puchero vegano de garbanzos y verduras,comida;cena,511,19.7,15.3,78.9,EJEMPLO | fibraAlta,unico,20.78,garbanzo cocido,legumbre,,si,si,si,pendiente_ficha,no,60,nuevo,Cocer la zanahoria y el puerro (15 min); a\xF1adir el garbanzo cocido y el repollo al final (5 min) y terminar con el aceite al servir. Pesar el garbanzo ya cocido.,normal
-R326,Pasta con soja texturizada al tomate,comida;cena,576,37.3,12.2,83.6,EJEMPLO,unico,16.15,soja texturizada,cereal,gluten;soja,si,si,si,no,no,25,nuevo,"Hidratar la soja texturizada (15 min). Cocer la pasta en seco pesada (10-12 min). Sofre\xEDr la cebolla (5 min), a\xF1adir la soja y el tomate triturado (10 min); mezclar con la pasta.",normal
+R326,Pasta con soja texturizada al tomate,comida;cena,583,37.6,12.2,85.3,EJEMPLO,unico,16.25,soja texturizada,cereal,gluten;soja,si,si,si,no,no,25,nuevo,"Hidratar la soja texturizada (15 min). Cocer la pasta en seco pesada (10-12 min). Sofre\xEDr el ajo picado y la cebolla (5 min), a\xF1adir la soja y el tomate triturado (10 min); mezclar con la pasta.",normal
 R327,Arroz con verduras y tofu a la plancha,comida;cena,631,36.0,24.3,74.7,EJEMPLO,unico,9.96,tofu firme,cereal,soja,si,si,si,pendiente_ficha,no,30,nuevo,Cocer el arroz con el piment\xF3n. Saltear el br\xF3coli y el pimiento y hacer el tofu a la plancha; servir junto. Pesar el arroz en seco.,normal
 R328,"Quinoa con tempeh, berenjena y tomate",comida;cena,608,35.7,27.2,63.3,EJEMPLO,unico,11.40,tempeh,cereal,soja,si,si,si,pendiente_ficha,no,30,nuevo,"Cocer la quinoa. Saltear la berenjena y el tempeh en dados, a\xF1adir el tomate al final; servir sobre la quinoa. Pesar la quinoa en seco.",normal
 R329,Alubia roja guisada con verduras,comida;cena,433,20.4,11.9,66.4,EJEMPLO | fibraAlta,unico,22.55,alubia roja cocida,legumbre,,si,si,si,pendiente_ficha,no,30,nuevo,"Sofre\xEDr la zanahoria y el pimiento (5 min a fuego medio), a\xF1adir la alubia cocida y el tomate triturado; cocer 15 minutos. Pesar la alubia ya cocida.",normal
-R330,"Pasta con berenjena, tomate y almendra",comida;cena,509,15.4,19.3,72.5,EJEMPLO,unico,12.96,pasta,cereal,frutos de c\xE1scara;gluten,si,si,si,no,no,30,nuevo,"Cocer la pasta (10-12 min). Saltear la berenjena (8 min), a\xF1adir el tomate triturado (10 min); mezclar con la pasta y coronar con la almendra picada. Pesar la pasta en seco.",normal
-R331,Patata asada con ensalada y tofu marinado,comida;cena,565,34.0,23.7,62.8,EJEMPLO,unico,11.99,tofu firme,patata,soja,si,si,si,pendiente_ficha,no,45,nuevo,Asar la patata (40 min a 200 \xBAC). Marinar el tofu en parte del aceite (10 min) y dorarlo a la plancha (5 min); servir con la lechuga y el tomate ali\xF1ados.,normal
+R330,"Pasta con berenjena, tomate y almendra",comida;cena,516,15.7,19.3,74.2,EJEMPLO,unico,13.07,pasta,cereal,frutos de c\xE1scara;gluten,si,si,si,no,no,30,nuevo,"Cocer la pasta (10-12 min). Saltear el ajo picado y la berenjena (8 min), a\xF1adir el tomate triturado (10 min); mezclar con la pasta y coronar con la almendra picada. Pesar la pasta en seco.",normal
+R331,Patata asada con ensalada y tofu marinado,comida;cena,573,34.4,23.7,64.6,EJEMPLO,unico,12.16,tofu firme,patata,soja,si,si,si,pendiente_ficha,no,45,nuevo,Asar la patata (40 min a 200 \xBAC). Marinar el tofu en parte del aceite con el ajo picado y el perejil (10 min) y dorarlo a la plancha (5 min); servir con la lechuga y el tomate ali\xF1ados.,normal
 R332,Yogur de soja con nueces y manzana,media_manana;merienda,282,7.8,13.5,35.2,EJEMPLO,unico,4.21,yogur de soja,,frutos de c\xE1scara;soja,si,si,si,pendiente_ficha,si,5,nuevo,Mezclar el yogur con la manzana en dados y las nueces.,normal
 R333,Hummus con zanahoria y pepino,media_manana;merienda,198,6.2,11.0,22.2,EJEMPLO | fibraAlta,unico,6.60,hummus,legumbre,s\xE9samo,si,si,si,pendiente_ficha,no,5,nuevo,Bastones de zanahoria y pepino con el hummus.,normal
 R334,Media tostada integral con crema de cacahuete y pl\xE1tano,media_manana;merienda,287,10.4,9.7,43.0,EJEMPLO,unico,5.83,crema de cacahuete,pan,cacahuete;gluten,si,si,si,no,si,5,nuevo,Untar el pan con la crema de cacahuete y cubrir con el pl\xE1tano en rodajas.,normal
@@ -7642,11 +7668,13 @@ R314,zanahoria,100,verdura,170393,peso crudo,
 R314,tomate triturado,150,verdura,170051,peso crudo,
 R314,cebolla,60,aromatico,170000,peso crudo,
 R314,aceite de oliva,10,grasa,171413,tal cual,
+R314,ajo,5,condimento,169230,peso crudo,
 R315,garbanzo cocido,180,base,173757,peso cocido,
 R315,espinacas,150,verdura,168462,peso crudo,
 R315,tomate triturado,100,verdura,170051,peso crudo,
 R315,comino,2,condimento,170923,tal cual,
 R315,aceite de oliva,10,grasa,171413,tal cual,
+R315,ajo,5,condimento,169230,peso crudo,
 R316,boniato,200,base,168482,peso crudo,
 R316,tofu firme,150,proteina,172475,tal cual,
 R316,jud\xEDa verde,150,verdura,169961,peso crudo,
@@ -7681,6 +7709,7 @@ R323,soja texturizada,50,proteina,174275,peso seco,si
 R323,guisantes,100,verdura,170419,peso crudo,
 R323,tomate triturado,100,verdura,170051,peso crudo,
 R323,aceite de oliva,10,grasa,171413,tal cual,
+R323,ajo,5,condimento,169230,peso crudo,
 R324,quinoa,60,base,168874,peso seco,
 R324,tofu firme,150,proteina,172475,tal cual,
 R324,pimiento rojo,100,verdura,170108,peso crudo,
@@ -7696,6 +7725,7 @@ R326,soja texturizada,50,proteina,174275,peso seco,si
 R326,tomate triturado,200,verdura,170051,peso crudo,
 R326,cebolla,80,aromatico,170000,peso crudo,
 R326,aceite de oliva,10,grasa,171413,tal cual,
+R326,ajo,5,condimento,169230,peso crudo,
 R327,arroz,70,base,169756,peso seco,
 R327,tofu firme,150,proteina,172475,tal cual,
 R327,br\xF3coli,150,verdura,170379,peso crudo,
@@ -7716,11 +7746,14 @@ R330,berenjena,200,verdura,169228,peso crudo,
 R330,tomate triturado,150,verdura,170051,peso crudo,
 R330,almendra,15,grasa,170567,tal cual,
 R330,aceite de oliva,10,grasa,171413,tal cual,
+R330,ajo,5,condimento,169230,peso crudo,
 R331,patata,300,base,170026,peso crudo,
 R331,tofu firme,150,proteina,172475,tal cual,
 R331,lechuga hoja verde,80,verdura,169249,peso crudo,
 R331,tomate,100,verdura,170457,peso crudo,
 R331,aceite de oliva,10,grasa,171413,tal cual,
+R331,ajo,5,condimento,169230,peso crudo,
+R331,perejil,2,condimento,170416,peso crudo,
 R332,yogur de soja,200,fruta_lacteo,175227,tal cual,
 R332,manzana,100,fruta_lacteo,171688,peso comestible,
 R332,nueces,15,grasa,170187,tal cual,
