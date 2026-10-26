@@ -3584,6 +3584,8 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     }
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     const asignacionSemana = { ...aplicadas.resultado, asignaciones: cuadrado.asignaciones, avisos: [...aplicadas.resultado.avisos, ...cuadrado.avisos] };
+    // #265 E2 (revisión del 26/10): lo que la variedad de la semana no ha podido cumplir se ve en «Avisos del plan» (antes se quedaba en el motor).
+    asignacionSemana.avisos.filter((a) => a.startsWith('Variedad de la semana')).forEach((a) => avisosReparto.push(a));
     // #259 (punto 27): al recalcular se dice qué ha cambiado (antes no salía nada y la compra tachada dejaba de servir sin saberlo).
     const NOMBRE_CAMBIO = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
     const cambiadas = previa.length ? asignacionSemana.asignaciones.filter((a) => { const x = previa.find((y) => y.dia === a.dia && y.franja === a.franja); return !x || x.receta !== a.receta; }) : [];
