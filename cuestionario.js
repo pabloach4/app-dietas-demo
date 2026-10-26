@@ -1134,9 +1134,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // #265 I: entreno en ayunas a primera hora: la toma solo se sugiere; con «Me la he tomado», sus kcal salen del resto del día.
     const tomaSug = otraSemana || hoyReal ? undefined : reparto.tomaSugerida;
     const tomada = tomasAyunas.includes(iso);
+    // #275 (parte 3): la nota dice qué comidas bajan y sus kcal de antes y de ahora (las mismas que enseña el resumen del día).
+    const ART_FRANJA = { desayuno: 'el desayuno', media_manana: 'la media mañana', comida: 'la comida', merienda: 'la merienda', cena: 'la cena' };
+    const bajadasToma = (descuentoAyunasHoy && descuentoAyunasHoy.bajadas || []).map((b) => `${ART_FRANJA[b.franja] ?? b.franja} (~${b.antes} → ~${b.despues} kcal)`);
+    const listaBajadas = bajadasToma.length > 1 ? `${bajadasToma.slice(0, -1).join(', ')} y ${bajadasToma[bajadasToma.length - 1]}` : bajadasToma[0];
     const notaToma = !tomada ? `Si la marcas, esas ${tomaSug ? tomaSug.kcal : ''} kcal se quitan del resto del día. Si no, el día sigue igual.`
-      : descuentoAyunasHoy && descuentoAyunasHoy.descontado < descuentoAyunasHoy.kcal - 25 ? `Con raciones normales solo se han podido quitar unas ${descuentoAyunasHoy.descontado} kcal del resto del día.`
-        : 'Hecho: las comidas de después llevan un poco menos.';
+      : !listaBajadas ? 'Con raciones normales no se ha podido quitar nada del resto del día.'
+        : descuentoAyunasHoy.descontado < descuentoAyunasHoy.kcal - 25 ? `Con raciones normales solo se han podido quitar unas ${descuentoAyunasHoy.descontado} kcal: baja${bajadasToma.length > 1 ? 'n' : ''} ${listaBajadas}.`
+          : `Hecho: baja${bajadasToma.length > 1 ? 'n' : ''} ${listaBajadas}.`;
     const bloqueAyunas = tomaSug ? `<div class="hoy-bloque" id="hoy-toma-ayunas"><h3>Antes de entrenar</h3><p style="margin:0 0 0.4rem">Entrenas a las ${escaparHtml(horaDecimalATexto(tomaSug.inicio))} sin comer antes. Si te sienta bien, toma algo ligero 30-60 min antes, por ejemplo ${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)} (unas ${tomaSug.kcal} kcal). Es solo una sugerencia.</p><label class="hoy-check"><input type="checkbox" id="hoy-toma-check"${tomada ? ' checked' : ''}> Me la he tomado</label><p class="hoy-nota" id="hoy-toma-nota">${escaparHtml(notaToma)}</p></div>` : '';
     const avisoHorarioHtml = choques.length ? `<div class="hoy-bloque" id="hoy-choques" role="status"><h3>Revisa el horario de hoy</h3>${choques.map((c) => `<p style="margin:0 0 0.3rem">${escaparHtml(c.texto)}</p>`).join('')}<button type="button" class="btn-secundario" id="hoy-cambiar-hora" data-dia="${dia}">Cambiar la hora</button></div>` : '';
     const compiteHoy = otraSemana ? [] : compiteEseDia(dia);
@@ -3799,8 +3804,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       if (tomaHoy && tomasAyunas.includes(hoyIso) && !enCompeticion(diaHoy)) {
         const horaDe = (franja) => { const h = franjasDelDia(diaHoy).find((x) => x.franja === franja); return h && h.hora !== undefined ? h.hora : undefined; };
         const r = Motor.descontarTomaPrevia(cuadrado, slotsSemana, recetasCuadre, { dia: diaHoy, kcal: tomaHoy.kcal, hora: tomaHoy.inicio - 0.75, horaDe });
+        // #275 (parte 3): qué comidas bajan y de cuánto a cuánto, para decirlo en la nota de Hoy (antes: «llevan un poco menos»).
+        const antes = new Map(cuadrado.asignaciones.filter((a) => a.dia === diaHoy).map((a) => [a.franja, a.kcalResultante]));
+        const bajadas = r.asignaciones.filter((a) => a.dia === diaHoy && antes.has(a.franja) && a.kcalResultante < antes.get(a.franja))
+          .map((a) => ({ franja: a.franja, antes: antes.get(a.franja), despues: a.kcalResultante }))
+          .sort((x, y) => (horaDe(x.franja) ?? 99) - (horaDe(y.franja) ?? 99));
         cuadrado = r;
-        descuentoAyunasHoy = { kcal: tomaHoy.kcal, descontado: r.descontado };
+        descuentoAyunasHoy = { kcal: tomaHoy.kcal, descontado: r.descontado, bajadas };
       }
     }
     // #207: «Revisado por Pablo» mientras el plan en uso coincide con lo que publicó; «con cambios tuyos» si la persona cambia platos.
