@@ -69,6 +69,7 @@ var Motor = (() => {
     OPCIONES_GELES: () => OPCIONES_GELES,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
+    PRECIOS_CSV: () => PRECIOS_CSV,
     PREGUNTAS_CRIBADO: () => PREGUNTAS_CRIBADO,
     RACION_MAX: () => RACION_MAX,
     RACION_MIN: () => RACION_MIN,
@@ -157,6 +158,7 @@ var Motor = (() => {
     comprobarGlutenCsv: () => comprobarGlutenCsv,
     comprobarLimitesIngredientesCsv: () => comprobarLimitesIngredientesCsv,
     comprobarMedidasCsv: () => comprobarMedidasCsv,
+    comprobarPrecios: () => comprobarPrecios,
     conLimitesIngredientes: () => conLimitesIngredientes,
     conflictosComidaEntreno: () => conflictosComidaEntreno,
     conservacionDesdeCsv: () => conservacionDesdeCsv,
@@ -3830,40 +3832,76 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
   }
 
   // src/motor/estimador-coste.ts
-  var COLUMNAS3 = ["ingrediente", "unidad", "precio_medio", "nota"];
-  var UNIDADES_VALIDAS = ["kg", "ud"];
-  var GRAMOS_POR_UNIDAD = { huevo: 50 };
+  var COLUMNAS3 = ["ingrediente", "unidad", "precio_medio", "nota", "fuente", "fecha_consulta"];
+  var UNIDADES_VALIDAS = ["kg", "l", "unidad"];
+  var GRAMOS_POR_ML = { "aceite de oliva": 0.92 };
+  var MEDIDAS2 = medidasDesdeCsv(MEDIDAS_CASERAS_CSV);
+  function gramosPorUnidad(ingrediente) {
+    return MEDIDAS2.find((m) => normalizar5(m.ingrediente) === normalizar5(ingrediente) && /^unidad\b/i.test(m.medida))?.gramos;
+  }
   function normalizar5(s) {
-    return Array.from(s.normalize("NFD")).filter((c2) => c2.codePointAt(0) < 768 || c2.codePointAt(0) > 879).join("").toLowerCase();
+    return Array.from(s.normalize("NFD")).filter((c2) => c2.codePointAt(0) < 768 || c2.codePointAt(0) > 879).join("").trim().toLowerCase();
   }
   function parsearPrecios(csv) {
-    const lineas = csv.split(/\r?\n/).filter((l) => l.trim() !== "");
     const errores = [];
     const filas = [];
-    const cabecera = (lineas[0] ?? "").split(",");
-    if (cabecera.join(",") !== COLUMNAS3.join(",")) {
-      errores.push({ fila: 1, ingrediente: "(cabecera)", problema: `se esperaba "${COLUMNAS3.join(",")}", se encontr\xF3 "${cabecera.join(",")}"` });
+    const cabecera = (csv.split(/\r?\n/)[0] ?? "").trim();
+    if (cabecera !== COLUMNAS3.join(",")) {
+      errores.push({ fila: 1, ingrediente: "(cabecera)", problema: `se esperaba "${COLUMNAS3.join(",")}", se encontr\xF3 "${cabecera}"` });
+      return { filas, errores };
     }
-    lineas.slice(1).forEach((linea, i) => {
+    registros(csv).forEach((r, i) => {
       const numFila = i + 2;
-      const cols = linea.split(",");
-      if (cols.length !== COLUMNAS3.length) {
-        errores.push({ fila: numFila, ingrediente: cols[0] ?? "(vac\xEDo)", problema: `${cols.length} columnas, se esperaban ${COLUMNAS3.length}` });
+      const precioMedio = Number(r.precio_medio);
+      if (r.precio_medio === "" || !Number.isFinite(precioMedio) || precioMedio < 0) {
+        errores.push({ fila: numFila, ingrediente: r.ingrediente, problema: `precio_medio no num\xE9rico o negativo: "${r.precio_medio}"` });
         return;
       }
-      const [ingrediente, unidad, precioRaw, nota] = cols;
-      const precioMedio = Number(precioRaw);
-      if (!Number.isFinite(precioMedio) || precioMedio < 0) {
-        errores.push({ fila: numFila, ingrediente, problema: `precio_medio no num\xE9rico o negativo: "${precioRaw}"` });
+      if (!UNIDADES_VALIDAS.includes(r.unidad)) {
+        errores.push({ fila: numFila, ingrediente: r.ingrediente, problema: `unidad desconocida: "${r.unidad}" (v\xE1lidas: ${UNIDADES_VALIDAS.join(", ")})` });
         return;
       }
-      if (!UNIDADES_VALIDAS.includes(unidad)) {
-        errores.push({ fila: numFila, ingrediente, problema: `unidad desconocida: "${unidad}" (v\xE1lidas: ${UNIDADES_VALIDAS.join(", ")})` });
-        return;
-      }
-      filas.push({ ingrediente, unidad, precioMedio, nota });
+      filas.push({ ingrediente: r.ingrediente, unidad: r.unidad, precioMedio, nota: r.nota, fuente: r.fuente, fechaConsulta: r.fecha_consulta });
     });
     return { filas, errores };
+  }
+  var BANDA_KG = {
+    proteina: [2, 40],
+    base: [0.5, 20],
+    verdura: [0.5, 20],
+    fruta_lacteo: [0.5, 20],
+    grasa: [1, 30],
+    condimento: [1, 80],
+    aromatico: [1, 80]
+  };
+  var BANDA_L = [0.5, 15];
+  var BANDA_UNIDAD = [0.05, 5];
+  function comprobarPrecios(csv, catalogo) {
+    const { filas, errores } = parsearPrecios(csv);
+    const fallos = errores.map((e) => `fila ${e.fila} (${e.ingrediente}): ${e.problema}`);
+    const rolDe = new Map(catalogo.map((c2) => [normalizar5(c2.ingrediente), c2.rol]));
+    const vistos = /* @__PURE__ */ new Set();
+    if (!errores.some((e) => e.fila === 1)) {
+      for (const r of registros(csv)) {
+        const clave2 = normalizar5(r.ingrediente);
+        if (vistos.has(clave2)) fallos.push(`${r.ingrediente}: fila repetida`);
+        vistos.add(clave2);
+      }
+    }
+    for (const f2 of filas) {
+      const clave2 = normalizar5(f2.ingrediente);
+      if (!/^https?:\/\//.test(f2.fuente.replace(/^[^:]+:\s*/, ""))) fallos.push(`${f2.ingrediente}: falta la fuente (tienda y enlace a la ficha)`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(f2.fechaConsulta)) fallos.push(`${f2.ingrediente}: fecha de consulta "${f2.fechaConsulta}" (se espera AAAA-MM-DD)`);
+      const rol = rolDe.get(clave2);
+      const [min, max] = f2.unidad === "kg" ? rol ? BANDA_KG[rol] ?? [0.5, 80] : [0.5, 80] : f2.unidad === "l" ? BANDA_L : BANDA_UNIDAD;
+      if (f2.precioMedio < min || f2.precioMedio > max) {
+        fallos.push(`${f2.ingrediente}: ${f2.precioMedio} \u20AC/${f2.unidad} fuera de lo normal${rol ? ` para ${rol}` : ""} (${min}\u2013${max})`);
+      }
+    }
+    for (const [clave2, rol] of rolDe) {
+      if (!vistos.has(clave2)) fallos.push(`${catalogo.find((c2) => normalizar5(c2.ingrediente) === clave2).ingrediente} (${rol}): sin precio`);
+    }
+    return fallos;
   }
   function redondear2(n) {
     return Math.round(n * 100) / 100;
@@ -3882,13 +3920,15 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       let coste;
       if (precio.unidad === "kg") {
         coste = item.gramosTotales / 1e3 * precio.precioMedio;
+      } else if (precio.unidad === "l") {
+        coste = item.gramosTotales / (GRAMOS_POR_ML[normalizar5(item.ingrediente)] ?? 1) / 1e3 * precio.precioMedio;
       } else {
-        const gramosPorUnidad = GRAMOS_POR_UNIDAD[normalizar5(item.ingrediente)];
-        if (!gramosPorUnidad) {
+        const gramos = gramosPorUnidad(item.ingrediente);
+        if (!gramos) {
           sinPrecio.push(item.ingrediente);
           continue;
         }
-        coste = Math.ceil(item.gramosTotales / gramosPorUnidad) * precio.precioMedio;
+        coste = Math.ceil(item.gramosTotales / gramos) * precio.precioMedio;
       }
       total += coste;
       porSeccion[item.seccion] = (porSeccion[item.seccion] ?? 0) + coste;
@@ -3898,6 +3938,116 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     }
     return { total: redondear2(total), porSeccion, sinPrecio };
   }
+
+  // src/motor/precios-datos.ts
+  var PRECIOS_CSV = `ingrediente,unidad,precio_medio,nota,fuente,fecha_consulta
+aceite de oliva,l,4.35,"virgen extra Hacendado, botella 1 l",Mercadona: https://tienda.mercadona.es/product/4740/aceite-oliva-virgen-extra-hacendado-botella,2026-10-20
+aceituna negra,kg,7.00,"sin hueso Hacendado, bote; precio por kg escurrido (Instinct puso 3.00, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/52734/aceitunas-negras-hacendado-sin-hueso-bote,2026-10-20
+aguacate,kg,5.00,pieza,Mercadona: https://tienda.mercadona.es/product/3830/aguacate-pieza,2026-10-20
+ajo,kg,7.40,"ajos morados, malla",Mercadona: https://tienda.mercadona.es/product/69297/ajos-morados-malla,2026-10-20
+alcachofa,kg,10.29,"corazones Hacendado, tarro; precio por kg escurrido (Instinct puso 6.21, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/16040/corazones-alcachofa-hacendado-tarro,2026-10-20
+almendra,kg,11.50,"natural Hacendado, paquete",Mercadona: https://tienda.mercadona.es/product/34865/almendra-natural-hacendado-paquete,2026-10-20
+alubia blanca cocida,kg,1.88,"cocida Hacendado, tarro; precio por kg escurrido (Instinct puso 1.32, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/26019/alubia-cocida-blanca-hacendado-tarro,2026-10-20
+alubia blanca seca,kg,2.45,"extra Hacendado, paquete 1 kg",Mercadona: https://tienda.mercadona.es/product/5124/alubia-blanca-hacendado-categoria-extra-paquete,2026-10-20
+alubia roja cocida,kg,3.00,"cocida Hacendado, tarro; precio por kg escurrido (Instinct puso 2.11, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/26000/alubia-cocida-roja-hacendado-tarro,2026-10-20
+arroz,kg,1.15,"redondo Hacendado, paquete 1 kg",Mercadona: https://tienda.mercadona.es/product/5044/arroz-redondo-hacendado-paquete,2026-10-20
+at\xFAn en lata,kg,10.00,"en aceite de girasol Hacendado, lata 900 g; precio por kg escurrido (Instinct puso 7.22, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/18086/atun-aceite-girasol-hacendado-lata,2026-10-20
+at\xFAn fresco,kg,13.73,"solomillo de at\xFAn congelado Dia Mari Marinera, 250 g",Dia: https://www.dia.es/pescados-y-mariscos/congelado/p/288633,2026-10-20
+bacalao fresco,kg,13.75,"a rodajas (desalado), pescader\xEDa",Mercadona: https://tienda.mercadona.es/product/81204.1/bacalao-rodajas-pieza,2026-10-20
+bebida de soja,l,0.65,"con calcio sin az\xFAcares a\xF1adidos Hacendado, brick 1 l",Mercadona: https://tienda.mercadona.es/product/14707/bebida-soja-con-calcio-vitaminas-sin-azucares-anadidos-hacendado-brick,2026-10-20
+berenjena,kg,2.20,pieza,Mercadona: https://tienda.mercadona.es/product/69326/berenjena-pieza,2026-10-20
+boniato,kg,2.55,"batata, granel",Mercadona: https://tienda.mercadona.es/product/69239/batata-pieza,2026-10-20
+br\xF3coli,kg,2.30,pieza,Mercadona: https://tienda.mercadona.es/product/69580/brocoli-pieza,2026-10-20
+caballa,kg,5.11,"filetes de mostrador Alcampo; peso variable, precio aprox.",Alcampo: https://www.compraonline.alcampo.es/products/caballa-mostrador-filetes/73045-FILETES,2026-10-20
+cacao puro en polvo,kg,16.60,"cacao puro 0% az\xFAcares La Chocolatera, bote",Mercadona: https://tienda.mercadona.es/product/22580/cacao-puro-polvo-chocolatera-0-azucares-anadidos-bote,2026-10-20
+calabac\xEDn,kg,1.40,"verde, pieza",Mercadona: https://tienda.mercadona.es/product/69338/calabacin-verde-pieza,2026-10-20
+calabaza,kg,2.80,media calabaza para asar,Mercadona: https://tienda.mercadona.es/product/68853/media-calabaza-asar-12-pieza,2026-10-20
+calamar,kg,19.50,"peque\xF1o limpio patag\xF3nico, bandeja",Mercadona: https://tienda.mercadona.es/product/87177/calamar-pequeno-limpio-patagonico-bandeja,2026-10-20
+canela,kg,19.23,"molida Hacendado, bote",Mercadona: https://tienda.mercadona.es/product/34177/canela-molida-hacendado-bote,2026-10-20
+cebolla,kg,1.50,malla/paquete,Mercadona: https://tienda.mercadona.es/product/69079/cebollas-malla,2026-10-20
+champi\xF1\xF3n,kg,5.20,"blancos, bandeja",Mercadona: https://tienda.mercadona.es/product/26951/champinon-blanco-bandeja,2026-10-20
+claras de huevo,l,2.85,"l\xEDquidas pasteurizadas, botella 1 l",Mercadona: https://tienda.mercadona.es/product/31312/claras-huevo-liquidas-pasteurizadas-botella,2026-10-20
+coliflor,kg,2.50,pieza,Mercadona: https://tienda.mercadona.es/product/69220/coliflor-pieza,2026-10-20
+comino,kg,19.83,"molido Hacendado, bote",Mercadona: https://tienda.mercadona.es/product/34120/comino-molido-hacendado-bote,2026-10-20
+compota de manzana,kg,2.68,"postre de manzana (compota) Jamar, tarro",Mercadona: https://tienda.mercadona.es/product/15086/postre-manzana-jamar-tarro,2026-10-20
+conejo,kg,8.90,"entero, pieza",Mercadona: https://tienda.mercadona.es/product/2797/conejo-entero-pieza,2026-10-20
+copos de avena,kg,1.63,"Br\xFCggen, caja",Mercadona: https://tienda.mercadona.es/product/86341/copos-avena-bruggen-caja,2026-10-20
+copos de avena sin gluten,kg,4.00,"sin gluten Hacendado, paquete",Mercadona: https://tienda.mercadona.es/product/86368/copos-avena-hacendado-paquete,2026-10-20
+crema de cacahuete,kg,9.38,Capit\xE1n Man\xED 340 g,Dia: https://www.dia.es/chocolates-y-golosinas/cremas-de-cacao-y-de-untar/p/145830,2026-10-20
+cusc\xFAs,kg,1.95,"cous cous mediano Hacendado, paquete",Mercadona: https://tienda.mercadona.es/product/9395/cous-cous-mediano-bia-caja,2026-10-20
+espinacas,kg,4.33,"cortadas y lavadas, paquete",Mercadona: https://tienda.mercadona.es/product/69730/espinacas-cortadas-paquete,2026-10-20
+esp\xE1rrago,kg,11.80,"verdes finos, paquete",Mercadona: https://tienda.mercadona.es/product/69656/esparrago-verde-fino-paquete,2026-10-20
+fresas,kg,7.50,bandeja 500 g,Mercadona: https://tienda.mercadona.es/product/3723/fresas-bandeja,2026-10-20
+garbanzo cocido,kg,2.00,"cocido Hacendado, tarro; precio por kg escurrido (Instinct puso 1.40, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/26029/garbanzo-cocido-hacendado-tarro,2026-10-20
+guisantes,kg,3.80,"extra Hacendado, bote; precio por kg escurrido (Instinct puso 2.44, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/16416/guisantes-extra-hacendado-bote,2026-10-20
+huevo,unidad,0.25,"huevo L, docena",Mercadona: https://tienda.mercadona.es/product/31504/huevos-grandes-l-paquete,2026-10-20
+huevo cocido,unidad,0.25,huevo L (se cuece en casa),Mercadona: https://tienda.mercadona.es/product/31504/huevos-grandes-l-paquete,2026-10-20
+hummus,kg,4.38,"de garbanzos Hacendado receta cl\xE1sica, tarrina",Mercadona: https://tienda.mercadona.es/product/80858/hummus-garbanzos-hacendado-receta-clasica-tarrina,2026-10-20
+jud\xEDa verde,kg,5.71,"plana, paquete",Mercadona: https://tienda.mercadona.es/product/68131/judia-verde-plana-paquete,2026-10-20
+kiwi,kg,4.65,"verde, pieza",Mercadona: https://tienda.mercadona.es/product/3820/kiwi-verde-pieza,2026-10-20
+leche semidesnatada,l,0.83,"Hacendado, brick 1 l",Mercadona: https://tienda.mercadona.es/product/10382/leche-semidesnatada-hacendado-brick,2026-10-20
+lechuga hoja verde,unidad,1.70,"hoja roble, pieza",Mercadona: https://tienda.mercadona.es/product/69114/lechuga-hoja-roble-paquete,2026-10-20
+lechuga romana,unidad,1.10,"coraz\xF3n romana, pieza",Mercadona: https://tienda.mercadona.es/product/69122/lechuga-corazon-romana-paquete,2026-10-20
+lenteja cocida,kg,2.25,"cocida Hacendado, tarro; precio por kg escurrido (Instinct puso 1.58, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/26030/lenteja-cocida-hacendado-tarro,2026-10-20
+lenteja seca,kg,1.85,"pardina Hacendado, paquete 1 kg",Mercadona: https://tienda.mercadona.es/product/5330/lenteja-pardina-hacendado-categoria-extra-paquete,2026-10-20
+lomo de cerdo,kg,6.30,"filetes, bandeja familiar",Mercadona: https://tienda.mercadona.es/product/3395/filetes-lomo-cerdo-familiar-bandeja,2026-10-20
+lubina,kg,9.95,"limpia con cabeza, pescader\xEDa",Mercadona: https://tienda.mercadona.es/product/81241.1/lubina-limpia-con-cabeza-pieza,2026-10-20
+mandarina,kg,2.55,pieza,Mercadona: https://tienda.mercadona.es/product/3238/mandarina-pieza,2026-10-20
+manzana,kg,2.00,"Golden, pieza",Mercadona: https://tienda.mercadona.es/product/3028/manzana-golden-pieza,2026-10-20
+mejill\xF3n,kg,2.95,"vivo, bandeja 1 kg",Mercadona: https://tienda.mercadona.es/product/85144/mejillon-vivo-bandeja,2026-10-20
+mel\xF3n,kg,2.49,"medio mel\xF3n piel de sapo Dia, 2.5 kg aprox.",Dia: https://www.dia.es/frutas/melon-y-sandia/p/265125,2026-10-20
+merluza,kg,26.95,"porciones frescas, bandeja",Mercadona: https://tienda.mercadona.es/product/87200/porciones-merluza-bandeja,2026-10-20
+miel,kg,5.00,"de flores Hacendado, tarro 1 kg",Mercadona: https://tienda.mercadona.es/product/15436/miel-flores-hacendado-tarro,2026-10-20
+mozzarella,kg,7.20,"fresca de vaca Hacendado, bola 125 g; precio por kg escurrido (Instinct puso 3.60, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/51050/mozzarella-fresca-vaca-hacendado-paquete,2026-10-20
+naranja,kg,2.50,"de mesa, pieza",Mercadona: https://tienda.mercadona.es/product/3235/naranja-mesa-pieza,2026-10-20
+nueces,kg,12.00,"peladas Hacendado, paquete",Mercadona: https://tienda.mercadona.es/product/34024/nuez-natural-hacendado-pelada-paquete,2026-10-20
+pan blanco,kg,1.40,de molde familiar Hacendado,Mercadona: https://tienda.mercadona.es/product/82324/pan-molde-blanco-familiar-hacendado-paquete,2026-10-20
+pan integral,kg,3.91,barra integral 100%,Mercadona: https://tienda.mercadona.es/product/17912.1/barra-pan-integral-100,2026-10-20
+pan sin gluten,kg,5.48,de molde blanco sin gluten Hacendado,Mercadona: https://tienda.mercadona.es/product/35711/pan-molde-sin-gluten-blanco-hacendado-paquete,2026-10-20
+pasta,kg,1.15,"spaghetti Hacendado, paquete 1 kg",Mercadona: https://tienda.mercadona.es/product/6245/spaghetti-hacendado-paquete,2026-10-20
+pasta sin gluten,kg,4.10,"fusilli sin gluten Felicia, paquete",Mercadona: https://tienda.mercadona.es/product/35643/pasta-fusilli-sin-gluten-felicia-paquete,2026-10-20
+patata,kg,1.90,pieza,Mercadona: https://tienda.mercadona.es/product/69066/patata-pieza,2026-10-20
+pechuga de pavo,kg,8.75,"filetes, bandeja",Mercadona: https://tienda.mercadona.es/product/2794/filetes-pechuga-pavo-bandeja,2026-10-20
+pechuga de pavo asada,kg,8.75,filetes (se asa en casa),Mercadona: https://tienda.mercadona.es/product/2794/filetes-pechuga-pavo-bandeja,2026-10-20
+pechuga de pollo,kg,7.70,"filetes, bandeja",Mercadona: https://tienda.mercadona.es/product/2787/filetes-pechuga-pollo-bandeja,2026-10-20
+pechuga de pollo asada,kg,7.70,filetes (se asa en casa),Mercadona: https://tienda.mercadona.es/product/2787/filetes-pechuga-pollo-bandeja,2026-10-20
+pepino,kg,1.70,pieza,Mercadona: https://tienda.mercadona.es/product/69584/pepino-pieza,2026-10-20
+pera,kg,2.50,"Conferencia, pieza",Mercadona: https://tienda.mercadona.es/product/3119/pera-conferencia-pieza,2026-10-20
+perejil,kg,55.56,"seco Hacendado, bote",Mercadona: https://tienda.mercadona.es/product/5599/perejil-hacendado-bote,2026-10-20
+piment\xF3n,kg,24.67,"dulce de la Vera Hacendado, bote",Mercadona: https://tienda.mercadona.es/product/34102/pimenton-dulce-vera-hacendado-bote,2026-10-20
+pimiento rojo,kg,2.90,pieza,Mercadona: https://tienda.mercadona.es/product/69310/pimiento-rojo-pieza,2026-10-20
+pimiento verde,kg,2.50,"de fre\xEDr, pieza",Mercadona: https://tienda.mercadona.es/product/69320/pimiento-verde-freir-pieza,2026-10-20
+pi\xF1a,kg,2.00,"entera, pieza",Mercadona: https://tienda.mercadona.es/product/3076/pina-pieza,2026-10-20
+pl\xE1tano,kg,2.80,"de Canarias IGP, pieza",Mercadona: https://tienda.mercadona.es/product/3819/platano-canarias-igp-pieza,2026-10-20
+polenta,kg,3.98,harina de ma\xEDz precocinada Do\xF1a Petrona 500 g (Alcampo),Alcampo: https://www.compraonline.alcampo.es/products/do%C3%B1a-petrona-polenta-harina-de-ma%C3%ADz-precocinada-500-g/506164,2026-10-20
+puerro,kg,3.10,paquete,Mercadona: https://tienda.mercadona.es/product/69411/puerros-paquete,2026-10-20
+queso cottage,kg,6.75,"Valblu, tarrina",Mercadona: https://tienda.mercadona.es/product/17662/queso-cottage-valblu-tarrina,2026-10-20
+queso fresco,kg,4.10,"tipo Burgos natural Hacendado, pack 2",Mercadona: https://tienda.mercadona.es/product/52406/queso-fresco-burgos-natural-hacendado-pack-2,2026-10-20
+quinoa,kg,5.30,blanca seca PRODUCTO ALCAMPO 500 g (Alcampo),Alcampo: https://www.compraonline.alcampo.es/products/producto-alcampo-quinoa-blanca-seca-500-g/798106,2026-10-20
+remolacha cocida,kg,2.33,"cocida y pelada, paquete",Mercadona: https://tienda.mercadona.es/product/69523/remolacha-cocida-pelada-paquete,2026-10-20
+repollo,kg,2.15,"liso, media pieza",Mercadona: https://tienda.mercadona.es/product/68462/medio-repollo-liso-12-pieza,2026-10-20
+reques\xF3n,kg,5.00,"Hacendado, tarrina",Mercadona: https://tienda.mercadona.es/product/51012/requeson-mezcla-montesinos-tarrina,2026-10-20
+r\xFAcula,kg,17.00,"lavada, paquete",Mercadona: https://tienda.mercadona.es/product/69753/rucula-paquete,2026-10-20
+salm\xF3n,kg,10.95,"a rodajas, pescader\xEDa",Mercadona: https://tienda.mercadona.es/product/81649.1/salmon-rodajas-pieza,2026-10-20
+sand\xEDa,kg,0.99,"media sand\xEDa negra Dia, 3 kg aprox.",Dia: https://www.dia.es/frutas/melon-y-sandia/p/265126,2026-10-20
+sardina en lata,kg,13.39,"en aceite de oliva Hacendado, pack 2; precio por kg escurrido (Instinct puso 9.62, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/18225/sardinas-aceite-oliva-hacendado-pack-2,2026-10-20
+semillas de calabaza,kg,11.00,"pipas de calabaza peladas Hacendado, paquete",Mercadona: https://tienda.mercadona.es/product/18259/pipas-calabaza-natural-hacendado-peladas-paquete,2026-10-20
+semillas de girasol,kg,5.75,"pipas de girasol peladas naturales Hacendado, paquete",Mercadona: https://tienda.mercadona.es/product/34193/pipas-girasol-naturales-hacendado-peladas-paquete,2026-10-20
+sepia,kg,14.95,"limpia, pieza",Mercadona: https://tienda.mercadona.es/product/81704/sepia-pieza,2026-10-20
+soja texturizada,kg,13.50,"Luengo, paquete",Mercadona: https://tienda.mercadona.es/product/13926/soja-texturizada-luengo-paquete,2026-10-20
+tempeh,kg,17.96,tempe de garbanzo ecol\xF3gico Vegetalia 250 g (Carrefour),Carrefour: https://www.carrefour.es/supermercado/tempe-de-garbanzo-ecologico-vegetalia-250-g/R-VC4AECOMM-518360/p,2026-10-20
+ternera magra (solomillo de aguja),kg,19.00,filetes de vacuno a\xF1ojo para plancha (no hay \xABsolomillo de aguja\xBB online; corte magro equivalente),Mercadona: https://tienda.mercadona.es/product/8936/filetes-vacuno-anojo-plancha-bandeja,2026-10-20
+ternera picada,kg,10.80,"preparado de carne picada de vacuno, bandeja",Mercadona: https://tienda.mercadona.es/product/3454/preparado-carne-picada-vacuno-bandeja,2026-10-20
+tofu firme,kg,6.36,"firme Hacendado, paquete; precio por kg escurrido (Instinct puso 4.38, el de kg con l\xEDquido; corregido por el bucle el 2026-10-26, #265 J)",Mercadona: https://tienda.mercadona.es/product/51097/tofu-firme-frias-paquete,2026-10-20
+tomate,kg,2.10,malla,Mercadona: https://tienda.mercadona.es/product/69971/tomates-malla,2026-10-20
+tomate triturado,kg,1.25,"Hacendado, bote 800 g",Mercadona: https://tienda.mercadona.es/product/16043/tomate-triturado-hacendado-freir-bote,2026-10-20
+tortilla de trigo,kg,3.19,"tortillas de trigo Hacendado (wraps), paquete",Mercadona: https://tienda.mercadona.es/product/80859/tortillas-trigo-hacendado-paquete,2026-10-20
+tortita de ma\xEDz,kg,9.17,"tortitas de ma\xEDz Hacendado, paquete",Mercadona: https://tienda.mercadona.es/product/14158/tortitas-maiz-hacendado-paquete,2026-10-20
+yogur de soja,kg,3.00,"postre de soja natural Hacendado, pack",Mercadona: https://tienda.mercadona.es/product/20200/postre-soja-hacendado-natural-pack-4,2026-10-20
+yogur griego,kg,1.93,"griego natural Hacendado, pack 6",Mercadona: https://tienda.mercadona.es/product/20559/yogur-griego-natural-hacendado-pack-6,2026-10-20
+yogur natural,kg,1.33,"natural Hacendado, pack 6",Mercadona: https://tienda.mercadona.es/product/22313/yogur-natural-hacendado-pack-6,2026-10-20
+zanahoria,kg,1.00,paquete 1 kg,Mercadona: https://tienda.mercadona.es/product/69586/zanahorias-paquete,2026-10-20
+`;
 
   // src/motor/contexto-dia.ts
   function contextoDiaPorDefecto() {
@@ -5456,7 +5606,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
         `D\xEDas incluidos: ${ctx.dias}. Los d\xEDas sin marcar no entran ni en la lista ni en el coste.`,
         "Redondeo: carne y pescado de 50 en 50 g; el resto de 25 en 25 g; huevos en unidades de 50 g.",
         "Marcar \xABya en casa\xBB tacha el ingrediente pero no resta de lo que pide la dieta.",
-        "El coste usa precios de EJEMPLO por kg o por unidad, sin ninguna tienda real; lo que no tiene precio queda fuera del total" + (ctx.sinPrecio ? ` (ahora ${ctx.sinPrecio} ingredientes).` : "."),
+        "El coste usa precios aproximados de supermercado por kg, litro o unidad, consultados en su tienda online: es una aproximaci\xF3n, no una oferta; lo que no tiene precio queda fuera del total" + (ctx.sinPrecio ? ` (ahora ${ctx.sinPrecio} ingredientes).` : "."),
         ctx.huecos ? `Hay ${ctx.huecos} comidas sin receta de ejemplo: la lista es parcial y no incluye sus ingredientes.` : "Todas las comidas de los d\xEDas elegidos tienen receta de ejemplo."
       ]
     };

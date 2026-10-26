@@ -92,20 +92,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   /** Catálogo + las comidas compuestas (primero y segundo) que usa un plan, para la compra y el detalle (issue #131). */
   const catalogoPlan = (asignaciones) => RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
 
-  // Tabla de precios de EJEMPLO (issue #32/#36), igual que datos/precios.csv: ningún precio real,
-  // pendientes de validar por Pablo. Solo para ver la forma del estimador de coste de la compra.
-  const PRECIOS_EJEMPLO_CSV = `ingrediente,unidad,precio_medio,nota
-pollo,kg,6.5,EJEMPLO-PENDIENTE-PABLO
-patata,kg,1.2,EJEMPLO-PENDIENTE-PABLO
-aceite de oliva,kg,6,EJEMPLO-PENDIENTE-PABLO
-avena,kg,2.5,EJEMPLO-PENDIENTE-PABLO
-yogur griego,kg,4,EJEMPLO-PENDIENTE-PABLO
-plátano,kg,1.5,EJEMPLO-PENDIENTE-PABLO
-atún en lata,kg,12,EJEMPLO-PENDIENTE-PABLO
-merluza,kg,14,EJEMPLO-PENDIENTE-PABLO
-pan,kg,3,EJEMPLO-PENDIENTE-PABLO
-huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
-  const PRECIOS_EJEMPLO = Motor.parsearPrecios(PRECIOS_EJEMPLO_CSV).filas;
+  // Precios aproximados de supermercado (#265 J): la tabla de Instinct (#266) con la ficha de cada producto, por el bundle.
+  const PRECIOS = Motor.parsearPrecios(Motor.PRECIOS_CSV).filas;
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const FECHA_PRECIOS = PRECIOS.reduce((m, f) => (f.fechaConsulta > m ? f.fechaConsulta : m), '');
+  const CUANDO_PRECIOS = `${MESES[Number(FECHA_PRECIOS.slice(5, 7)) - 1]} de ${FECHA_PRECIOS.slice(0, 4)}`;
 
   const DIAS = Motor.DIAS;
   const FRANJAS = [
@@ -2807,7 +2798,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // Issue #34: cada ingrediente puede tacharse como "ya en casa" sin tocar la cantidad requerida por
     // la dieta (gramosTotales/comprar no cambian). Los artículos añadidos a mano son una lista aparte,
     // que nunca entra en generarListaCompra ni afecta a macros o recetas.
-    // Issue #36: coste orientativo con datos/precios.csv (valores de EJEMPLO, #32). Responde al mismo
+    // Issue #36: coste orientativo con los precios aproximados de supermercado (#265 J). Responde al mismo
     // filtro de días que la lista: se calcula sobre `lista`, ya filtrada por diasElegidos.
     const euros = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     let cuerpo;
@@ -2898,7 +2889,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         if (periodoDieta.semanas > 1) cuerpo = '<p class="una-linea">Por ahora todo se compra cada semana: todavía no está validado qué aguanta sin ponerse malo.</p>' + cuerpo;
       }
 
-      const estimacion = Motor.estimarCoste(lista, PRECIOS_EJEMPLO);
+      const estimacion = Motor.estimarCoste(lista, PRECIOS);
       porqueCompra = porqueHtml('compra', Motor.explicarCompra({ dias: diasElegidos.length, huecos: huecos.length, sinPrecio: estimacion.sinPrecio.length }), '¿Por qué estas cantidades y este coste?');
       const filasSeccionCoste = Object.entries(estimacion.porSeccion)
         .sort(([a], [b]) => a.localeCompare(b))
@@ -2906,15 +2897,13 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         .join('');
       const sinPrecioHtml = estimacion.sinPrecio.length ? `
         <p style="font-size:0.8rem;color:var(--gris);margin:0.5rem 0 0">
-          Sin precio de ejemplo, fuera del total (${estimacion.sinPrecio.length}): ${estimacion.sinPrecio.join(', ')}.
+          Sin precio, fuera del total (${estimacion.sinPrecio.length}): ${estimacion.sinPrecio.join(', ')}.
         </p>
       ` : '';
       costeHtml = `
         <div class="coste-estimado">
-          <p style="font-size:0.8rem;color:var(--peligro);font-weight:600;margin:0 0 0.4rem">
-            ⚠️ Coste de EJEMPLO, pendiente de validar por Pablo — no son precios reales ni una oferta.
-          </p>
-          <p style="margin:0 0 0.4rem"><strong>≈ ${euros(estimacion.total)} €</strong> en total, con los días elegidos</p>
+          <p style="margin:0 0 0.4rem"><strong>≈ ${euros(estimacion.total)} €</strong> en total, con los días elegidos
+            <span style="font-size:0.8rem;color:var(--gris)">(precio aproximado de supermercado, consultado en ${CUANDO_PRECIOS})</span></p>
           <ul class="resumen-lista">${filasSeccionCoste}</ul>
           ${sinPrecioHtml}
         </div>
