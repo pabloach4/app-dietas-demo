@@ -2721,7 +2721,7 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
         continue;
       }
       if (n > 4.25) return void 0;
-      if (n < 0.5) continue;
+      if (n < 0.45) continue;
       return texto(Math.min(4, Math.round(n * 2) / 2), m);
     }
     return void 0;
@@ -2832,6 +2832,27 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     for (const x of gruposProteina(r, porId)) if (g.has(x)) return true;
     return false;
   }
+  var BASES = [["arroz", /\barroz\b/], ["pasta", /\bpasta\b/], ["patata", /\bpatatas?\b/]];
+  var cacheBases = /* @__PURE__ */ new WeakMap();
+  function basesDePlato(p) {
+    let b = cacheBases.get(p);
+    if (!b) {
+      const textos = p.ingredientes.map((i) => normal(i.nombre));
+      b = new Set(BASES.filter(([, re]) => textos.some((t2) => re.test(t2))).map(([x]) => x));
+      if (gruposDePlato(p).has("legumbre")) b.add("legumbre");
+      cacheBases.set(p, b);
+    }
+    return b;
+  }
+  function basesDe(r, porId) {
+    if (!r.platos || !porId) return basesDePlato(r);
+    const b = /* @__PURE__ */ new Set();
+    for (const id of r.platos) {
+      const p = porId.get(id);
+      if (p && p.tipoPlato !== "postre") for (const x of basesDePlato(p)) b.add(x);
+    }
+    return b;
+  }
 
   // src/motor/asignador-recetas.ts
   var MEDIDAS = medidasDesdeCsv(MEDIDAS_CASERAS_CSV);
@@ -2858,6 +2879,10 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
   var FRANJAS_CON_LIMITE_VARIEDAD = ["comida", "cena"];
   var GRUPO_VARIEDAD = { desayuno: "desayuno", media_manana: "tentempie", merienda: "tentempie" };
   var MIN_DISTINTAS_GRUPO = 2;
+  var MAX_SOJA = 2;
+  var MIN_LEGUMBRE = 2;
+  var MAX_BASE = 4;
+  var PESO_VIOLACION_E2 = 300;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
@@ -3125,6 +3150,9 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     };
     const usadosPorGrupo = /* @__PURE__ */ new Map();
     const libre = (s) => !fijadasPorSlot.has(claveSlotSiOSi(s)) && !reservas.has(claveSlotSiOSi(s));
+    const omnivoro = !opciones.alergiasPreferencias?.vegetariano;
+    const vecesBase = /* @__PURE__ */ new Map();
+    let vecesSoja = 0, vecesLegumbre = 0;
     const cola = [...slots];
     for (let iSlot = 0; iSlot < cola.length; iSlot++) {
       const slot = cola[iSlot];
@@ -3143,6 +3171,21 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       let excluirUsadas = false;
       const variado = (r) => !excluirUsadas || !idsDe(r).some((id) => usadosGrupo.has(id));
       const delDia = (r) => !distintaDelDia || !chocaConElDia(r, otraDelDia, catalogoPorId);
+      const esCC = slot.franja === "comida" || slot.franja === "cena";
+      const quedanCC = esCC ? cola.slice(iSlot).filter((s) => (s.franja === "comida" || s.franja === "cena") && libre(s)).length : 0;
+      const faltaLegumbre = Math.max(0, MIN_LEGUMBRE - vecesLegumbre);
+      const forzarLegumbre = faltaLegumbre > 0 && quedanCC <= 2 * faltaLegumbre;
+      const basesOtra = otraDelDia ? basesDe(otraDelDia, catalogoPorId) : /* @__PURE__ */ new Set();
+      let variedadCC = esCC;
+      const violacionesE2 = (r) => {
+        if (!esCC) return 0;
+        const g = gruposProteina(r, catalogoPorId);
+        let n = omnivoro && g.has("soja") && vecesSoja >= MAX_SOJA ? 1 : 0;
+        if (forzarLegumbre && !g.has("legumbre")) n++;
+        for (const b of basesDe(r, catalogoPorId)) n += (basesOtra.has(b) ? 1 : 0) + ((vecesBase.get(b) ?? 0) >= MAX_BASE ? 1 : 0);
+        return n;
+      };
+      const semanaVaria = (r) => !variedadCC || violacionesE2(r) === 0;
       const intentarBase = (lista, filtrar) => {
         const candidatas = filtrar ? lista.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista;
         if (!candidatas.length) {
@@ -3172,14 +3215,14 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
             continue;
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
-          const falta = faltaProteina(r, factorRedondeado2);
+          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r);
           if (!mejor || clave2(desviacion, dist, falta) < clave2(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
         return { elegido: mejor };
       };
       const intentar = (listaTodas, filtrar) => {
-        const lista = listaTodas.filter((r) => delDia(r) && variado(r));
+        const lista = listaTodas.filter((r) => delDia(r) && variado(r) && semanaVaria(r));
         if (!lista.length) return { motivo: "todas las opciones repiten el plato o la prote\xEDna de la otra comida del d\xEDa" };
         if (evitarIds.size) {
           const nuevas = intentarBase(lista.filter((r) => !idsDe(r).some((id) => evitarIds.has(id))), filtrar);
@@ -3196,12 +3239,17 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       let res = { motivo: "ninguna receta disponible" };
       for (const conVariedad of forzarVariedad && !fijada && !reservada ? [true, false] : [false]) {
         excluirUsadas = conVariedad;
-        const conservada = preferida && vale(preferida) && delDia(preferida) && variado(preferida) && !idsPedidos.has(preferida.id) && !idsDe(preferida).some((id) => evitarIds.has(id)) ? (() => {
+        variedadCC = esCC;
+        const conservada = preferida && vale(preferida) && delDia(preferida) && variado(preferida) && semanaVaria(preferida) && !idsPedidos.has(preferida.id) && !idsDe(preferida).some((id) => evitarIds.has(id)) ? (() => {
           const e = intentarBase([preferida], false);
           return e.elegido && alcanza(e.elegido) ? e : void 0;
         })() : void 0;
-        for (const conFiltroDia of otraDelDia && !fijada && !reservada && !conservada ? [true, false] : [false]) {
+        const libreAqui = !fijada && !reservada && !conservada;
+        const niveles = !libreAqui ? [2] : otraDelDia ? [0, 1, 2] : esCC ? [0, 2] : [2];
+        for (const nivel of niveles) {
+          const conFiltroDia = nivel < 2;
           distintaDelDia = conFiltroDia;
+          variedadCC = nivel === 0;
           res = fijada ? { elegido: fijada } : reservada ? { elegido: reservada } : conservada ?? intentar(recetas.filter((r) => esUnico(r) && !idsPedidos.has(r.id)), true);
           if (!fijada && !reservada && !conservada && (slot.franja === "comida" || slot.franja === "cena") && (!!slot.bandaPeso || !alcanza(res.elegido))) {
             const primeros = recetas.filter((r) => r.tipoPlato === "primero" && vale(r) && (!limitada || usosDe(r) < maxRep));
@@ -3218,7 +3266,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
               }
             }
           }
-          if (res.elegido) {
+          if (res.elegido && (nivel !== 0 || alcanza(res.elegido) || nivel === niveles[niveles.length - 1])) {
             if (otraDelDia && !conFiltroDia && chocaConElDia(res.elegido.receta, otraDelDia, catalogoPorId)) avisos.push(`${slot.dia} ${slot.franja}: no hay ninguna receta que encaje sin repetir el plato o la prote\xEDna de la otra comida del d\xEDa; se repite.`);
             break;
           }
@@ -3239,6 +3287,12 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       const elegido = res.elegido;
       if (limitada) for (const id of idsDe(elegido.receta)) usos.set(id, (usos.get(id) ?? 0) + 1);
       if (grupo) usadosPorGrupo.set(grupo, /* @__PURE__ */ new Set([...usadosGrupo, elegido.receta.id]));
+      if (esCC) {
+        const g = gruposProteina(elegido.receta, catalogoPorId);
+        if (g.has("soja")) vecesSoja++;
+        if (g.has("legumbre")) vecesLegumbre++;
+        for (const b of basesDe(elegido.receta, catalogoPorId)) vecesBase.set(b, (vecesBase.get(b) ?? 0) + 1);
+      }
       const factorRedondeado = Math.round(elegido.factor * 1e4) / 1e4;
       const { protegidos, incumplimientos } = incumplimientosRacion(slot.franja, elegido.receta, factorRedondeado, { cargaAlta: slot.cargaAlta });
       if (incumplimientos.length) {
@@ -3261,6 +3315,12 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
         );
       }
     }
+    const faltasVariedad = [
+      ...omnivoro && vecesSoja > MAX_SOJA ? [`tofu, tempeh o soja ${vecesSoja} veces (m\xE1x. ${MAX_SOJA})`] : [],
+      ...vecesLegumbre < MIN_LEGUMBRE && slots.some((s) => s.franja === "comida" || s.franja === "cena") ? [`legumbre ${vecesLegumbre} veces (m\xEDn. ${MIN_LEGUMBRE})`] : [],
+      ...[...vecesBase].filter(([, n]) => n > MAX_BASE).map(([b, n]) => `${b} ${n} veces (m\xE1x. ${MAX_BASE})`)
+    ];
+    if (faltasVariedad.length) avisos.push(`Variedad de la semana: con las recetas que encajan no se ha podido cumplir del todo (${faltasVariedad.join("; ")}); es lo m\xE1s cerca posible.`);
     const imprescindibles = opciones.imprescindibles?.length ? cubrirImprescindibles(opciones.imprescindibles, slots, recetas, asignaciones, avisos, maxRep, opciones.alergiasPreferencias) : void 0;
     return { asignaciones, huecos, avisos, ...imprescindibles ? { imprescindibles } : {}, ...estadosSiOSi.length ? { recetasSiOSi: estadosSiOSi } : {}, ...estadosFijadas.length ? { fijadas: estadosFijadas } : {} };
   }
