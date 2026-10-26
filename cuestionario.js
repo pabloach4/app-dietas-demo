@@ -1138,6 +1138,13 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // #259 (punto 29): comidas de hoy a la misma hora, muy pegadas o dentro de un entreno: aviso y botón para cambiar la hora.
     const NOMBRE_CHOQUE = { desayuno: 'El desayuno', media_manana: 'La media mañana', comida: 'La comida', merienda: 'La merienda', cena: 'La cena' };
     const choques = Motor.choquesHorario(horas, entrenos.filter((s) => s.horaInicio !== undefined).map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 })), (f) => NOMBRE_CHOQUE[f] ?? f);
+    // #265 I: entreno en ayunas a primera hora: la toma solo se sugiere; con «Me la he tomado», sus kcal salen del resto del día.
+    const tomaSug = otraSemana || hoyReal ? undefined : reparto.tomaSugerida;
+    const tomada = tomasAyunas.includes(iso);
+    const notaToma = !tomada ? `Si la marcas, esas ${tomaSug ? tomaSug.kcal : ''} kcal se quitan del resto del día. Si no, el día sigue igual.`
+      : descuentoAyunasHoy && descuentoAyunasHoy.descontado < descuentoAyunasHoy.kcal - 25 ? `Con raciones normales solo se han podido quitar unas ${descuentoAyunasHoy.descontado} kcal del resto del día.`
+        : 'Hecho: las comidas de después llevan un poco menos.';
+    const bloqueAyunas = tomaSug ? `<div class="hoy-bloque" id="hoy-toma-ayunas"><h3>Antes de entrenar</h3><p style="margin:0 0 0.4rem">Entrenas a las ${escaparHtml(horaDecimalATexto(tomaSug.inicio))} sin comer antes. Si te sienta bien, toma algo ligero 30-60 min antes, por ejemplo ${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)} (unas ${tomaSug.kcal} kcal). Es solo una sugerencia.</p><label class="hoy-check"><input type="checkbox" id="hoy-toma-check"${tomada ? ' checked' : ''}> Me la he tomado</label><p class="hoy-nota" id="hoy-toma-nota">${escaparHtml(notaToma)}</p></div>` : '';
     const avisoHorarioHtml = choques.length ? `<div class="hoy-bloque" id="hoy-choques" role="status"><h3>Revisa el horario de hoy</h3>${choques.map((c) => `<p style="margin:0 0 0.3rem">${escaparHtml(c.texto)}</p>`).join('')}<button type="button" class="btn-secundario" id="hoy-cambiar-hora" data-dia="${dia}">Cambiar la hora</button></div>` : '';
     const compiteHoy = otraSemana ? [] : compiteEseDia(dia);
     const bloqueEntreno = compiteHoy.length ? `<div class="hoy-bloque"><h3>Hoy compites</h3><div class="titulo">${escaparHtml(compiteHoy.map((c) => c.nombre).join(' y '))}: la prueba sustituye al entreno habitual de hoy.</div></div>` // #257.14
@@ -1200,6 +1207,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ${otraSemana ? '' : previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${acuseVolumen && acuseVolumen.fecha === iso ? `<p class="hoy-acuse" role="status">${escaparHtml(acuseVolumen.texto)}</p>` : ''}
       ${bloqueComida}
+      ${bloqueAyunas}
       ${avisoHorarioHtml}
       ${medallasHoyHtml(dia, iso)}
       ${bloqueFuera}
@@ -1221,6 +1229,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       const visible = document.getElementById(`panel-horario-${d}`);
       for (let det = visible && visible.closest('details'); det; det = det.parentElement && det.parentElement.closest('details')) det.open = true; // «Más opciones de este día»
       if (visible) { visible.scrollIntoView({ block: 'center' }); const campo = visible.querySelector('.hor-campo'); if (campo) campo.focus(); }
+    });
+    const checkToma = document.getElementById('hoy-toma-check');
+    if (checkToma) checkToma.addEventListener('change', () => { // #265 I
+      tomasAyunas = tomasAyunas.filter((x) => x !== iso).concat(checkToma.checked ? [iso] : []).slice(-30);
+      try { localStorage.setItem(CLAVE_AYUNAS, JSON.stringify(tomasAyunas)); } catch { falloAlmacenamiento(); }
+      mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // el resto del día se regula
+      pintarHoy();
+      document.getElementById('hoy-toma-check')?.focus();
     });
     const volverSemana = document.getElementById('hoy-volver-semana');
     if (volverSemana) volverSemana.addEventListener('click', () => document.getElementById('cal-lunes-actual').click());
@@ -1544,6 +1560,15 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         .map((x) => ({ fecha: x.fecha, franja: x.franja, texto: x.texto.slice(0, 80), ...(Number.isFinite(x.kcal) ? { kcal: Math.round(x.kcal) } : {}), ...(x.prevista === true ? { prevista: true } : {}), ...(x.tipica === true && typeof x.fuente === 'string' ? { tipica: true, fuente: x.fuente.slice(0, 300) } : {}) })).slice(-30);
     }
   } catch { /* sin almacenamiento o dato corrupto: ninguna */ }
+  // #265 I (Pablo, 20/10: «Solo sugerencia… si no marca se entiende que no se la ha comido»): los días en que la persona marcó
+  // «Me la he tomado» (la toma ligera antes de entrenar en ayunas). Solo cuenta la de hoy; se guardan las 30 últimas, en este navegador.
+  const CLAVE_AYUNAS = 'app-dietas-toma-ayunas';
+  let tomasAyunas = []; // ['YYYY-MM-DD', …]
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_AYUNAS) || 'null');
+    if (Array.isArray(g)) tomasAyunas = g.filter((x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)).slice(-30);
+  } catch { /* sin almacenamiento o dato corrupto: ninguna */ }
+  let descuentoAyunasHoy = null; // { kcal, descontado } tras el último cálculo, para la nota de Hoy
   // #265 H: la fecha de cada día de la semana del plan, desde hoy (hoy, o el próximo de los 6 siguientes con esa letra).
   function fechaProximaDe(dia) {
     const d = new Date();
@@ -3702,6 +3727,17 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       if (!fueraD.size) continue; // #173: la segunda pasada vive ahora en el motor, con tests
       const horaDe = (franja) => { const h = franjasDelDia(d).find((x) => x.franja === franja); return h && h.hora !== undefined ? h.hora : undefined; };
       cuadrado = Motor.cuadrarConComidaFuera(cuadrado, slotsSemana, recetasCuadre, { diaHoy: d, fuera: fueraD, horaDe, noMoverDia: enCompeticion, todoElDia: isoD !== hoyIso });
+    }
+    // #265 I: «Me la he tomado» hoy: las kcal de la toma antes de entrenar en ayunas se quitan de las comidas de después, con los topes de siempre.
+    descuentoAyunasHoy = null;
+    {
+      const tomaHoy = (repartosPorDia.find((r) => r.dia.dia === diaHoy) || {}).reparto?.tomaSugerida;
+      if (tomaHoy && tomasAyunas.includes(hoyIso) && !enCompeticion(diaHoy)) {
+        const horaDe = (franja) => { const h = franjasDelDia(diaHoy).find((x) => x.franja === franja); return h && h.hora !== undefined ? h.hora : undefined; };
+        const r = Motor.descontarTomaPrevia(cuadrado, slotsSemana, recetasCuadre, { dia: diaHoy, kcal: tomaHoy.kcal, hora: tomaHoy.inicio - 0.75, horaDe });
+        cuadrado = r;
+        descuentoAyunasHoy = { kcal: tomaHoy.kcal, descontado: r.descontado };
+      }
     }
     // #207: «Revisado por Pablo» mientras el plan en uso coincide con lo que publicó; «con cambios tuyos» si la persona cambia platos.
     {

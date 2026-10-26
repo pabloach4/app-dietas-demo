@@ -87,6 +87,7 @@ var Motor = (() => {
     TIPOS_ALERTA: () => TIPOS_ALERTA,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
+    TOMA_AYUNAS: () => TOMA_AYUNAS,
     UMBRALES_FRENO: () => UMBRALES_FRENO,
     UMBRALES_LOGROS: () => UMBRALES_LOGROS,
     UMBRAL_FALTA_COMPETICION: () => UMBRAL_FALTA_COMPETICION,
@@ -177,6 +178,7 @@ var Motor = (() => {
     deportePrincipal: () => deportePrincipal,
     desayunoCumple: () => desayunoCumple,
     descontarSobras: () => descontarSobras,
+    descontarTomaPrevia: () => descontarTomaPrevia,
     deshacer: () => deshacer,
     diaDeLaFecha: () => diaDeLaFecha,
     diasConSuelo: () => diasConSuelo,
@@ -1796,6 +1798,7 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
   // src/motor/reparto-comidas.ts
   var PRINCIPALES = ["desayuno", "comida", "cena"];
   var SECUNDARIAS = ["media_manana", "merienda"];
+  var TOMA_AYUNAS = { ejemplo: "un pl\xE1tano", gramos: 118, kcal: Math.round(89 * 118 / 100), fuente: "USDA FoodData Central, FDC 173944 (Bananas, raw): 89 kcal/100 g; 1 mediano = 118 g" };
   function hhmm(h) {
     const total = (Math.round(h * 60) % 1440 + 1440) % 1440;
     return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
@@ -1893,11 +1896,8 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
     const horaDesayuno = e.franjas.find((f2) => f2.franja === "desayuno")?.hora;
     const desayunoForzadoPost = primeraHora !== void 0 && horaDesayuno !== void 0 && horaDesayuno >= primeraHora.fin && horaDesayuno - primeraHora.fin <= p.ventana.POST_hasta_h_despues;
     if (primeraHora) {
-      const peso = e.peso ?? e.pesoRef;
-      const gMin = redondear(p.bordePrimeraHora.hidrato_rapido_g_kg_min * peso, 1);
-      const gMax = redondear(p.bordePrimeraHora.hidrato_rapido_g_kg_max * peso, 1);
       avisos.push(
-        `Entrenas antes de las ${p.bordePrimeraHora.sesion_antes_de_h}:00 sin una comida principal cerca: si te sienta bien, toma algo ligero ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes, por ejemplo un pl\xE1tano o una tostada con mermelada (unos ${Math.round(gMin)}-${Math.round(gMax)} g de hidrato). Es solo una sugerencia: no se ha reservado ni descontado nada del reparto del d\xEDa, las comidas ya suman el total del d\xEDa.` + (desayunoForzadoPost ? " El desayuno cuenta como la comida de despu\xE9s del entreno, con m\xE1s hidrato." : "")
+        `Entrenas antes de las ${p.bordePrimeraHora.sesion_antes_de_h}:00 sin una comida principal cerca: si te sienta bien, toma algo ligero ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes, por ejemplo ${TOMA_AYUNAS.ejemplo} (unas ${TOMA_AYUNAS.kcal} kcal). Es solo una sugerencia: no se ha reservado nada en el plan. Si te lo tomas, m\xE1rcalo en Hoy (\xABMe la he tomado\xBB) y esas kcal se quitan del resto del d\xEDa; si no, el d\xEDa sigue igual.` + (desayunoForzadoPost ? " El desayuno cuenta como la comida de despu\xE9s del entreno, con m\xE1s hidrato." : "")
       );
     }
     const pPrincipalCap = p.proteinaPrincipal.g_kg_max * e.pesoRef;
@@ -2072,7 +2072,8 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
         `${NOMBRE_FRANJA[c2.franja] ?? c2.franja} (${hhmm(c2.hora)}) cae dentro de una sesi\xF3n de ${hhmm(c2.inicio)} a ${hhmm(c2.fin)}: revisa el horario. No se ha movido nada ni se da este horario por viable.`
       );
     }
-    return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {}, ...cenaTrasEntreno ? { cenaTrasEntreno } : {} };
+    const tomaSugerida = primeraHora && !tomaLigera ? { inicio: primeraHora.inicio, kcal: TOMA_AYUNAS.kcal } : void 0;
+    return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {}, ...cenaTrasEntreno ? { cenaTrasEntreno } : {}, ...tomaSugerida ? { tomaSugerida } : {} };
   }
   function agruparAvisosPorDia(avisos) {
     const NOMBRE2 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
@@ -8175,6 +8176,48 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
     });
     const asignaciones = segunda.asignaciones.filter((a2) => !a2.soloFuera).map((a2) => a2.dia === diaHoy && fuera.has(a2.franja) ? previas.find((b) => b.dia === a2.dia && b.franja === a2.franja) : a2);
     return { ...segunda, asignaciones };
+  }
+  function descontarTomaPrevia(primera, slots, recetas, o) {
+    const porId = new Map(recetas.map((r) => [r.id, r]));
+    const asignaciones = primera.asignaciones.map((a2) => ({ ...a2 }));
+    const delDia = slots.filter((s) => s.dia === o.dia);
+    const candidatas = asignaciones.filter((a2) => a2.dia === o.dia && (o.horaDe(a2.franja) ?? -1) > o.hora && !o.noMover?.(o.dia, a2.franja)).sort((a2, b) => ORDEN_BAJADA.indexOf(a2.franja) - ORDEN_BAJADA.indexOf(b.franja));
+    const HOLGURA = 25;
+    let pendiente = o.kcal;
+    for (const a2 of candidatas) {
+      if (pendiente <= HOLGURA / 2) break;
+      const slot = delDia.find((s) => s.franja === a2.franja);
+      const receta = recetaDeId(porId, a2.receta);
+      if (!slot || !receta) continue;
+      const tope = slot.kcalObjetivo * (1 - MAX_BAJADA_COMIDA);
+      const deseada = Math.max(tope, a2.kcalResultante - pendiente);
+      if (deseada >= a2.kcalResultante) continue;
+      let r;
+      for (const fraccion of FRACCIONES_AJUSTE) {
+        const cand = racionParaObjetivo(receta, a2.kcalResultante + fraccion * (deseada - a2.kcalResultante), a2.franja, { cargaAlta: slot.cargaAlta, piso: 0.5 });
+        const quita = a2.kcalResultante - cand.kcalResultante;
+        if (quita <= 0 || quita > pendiente + HOLGURA || cand.kcalResultante < tope - 1) continue;
+        if (incumplimientosRacion(a2.franja, receta, cand.factorRedondeado, { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+        if (validarPlatoGenerado(a2.franja, gramosEscalados(receta, cand.factorRedondeado), { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+        r = cand;
+        break;
+      }
+      if (!r) continue;
+      const delta = r.kcalResultante - a2.kcalResultante;
+      a2.racionAjustada = r.factorRedondeado;
+      a2.kcalResultante = r.kcalResultante;
+      a2.ajusteDia = { kcal: (a2.ajusteDia?.kcal ?? 0) + delta, motivo: `Hoy esta comida lleva ${Math.abs(delta)} kcal menos porque te has tomado algo antes de entrenar.` };
+      pendiente += delta;
+    }
+    const descontado = Math.round(o.kcal - pendiente);
+    const dias = primera.dias.map((d) => {
+      if (d.dia !== o.dia) return d;
+      const servido = Math.round(asignaciones.filter((a2) => a2.dia === o.dia).reduce((s, a2) => s + a2.kcalResultante, 0) + o.kcal);
+      const cuadrado = Math.abs(d.objetivo - servido) <= TOLERANCIA_DIA * d.objetivo || d.objetivo === 0;
+      const { aviso: _aviso, ...resto } = d;
+      return { ...resto, servido, cuadrado, ...cuadrado ? {} : { aviso: _aviso } };
+    });
+    return { asignaciones, dias, avisos: primera.avisos, descontado };
   }
   var UMBRAL_FALTA_COMPETICION = 0.08;
   var faltaVisibleCompeticion = (falta, kcalDia) => falta > UMBRAL_FALTA_COMPETICION * kcalDia;
