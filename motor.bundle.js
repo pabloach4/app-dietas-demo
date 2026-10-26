@@ -40,10 +40,12 @@ var Motor = (() => {
     ETIQUETA_FASE: () => ETIQUETA_FASE,
     FACTOR_LEGUMBRE_COCIDA: () => FACTOR_LEGUMBRE_COCIDA,
     FILTROS_PERSONAS: () => FILTROS_PERSONAS,
+    FRACCION_CENA_LIGERA: () => FRACCION_CENA_LIGERA,
     FRANJAS_CITA: () => FRANJAS_CITA,
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
     GLUTEN_CSV: () => GLUTEN_CSV,
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
+    HORA_ENTRENO_NOCHE: () => HORA_ENTRENO_NOCHE,
     LIMITES_INGREDIENTES_CSV: () => LIMITES_INGREDIENTES_CSV,
     LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
     MAX_BAJADA_COMIDA: () => MAX_BAJADA_COMIDA,
@@ -176,6 +178,7 @@ var Motor = (() => {
     elaboracionEjemplo: () => elaboracionEjemplo,
     encimasDe: () => encimasDe,
     enlaceCorreoPablo: () => enlaceCorreoPablo,
+    entrenoNocheAntesDeCena: () => entrenoNocheAntesDeCena,
     esDesayunoDePan: () => esDesayunoDePan,
     esFechaValida: () => esFechaValida,
     esFranjaConLimiteVariedad: () => esFranjaConLimiteVariedad,
@@ -223,6 +226,7 @@ var Motor = (() => {
     generarListaCompra: () => generarListaCompra,
     glutenDesdeCsv: () => glutenDesdeCsv,
     grupoDeFranja: () => grupoDeFranja,
+    hambreCenaValida: () => hambreCenaValida,
     historialPlanes: () => historialPlanes,
     horaDeGuardado: () => horaDeGuardado,
     idAlerta: () => idAlerta,
@@ -253,6 +257,7 @@ var Motor = (() => {
     motivosAlerta: () => motivosAlerta,
     moverSesion: () => moverSesion,
     necesitaVentanaNube: () => necesitaVentanaNube,
+    nivelVolumenCena: () => nivelVolumenCena,
     noSeReescala: () => noSeReescala,
     normalizarBusqueda: () => normalizarBusqueda,
     normalizarSobras: () => normalizarSobras,
@@ -1767,6 +1772,20 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
     return { estado: "ok", perfil };
   }
 
+  // src/motor/cena-tras-entreno.ts
+  var HORA_ENTRENO_NOCHE = 20;
+  var FRACCION_CENA_LIGERA = 0.2;
+  function entrenoNocheAntesDeCena(franjas, sesiones) {
+    const cena = franjas.find((f2) => f2.franja === "cena");
+    if (!cena) return void 0;
+    const validas = sesiones.filter((s2) => s2.fin >= HORA_ENTRENO_NOCHE && cena.hora >= s2.fin);
+    if (!validas.length) return void 0;
+    const s = validas.reduce((a2, b) => b.fin > a2.fin ? b : a2);
+    return { inicio: s.inicio, fin: s.fin };
+  }
+  var nivelVolumenCena = (nivelPrincipal, hambre) => hambre === "mucha" ? Math.min(2, nivelPrincipal + 1) : nivelPrincipal;
+  var hambreCenaValida = (x) => x === "poca" || x === "normal" || x === "mucha" ? x : void 0;
+
   // src/motor/reparto-comidas.ts
   var PRINCIPALES = ["desayuno", "comida", "cena"];
   var SECUNDARIAS = ["media_manana", "merienda"];
@@ -2002,6 +2021,39 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
         else avisos.push(texto);
       }
     }
+    let cenaTrasEntreno;
+    const noche = e.hambreCena === "poca" || e.hambreCena === "mucha" ? entrenoNocheAntesDeCena(e.franjas, e.sesionesTodas ?? sesionesCarga) : void 0;
+    if (noche && e.hambreCena === "mucha") {
+      cenaTrasEntreno = { hambre: "mucha", kcal: 0 };
+      avisos.push("Cena despu\xE9s de entrenar de noche: como llegas con mucha hambre, lleva m\xE1s cantidad (m\xE1s volumen, primero y segundo si hace falta) con las mismas calor\xEDas.");
+    } else if (noche) {
+      const cena = salida.find((s) => s.franja === "cena");
+      const hora = (f2) => e.franjas.find((x) => x.franja === f2).hora;
+      const previa = salida.filter((s) => s.franja !== "cena" && hora(s.franja) <= noche.inicio).sort((a2, b) => hora(b.franja) - hora(a2.franja))[0];
+      const kH = 4 * cena.hidrato, kG = 9 * cena.grasa;
+      const mover = Math.min(FRACCION_CENA_LIGERA * cena.kcalAprox, kH + kG);
+      if (previa && mover > 0) {
+        const dH = cena.hidrato * mover / (kH + kG), dG = cena.grasa * mover / (kH + kG);
+        cena.hidrato = redondear(cena.hidrato - dH);
+        cena.grasa = redondear(cena.grasa - dG, 1);
+        const grasaAntes = previa.grasa;
+        let grasa = previa.grasa + dG, hidrato = previa.hidrato + dH;
+        const enVentanaPreCarga = sesionesCarga.some((s) => {
+          const a2 = s.inicio - hora(previa.franja);
+          return a2 > 0 && a2 <= 2;
+        });
+        const limite = Math.max(p.tope.grasa_pre_carga_g, grasaAntes);
+        if (enVentanaPreCarga && grasa > limite) {
+          hidrato += (grasa - limite) * 9 / 4;
+          grasa = limite;
+        }
+        previa.hidrato = redondear(hidrato);
+        previa.grasa = redondear(grasa, 1);
+        for (const s of [cena, previa]) s.kcalAprox = redondear(4 * s.proteina + 4 * s.hidrato + 9 * s.grasa);
+        cenaTrasEntreno = { hambre: "poca", kcal: Math.round(mover), haciaFranja: previa.franja };
+        avisos.push(`Cena despu\xE9s de entrenar de noche: como llegas con poca hambre, es m\xE1s ligera (unas ${Math.round(mover)} kcal menos) y eso pasa a ${NOMBRE_FRANJA[previa.franja]?.toLowerCase() ?? previa.franja}, antes del entreno. El total del d\xEDa no cambia.`);
+      }
+    }
     const conflictos = [];
     for (const f2 of e.franjas) {
       for (const ses of e.sesionesTodas ?? sesionesCarga) {
@@ -2013,7 +2065,7 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
         `${NOMBRE_FRANJA[c2.franja] ?? c2.franja} (${hhmm(c2.hora)}) cae dentro de una sesi\xF3n de ${hhmm(c2.inicio)} a ${hhmm(c2.fin)}: revisa el horario. No se ha movido nada ni se da este horario por viable.`
       );
     }
-    return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {} };
+    return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {}, ...cenaTrasEntreno ? { cenaTrasEntreno } : {} };
   }
   function agruparAvisosPorDia(avisos) {
     const NOMBRE2 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };

@@ -696,6 +696,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         sesionesTodas: sesionesTodasDelDia(d.dia, sesionesConActividad),
         franjas: franjasDelDia(d.dia),
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
+        ...(hambreCena ? { hambreCena } : {}), // #265 F
       });
       reparto.franjas.forEach((f) => {
         const rol = f.rol !== 'normal' ? ` (${nombreRol(f.rol)})` : '';
@@ -1640,6 +1641,46 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (caja.id === 'desayuno-perfil' && vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // la semana se rehace con el desayuno elegido
   });
   pintarDesayunoPref();
+
+  // --- #265 F (punto 23). Pablo: «Cuando llegas de entrenar por la noche y te toca cenar, ¿llegas con mucha hambre o con poca?».
+  // Solo se pregunta si algún entreno acaba a partir de las 20:00 con la cena después. «Con poca»: la cena pasa un 20 % a la toma de
+  // antes del entreno (lo hace repartirComidas); «con mucha»: la cena sube un nivel de volumen; «normal» o sin contestar: como
+  // ahora. Al final del cuestionario (opcional) y en Perfil, con el mismo estado; se guarda en este navegador, como el desayuno. ---
+  const CLAVE_HAMBRE_CENA = 'app-dietas-hambre-cena';
+  let hambreCena;
+  try { hambreCena = Motor.hambreCenaValida(JSON.parse(localStorage.getItem(CLAVE_HAMBRE_CENA) || 'null')); } catch { /* sin almacenamiento o dato corrupto: sin contestar */ }
+  function guardarHambreCena() { try { localStorage.setItem(CLAVE_HAMBRE_CENA, JSON.stringify(hambreCena ?? null)); } catch { falloAlmacenamiento(); } }
+  function hayEntrenoNoche(sesiones, franjasDe) {
+    return sesiones.some((s) => Number.isFinite(s.horaInicio) && s.minutos > 0
+      && Motor.entrenoNocheAntesDeCena(franjasDe(s.dia), [{ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }]));
+  }
+  function pintarHambreCena() {
+    const sesPlan = semanaActual ? semanaActual.perfil.sesiones ?? [] : [];
+    const ve = {
+      c: hayEntrenoNoche(leerSesiones(), () => leerFranjas()),
+      p: !!semanaActual && hayEntrenoNoche(ultimasSesiones.map((s, i) => ({ ...s, dia: sesPlan[i] ? sesPlan[i].dia : s.dia })), franjasDelDia),
+    };
+    for (const [id, s] of [['hambre-cena-cuestionario', 'c'], ['hambre-cena-perfil', 'p']]) {
+      const caja = document.getElementById(id);
+      if (!caja) continue;
+      caja.closest('.tarjeta').hidden = !ve[s];
+      const opcion = (valor, texto) => `<label class="check"><input type="radio" class="hc-opcion" name="hc-${s}" value="${valor}" ${hambreCena === valor ? 'checked' : ''}> ${texto}</label>`;
+      caja.innerHTML = opcion('poca', 'Con poca hambre') + opcion('normal', 'Normal') + opcion('mucha', 'Con mucha hambre');
+    }
+  }
+  document.addEventListener('change', (ev) => {
+    const t = ev.target;
+    const caja = t.closest && t.closest('#hambre-cena-cuestionario, #hambre-cena-perfil');
+    if (!caja) { if (t.closest && t.closest('#form-cuestionario')) pintarHambreCena(); return; } // sesiones u horarios cambiados
+    if (!t.classList.contains('hc-opcion')) return;
+    hambreCena = Motor.hambreCenaValida(t.value);
+    guardarHambreCena();
+    pintarHambreCena();
+    const enfocar = document.querySelector(`#${caja.id} .hc-opcion[value="${t.value}"]`); // el control se ha vuelto a pintar
+    if (enfocar) enfocar.focus();
+    if (caja.id === 'hambre-cena-perfil' && vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
+  });
+  document.getElementById('btn-siguiente').addEventListener('click', () => pintarHambreCena()); // filas de sesión quitadas o puestas (no al cargar: semanaActual aún no existe)
 
   function textoRestricciones(ap) {
     if (!ap) return 'Restricciones del perfil: aún no calculadas.';
@@ -3555,10 +3596,11 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
         sesionesTodas: sesionesTodasDelDia(d.dia, sesionesConActividad),
         franjas: franjasDelDia(d.dia),
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
+        ...(hambreCena ? { hambreCena } : {}), // #265 F
       });
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...(nivelesVolumen()[Motor.grupoDeFranja(f.franja)] !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, nivelesVolumen()[Motor.grupoDeFranja(f.franja)]) } : {}), ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()) });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()) });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,
@@ -3574,6 +3616,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
     pintarDesayunoPref(); // #265 E3: la lista de «siempre el mismo», con las restricciones de ahora
+    pintarHambreCena(); // #265 F: la pregunta, solo si esta semana algún entreno acaba de noche con la cena después
     const admitePostre = (r) => Motor.evaluarCompatibilidad(r, alergiasPreferencias).compatible; // #259.11: el postre de cierre, con las mismas restricciones
     RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, Boolean(respuestas.alergias && respuestas.alergias.celiaquia)); // #256.26
     // #189: la próxima dieta guardada se vuelve a comprobar con las restricciones de ahora: lo que ya no vale se quita y se dice.
@@ -3905,6 +3948,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
           sesiones: franjaADia(dB.dia, franjasDelDia(dB.dia), sesionesConActividad),
           sesionesTodas: sesionesTodasDelDia(dB.dia, sesionesConActividad),
           franjas: franjasDelDia(dB.dia),
+          ...(hambreCena ? { hambreCena } : {}), // #265 F
         });
         const slotsB = repB.franjas.map((f) => ({ dia: dB.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: dB.tipo === 'carga_alta' }));
         const asigB = Motor.asignarRecetas(slotsB, RECETAS_EJEMPLO, { alergiasPreferencias, preferir: asignacionSemana.asignaciones.filter((a) => a.dia === dB.dia) });
