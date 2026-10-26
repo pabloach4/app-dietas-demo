@@ -2856,6 +2856,8 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
   }
   var AJUSTE_MAX = 0.2;
   var FRANJAS_CON_LIMITE_VARIEDAD = ["comida", "cena"];
+  var GRUPO_VARIEDAD = { desayuno: "desayuno", media_manana: "tentempie", merienda: "tentempie" };
+  var MIN_DISTINTAS_GRUPO = 2;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
@@ -3121,6 +3123,8 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       const k = `${slot.dia}|${otra}`;
       return (fijadasPorSlot.get(k) ?? reservas.get(k))?.receta;
     };
+    const usadosPorGrupo = /* @__PURE__ */ new Map();
+    const libre = (s) => !fijadasPorSlot.has(claveSlotSiOSi(s)) && !reservas.has(claveSlotSiOSi(s));
     const cola = [...slots];
     for (let iSlot = 0; iSlot < cola.length; iSlot++) {
       const slot = cola[iSlot];
@@ -3132,6 +3136,12 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       const esUnico = (r) => !r.tipoPlato || r.tipoPlato === "unico" || r.tipoPlato === "postre" && slot.franja !== "comida" && slot.franja !== "cena";
       const otraDelDia = otraComidaDelDia(slot);
       let distintaDelDia = true;
+      const grupo = GRUPO_VARIEDAD[slot.franja];
+      const usadosGrupo = grupo ? usadosPorGrupo.get(grupo) ?? /* @__PURE__ */ new Set() : void 0;
+      const quedan = grupo ? cola.slice(iSlot).filter((s) => GRUPO_VARIEDAD[s.franja] === grupo && libre(s)).length : 0;
+      const forzarVariedad = !!usadosGrupo && usadosGrupo.size > 0 && usadosGrupo.size < MIN_DISTINTAS_GRUPO && quedan <= MIN_DISTINTAS_GRUPO - usadosGrupo.size;
+      let excluirUsadas = false;
+      const variado = (r) => !excluirUsadas || !idsDe(r).some((id) => usadosGrupo.has(id));
       const delDia = (r) => !distintaDelDia || !chocaConElDia(r, otraDelDia, catalogoPorId);
       const intentarBase = (lista, filtrar) => {
         const candidatas = filtrar ? lista.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista;
@@ -3169,7 +3179,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
         return { elegido: mejor };
       };
       const intentar = (listaTodas, filtrar) => {
-        const lista = listaTodas.filter(delDia);
+        const lista = listaTodas.filter((r) => delDia(r) && variado(r));
         if (!lista.length) return { motivo: "todas las opciones repiten el plato o la prote\xEDna de la otra comida del d\xEDa" };
         if (evitarIds.size) {
           const nuevas = intentarBase(lista.filter((r) => !idsDe(r).some((id) => evitarIds.has(id))), filtrar);
@@ -3183,33 +3193,37 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       const fijada = fijadasPorSlot.get(claveSlotSiOSi(slot));
       const reservada = fijada ? void 0 : reservas.get(claveSlotSiOSi(slot));
       const preferida = fijada || reservada ? void 0 : preferidasPorSlot.get(claveSlotSiOSi(slot));
-      const conservada = preferida && vale(preferida) && delDia(preferida) && !idsPedidos.has(preferida.id) && !idsDe(preferida).some((id) => evitarIds.has(id)) ? (() => {
-        const e = intentarBase([preferida], false);
-        return e.elegido && alcanza(e.elegido) ? e : void 0;
-      })() : void 0;
       let res = { motivo: "ninguna receta disponible" };
-      for (const conFiltroDia of otraDelDia && !fijada && !reservada && !conservada ? [true, false] : [false]) {
-        distintaDelDia = conFiltroDia;
-        res = fijada ? { elegido: fijada } : reservada ? { elegido: reservada } : conservada ?? intentar(recetas.filter((r) => esUnico(r) && !idsPedidos.has(r.id)), true);
-        if (!fijada && !reservada && !conservada && (slot.franja === "comida" || slot.franja === "cena") && (!!slot.bandaPeso || !alcanza(res.elegido))) {
-          const primeros = recetas.filter((r) => r.tipoPlato === "primero" && vale(r) && (!limitada || usosDe(r) < maxRep));
-          const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
-          const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));
-          const parejas = primeros.flatMap((p) => segundos.filter((s) => combinanBien(p, s)).map((s) => componerComida([p, s])));
-          const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave2(b.elegido.desviacion, b.elegido.dist ?? 0, b.elegido.falta ?? 0) < clave2(a2.elegido.desviacion, a2.elegido.dist ?? 0, a2.elegido.falta ?? 0)) ? b : a2;
-          if (parejas.length) {
-            const r2 = intentar(parejas, false);
-            res = mejorDe(res, r2);
-            if (!!slot.bandaPeso || !alcanza(res.elegido)) {
-              const conPostre = parejas.flatMap((c2) => postres.filter((po) => !c2.platos.includes(po.id)).map((po) => componerComida([...c2.platos.map((id) => recetas.find((x) => x.id === id)), po])));
-              if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
+      for (const conVariedad of forzarVariedad && !fijada && !reservada ? [true, false] : [false]) {
+        excluirUsadas = conVariedad;
+        const conservada = preferida && vale(preferida) && delDia(preferida) && variado(preferida) && !idsPedidos.has(preferida.id) && !idsDe(preferida).some((id) => evitarIds.has(id)) ? (() => {
+          const e = intentarBase([preferida], false);
+          return e.elegido && alcanza(e.elegido) ? e : void 0;
+        })() : void 0;
+        for (const conFiltroDia of otraDelDia && !fijada && !reservada && !conservada ? [true, false] : [false]) {
+          distintaDelDia = conFiltroDia;
+          res = fijada ? { elegido: fijada } : reservada ? { elegido: reservada } : conservada ?? intentar(recetas.filter((r) => esUnico(r) && !idsPedidos.has(r.id)), true);
+          if (!fijada && !reservada && !conservada && (slot.franja === "comida" || slot.franja === "cena") && (!!slot.bandaPeso || !alcanza(res.elegido))) {
+            const primeros = recetas.filter((r) => r.tipoPlato === "primero" && vale(r) && (!limitada || usosDe(r) < maxRep));
+            const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
+            const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));
+            const parejas = primeros.flatMap((p) => segundos.filter((s) => combinanBien(p, s)).map((s) => componerComida([p, s])));
+            const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave2(b.elegido.desviacion, b.elegido.dist ?? 0, b.elegido.falta ?? 0) < clave2(a2.elegido.desviacion, a2.elegido.dist ?? 0, a2.elegido.falta ?? 0)) ? b : a2;
+            if (parejas.length) {
+              const r2 = intentar(parejas, false);
+              res = mejorDe(res, r2);
+              if (!!slot.bandaPeso || !alcanza(res.elegido)) {
+                const conPostre = parejas.flatMap((c2) => postres.filter((po) => !c2.platos.includes(po.id)).map((po) => componerComida([...c2.platos.map((id) => recetas.find((x) => x.id === id)), po])));
+                if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
+              }
             }
           }
+          if (res.elegido) {
+            if (otraDelDia && !conFiltroDia && chocaConElDia(res.elegido.receta, otraDelDia, catalogoPorId)) avisos.push(`${slot.dia} ${slot.franja}: no hay ninguna receta que encaje sin repetir el plato o la prote\xEDna de la otra comida del d\xEDa; se repite.`);
+            break;
+          }
         }
-        if (res.elegido) {
-          if (otraDelDia && !conFiltroDia && chocaConElDia(res.elegido.receta, otraDelDia, catalogoPorId)) avisos.push(`${slot.dia} ${slot.franja}: no hay ninguna receta que encaje sin repetir el plato o la prote\xEDna de la otra comida del d\xEDa; se repite.`);
-          break;
-        }
+        if (!conVariedad || alcanza(res.elegido)) break;
       }
       if (!res.elegido && slot.maxFibraG !== void 0) {
         const { maxFibraG, ...resto } = slot;
@@ -3224,6 +3238,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       }
       const elegido = res.elegido;
       if (limitada) for (const id of idsDe(elegido.receta)) usos.set(id, (usos.get(id) ?? 0) + 1);
+      if (grupo) usadosPorGrupo.set(grupo, /* @__PURE__ */ new Set([...usadosGrupo, elegido.receta.id]));
       const factorRedondeado = Math.round(elegido.factor * 1e4) / 1e4;
       const { protegidos, incumplimientos } = incumplimientosRacion(slot.franja, elegido.receta, factorRedondeado, { cargaAlta: slot.cargaAlta });
       if (incumplimientos.length) {
