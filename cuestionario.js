@@ -1034,6 +1034,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
 
   // --- Issue #73: «Hoy» (siguiente comida y sesión según el reloj de este dispositivo) y resumen de «Perfil».
   // No hay conexión con calendarios ni con la actividad real: solo el día de la semana y la hora del dispositivo.
+  let acuseVolumen = null; // #265 G: { fecha, texto } tras «¿qué tal de cantidad?», hasta la siguiente comida marcada
   function pintarHoy() {
     const cont = document.getElementById('hoy-ahora');
     if (!vistaSemana || !planActual) { cont.innerHTML = '<h2>Hoy</h2><p class="subt">Calcula tu plan para ver aquí lo que toca hoy.</p>'; return; }
@@ -1197,6 +1198,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
       ${avisoFinHtml}${avisoTerminadaHtml}
       ${avisoOtraSemanaHtml}
       ${otraSemana ? '' : previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
+      ${acuseVolumen && acuseVolumen.fecha === iso ? `<p class="hoy-acuse" role="status">${escaparHtml(acuseVolumen.texto)}</p>` : ''}
       ${bloqueComida}
       ${avisoHorarioHtml}
       ${medallasHoyHtml(dia, iso)}
@@ -1550,6 +1552,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     if (b.classList.contains('hoy-hecha')) {
       if (!hechas.includes(b.dataset.franja)) hechas.push(b.dataset.franja);
       porValorar = { fecha: iso, franja: b.dataset.franja };
+      acuseVolumen = null;
     } else {
       if (b.classList.contains('hoy-hecha-deshacer') && porValorar) comidasHechas.franjas = hechas.filter((f) => f !== porValorar.franja);
       porValorar = null;
@@ -1565,8 +1568,14 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const ahora = new Date();
     const iso = Motor.fechaLocalISO(ahora);
     const yaIgual = valoraciones.find((v) => v.fecha === iso && v.franja === b.dataset.franja && v.valor === b.dataset.valor);
+    const g = Motor.grupoDeFranja(b.dataset.franja);
+    const antes = nivelesVolumen()[g];
     valoraciones = valoraciones.filter((v) => !(v.fecha === iso && v.franja === b.dataset.franja));
     if (!yaIgual) valoraciones.push({ fecha: iso, franja: b.dataset.franja, valor: b.dataset.valor });
+    // #265 G (punto 35): acuse visible y, a la 3.ª «hambre» de la semana (lunes a domingo), alerta para Pablo no prioritaria.
+    const alerta = !yaIgual && b.dataset.valor === 'hambre' ? Motor.alertaHambre(valoraciones, iso, ahora.toISOString(), leerAlertas()) : undefined;
+    if (alerta) { guardarAlertas(Motor.anadirAlerta(leerAlertas(), alerta)); pintarAlertas(); }
+    acuseVolumen = yaIgual ? null : { fecha: iso, texto: Motor.acuseValoracion(b.dataset.valor, antes, nivelesVolumen()[g], nivelManual[g] !== undefined, Boolean(alerta)) };
     porValorar = null;
     cambioVolumen();
   });

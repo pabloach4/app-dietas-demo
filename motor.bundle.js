@@ -23,6 +23,7 @@ var Motor = (() => {
   __export(motor_exports, {
     ACTIVIDADES: () => ACTIVIDADES,
     ACTIVIDAD_POR_TIPO: () => ACTIVIDAD_POR_TIPO,
+    ACUSE_HAMBRE: () => ACUSE_HAMBRE,
     AVISO_DESCARGA: () => AVISO_DESCARGA,
     AVISO_ETIQUETA_GLUTEN: () => AVISO_ETIQUETA_GLUTEN,
     CLAVES_NUBE: () => CLAVES_NUBE,
@@ -88,12 +89,14 @@ var Motor = (() => {
     UMBRALES_FRENO: () => UMBRALES_FRENO,
     UMBRALES_LOGROS: () => UMBRALES_LOGROS,
     UMBRAL_FALTA_COMPETICION: () => UMBRAL_FALTA_COMPETICION,
+    VECES_HAMBRE_ALERTA: () => VECES_HAMBRE_ALERTA,
     VERSION_CONSENTIMIENTO_NUBE: () => VERSION_CONSENTIMIENTO_NUBE,
     ZONAS_ICS: () => ZONAS_ICS,
     aHoraTexto: () => aHoraTexto,
     aMinutos: () => aMinutos2,
     accionReintentoNube: () => accionReintentoNube,
     actividadesDesconocidas: () => actividadesDesconocidas,
+    acuseValoracion: () => acuseValoracion,
     adaptarNombresGluten: () => adaptarNombresGluten,
     adherenciaSemana: () => adherenciaSemana,
     agruparAvisosPorDia: () => agruparAvisosPorDia,
@@ -103,6 +106,7 @@ var Motor = (() => {
     alertaCita: () => alertaCita,
     alertaDerivacion: () => alertaDerivacion,
     alertaFreno: () => alertaFreno,
+    alertaHambre: () => alertaHambre,
     alertaParaPablo: () => alertaParaPablo,
     alertaSuelo: () => alertaSuelo,
     alertasNuevas: () => alertasNuevas,
@@ -227,6 +231,7 @@ var Motor = (() => {
     glutenDesdeCsv: () => glutenDesdeCsv,
     grupoDeFranja: () => grupoDeFranja,
     hambreCenaValida: () => hambreCenaValida,
+    hambresDeLaSemana: () => hambresDeLaSemana,
     historialPlanes: () => historialPlanes,
     horaDeGuardado: () => horaDeGuardado,
     idAlerta: () => idAlerta,
@@ -2699,9 +2704,8 @@ semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por natur
       for (const v of propias) {
         ultimas = [...ultimas, v.valor].slice(-3);
         const mucha = ultimas.filter((x) => x === "mucha").length;
-        const hambre = ultimas.filter((x) => x === "hambre").length;
-        const paso = mucha >= 2 ? -1 : hambre >= 2 ? 1 : 0;
-        if (paso && aMs(v.fecha) - ultimoCambio >= SEMANA_MS) {
+        const paso = v.valor === "hambre" ? 1 : mucha >= 2 ? -1 : 0;
+        if (paso === 1 || paso && aMs(v.fecha) - ultimoCambio >= SEMANA_MS) {
           niveles[g] = Math.max(-2, Math.min(2, niveles[g] + paso));
           ultimoCambio = aMs(v.fecha);
           ultimas = [];
@@ -6302,6 +6306,45 @@ r43,aceite de oliva,10`;
     return [redondear1(kgPerdidos * LIQUIDO_RECUPERACION_L_POR_KG[0]), redondear1(kgPerdidos * LIQUIDO_RECUPERACION_L_POR_KG[1])];
   }
 
+  // src/motor/hambre.ts
+  var VECES_HAMBRE_ALERTA = 3;
+  var ACUSE_HAMBRE = "Anotado: la pr\xF3xima vez esta comida ser\xE1 m\xE1s abundante, con las mismas calor\xEDas.";
+  var NOMBRE_FRANJA2 = { desayuno: "desayuno", media_manana: "media ma\xF1ana", comida: "comida", merienda: "merienda", cena: "cena" };
+  function acuseValoracion(valor, antes, despues, manual, avisaPablo = false) {
+    let t2;
+    if (valor === "bien") t2 = "Anotado. Seguimos con esta cantidad.";
+    else if (valor === "hambre") {
+      t2 = despues > antes ? ACUSE_HAMBRE : manual ? "Anotado. La cantidad de estas comidas la tienes puesta a mano en Perfil: si quieres que sean m\xE1s abundantes, s\xFAbela all\xED." : "Anotado. Esta comida ya lleva la mayor cantidad posible con tus calor\xEDas.";
+    } else {
+      t2 = despues < antes ? "Anotado: la pr\xF3xima vez esta comida ser\xE1 m\xE1s concentrada, con las mismas calor\xEDas." : manual ? "Anotado. La cantidad de estas comidas la tienes puesta a mano en Perfil: si quieres que sean m\xE1s concentradas, b\xE1jala all\xED." : despues <= -2 ? "Anotado. Esta comida ya va lo m\xE1s concentrada posible con tus calor\xEDas." : "Anotado: si se repite, tus platos ser\xE1n m\xE1s concentrados, con las mismas calor\xEDas.";
+    }
+    return avisaPablo ? `${t2} Es la ${VECES_HAMBRE_ALERTA}.\xAA vez esta semana que te quedas con hambre: queda anotado para Pablo.` : t2;
+  }
+  var aMs2 = (f2) => Date.UTC(Number(f2.slice(0, 4)), Number(f2.slice(5, 7)) - 1, Number(f2.slice(8, 10)));
+  var aISO = (ms) => new Date(ms).toISOString().slice(0, 10);
+  function hambresDeLaSemana(valoraciones, hoy) {
+    const lunes = lunesDeLaSemana(hoy);
+    const domingo = aISO(aMs2(lunes) + 6 * 864e5);
+    return valoraciones.filter((v) => v.valor === "hambre" && v.fecha >= lunes && v.fecha <= domingo).sort((a2, b) => a2.fecha.localeCompare(b.fecha));
+  }
+  function alertaHambre(valoraciones, hoy, fechaISO, existentes = []) {
+    const lunes = lunesDeLaSemana(hoy);
+    const firma = `H|${lunes}`;
+    const lista = hambresDeLaSemana(valoraciones, hoy);
+    if (lista.length < VECES_HAMBRE_ALERTA || existentes.some((a2) => a2.firma === firma)) return void 0;
+    const cuales = lista.map((v) => `${NOMBRE_FRANJA2[v.franja] ?? v.franja} del ${v.fecha.slice(8, 10)}/${v.fecha.slice(5, 7)}`).join(", ");
+    return {
+      fecha: fechaISO,
+      prioritaria: false,
+      tipo: "hambre",
+      hambre: true,
+      disparadores: [{ pregunta: 0, etiqueta: "hambre", se\u00F1al: `\xABMe he quedado con hambre\xBB ${lista.length} veces esta semana (desde el lunes ${lunes.slice(8, 10)}/${lunes.slice(5, 7)}): ${cuales}. La app sube el volumen de esas comidas, no las calor\xEDas.` }],
+      contexto: [],
+      sinInterpretar: [],
+      firma
+    };
+  }
+
   // src/motor/catalogo-amplio.ts
   var RECETAS_CATALOGO_CSV = `id,nombre,franjas,kcal,proteina_g,grasa_g,hidrato_g,notas,tipoPlato,fibra_g,proteina_principal,base_hidrato,alergenos,apto_vegetariano,apto_vegano,apto_sin_lactosa,apto_sin_gluten,bajo_fibra,tiempo_min,origen,preparacion,uso_dia
 R01,Puchero ligero de garbanzos y pollo,comida,673,50.9,18.1,78.2,EJEMPLO | fibraAlta | doble_base | carga,unico,17.0,pechuga de pollo asada,legumbre;patata,,no,no,si,pendiente_ficha,no,65,recetario42,Cocer verduras con agua; a\xF1adir garbanzo ya cocido y pollo asado pesado despu\xE9s de cocinar. Servir con aceite al final.,carga
@@ -8307,7 +8350,7 @@ ${textoCita(p)}
     return `${String(d.getFullYear()).padStart(4, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
   function lineasAlertasPersona(alertas, nubeActiva) {
-    return alertas.filter((a2) => a2.tipo !== "cita").map((a2) => ({
+    return alertas.filter((a2) => a2.tipo !== "cita" && a2.tipo !== "hambre").map((a2) => ({
       fecha: fechaLocal(a2.fecha),
       texto: `${TEXTO_ALERTA_PERSONA} ${textoLlegaAPablo(nubeActiva)}`
     }));
@@ -8471,12 +8514,14 @@ ${textoCita(p)}
     suelo: "Suelo de kcal",
     celiaquia: "Celiaqu\xEDa",
     derivacion: "Derivaci\xF3n (salud o edad)",
-    cita: "Pide cita"
+    cita: "Pide cita",
+    hambre: "Hambre repetida"
   };
   var datosDe = (a2) => a2.datos && typeof a2.datos === "object" ? a2.datos : {};
   function clasificarAlerta(a2) {
     const d = datosDe(a2);
     if (a2.tipo === "cita" || d.cita === true) return "cita";
+    if (a2.tipo === "hambre" || d.hambre === true) return "hambre";
     if (d.freno === true) return "freno";
     if (d.suelo === true) return "suelo";
     if (d.celiaquia === true) return "celiaquia";
