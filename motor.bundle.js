@@ -26,6 +26,7 @@ var Motor = (() => {
     ACUSE_HAMBRE: () => ACUSE_HAMBRE,
     AVISO_DESCARGA: () => AVISO_DESCARGA,
     AVISO_ETIQUETA_GLUTEN: () => AVISO_ETIQUETA_GLUTEN,
+    CADENA_TIPICA: () => CADENA_TIPICA,
     CLAVES_NUBE: () => CLAVES_NUBE,
     COMER_FUERA_CSV: () => COMER_FUERA_CSV,
     CONSEJOS_DERIVADO: () => CONSEJOS_DERIVADO,
@@ -137,6 +138,7 @@ var Motor = (() => {
     cargaDeHidratos: () => cargaDeHidratos,
     categoriasDeTexto: () => categoriasDeTexto,
     choquesHorario: () => choquesHorario,
+    cifraTipicaRestaurante: () => cifraTipicaRestaurante,
     claseGluten: () => claseGluten,
     clasificarAlerta: () => clasificarAlerta,
     claveSlot: () => claveSlot,
@@ -4619,6 +4621,7 @@ copos de avena sin gluten,20,150,avena,"https://www.bda.uk.com/resource/food-fac
     return void 0;
   }
   function estimarComidaFuera(texto, tabla2) {
+    tabla2 = tabla2.filter((f2) => f2.cadena !== CADENA_TIPICA);
     const genericos = nombresGenericos(tabla2);
     const aliasesDe = (f2) => [f2.plato, ...f2.sinonimos, ...genericos.get(f2) ?? []];
     const conPlural = (a2) => {
@@ -4785,6 +4788,15 @@ copos de avena sin gluten,20,150,avena,"https://www.bda.uk.com/resource/food-fac
     }
     const total = { min: lineas.reduce((s, l) => s + l.kcalMin, 0), max: lineas.reduce((s, l) => s + l.kcalMax, 0), ...lineas.some((l) => l.comoMinimo) ? { comoMinimo: true } : {} };
     return { lineas, total, sinReconocer };
+  }
+  var CADENA_TIPICA = "Referencia t\xEDpica de restaurante";
+  function cifraTipicaRestaurante(tabla2, franja) {
+    const plato = franja === "media_manana" || franja === "merienda" ? "tentempi\xE9" : franja;
+    const f2 = tabla2.find((x) => x.cadena === CADENA_TIPICA && normalizarTexto2(x.plato) === normalizarTexto2(plato));
+    if (!f2) return void 0;
+    const peso = f2.peso ?? (f2.pesoMin !== void 0 && f2.pesoMax !== void 0 ? (f2.pesoMin + f2.pesoMax) / 2 : void 0);
+    const kcal = f2.kcalUnidad ?? (f2.kcal100 !== void 0 && peso !== void 0 ? f2.kcal100 * peso / 100 : void 0);
+    return kcal === void 0 ? void 0 : { kcal: Math.round(kcal / 10) * 10, fuenteUrl: f2.fuenteUrl, fecha: f2.fecha, tamano: f2.tamano };
   }
 
   // src/motor/comer-fuera-datos.ts
@@ -8159,7 +8171,7 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
       if (!previas.some((a2) => a2.dia === diaHoy && a2.franja === f2)) entrada.push({ dia: diaHoy, franja: f2, receta: "", racionAjustada: 1, kcalResultante: kcal, soloFuera: true });
     }
     const segunda = cuadrarDias(entrada, slots, recetas, {
-      noMover: (dia, franja) => dia !== diaHoy || !!o.noMoverDia?.(dia) || fuera.has(franja) || (horaDe(franja) ?? 24) <= primeraFuera
+      noMover: (dia, franja) => dia !== diaHoy || !!o.noMoverDia?.(dia) || fuera.has(franja) || !o.todoElDia && (horaDe(franja) ?? 24) <= primeraFuera
     });
     const asignaciones = segunda.asignaciones.filter((a2) => !a2.soloFuera).map((a2) => a2.dia === diaHoy && fuera.has(a2.franja) ? previas.find((b) => b.dia === a2.dia && b.franja === a2.franja) : a2);
     return { ...segunda, asignaciones };
