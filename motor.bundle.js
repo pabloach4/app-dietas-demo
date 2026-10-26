@@ -24,8 +24,10 @@ var Motor = (() => {
     ACTIVIDADES: () => ACTIVIDADES,
     ACTIVIDAD_POR_TIPO: () => ACTIVIDAD_POR_TIPO,
     ACUSE_HAMBRE: () => ACUSE_HAMBRE,
+    ATRIBUTOS_CSV: () => ATRIBUTOS_CSV,
     AVISO_DESCARGA: () => AVISO_DESCARGA,
     AVISO_ETIQUETA_GLUTEN: () => AVISO_ETIQUETA_GLUTEN,
+    CABECERA_ATRIBUTOS: () => CABECERA_ATRIBUTOS,
     CADENA_TIPICA: () => CADENA_TIPICA,
     CLAVES_NUBE: () => CLAVES_NUBE,
     COMER_FUERA_CSV: () => COMER_FUERA_CSV,
@@ -94,6 +96,7 @@ var Motor = (() => {
     UMBRAL_FALTA_COMPETICION: () => UMBRAL_FALTA_COMPETICION,
     VECES_HAMBRE_ALERTA: () => VECES_HAMBRE_ALERTA,
     VERSION_CONSENTIMIENTO_NUBE: () => VERSION_CONSENTIMIENTO_NUBE,
+    VOCABULARIO_ATRIBUTOS: () => VOCABULARIO_ATRIBUTOS,
     ZONAS_ICS: () => ZONAS_ICS,
     aHoraTexto: () => aHoraTexto,
     aMinutos: () => aMinutos2,
@@ -124,6 +127,7 @@ var Motor = (() => {
     aptitudCeliaca: () => aptitudCeliaca,
     apuntadoPorDia: () => apuntadoPorDia,
     asignarRecetas: () => asignarRecetas,
+    atributosDesdeCsv: () => atributosDesdeCsv,
     avisoClasificacionSesion: () => avisoClasificacionSesion,
     avisoDietaTerminada: () => avisoDietaTerminada,
     avisoFinDeLaDieta: () => avisoFinDeLaDieta,
@@ -153,6 +157,7 @@ var Motor = (() => {
     competicionesDesdeJson: () => competicionesDesdeJson,
     componerComida: () => componerComida,
     compraDelPeriodo: () => compraDelPeriodo,
+    comprobarAtributos: () => comprobarAtributos,
     comprobarComerFueraCsv: () => comprobarComerFueraCsv,
     comprobarConservacionCsv: () => comprobarConservacionCsv,
     comprobarGlutenCsv: () => comprobarGlutenCsv,
@@ -4075,6 +4080,445 @@ legumbre seca,kg,2.15,"media de lenteja seca (1.85) y alubia blanca seca (2.45) 
 legumbre cocida,kg,2.04,"media de lenteja cocida (2.25), garbanzo cocido (2.00) y alubia blanca cocida (1.88) de esta tabla; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/26030/lenteja-cocida-hacendado-tarro ; https://tienda.mercadona.es/product/26029/garbanzo-cocido-hacendado-tarro ; https://tienda.mercadona.es/product/26019/alubia-cocida-blanca-hacendado-tarro,2026-10-26
 `;
 
+  // src/motor/atributos-datos.ts
+  var ATRIBUTOS_CSV = `receta_id,metodo_cocinado,estilo,servicio,picante
+R01,cocido;horno,guiso,cuchara_caliente,no
+R02,cocido;horno,guiso,cuchara_caliente,no
+R03,salteado,verduras_plato,caliente,no
+R04,cocido;horno;sarten,verduras_plato,caliente,no
+R05,cocido,guiso,cuchara_caliente,suave
+R06,cocido;horno;sarten,arroz_plato,caliente,no
+R07,crudo,ensalada,templado,no
+R08,cocido;salteado,guiso,cuchara_caliente,no
+R09,crudo,bol_desayuno,cuchara_fria,no
+R10,cocido;horno;salteado,plato_combinado,caliente,no
+R11,sarten,bocadillo_tostada,frio,no
+R12,cocido;salteado,arroz_plato,caliente,no
+R13,cocido;salteado,guiso,cuchara_caliente,no
+R14,cocido;salteado,guiso,cuchara_caliente,no
+R15,cocido;sarten,guiso,cuchara_caliente,no
+R16,cocido;salteado,guiso,cuchara_caliente,no
+R17,cocido;salteado,verduras_plato,caliente,no
+R18,horno,verduras_plato,caliente,no
+R19,cocido;vapor;plancha;sarten,plato_combinado,caliente,suave
+R20,cocido;salteado;sarten,verduras_plato,caliente,no
+R21,crudo,crema,cuchara_fria,no
+R22,salteado;sarten,verduras_plato,caliente,no
+R23,cocido;salteado,guiso,cuchara_caliente,no
+R24,cocido,guiso,cuchara_caliente,no
+R25,cocido,bol_desayuno,cuchara_caliente,no
+R26,sarten,bol_desayuno,cuchara_fria,no
+R27,crudo,bocadillo_tostada,frio,no
+R28,crudo,bol_desayuno,cuchara_fria,no
+R29,sarten,huevo_plato,caliente,no
+R30,crudo,batido,frio,no
+R31,cocido,arroz_plato,caliente,no
+R32,crudo,bocadillo_tostada,frio,no
+R33,sarten,arroz_plato,caliente,no
+R34,cocido;horno,plato_combinado,caliente,no
+R35,cocido;salteado,pasta,caliente,no
+R36,crudo,bol_desayuno,cuchara_fria,no
+R37,salteado;sarten,huevo_plato,caliente,no
+R38,cocido,crema,cuchara_caliente,no
+R39,cocido;horno;plancha,plato_combinado,caliente,no
+R40,crudo,ensalada,templado,no
+R41,cocido;plancha,plato_combinado,caliente,no
+R42,crudo,bocadillo_tostada,frio,no
+R43,cocido;horno,ensalada,frio,no
+R44,crudo,ensalada,frio,no
+R45,crudo,ensalada,frio,no
+R46,crudo,ensalada,frio,no
+R47,cocido,ensalada,frio,no
+R48,cocido,crema,cuchara_caliente,no
+R49,cocido,crema,cuchara_caliente,no
+R50,crudo,crema,cuchara_fria,no
+R51,crudo,crema,cuchara_fria,no
+R52,cocido;salteado,verduras_plato,caliente,no
+R53,plancha;salteado,verduras_plato,caliente,no
+R54,horno,verduras_plato,caliente,no
+R55,cocido;salteado,guiso,cuchara_caliente,suave
+R56,cocido;salteado,guiso,cuchara_caliente,suave
+R57,cocido;salteado,arroz_plato,caliente,no
+R58,cocido;salteado,pasta,caliente,no
+R59,cocido,sopa,cuchara_caliente,no
+R60,horno;plancha,plato_combinado,caliente,no
+R61,cocido;salteado,plato_combinado,caliente,no
+R62,cocido;salteado,guiso,cuchara_caliente,no
+R63,cocido;salteado,plato_combinado,caliente,no
+R64,vapor;horno;plancha,plato_combinado,caliente,no
+R65,horno;plancha,plato_combinado,caliente,no
+R66,cocido;salteado,guiso,cuchara_caliente,no
+R67,cocido,guiso,cuchara_caliente,no
+R68,cocido;salteado,plato_combinado,caliente,no
+R69,cocido;horno,plato_combinado,caliente,no
+R70,plancha,plato_combinado,caliente,no
+R71,horno,plato_combinado,caliente,no
+R72,horno,plato_combinado,caliente,no
+R73,vapor,plato_combinado,caliente,no
+R74,cocido;plancha,plato_combinado,caliente,no
+R75,sarten,huevo_plato,caliente,no
+R76,salteado;sarten,huevo_plato,caliente,no
+R77,salteado;sarten,huevo_plato,caliente,no
+R78,cocido;salteado,plato_combinado,caliente,no
+R79,horno;plancha;salteado,plato_combinado,caliente,no
+R80,cocido;salteado;sarten,guiso,cuchara_caliente,no
+R81,horno;plancha,plato_combinado,caliente,no
+R82,cocido;salteado,pasta,caliente,no
+R83,cocido;salteado,arroz_plato,caliente,no
+R84,cocido,pasta,caliente,no
+R85,cocido,plato_combinado,caliente,no
+R86,cocido;salteado,plato_combinado,caliente,no
+R87,salteado,pasta,caliente,no
+R88,salteado,cereal_plato,caliente,no
+R89,horno;sarten,bocadillo_tostada,caliente,no
+R90,sarten,bocadillo_tostada,caliente,no
+R91,crudo,bocadillo_tostada,frio,no
+R92,cocido,bol_desayuno,cuchara_caliente,no
+R93,sarten,huevo_plato,caliente,no
+R94,crudo,bocadillo_tostada,frio,no
+R95,crudo,yogur_fruta,cuchara_fria,no
+R96,crudo,snack,frio,no
+R97,crudo,fruta,frio,no
+R98,horno,bocadillo_tostada,frio,no
+R99,crudo,bocadillo_tostada,frio,no
+R100,crudo,batido,frio,no
+R101,cocido,snack,frio,no
+R102,crudo,fruta,frio,no
+R103,crudo,bol_desayuno,cuchara_fria,no
+R104,crudo,fruta,frio,no
+R105,crudo,yogur_fruta,cuchara_fria,no
+R106,crudo,yogur_fruta,cuchara_fria,no
+R107,horno,dulce_cuchara,cuchara_caliente,no
+R108,crudo,fruta,frio,no
+R109,crudo,yogur_fruta,cuchara_fria,no
+R110,cocido,dulce_cuchara,cuchara_caliente,no
+R111,crudo,fruta,frio,no
+R112,crudo,fruta,frio,no
+R113,crudo,fruta,frio,no
+R114,crudo,yogur_fruta,cuchara_fria,no
+R115,cocido,dulce_cuchara,cuchara_fria,no
+R116,sarten,bocadillo_tostada,frio,no
+R117,crudo,dulce_cuchara,cuchara_caliente,no
+R118,crudo,yogur_fruta,cuchara_fria,no
+R119,horno,bocadillo_tostada,frio,no
+R120,crudo,bocadillo_tostada,frio,no
+R121,sarten,huevo_plato,caliente,no
+R122,horno,bocadillo_tostada,frio,no
+R123,cocido,bocadillo_tostada,frio,no
+R124,cocido;salteado;sarten,arroz_plato,caliente,no
+R125,cocido;horno,arroz_plato,caliente,no
+R126,cocido;sarten,arroz_plato,caliente,no
+R127,cocido;sarten,pasta,caliente,no
+R128,cocido;sarten,huevo_plato,caliente,no
+R129,cocido;horno,arroz_plato,caliente,no
+R130,cocido;salteado,arroz_plato,caliente,no
+R131,cocido;sarten,arroz_plato,caliente,no
+R132,cocido,bol_desayuno,cuchara_caliente,no
+R133,cocido,bol_desayuno,cuchara_caliente,no
+R134,cocido,bol_desayuno,cuchara_caliente,no
+R135,cocido,bol_desayuno,cuchara_caliente,no
+R136,cocido;sarten,huevo_plato,caliente,no
+R137,cocido;sarten,arroz_plato,caliente,no
+R138,cocido;sarten,arroz_plato,caliente,no
+R139,cocido;sarten,arroz_plato,caliente,no
+R140,cocido;sarten,arroz_plato,caliente,no
+R141,cocido;horno;sarten,arroz_plato,caliente,no
+R142,cocido;sarten,huevo_plato,caliente,no
+R143,cocido;sarten,plato_combinado,caliente,no
+R144,sarten,guiso,cuchara_caliente,no
+R145,salteado;sarten,guiso,cuchara_caliente,no
+R146,crudo,fruta,frio,no
+R147,crudo,fruta,frio,no
+R148,crudo,fruta,frio,no
+R149,crudo,fruta,frio,no
+R150,crudo,fruta,frio,no
+R151,crudo,fruta,frio,no
+R152,crudo,fruta,frio,no
+R153,crudo,fruta,frio,no
+R154,crudo,fruta,frio,no
+R155,crudo,yogur_fruta,cuchara_fria,no
+R156,crudo,yogur_fruta,cuchara_fria,no
+R157,crudo,yogur_fruta,cuchara_fria,no
+R158,crudo,yogur_fruta,cuchara_fria,no
+R159,cocido,snack,frio,no
+R160,cocido,snack,frio,no
+R161,cocido,bol_desayuno,cuchara_caliente,no
+R162,cocido,bol_desayuno,cuchara_caliente,no
+R163,cocido,bol_desayuno,cuchara_caliente,no
+R164,cocido,bol_desayuno,cuchara_caliente,no
+R165,crudo,bocadillo_tostada,frio,no
+R166,crudo,bocadillo_tostada,frio,no
+R167,crudo,bocadillo_tostada,frio,no
+R168,crudo,bocadillo_tostada,frio,no
+R169,cocido,dulce_cuchara,cuchara_caliente,no
+R170,cocido,dulce_cuchara,cuchara_caliente,no
+R171,cocido,dulce_cuchara,cuchara_caliente,no
+R172,cocido,dulce_cuchara,cuchara_caliente,no
+R173,crudo,fruta,frio,no
+R174,crudo,fruta,frio,no
+R175,crudo,yogur_fruta,cuchara_fria,no
+R176,crudo,yogur_fruta,cuchara_fria,no
+R177,crudo,yogur_fruta,cuchara_fria,no
+R178,crudo,yogur_fruta,cuchara_fria,no
+R179,crudo,yogur_fruta,cuchara_fria,no
+R180,crudo,yogur_fruta,cuchara_fria,no
+R181,crudo,yogur_fruta,cuchara_fria,no
+R182,crudo,bocadillo_tostada,frio,no
+R183,crudo,bocadillo_tostada,frio,no
+R184,crudo,fruta,frio,no
+R300,cocido,bol_desayuno,cuchara_caliente,no
+R301,cocido,bol_desayuno,cuchara_caliente,no
+R302,crudo,bocadillo_tostada,frio,no
+R303,crudo,bocadillo_tostada,frio,no
+R304,crudo,bol_desayuno,cuchara_fria,no
+R305,crudo,bol_desayuno,cuchara_fria,no
+R306,cocido,bol_desayuno,cuchara_caliente,no
+R307,crudo,bocadillo_tostada,frio,no
+R308,crudo,bol_desayuno,cuchara_fria,no
+R309,crudo,bocadillo_tostada,frio,no
+R310,crudo,yogur_fruta,cuchara_fria,no
+R311,plancha;salteado,bocadillo_tostada,caliente,no
+R312,cocido;salteado,plato_combinado,caliente,no
+R313,cocido;salteado,plato_combinado,caliente,no
+R314,cocido;salteado,guiso,cuchara_caliente,no
+R315,cocido;salteado,guiso,cuchara_caliente,suave
+R316,cocido;horno;plancha,plato_combinado,caliente,no
+R317,cocido;salteado,plato_combinado,caliente,no
+R318,cocido;salteado,plato_combinado,caliente,no
+R319,cocido,ensalada,templado,no
+R321,salteado;sarten,huevo_plato,caliente,no
+R322,cocido;salteado,guiso,cuchara_caliente,no
+R323,cocido;salteado,guiso,cuchara_caliente,no
+R324,cocido;horno;salteado,cereal_plato,caliente,no
+R325,cocido,guiso,cuchara_caliente,no
+R326,cocido;salteado,pasta,caliente,no
+R327,cocido;plancha;salteado,arroz_plato,caliente,suave
+R328,cocido;salteado,cereal_plato,caliente,no
+R329,cocido;salteado,guiso,cuchara_caliente,no
+R330,cocido;salteado,pasta,caliente,no
+R331,horno;plancha;salteado,plato_combinado,caliente,no
+R332,crudo,yogur_fruta,cuchara_fria,no
+R333,crudo,snack,frio,no
+R334,crudo,bocadillo_tostada,frio,no
+R335,crudo,yogur_fruta,cuchara_fria,no
+R336,crudo,bocadillo_tostada,frio,no
+R337,crudo,yogur_fruta,cuchara_fria,no
+R340,crudo,bocadillo_tostada,frio,no
+R341,crudo,bocadillo_tostada,frio,no
+R342,cocido,bol_desayuno,cuchara_caliente,no
+R343,cocido,bol_desayuno,cuchara_caliente,no
+R344,crudo,bocadillo_tostada,frio,no
+R345,crudo,bocadillo_tostada,frio,no
+R346,crudo,bol_desayuno,cuchara_fria,no
+R347,crudo,bocadillo_tostada,frio,no
+R348,crudo,bocadillo_tostada,frio,no
+R349,cocido,bol_desayuno,cuchara_caliente,no
+R350,crudo,bocadillo_tostada,frio,no
+R351,crudo,bol_desayuno,cuchara_fria,no
+R352,crudo,bocadillo_tostada,frio,no
+R353,crudo,yogur_fruta,cuchara_fria,no
+R354,crudo,bocadillo_tostada,frio,no
+R355,crudo,bocadillo_tostada,frio,no
+R356,crudo,bocadillo_tostada,frio,no
+R357,crudo,yogur_fruta,cuchara_fria,no
+R358,crudo,bocadillo_tostada,frio,no
+R359,crudo,bocadillo_tostada,frio,no
+R380,cocido,bol_desayuno,cuchara_caliente,no
+R381,plancha,bocadillo_tostada,caliente,no
+R382,crudo,bol_desayuno,cuchara_fria,no
+R383,plancha,bocadillo_tostada,caliente,no
+R384,crudo,bol_desayuno,cuchara_fria,no
+R385,crudo,bocadillo_tostada,frio,no
+R386,cocido,bol_desayuno,cuchara_caliente,no
+R387,crudo,bol_desayuno,cuchara_fria,no
+R388,crudo,bocadillo_tostada,frio,no
+R389,crudo,yogur_fruta,cuchara_fria,no
+R390,crudo,bocadillo_tostada,frio,no
+R391,crudo,yogur_fruta,cuchara_fria,no
+R392,crudo,bocadillo_tostada,frio,no
+R393,plancha,bocadillo_tostada,caliente,no
+R394,cocido;salteado,guiso,cuchara_caliente,no
+R395,cocido;salteado,guiso,cuchara_caliente,suave
+R396,cocido;salteado,pasta,caliente,no
+R397,cocido;salteado,arroz_plato,caliente,no
+R398,cocido;salteado,cereal_plato,caliente,no
+R399,cocido;salteado,guiso,cuchara_caliente,no
+R400,salteado,bocadillo_tostada,frio,no
+R402,cocido,ensalada,templado,no
+R403,cocido;salteado,guiso,cuchara_caliente,suave
+R404,cocido;horno;plancha,plato_combinado,caliente,no
+R405,horno;salteado,plato_combinado,caliente,no
+R406,salteado;sarten,huevo_plato,caliente,no
+R407,cocido,ensalada,frio,no
+R408,cocido;salteado,guiso,cuchara_caliente,no
+R410,cocido;salteado,pasta,caliente,no
+R411,cocido;salteado,arroz_plato,caliente,no
+R412,horno,cereal_plato,caliente,no
+R413,cocido;salteado,verduras_plato,caliente,no
+R414,cocido,ensalada,templado,no
+R417,cocido,ensalada,frio,no
+R320,horno;salteado,verduras_plato,caliente,no
+R409,cocido;salteado,guiso,cuchara_caliente,no
+R416,horno,plato_combinado,caliente,no
+R401,cocido;plancha,crema,cuchara_caliente,no
+R415,cocido,crema,cuchara_caliente,no
+R418,horno,verduras_plato,caliente,no
+R420,crudo,bocadillo_tostada,frio,no
+R421,crudo,bocadillo_tostada,frio,no
+R422,sarten,huevo_plato,caliente,no
+R423,cocido,bocadillo_tostada,frio,no
+R424,sarten,huevo_plato,caliente,no
+R425,sarten,huevo_plato,caliente,no
+R426,crudo,bol_desayuno,cuchara_fria,no
+R427,cocido,bol_desayuno,cuchara_caliente,no
+R428,crudo,bocadillo_tostada,frio,no
+R429,crudo,bol_desayuno,cuchara_fria,no
+R430,crudo,bocadillo_tostada,frio,no
+R431,crudo,bocadillo_tostada,frio,no
+R432,crudo,bocadillo_tostada,frio,no
+R433,crudo,bol_desayuno,cuchara_fria,no
+R434,crudo,bocadillo_tostada,frio,no
+R435,crudo,yogur_fruta,cuchara_fria,no
+R436,cocido;salteado,arroz_plato,caliente,no
+R437,cocido;plancha,plato_combinado,caliente,no
+R438,cocido;vapor;horno;plancha,plato_combinado,caliente,no
+R439,cocido;salteado,pasta,caliente,no
+R440,horno,plato_combinado,caliente,no
+R441,cocido;salteado,guiso,cuchara_caliente,no
+R442,cocido;salteado,guiso,cuchara_caliente,no
+R443,cocido;salteado,cereal_plato,caliente,no
+R444,cocido;plancha,plato_combinado,caliente,no
+R445,sarten,huevo_plato,caliente,no
+R446,horno;plancha,plato_combinado,caliente,no
+R447,cocido,crema,cuchara_caliente,no
+R448,cocido;plancha,plato_combinado,caliente,no
+R449,salteado;sarten,huevo_plato,caliente,no
+R450,cocido,crema,cuchara_caliente,no
+R451,salteado;sarten,huevo_plato,caliente,no
+R460,cocido,bol_desayuno,cuchara_caliente,no
+R461,crudo,bol_desayuno,cuchara_fria,no
+R462,crudo,bocadillo_tostada,frio,no
+R463,crudo,bocadillo_tostada,frio,no
+R464,crudo,bocadillo_tostada,frio,no
+R465,cocido,bol_desayuno,cuchara_caliente,no
+R466,crudo,bol_desayuno,cuchara_fria,no
+R467,plancha,bocadillo_tostada,caliente,no
+R468,crudo,bocadillo_tostada,frio,no
+R469,crudo,bocadillo_tostada,frio,no
+R470,crudo,yogur_fruta,cuchara_fria,no
+R471,crudo,batido,frio,no
+R472,plancha,bocadillo_tostada,caliente,no
+R473,crudo,yogur_fruta,cuchara_fria,no
+R474,cocido;salteado,plato_combinado,caliente,no
+R475,cocido;vapor;horno;plancha,plato_combinado,caliente,no
+R476,cocido;salteado,plato_combinado,caliente,no
+R477,cocido;plancha,crema,cuchara_caliente,no
+r01,cocido;sarten,plato_combinado,caliente,no
+r02,sarten,bol_desayuno,cuchara_fria,no
+r03,crudo,crema,cuchara_fria,no
+r04,plancha;vapor,plato_combinado,caliente,no
+r05,sarten,bocadillo_tostada,caliente,no
+r06,crudo,yogur_fruta,frio,no
+r07,crudo,bocadillo_tostada,frio,no
+r08,crudo,bocadillo_tostada,frio,no
+r09,crudo,fruta,frio,no
+r10,crudo,bocadillo_tostada,frio,no
+r11,crudo,yogur_fruta,frio,no
+r12,cocido;sarten,arroz_plato,caliente,no
+r13,cocido;sarten,pasta,caliente,no
+r14,cocido,guiso,cuchara_caliente,no
+r15,horno,plato_combinado,caliente,no
+r16,cocido;sarten,plato_combinado,caliente,no
+r17,sarten,huevo_plato,caliente,no
+r18,cocido;salteado,guiso,cuchara_caliente,no
+r19,cocido;plancha,plato_combinado,caliente,no
+r20,horno,plato_combinado,caliente,no
+r21,cocido,ensalada,frio,no
+r22,cocido,crema,cuchara_caliente,no
+r23,crudo,ensalada,frio,no
+r24,cocido,sopa,cuchara_caliente,no
+r25,salteado;sarten,verduras_plato,caliente,no
+r26,crudo,ensalada,templado,no
+r27,cocido;salteado,arroz_plato,caliente,no
+r28,crudo,crema,cuchara_fria,no
+r29,plancha,plato_combinado,caliente,no
+r30,horno,plato_combinado,caliente,no
+r31,cocido,guiso,cuchara_caliente,no
+r32,plancha,plato_combinado,caliente,no
+r33,cocido,guiso,cuchara_caliente,no
+r34,sarten,huevo_plato,caliente,no
+r35,cocido;plancha,plato_combinado,caliente,no
+r36,plancha,plato_combinado,caliente,no
+r37,crudo,yogur_fruta,frio,no
+r38,horno,dulce_cuchara,cuchara_caliente,no
+r39,crudo,yogur_fruta,frio,no
+r40,plancha,bocadillo_tostada,caliente,no
+r41,cocido,pasta,caliente,no
+r42,sarten,bocadillo_tostada,caliente,no
+r43,cocido,guiso,cuchara_caliente,no
+`;
+
+  // src/motor/atributos-recetas.ts
+  var CABECERA_ATRIBUTOS = "receta_id,metodo_cocinado,estilo,servicio,picante";
+  var VOCABULARIO_ATRIBUTOS = {
+    metodo_cocinado: ["cocido", "crudo", "horno", "plancha", "salteado", "sarten", "vapor"],
+    estilo: [
+      "arroz_plato",
+      "batido",
+      "bocadillo_tostada",
+      "bol_desayuno",
+      "cereal_plato",
+      "crema",
+      "dulce_cuchara",
+      "ensalada",
+      "fruta",
+      "guiso",
+      "huevo_plato",
+      "pasta",
+      "plato_combinado",
+      "snack",
+      "sopa",
+      "verduras_plato",
+      "yogur_fruta"
+    ],
+    servicio: ["caliente", "cuchara_caliente", "cuchara_fria", "frio", "templado"],
+    picante: ["no", "suave", "picante"]
+  };
+  var COLUMNAS4 = ["metodo_cocinado", "estilo", "servicio", "picante"];
+  function filasDatos(csv) {
+    return filasCsv(csv).slice(1).map((f2) => f2.map((x) => x.trim()));
+  }
+  function comprobarAtributos(csv, idsReceta) {
+    const [cab = []] = filasCsv(csv);
+    if (cab.map((x) => x.trim()).join(",") !== CABECERA_ATRIBUTOS) return [`Cabecera distinta de \xAB${CABECERA_ATRIBUTOS}\xBB.`];
+    const fallos = [];
+    const existen = new Set(idsReceta);
+    const vistos = /* @__PURE__ */ new Set();
+    for (const f2 of filasDatos(csv)) {
+      const id = f2[0] ?? "";
+      if (vistos.has(id)) fallos.push(`${id} repetida.`);
+      vistos.add(id);
+      if (!existen.has(id)) fallos.push(`${id} no existe en los cat\xE1logos.`);
+      COLUMNAS4.forEach((col, i) => {
+        const valores = (f2[i + 1] ?? "").split(";").map((x) => x.trim()).filter(Boolean);
+        if (!valores.length) fallos.push(`${id} sin ${col}.`);
+        if (col !== "metodo_cocinado" && valores.length > 1) fallos.push(`${id}: ${col} admite un solo valor.`);
+        for (const v of valores)
+          if (!VOCABULARIO_ATRIBUTOS[col].includes(v)) fallos.push(`${id}: ${col} \xAB${v}\xBB no est\xE1 en el vocabulario.`);
+      });
+    }
+    for (const id of idsReceta) if (!vistos.has(id)) fallos.push(`${id} sin fila de atributos.`);
+    return fallos;
+  }
+  function atributosDesdeCsv(csv) {
+    const m = /* @__PURE__ */ new Map();
+    for (const [id = "", met = "", estilo = "", servicio = "", picante = ""] of filasDatos(csv)) {
+      if (!id) continue;
+      m.set(id, { metodos: met.split(";").map((x) => x.trim()).filter(Boolean), estilo, servicio, picante });
+    }
+    return m;
+  }
+
   // src/motor/contexto-dia.ts
   function contextoDiaPorDefecto() {
     return { turno: false, comidaFuera: false, microondas: false, taperFrio: false, comedor: false, tiempoCocina: "normal" };
@@ -4647,11 +5091,11 @@ copos de avena sin gluten,20,150,avena,"https://www.bda.uk.com/resource/food-fac
   // src/motor/limites-ingredientes.ts
   var FACTOR_LEGUMBRE_COCIDA = 0.4;
   var RE_LEGUMBRE_COCIDA = /\b(garbanzo|lenteja|alubia)s?\b.*\bcocid/i;
-  var COLUMNAS4 = ["ingrediente", "min_g", "max_g", "familia", "fuente_url_o_nota", "estado"];
+  var COLUMNAS5 = ["ingrediente", "min_g", "max_g", "familia", "fuente_url_o_nota", "estado"];
   function comprobarLimitesIngredientesCsv(texto) {
     const fallos = [];
     const cab = (texto.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
-    for (const c2 of COLUMNAS4) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
+    for (const c2 of COLUMNAS5) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
     if (fallos.length) return fallos;
     const vistos = /* @__PURE__ */ new Set();
     for (const r of registros(texto)) {
