@@ -1600,6 +1600,47 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
   try { favoritasRecetas = Motor.favoritasValidas(JSON.parse(localStorage.getItem(CLAVE_FAVORITAS) || 'null'), RECETAS_EJEMPLO); } catch { /* sin almacenamiento o dato corrupto: sin favoritas */ }
   function guardarFavoritas() { try { localStorage.setItem(CLAVE_FAVORITAS, JSON.stringify(favoritasRecetas)); } catch { falloAlmacenamiento(); /* solo dura esta sesión */ } }
 
+  // --- #265 E3 (Pablo: «que todos los días quiera desayunar "pan con…" que tenga opciones para eso»): desayuno variado, siempre el
+  // mismo o siempre pan con… Al final del cuestionario (opcional) y en Perfil, con el mismo estado. Es un gusto, no un dato de salud:
+  // se guarda en este navegador, como el volumen. ---
+  const CLAVE_DESAYUNO = 'app-dietas-desayuno';
+  let prefDesayuno = { modo: 'variado' };
+  try { prefDesayuno = Motor.preferenciaDesayunoValida(JSON.parse(localStorage.getItem(CLAVE_DESAYUNO) || 'null')); } catch { /* sin almacenamiento o dato corrupto: variado */ }
+  function guardarDesayuno() { try { localStorage.setItem(CLAVE_DESAYUNO, JSON.stringify(prefDesayuno)); } catch { falloAlmacenamiento(); } }
+  const desayunosElegibles = () => RECETAS_EJEMPLO.filter((r) => r.franjas.includes('desayuno') && (!restriccionesActuales || Motor.evaluarCompatibilidad(r, restriccionesActuales).compatible));
+  function pintarDesayunoPref() {
+    for (const [id, s] of [['desayuno-cuestionario', 'c'], ['desayuno-perfil', 'p']]) {
+      const caja = document.getElementById(id);
+      if (!caja) continue;
+      const opcion = (valor, texto) => `<label class="check"><input type="radio" class="des-modo" name="des-modo-${s}" value="${valor}" ${prefDesayuno.modo === valor ? 'checked' : ''}> ${texto}</label>`;
+      const lista = desayunosElegibles();
+      const elegida = prefDesayuno.modo === 'mismo' ? prefDesayuno.receta : '';
+      const deLista = lista.some((r) => r.id === elegida) ? lista : [...RECETAS_EJEMPLO.filter((r) => r.id === elegida), ...lista];
+      caja.innerHTML = opcion('variado', 'Variado (lo elige la app)')
+        + opcion('mismo', 'Siempre el mismo')
+        + (prefDesayuno.modo === 'mismo' ? `<div class="campo"><label for="des-receta-${s}">¿Cuál?</label><select id="des-receta-${s}" class="des-receta">${deLista.map((r) => `<option value="${escaparHtml(r.id)}" ${r.id === elegida ? 'selected' : ''}>${escaparHtml(r.nombre)}</option>`).join('')}</select></div>` : '')
+        + opcion('pan', 'Siempre pan con…')
+        + (prefDesayuno.modo === 'pan' ? `<div class="des-encimas" role="group" aria-label="Con qué">${Motor.ENCIMAS_PAN.map((e) => `<label class="check"><input type="checkbox" class="des-encima" value="${e.id}" ${prefDesayuno.con.includes(e.id) ? 'checked' : ''}> ${escaparHtml(e.nombre)}</label>`).join('')}<small class="ayuda">Sin marcar nada, cualquier desayuno de pan o tostada.</small></div>` : '');
+    }
+  }
+  document.addEventListener('change', (ev) => {
+    const t = ev.target;
+    const caja = t.closest && t.closest('#desayuno-cuestionario, #desayuno-perfil');
+    if (!caja) return;
+    if (t.classList.contains('des-modo')) {
+      prefDesayuno = t.value === 'mismo' ? { modo: 'mismo', receta: (desayunosElegibles()[0] ?? RECETAS_EJEMPLO.find((r) => r.franjas.includes('desayuno'))).id }
+        : t.value === 'pan' ? { modo: 'pan', con: [] } : { modo: 'variado' };
+    } else if (t.classList.contains('des-receta')) prefDesayuno = { modo: 'mismo', receta: t.value };
+    else if (t.classList.contains('des-encima')) prefDesayuno = { modo: 'pan', con: Array.from(t.closest('.des-encimas').querySelectorAll('.des-encima:checked')).map((c) => c.value) };
+    else return;
+    guardarDesayuno();
+    pintarDesayunoPref();
+    const enfocar = document.querySelector(`#${caja.id} .${t.classList[0]}${t.type === 'select-one' ? '' : `[value="${t.value}"]`}`); // el control se ha vuelto a pintar
+    if (enfocar) enfocar.focus();
+    if (caja.id === 'desayuno-perfil' && vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // la semana se rehace con el desayuno elegido
+  });
+  pintarDesayunoPref();
+
   function textoRestricciones(ap) {
     if (!ap) return 'Restricciones del perfil: aún no calculadas.';
     const deAlergia = new Set(ap.deAlergia || []); // #256.5: una alergia se llama alergia, no «evitas»
@@ -3532,6 +3573,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
     const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
+    pintarDesayunoPref(); // #265 E3: la lista de «siempre el mismo», con las restricciones de ahora
     const admitePostre = (r) => Motor.evaluarCompatibilidad(r, alergiasPreferencias).compatible; // #259.11: el postre de cierre, con las mismas restricciones
     RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, Boolean(respuestas.alergias && respuestas.alergias.celiaquia)); // #256.26
     // #189: la próxima dieta guardada se vuelve a comprobar con las restricciones de ahora: lo que ya no vale se quita y se dice.
@@ -3554,7 +3596,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     }
     // #259 (punto 27): al recalcular (por ejemplo, tras cambiar el peso), cada comida conserva su plato si sigue valiendo.
     const previa = asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta }));
-    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias), ...(previa.length ? { preferir: previa } : {}) };
+    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias), ...(previa.length ? { preferir: previa } : {}), desayuno: prefDesayuno };
     const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador);
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
@@ -3585,7 +3627,7 @@ huevo,ud,0.25,EJEMPLO-PENDIENTE-PABLO`;
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     const asignacionSemana = { ...aplicadas.resultado, asignaciones: cuadrado.asignaciones, avisos: [...aplicadas.resultado.avisos, ...cuadrado.avisos] };
     // #265 E2 (revisión del 26/10): lo que la variedad de la semana no ha podido cumplir se ve en «Avisos del plan» (antes se quedaba en el motor).
-    asignacionSemana.avisos.filter((a) => a.startsWith('Variedad de la semana')).forEach((a) => avisosReparto.push(a));
+    asignacionSemana.avisos.filter((a) => a.startsWith('Variedad de la semana') || a.startsWith('Desayuno:')).forEach((a) => avisosReparto.push(a)); // #265 E3: el desayuno elegido que no se ha podido servir
     // #259 (punto 27): al recalcular se dice qué ha cambiado (antes no salía nada y la compra tachada dejaba de servir sin saberlo).
     const NOMBRE_CAMBIO = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
     const cambiadas = previa.length ? asignacionSemana.asignaciones.filter((a) => { const x = previa.find((y) => y.dia === a.dia && y.franja === a.franja); return !x || x.receta !== a.receta; }) : [];

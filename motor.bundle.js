@@ -36,6 +36,7 @@ var Motor = (() => {
     DIAS_CITA: () => DIAS_CITA,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
+    ENCIMAS_PAN: () => ENCIMAS_PAN,
     ETIQUETA_FASE: () => ETIQUETA_FASE,
     FACTOR_LEGUMBRE_COCIDA: () => FACTOR_LEGUMBRE_COCIDA,
     FILTROS_PERSONAS: () => FILTROS_PERSONAS,
@@ -166,13 +167,16 @@ var Motor = (() => {
     definirTablaLimites: () => definirTablaLimites,
     densidadKcalG: () => densidadKcalG,
     deportePrincipal: () => deportePrincipal,
+    desayunoCumple: () => desayunoCumple,
     descontarSobras: () => descontarSobras,
     deshacer: () => deshacer,
     diaDeLaFecha: () => diaDeLaFecha,
     diasConSuelo: () => diasConSuelo,
     editarCompeticion: () => editarCompeticion,
     elaboracionEjemplo: () => elaboracionEjemplo,
+    encimasDe: () => encimasDe,
     enlaceCorreoPablo: () => enlaceCorreoPablo,
+    esDesayunoDePan: () => esDesayunoDePan,
     esFechaValida: () => esFechaValida,
     esFranjaConLimiteVariedad: () => esFranjaConLimiteVariedad,
     esIngredienteProtegido: () => esIngredienteProtegido,
@@ -266,6 +270,7 @@ var Motor = (() => {
     planDiaCompeticion: () => planDiaCompeticion,
     planPabloAplicable: () => planPabloAplicable,
     plegarLineaIcs: () => plegarLineaIcs,
+    preferenciaDesayunoValida: () => preferenciaDesayunoValida,
     racionEnPalabras: () => racionEnPalabras,
     racionRealistaMinima: () => racionRealistaMinima,
     raizAlimento: () => raizAlimento,
@@ -2854,6 +2859,42 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
     return b;
   }
 
+  // src/motor/desayuno-preferido.ts
+  var ENCIMAS_PAN = [
+    { id: "tomate", nombre: "Tomate", alimentos: ["tomate"] },
+    { id: "huevo", nombre: "Huevo o tortilla", alimentos: ["huevo", "claras de huevo"] },
+    { id: "pescado", nombre: "At\xFAn, sardina o salm\xF3n", alimentos: ["at\xFAn", "sardina", "salm\xF3n"] },
+    { id: "fiambre", nombre: "Pavo o pollo", alimentos: ["pechuga de pavo", "pechuga de pollo"] },
+    { id: "queso", nombre: "Queso", alimentos: ["mozzarella", "reques\xF3n", "queso"] },
+    { id: "aguacate", nombre: "Aguacate", alimentos: ["aguacate"] },
+    { id: "hummus", nombre: "Hummus", alimentos: ["hummus"] },
+    { id: "cacahuete", nombre: "Crema de cacahuete", alimentos: ["crema de cacahuete"] },
+    { id: "vegetal", nombre: "Tofu o tempeh", alimentos: ["tofu", "tempeh"] }
+  ];
+  var empieza = (nombre, alimento) => {
+    const n = nombre.toLowerCase().trim();
+    return n === alimento || n.startsWith(`${alimento} `);
+  };
+  var esDesayunoDePan = (r) => r.ingredientes.some((i) => empieza(i.nombre, "pan"));
+  function encimasDe(r) {
+    return ENCIMAS_PAN.filter((e) => r.ingredientes.some((i) => e.alimentos.some((a2) => empieza(i.nombre, a2)))).map((e) => e.id);
+  }
+  function preferenciaDesayunoValida(p) {
+    const o = p;
+    if (o?.modo === "mismo" && typeof o.receta === "string" && o.receta) return { modo: "mismo", receta: o.receta };
+    if (o?.modo === "pan") {
+      const ids = new Set(ENCIMAS_PAN.map((e) => e.id));
+      return { modo: "pan", con: Array.isArray(o.con) ? [...new Set(o.con.filter((c2) => typeof c2 === "string" && ids.has(c2)))] : [] };
+    }
+    return { modo: "variado" };
+  }
+  function desayunoCumple(r, p) {
+    if (!p || p.modo === "variado") return true;
+    if (p.modo === "mismo") return r.id === p.receta;
+    if (!esDesayunoDePan(r)) return false;
+    return !p.con.length || encimasDe(r).some((e) => p.con.includes(e));
+  }
+
   // src/motor/asignador-recetas.ts
   var MEDIDAS = medidasDesdeCsv(MEDIDAS_CASERAS_CSV);
   function fibraServidaEstimada(r, slot) {
@@ -3169,6 +3210,8 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       return (fijadasPorSlot.get(k) ?? reservas.get(k))?.receta;
     };
     const usadosPorGrupo = /* @__PURE__ */ new Map();
+    const ultimoPorGrupo = /* @__PURE__ */ new Map();
+    const sinPreferenciaDesayuno = /* @__PURE__ */ new Set();
     const libre = (s) => !fijadasPorSlot.has(claveSlotSiOSi(s)) && !reservas.has(claveSlotSiOSi(s));
     const omnivoro = !opciones.alergiasPreferencias?.vegetariano;
     const vecesBase = /* @__PURE__ */ new Map();
@@ -3187,9 +3230,13 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       const grupo = GRUPO_VARIEDAD[slot.franja];
       const usadosGrupo = grupo ? usadosPorGrupo.get(grupo) ?? /* @__PURE__ */ new Set() : void 0;
       const quedan = grupo ? cola.slice(iSlot).filter((s) => GRUPO_VARIEDAD[s.franja] === grupo && libre(s)).length : 0;
+      const prefDesayuno = slot.franja === "desayuno" && !sinPreferenciaDesayuno.has(claveSlotSiOSi(slot)) && opciones.desayuno?.modo !== "variado" ? opciones.desayuno : void 0;
+      const desayunoVale = (r) => desayunoCumple(r, prefDesayuno);
       const forzarVariedad = !!usadosGrupo && usadosGrupo.size > 0 && usadosGrupo.size < MIN_DISTINTAS_GRUPO && quedan <= MIN_DISTINTAS_GRUPO - usadosGrupo.size;
-      let excluirUsadas = false;
-      const variado = (r) => !excluirUsadas || !idsDe(r).some((id) => usadosGrupo.has(id));
+      const ultimo = grupo ? ultimoPorGrupo.get(grupo) : void 0;
+      const pasesVariedad = prefDesayuno?.modo === "mismo" ? [void 0] : prefDesayuno?.modo === "pan" && usadosGrupo?.size ? [usadosGrupo, ...ultimo ? [/* @__PURE__ */ new Set([ultimo])] : [], void 0] : forzarVariedad ? [usadosGrupo, void 0] : [void 0];
+      let excluir;
+      const variado = (r) => !excluir || !idsDe(r).some((id) => excluir.has(id));
       const delDia = (r) => !distintaDelDia || !chocaConElDia(r, otraDelDia, catalogoPorId);
       const esCC = slot.franja === "comida" || slot.franja === "cena";
       const quedanCC = esCC ? cola.slice(iSlot).filter((s) => (s.franja === "comida" || s.franja === "cena") && libre(s)).length : 0;
@@ -3243,7 +3290,7 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
         return { elegido: mejor };
       };
       const intentar = (listaTodas, filtrar) => {
-        const lista = listaTodas.filter((r) => delDia(r) && variado(r) && semanaVaria(r));
+        const lista = listaTodas.filter((r) => delDia(r) && variado(r) && semanaVaria(r) && desayunoVale(r));
         if (!lista.length) return { motivo: "todas las opciones repiten el plato o la prote\xEDna de la otra comida del d\xEDa" };
         if (evitarIds.size) {
           const nuevas = intentarBase(lista.filter((r) => !idsDe(r).some((id) => evitarIds.has(id))), filtrar);
@@ -3258,10 +3305,10 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       const reservada = fijada ? void 0 : reservas.get(claveSlotSiOSi(slot));
       const preferida = fijada || reservada ? void 0 : preferidasPorSlot.get(claveSlotSiOSi(slot));
       let res = { motivo: "ninguna receta disponible" };
-      for (const conVariedad of forzarVariedad && !fijada && !reservada ? [true, false] : [false]) {
-        excluirUsadas = conVariedad;
+      for (const pase of !fijada && !reservada ? pasesVariedad : [void 0]) {
+        excluir = pase;
         variedadCC = esCC;
-        const conservada = preferida && vale(preferida) && delDia(preferida) && variado(preferida) && semanaVaria(preferida) && !idsPedidos.has(preferida.id) && !idsDe(preferida).some((id) => evitarIds.has(id)) ? (() => {
+        const conservada = preferida && vale(preferida) && delDia(preferida) && variado(preferida) && semanaVaria(preferida) && desayunoVale(preferida) && !idsPedidos.has(preferida.id) && !idsDe(preferida).some((id) => evitarIds.has(id)) ? (() => {
           const e = intentarBase([preferida], false);
           return e.elegido && alcanza(e.elegido) ? e : void 0;
         })() : void 0;
@@ -3292,7 +3339,15 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
             break;
           }
         }
-        if (!conVariedad || alcanza(res.elegido)) break;
+        if (!pase || alcanza(res.elegido)) break;
+      }
+      if (!res.elegido && prefDesayuno) {
+        const nombre = prefDesayuno.modo === "mismo" ? catalogoPorId.get(prefDesayuno.receta)?.nombre : void 0;
+        const aviso = prefDesayuno.modo === "mismo" ? `Desayuno: el que elegiste para todos los d\xEDas${nombre ? ` (\xAB${nombre}\xBB)` : ""} no se puede servir (${nombre ? res.motivo ?? "no encaja" : "ya no est\xE1 en el cat\xE1logo"}); esos d\xEDas se propone otro.` : `Desayuno: no hay ning\xFAn desayuno de pan con lo que elegiste que encaje (${res.motivo ?? "no encaja"}); esos d\xEDas se propone otro.`;
+        if (!avisos.includes(aviso)) avisos.push(aviso);
+        sinPreferenciaDesayuno.add(claveSlotSiOSi(slot));
+        iSlot--;
+        continue;
       }
       if (!res.elegido && slot.maxFibraG !== void 0) {
         const { maxFibraG, ...resto } = slot;
@@ -3307,7 +3362,10 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
       }
       const elegido = res.elegido;
       if (limitada) for (const id of idsDe(elegido.receta)) usos.set(id, (usos.get(id) ?? 0) + 1);
-      if (grupo) usadosPorGrupo.set(grupo, /* @__PURE__ */ new Set([...usadosGrupo, elegido.receta.id]));
+      if (grupo) {
+        usadosPorGrupo.set(grupo, /* @__PURE__ */ new Set([...usadosGrupo, elegido.receta.id]));
+        ultimoPorGrupo.set(grupo, elegido.receta.id);
+      }
       if (esCC) {
         const g = gruposProteina(elegido.receta, catalogoPorId);
         if (g.has("soja")) vecesSoja++;
