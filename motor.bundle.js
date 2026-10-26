@@ -393,6 +393,8 @@ var Motor = (() => {
   var DIAS = ["L", "M", "X", "J", "V", "S", "D"];
   var RITMO_POR_DEFECTO = { magro: 0.5, normal: 0.6, obesidad: 0.75 };
   var TOPE_DEFICIT = { magro: 0.25, normal: 0.25, obesidad: 0.3 };
+  var TOPE_DEFICIT_ENTRENO = 0.25;
+  var TOPE_DEFICIT_ENTRENO_KCAL = 500;
   var RECOMPOSICION_DEFICIT = 0.05;
   var SUPERAVIT_POR_DEFECTO = 7.5;
   var COMPENSACION_ENTRENO = 0.28;
@@ -474,16 +476,16 @@ var Motor = (() => {
     if (objetivo === "perder_grasa") {
       const ritmo = p.ritmo ?? RITMO_POR_DEFECTO[categoria];
       const deficitRitmo = ritmo / 100 * p.peso * rho / 7;
-      const deficit = Math.min(deficitRitmo, TOPE_DEFICIT[categoria] * gastoMedio);
+      const entrena = sesiones.length > 0;
+      const topeFraccion = entrena ? TOPE_DEFICIT_ENTRENO : TOPE_DEFICIT[categoria];
+      const tope = entrena ? Math.min(topeFraccion * gastoMedio, TOPE_DEFICIT_ENTRENO_KCAL) : topeFraccion * gastoMedio;
+      const deficit = Math.min(deficitRitmo, tope);
       if (deficit < deficitRitmo) {
-        notas.push(`El ritmo de ${ritmo} %/semana ped\xEDa ${redondear(deficitRitmo)} kcal de d\xE9ficit; se limita al ${TOPE_DEFICIT[categoria] * 100} % del gasto.`);
+        notas.push(`El ritmo de ${ritmo} %/semana ped\xEDa ${redondear(deficitRitmo)} kcal de d\xE9ficit; se limita al ${topeFraccion * 100} % del gasto${entrena ? ` sin pasar de ${TOPE_DEFICIT_ENTRENO_KCAL} kcal (entrena)` : ""}.`);
       }
       if (ritmo > 1) aviso("ritmo_alto", "M\xE1s del 1 % del peso por semana: por encima de lo recomendado sin supervisi\xF3n.");
-      if (deportista && categoria !== "obesidad" && deficit > 500) {
-        aviso("deficit_alto", `D\xE9ficit de ${redondear(deficit)} kcal/d\xEDa entrenando: con m\xE1s de ~500 se pierde masa magra (Murphy y Koehler 2022). Valorar un ritmo menor.`);
-      }
       ajuste = -deficit;
-      Object.assign(trazaAjuste, { ritmoPct: ritmo, deficitRitmo: redondear(deficitRitmo), topeFraccion: TOPE_DEFICIT[categoria], topeAplicado: deficit < deficitRitmo });
+      Object.assign(trazaAjuste, { ritmoPct: ritmo, deficitRitmo: redondear(deficitRitmo), topeFraccion, ...entrena ? { topeKcal: TOPE_DEFICIT_ENTRENO_KCAL } : {}, topeAplicado: deficit < deficitRitmo });
     } else if (objetivo === "recomposicion") {
       ajuste = -RECOMPOSICION_DEFICIT * gastoMedio;
       trazaAjuste.porcentaje = RECOMPOSICION_DEFICIT * 100;
@@ -5077,8 +5079,8 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       const l = [
         `Objetivo \xAB${obj}\xBB: d\xE9ficit de ${f(-a2.kcal)} kcal al d\xEDa. Sale del ritmo de ${f(a2.ritmoPct ?? 0, 2)} % del peso por semana: ritmo \xD7 peso \xD7 kcal por kg de peso perdido (${f(a2.densidadKcalKg ?? 0)} kcal/kg con ${f(a2.grasaPct ?? 0, 1)} % graso) \xF7 7 d\xEDas = ${f(a2.deficitRitmo ?? 0)} kcal/d\xEDa.`
       ];
-      if (a2.topeAplicado) l.push(`Ese d\xE9ficit pasaba del tope de seguridad (${f((a2.topeFraccion ?? 0) * 100)} % del gasto medio), as\xED que se limit\xF3 a ${f(-a2.kcal)} kcal.`);
-      else l.push(`Est\xE1 por debajo del tope de seguridad (${f((a2.topeFraccion ?? 0) * 100)} % del gasto medio).`);
+      if (a2.topeAplicado) l.push(`Ese d\xE9ficit pasaba del tope de seguridad (${f((a2.topeFraccion ?? 0) * 100)} % del gasto medio${a2.topeKcal ? `, y como entrena, nunca m\xE1s de ${f(a2.topeKcal)} kcal` : ""}), as\xED que se limit\xF3 a ${f(-a2.kcal)} kcal.`);
+      else l.push(`Est\xE1 por debajo del tope de seguridad (${f((a2.topeFraccion ?? 0) * 100)} % del gasto medio${a2.topeKcal ? `, y como entrena, nunca m\xE1s de ${f(a2.topeKcal)} kcal` : ""}).`);
       return l;
     }
     if (a2.objetivo === "recomposicion") return [`Objetivo \xAB${obj}\xBB: d\xE9ficit suave del ${f(a2.porcentaje ?? 0)} % del gasto medio = ${f(-a2.kcal)} kcal al d\xEDa.`];
