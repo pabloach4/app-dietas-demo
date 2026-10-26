@@ -1133,6 +1133,7 @@ compota de manzana,riesgo,si,"pur\xE9 de fruta elaborado: la fruta es apta, pero
 reques\xF3n,sin_gluten_natural,no,"leche o derivado natural sin azucarar ni sabor, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 semillas de calabaza,sin_gluten_natural,no,"semilla natural, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+zumo de lim\xF3n,sin_gluten_natural,no,"fruta fresca exprimida, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 `;
 
   // src/motor/gluten.ts
@@ -2852,6 +2853,8 @@ lenteja cocida,cucharada sopera de legumbre cocida escurrida,15,estimacion,"http
 alubia blanca cocida,cucharada sopera de legumbre cocida escurrida,15,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html; https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Peso en crudo (decisi\xF3n Pablo 14/10): 15 g en seco. Ayuda: 1 cucharada sopera de cocida escurrida = 37.5 g (BDA 150 g = 4 cucharadas), factor oficial x0.4. Variabilidad de caldo/escurrido/grano."
 alubia roja cocida,cucharada sopera de legumbre cocida escurrida,15,estimacion,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html; https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Peso en crudo (decisi\xF3n Pablo 14/10): 15 g en seco. Ayuda: 1 cucharada sopera de cocida escurrida = 37.5 g (BDA 150 g = 4 cucharadas), factor oficial x0.4. Variabilidad de caldo/escurrido/grano."
 hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-41d3-a03717a2467754d9/Practical-guide-other-sources-of-PROTEIN.pdf | Tabla hummus2tbsp60g:unacucharada30g de preparado, no garbanzo crudo. | Preparado tal cual; no aplica peso en crudo."
+lechuga hoja verde,unidad,150,fuente,"https://www.compraonline.alcampo.es/products/lechuga-hoja-de-roble-roja-1-ud/56653 | Ficha Alcampo: 150 g declarados por unidad (11,27 \u20AC/kg, 1,69 \u20AC la pieza). Mercadona 69114 vende la misma hoja de roble por unidad sin declarar peso; mismo proveedor (Verduras Curro S.L.). La tabla UCM solo da \xABhoja grande = 10 g\xBB."
+lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories/frescos/verduras-y-hortalizas/lechugas-coliflor-y-repollos/lechugas-y-endibias/OC170206 | \xABCoraz\xF3n de lechuga romana 2 uds\xBB con 600 g declarados -> 300 g por coraz\xF3n. Corrobora DIA: calibre 275-600 g por unidad (https://www.dia.es/verduras/lechugas-y-hojas-verdes/p/50077). Mercadona 69122 vende por unidad sin declarar peso."
 `;
 
   // src/motor/proteina-grupo.ts
@@ -4078,6 +4081,7 @@ queso curado,kg,11.40,"curado mezcla Hacendado, pieza; a\xF1adido por el bucle (
 can\xF3nigos,kg,9.60,"lavados, paquete 125 g; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/69719/canonigos-paquete,2026-10-26
 legumbre seca,kg,2.15,"media de lenteja seca (1.85) y alubia blanca seca (2.45) de esta tabla; el garbanzo seco no est\xE1 en ella; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/5330/lenteja-pardina-hacendado-categoria-extra-paquete ; https://tienda.mercadona.es/product/5124/alubia-blanca-hacendado-categoria-extra-paquete,2026-10-26
 legumbre cocida,kg,2.04,"media de lenteja cocida (2.25), garbanzo cocido (2.00) y alubia blanca cocida (1.88) de esta tabla; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/26030/lenteja-cocida-hacendado-tarro ; https://tienda.mercadona.es/product/26029/garbanzo-cocido-hacendado-tarro ; https://tienda.mercadona.es/product/26019/alubia-cocida-blanca-hacendado-tarro,2026-10-26
+zumo de lim\xF3n,kg,2.30,"se usa el zumo de lim\xF3n exprimido; precio de limones en malla de 1 kg",Mercadona: https://tienda.mercadona.es/product/3236/limones-malla,2026-10-26
 `;
 
   // src/motor/atributos-datos.ts
@@ -4976,6 +4980,7 @@ pasta sin gluten,despensa,no,"Seca; guardar cerrada en lugar fresco y seco. Una 
 tortita de ma\xEDz,despensa,no,"Seca; guardar cerrada en lugar fresco y seco para que no se ablande. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
 polenta,despensa,no,"Harina seca; guardar cerrada en lugar fresco y seco. Una vez cocida requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
 copos de avena sin gluten,despensa,no,"Secos; guardar cerrados en lugar fresco y seco. Una vez cocinados requieren fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
+zumo de lim\xF3n,nevera,si,"Reci\xE9n exprimido, en recipiente cerrado; consumir pronto. Congelable en porciones (cubitera) para uso en cocina.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
 `;
 
   // src/motor/limites-ingredientes-datos.ts
@@ -5086,6 +5091,7 @@ pasta sin gluten,30,150,cereal_seco,"https://estilosdevidasaludable.sanidad.gob.
 tortita de ma\xEDz,10,60,pan_plano,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Tal cual; m\xEDnimo 10 g como una tortita de referencia y m\xE1ximo 60 g por analog\xEDa con la raci\xF3n de pan 40-60 g. Unidades y marcas var\xEDan; no convertir a unidades sin etiqueta. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 polenta,30,150,cereal_seco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Harina de ma\xEDz en seco antes de cocer; misma banda que los cereales secos del cat\xE1logo (30-150 g). | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 copos de avena sin gluten,20,150,avena,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html | Seco; misma banda que los copos de avena del cat\xE1logo (20-150 g): misma semilla en su versi\xF3n certificada sin gluten. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+zumo de lim\xF3n,5,30,condimento,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Peso a\xF1adido neto para ali\xF1ar o rociar un plato de una persona: de una cucharada (5-10 g) al zumo de un lim\xF3n (~30 g). Condimento: no escalar para completar kcal (#264, R61 lleva 20 g). | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 `;
 
   // src/motor/limites-ingredientes.ts
@@ -7040,7 +7046,7 @@ R57,Arroz con tomate,comida;cena,362,6.5,8.9,64.0,EJEMPLO,primero,4.3,,cereal,,s
 R58,Pasta con tomate,comida;cena,396,11.8,9.6,65.9,EJEMPLO,primero,5.5,,cereal,gluten,si,pendiente_ficha,pendiente_ficha,no,si,20,nuevo,Cocer la pasta y mezclar con el tomate sofrito con ajo.,normal
 R59,Sopa de verduras con fideos,comida;cena,266,7.6,6.0,46.9,EJEMPLO,primero,5.5,,cereal,gluten,si,si,si,no,si,25,nuevo,Cocer las verduras en agua y a\xF1adir los fideos al final.,normal
 R60,Pollo a la plancha con patata asada y pimiento,comida;cena,508,50.1,15.7,41.0,EJEMPLO,segundo,6.3,pechuga de pollo,patata,,no,no,si,pendiente_ficha,no,35,nuevo,Asar patata y pimiento; hacer el pollo a la plancha.,normal
-R61,Pollo al lim\xF3n con arroz y jud\xEDas verdes,comida;cena,597,51.8,13.9,62.9,EJEMPLO,segundo,3.6,pechuga de pollo,cereal,,no,no,si,pendiente_ficha,si,30,nuevo,Marcar el pollo (3-4 min por lado); cocer el arroz (15-18 min) y las jud\xEDas verdes (8 min) aparte.,normal
+R61,Pollo al lim\xF3n con arroz y jud\xEDas verdes,comida;cena,602,51.9,14.0,64.3,EJEMPLO,segundo,3.7,pechuga de pollo,cereal,,no,no,si,pendiente_ficha,si,30,nuevo,Marcar el pollo (3-4 min por lado); cocer el arroz (15-18 min) y las jud\xEDas verdes (8 min) aparte; rociar el pollo con el zumo de lim\xF3n al servir.,normal
 R62,Pavo en salsa de verduras con patata,comida;cena,504,52.2,13.4,43.2,EJEMPLO,segundo,6.7,pechuga de pavo,patata,,no,no,si,pendiente_ficha,no,40,nuevo,"Sofre\xEDr la verdura, estofar el pavo y la patata.",normal
 R63,Ternera salteada con champi\xF1ones y arroz,comida;cena,650,48.9,19.3,67.9,EJEMPLO | pescado/carne con equivalente USDA aproximado,segundo,2.2,ternera magra (solomillo de aguja),cereal,,no,no,si,pendiente_ficha,si,30,nuevo,Saltear la ternera en tiras con el champi\xF1\xF3n; servir con el arroz cocido.,normal
 R64,Lomo de cerdo con boniato y br\xF3coli,comida;cena,541,45.1,18.7,48.2,EJEMPLO,segundo,9.1,lomo de cerdo,patata,,no,no,si,pendiente_ficha,no,35,nuevo,Hornear el boniato; lomo a la plancha; br\xF3coli al vapor.,normal
@@ -7624,6 +7630,7 @@ R61,pechuga de pollo,200,proteina,171077,crudo,
 R61,arroz,70,base,169756,crudo,
 R61,jud\xEDa verde,100,verdura,169961,crudo,
 R61,aceite de oliva,8,grasa,171413,crudo,
+R61,zumo de lim\xF3n,20,condimento,167747,tal cual,
 R62,pechuga de pavo,200,proteina,171098,crudo,
 R62,patata,180,base,170026,crudo,
 R62,zanahoria,80,verdura,170393,crudo,
