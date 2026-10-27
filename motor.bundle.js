@@ -28,7 +28,6 @@ var Motor = (() => {
     AVISO_DESCARGA: () => AVISO_DESCARGA,
     AVISO_ETIQUETA_GLUTEN: () => AVISO_ETIQUETA_GLUTEN,
     CABECERA_ATRIBUTOS: () => CABECERA_ATRIBUTOS,
-    CADENA_TIPICA: () => CADENA_TIPICA,
     CLAVES_NUBE: () => CLAVES_NUBE,
     COMER_FUERA_CSV: () => COMER_FUERA_CSV,
     CONSEJOS_DERIVADO: () => CONSEJOS_DERIVADO,
@@ -149,7 +148,6 @@ var Motor = (() => {
     cargaDeHidratos: () => cargaDeHidratos,
     categoriasDeTexto: () => categoriasDeTexto,
     choquesHorario: () => choquesHorario,
-    cifraTipicaRestaurante: () => cifraTipicaRestaurante,
     claseGluten: () => claseGluten,
     clasificarAlerta: () => clasificarAlerta,
     claveSlot: () => claveSlot,
@@ -5437,7 +5435,6 @@ zumo de lim\xF3n,5,30,condimento,"https://www.ucm.es/data/cont/docs/458-2015-10-
     return void 0;
   }
   function estimarComidaFuera(texto, tabla2) {
-    tabla2 = tabla2.filter((f2) => f2.cadena !== CADENA_TIPICA);
     const genericos = nombresGenericos(tabla2);
     const aliasesDe = (f2) => [f2.plato, ...f2.sinonimos, ...genericos.get(f2) ?? []];
     const conPlural = (a2) => {
@@ -5604,15 +5601,6 @@ zumo de lim\xF3n,5,30,condimento,"https://www.ucm.es/data/cont/docs/458-2015-10-
     }
     const total = { min: lineas.reduce((s, l) => s + l.kcalMin, 0), max: lineas.reduce((s, l) => s + l.kcalMax, 0), ...lineas.some((l) => l.comoMinimo) ? { comoMinimo: true } : {} };
     return { lineas, total, sinReconocer };
-  }
-  var CADENA_TIPICA = "Referencia t\xEDpica de restaurante";
-  function cifraTipicaRestaurante(tabla2, franja) {
-    const plato = franja === "media_manana" || franja === "merienda" ? "tentempi\xE9" : franja;
-    const f2 = tabla2.find((x) => x.cadena === CADENA_TIPICA && normalizarTexto2(x.plato) === normalizarTexto2(plato));
-    if (!f2) return void 0;
-    const peso = f2.peso ?? (f2.pesoMin !== void 0 && f2.pesoMax !== void 0 ? (f2.pesoMin + f2.pesoMax) / 2 : void 0);
-    const kcal = f2.kcalUnidad ?? (f2.kcal100 !== void 0 && peso !== void 0 ? f2.kcal100 * peso / 100 : void 0);
-    return kcal === void 0 ? void 0 : { kcal: Math.round(kcal / 10) * 10, fuenteUrl: f2.fuenteUrl, fecha: f2.fecha, tamano: f2.tamano };
   }
 
   // src/motor/comer-fuera-datos.ts

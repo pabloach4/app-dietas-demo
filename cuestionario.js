@@ -1165,10 +1165,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const previstas = (franja) => comidas.find((c) => c.f.franja === franja).f.kcalAprox;
     const cuadreHoy = vistaSemana.cuadreDias && vistaSemana.cuadreDias.get(dia);
     const desvioHoy = cuadreHoy ? Math.round((cuadreHoy.servido - cuadreHoy.objetivo) / 10) * 10 : 0;
-    const notaFuera = !fueraHoy.some((x) => x.kcal !== undefined) ? 'Sin calorías apuntadas, el resto del día no se ajusta.'
+    const notaFuera = fueraHoy.every((x) => x.noSe) ? 'Cuando sepas lo que has comido, apúntalo en «He comido fuera» y se ajusta el resto del día.'
+      : !fueraHoy.some((x) => x.kcal !== undefined) ? 'Sin calorías apuntadas, el resto del día no se ajusta.'
       : !cuadreHoy || cuadreHoy.cuadrado ? 'El resto del día está ajustado a la comida fuera, con raciones normales.'
         : `El resto del día se ha ajustado hasta donde dan las raciones normales: hoy te quedas unas ${Math.abs(desvioHoy)} kcal ${desvioHoy > 0 ? 'por encima' : 'por debajo'}. Mañana se sigue con el plan normal.`;
-    const bloqueFuera = fueraHoy.length ? `<div class="hoy-bloque hoy-despues"><h3>${fueraHoy.every((x) => x.prevista) ? 'Vas a comer fuera' : 'Has comido fuera'}</h3>${fueraHoy.map((x) => `<button type="button" class="hoy-fila-comida" data-dia="${dia}" data-franja="${x.franja}" data-vista="fuera" aria-label="Editar la comida fuera: ${(NOMBRE[x.franja] ?? x.franja).toLowerCase()}"><span class="texto"><strong>${NOMBRE[x.franja] ?? x.franja}</strong>${escaparHtml(x.texto)}${x.kcal !== undefined ? ` · ~${x.kcal} kcal${x.tipica ? ' (cifra típica)' : ''} (tu plan preveía ~${previstas(x.franja)})` : ''}</span></button>`).join('')}<p class="hoy-nota hoy-nota-fuera">${notaFuera}</p></div>` : '';
+    const bloqueFuera = fueraHoy.length ? `<div class="hoy-bloque hoy-despues"><h3>${fueraHoy.every((x) => x.prevista) ? 'Vas a comer fuera' : 'Has comido fuera'}</h3>${fueraHoy.map((x) => `<button type="button" class="hoy-fila-comida" data-dia="${dia}" data-franja="${x.franja}" data-vista="fuera" aria-label="Editar la comida fuera: ${(NOMBRE[x.franja] ?? x.franja).toLowerCase()}"><span class="texto"><strong>${NOMBRE[x.franja] ?? x.franja}</strong>${escaparHtml(x.texto)}${x.kcal !== undefined ? ` · ~${x.kcal} kcal (tu plan preveía ~${previstas(x.franja)})` : x.noSe ? ` · cuentan las de tu plan (~${previstas(x.franja)} kcal)` : ''}</span></button>`).join('')}<p class="hoy-nota hoy-nota-fuera">${notaFuera}</p></div>` : '';
     // Lo que no hace falta para saber qué toca se queda plegado; lo que estaba abierto sigue abierto al repintar (cada minuto).
     const abiertos = new Set([...cont.querySelectorAll('details.hoy-mas[open]')].map((x) => x.dataset.mas));
     const mas = (id, titulo, cuerpo) => (cuerpo ? `<details class="hoy-mas" data-mas="${id}"${abiertos.has(id) ? ' open' : ''}><summary>${titulo}</summary>${cuerpo}</details>` : '');
@@ -1552,12 +1553,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // preveía el plan. Con kcal apuntadas, el resto de ese día se regula (ver el cuadre en mostrarResultado). Se guardan las 30
   // últimas, solo en este navegador.
   const CLAVE_FUERA = 'app-dietas-comidas-fuera';
-  let comidasFuera = []; // [{ fecha: 'YYYY-MM-DD', franja, texto, kcal?, prevista?, tipica?, fuente? }] (#265 H: prevista = «Voy a comer fuera»)
+  let comidasFuera = []; // [{ fecha: 'YYYY-MM-DD', franja, texto, kcal?, prevista?, noSe? }] (#265 H: prevista = «Voy a comer fuera»; #268: noSe = aún no sabe qué)
   try {
     const g = JSON.parse(localStorage.getItem(CLAVE_FUERA) || 'null');
     if (Array.isArray(g)) {
       comidasFuera = g.filter((x) => x && typeof x.fecha === 'string' && typeof x.franja === 'string' && typeof x.texto === 'string')
-        .map((x) => ({ fecha: x.fecha, franja: x.franja, texto: x.texto.slice(0, 80), ...(Number.isFinite(x.kcal) ? { kcal: Math.round(x.kcal) } : {}), ...(x.prevista === true ? { prevista: true } : {}), ...(x.tipica === true && typeof x.fuente === 'string' ? { tipica: true, fuente: x.fuente.slice(0, 300) } : {}) })).slice(-30);
+        .map((x) => ({ fecha: x.fecha, franja: x.franja, texto: x.texto.slice(0, 80), ...(Number.isFinite(x.kcal) ? { kcal: Math.round(x.kcal) } : {}), ...(x.prevista === true ? { prevista: true } : {}), ...(x.noSe === true && !Number.isFinite(x.kcal) ? { noSe: true } : {}) })).slice(-30);
     }
   } catch { /* sin almacenamiento o dato corrupto: ninguna */ }
   // #265 I (Pablo, 20/10: «Solo sugerencia… si no marca se entiende que no se la ha comido»): los días en que la persona marcó
@@ -3463,7 +3464,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // «He comido fuera» (Pablo, 08/10): se apunta qué se comió y, si se saben, las kcal; se compara con lo previsto y la comida
   // queda como hecha. Con kcal apuntadas, el resto del día se regula. El buscador de platos y cadenas llegará con su tabla de datos.
   // #265 H (Pablo: «Sí, con antelación»): con `prevista`, «Voy a comer fuera»: se elige el día (desde hoy) y la comida, no se marca
-  // como hecha, y ese día se cuadra entero; si no sabe qué tomará, la cifra típica de restaurante con su fuente. Se puede quitar.
+  // como hecha, y ese día se cuadra entero. Se puede quitar. #268 (Pablo, 27/10: «que mantenga las calorías hasta que registre lo
+  // que ha comido»): si no sabe qué tomará, la comida cuenta con las kcal que ya tenía en el plan y el día no cambia (`noSe`).
   function abrirComidaFuera(dia, franja, prevista = false) {
     if (!vistaSemana || !planActual) return;
     const iso = prevista ? fechaProximaDe(dia) : Motor.fechaLocalISO(new Date());
@@ -3472,19 +3474,18 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (!f) return;
     const previa = comidasFuera.find((x) => x.fecha === iso && x.franja === franja);
     document.getElementById('dc-titulo').textContent = prevista ? 'Voy a comer fuera' : `Comida fuera · ${nombreSlot(`${dia}|${franja}`)}`;
-    const tipica = Motor.cifraTipicaRestaurante(TABLA_COMER_FUERA, franja);
     const diasElegibles = vistaSemana.repartosPorDia.map((r) => r.dia.dia).map((d) => ({ d, iso: fechaProximaDe(d) })).sort((a, b) => a.iso.localeCompare(b.iso));
     const bloqueAntes = prevista ? `
       <div class="campo"><label for="fuera-dia">Día</label><select id="fuera-dia" style="font-size:16px">${diasElegibles.map((x, i) => `<option value="${x.d}"${x.d === dia ? ' selected' : ''}>${i === 0 && x.iso === Motor.fechaLocalISO(new Date()) ? 'Hoy' : NOMBRE_DIA_LARGO[x.d]} ${Number(x.iso.slice(8))}</option>`).join('')}</select></div>
       <div class="campo"><label for="fuera-franja">Comida</label><select id="fuera-franja" style="font-size:16px">${reparto.franjas.map((x) => `<option value="${x.franja}"${x.franja === franja ? ' selected' : ''}>${escaparHtml(NOMBRE_FRANJA_CAMBIO[x.franja] ?? x.franja)}</option>`).join('')}</select></div>
-      <label class="check"><input type="checkbox" id="fuera-no-se"${previa && previa.tipica ? ' checked' : ''}> Todavía no sé qué tomaré</label>
-      <p class="una-linea" id="fuera-tipica"${previa && previa.tipica ? '' : ' hidden'}>${tipica ? `Se reserva una cifra típica de comida de restaurante: ~${tipica.kcal} kcal (${escaparHtml(tipica.tamano)}; <a href="${escaparHtml(tipica.fuenteUrl)}" target="_blank" rel="noopener">fuente</a>, consultada el ${escaparHtml(tipica.fecha)}). Si luego sabes qué tomaste, cámbialo aquí.` : 'Todavía no hay una cifra típica con fuente para esta comida: se guarda sin calorías y el día no se ajusta. Si sabes las calorías, escríbelas.'}</p>` : '';
+      <label class="check"><input type="checkbox" id="fuera-no-se"${previa && previa.noSe ? ' checked' : ''}> Todavía no sé qué tomaré</label>
+      <p class="una-linea" id="fuera-no-se-nota"${previa && previa.noSe ? '' : ' hidden'}>Se cuentan las kcal que ya tenía esta comida en tu plan (~${f.kcalAprox} kcal). Cuando sepas lo que has comido, apúntalo en «He comido fuera» y se ajusta el resto del día.</p>` : '';
     document.getElementById('dc-cuerpo').innerHTML = `${bloqueAntes}
       <div class="campo" id="fuera-campo-texto"><label for="fuera-texto">${prevista ? '¿Qué vas a tomar?' : '¿Qué has comido?'}</label><input id="fuera-texto" type="text" maxlength="120" autocomplete="off" placeholder="Ej.: una pizza de Telepizza con una Coca-Cola de lata"></div>
       <button type="button" class="btn-secundario" id="fuera-calcular" style="margin:0 0 0.6rem">Calcular las calorías</button>
       <div id="fuera-desglose" aria-live="polite"></div>
-      <div class="campo"><label for="fuera-kcal">Calorías aproximadas, si las sabes</label><input id="fuera-kcal" type="number" inputmode="numeric" min="0" max="5000" step="10" placeholder="Ej.: 850"></div>
-      <p class="una-linea">Tu plan preveía ~${f.kcalAprox} kcal para esta comida. Si apuntas las calorías, el resto ${prevista ? 'de ese día' : 'del día'} se ajusta solo, con raciones normales. Vale solo para ${prevista ? 'ese día' : 'hoy'}.</p>
+      <div class="campo" id="fuera-campo-kcal"><label for="fuera-kcal">Calorías aproximadas, si las sabes</label><input id="fuera-kcal" type="number" inputmode="numeric" min="0" max="5000" step="10" placeholder="Ej.: 850"></div>
+      <p class="una-linea" id="fuera-previa-plan">Tu plan preveía ~${f.kcalAprox} kcal para esta comida. Si apuntas las calorías, el resto ${prevista ? 'de ese día' : 'del día'} se ajusta solo, con raciones normales. Vale solo para ${prevista ? 'ese día' : 'hoy'}.</p>
       <p class="error-inline" id="fuera-error" role="alert" hidden></p>
       <div class="dc-acciones">
         <button type="button" class="btn-principal" id="fuera-guardar">Guardar</button>
@@ -3493,13 +3494,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       </div>`;
     const campoTexto = document.getElementById('fuera-texto');
     const campoKcal = document.getElementById('fuera-kcal');
-    if (previa && !previa.tipica) { campoTexto.value = previa.texto; if (previa.kcal !== undefined) campoKcal.value = previa.kcal; }
+    if (previa && !previa.noSe) { campoTexto.value = previa.texto; if (previa.kcal !== undefined) campoKcal.value = previa.kcal; }
     const noSe = document.getElementById('fuera-no-se');
     if (prevista) {
       const otra = () => abrirComidaFuera(document.getElementById('fuera-dia').value, document.getElementById('fuera-franja').value, true);
       document.getElementById('fuera-dia').addEventListener('change', otra);
       document.getElementById('fuera-franja').addEventListener('change', otra);
-      const pintarNoSe = () => { document.getElementById('fuera-tipica').hidden = !noSe.checked; document.getElementById('fuera-campo-texto').hidden = noSe.checked; document.getElementById('fuera-calcular').hidden = noSe.checked; };
+      const pintarNoSe = () => { document.getElementById('fuera-no-se-nota').hidden = !noSe.checked; ['fuera-campo-texto', 'fuera-calcular', 'fuera-desglose', 'fuera-campo-kcal', 'fuera-previa-plan'].forEach((id) => { document.getElementById(id).hidden = noSe.checked; }); };
       noSe.addEventListener('change', pintarNoSe);
       pintarNoSe();
     }
@@ -3573,9 +3574,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     [campoTexto, campoKcal].forEach((c) => c.addEventListener('input', () => { document.getElementById('fuera-error').hidden = true; }));
     document.getElementById('fuera-guardar').addEventListener('click', () => {
       if (prevista && noSe.checked) {
-        const kcalTip = campoKcal.value.trim() !== '' && Number.isFinite(Number(campoKcal.value)) ? Number(campoKcal.value) : tipica && tipica.kcal;
+        // #268: sin kcal, el día no se vuelve a cuadrar: cuenta lo que ya tenía la comida en el plan.
         comidasFuera = comidasFuera.filter((x) => !(x.fecha === iso && x.franja === franja))
-          .concat({ fecha: iso, franja, texto: 'Aún sin decidir', prevista: true, ...(Number.isFinite(kcalTip) ? { kcal: Math.round(kcalTip) } : {}), ...(tipica && campoKcal.value.trim() === '' ? { tipica: true, fuente: tipica.fuenteUrl } : {}) }).slice(-30);
+          .concat({ fecha: iso, franja, texto: 'Aún sin decidir', prevista: true, noSe: true }).slice(-30);
         terminar();
         return;
       }
