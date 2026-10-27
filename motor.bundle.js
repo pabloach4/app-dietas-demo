@@ -3301,7 +3301,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const ultimoPorGrupo = /* @__PURE__ */ new Map();
     const sinPreferenciaDesayuno = /* @__PURE__ */ new Set();
     const libre = (s) => !fijadasPorSlot.has(claveSlotSiOSi(s)) && !reservas.has(claveSlotSiOSi(s));
-    const omnivoro = !opciones.alergiasPreferencias?.vegetariano;
+    const omnivoro = !(opciones.alergiasPreferencias?.vegetariano || opciones.alergiasPreferencias?.vegano);
     const maxBase = (b) => !omnivoro && b === "legumbre" ? MAX_LEGUMBRE_VEGETARIANO : MAX_BASE;
     const vecesBase = /* @__PURE__ */ new Map();
     let vecesSoja = 0, vecesLegumbre = 0;
