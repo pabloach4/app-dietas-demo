@@ -3835,6 +3835,15 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       if (caja) { caja.hidden = !avisoPabloHoy; caja.innerHTML = avisoPabloHoy; }
     }
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
+    // #283: el día con una comida fuera apuntada (con kcal) dice en su cabecera lo que suma y cuánto se pasa, con las cifras de «Hoy».
+    const kcalFueraHtml = (d) => {
+      const isoD = fechaProximaDe(d);
+      const c = cuadrado.dias.find((x) => x.dia === d);
+      if (!c || !comidasFuera.some((x) => x.fecha === isoD && x.kcal !== undefined && slotsSemana.some((s) => s.dia === d && s.franja === x.franja))) return '';
+      const desvio = Math.round((c.servido - c.objetivo) / 10) * 10;
+      const cuanto = !c.cuadrado && desvio ? `, unas ${Math.abs(desvio)} ${desvio > 0 ? 'por encima' : 'por debajo'}` : '';
+      return `<div class="dia-kcal-fuera">${isoD === hoyIso ? 'hoy' : 'ese día'} ~${Math.round(c.servido / 10) * 10} kcal con la comida fuera${cuanto}</div>`;
+    };
     const asignacionSemana = { ...aplicadas.resultado, asignaciones: cuadrado.asignaciones, avisos: [...aplicadas.resultado.avisos, ...cuadrado.avisos] };
     // #265 E2 (revisión del 26/10): lo que la variedad de la semana no ha podido cumplir se ve en «Avisos del plan» (antes se quedaba en el motor).
     asignacionSemana.avisos.filter((a) => a.startsWith('Variedad de la semana') || a.startsWith('Desayuno:')).forEach((a) => avisosReparto.push(a)); // #265 E3: el desayuno elegido que no se ha podido servir
@@ -3999,6 +4008,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
               <div class="dia-tipo" data-tipo="${d.tipo}">${nombreTipoDia(d, hayEntrenoEl(d.dia))}${compPorDia.get(d.dia)?.fase ? ` · <span class="etq-fase">${Motor.ETIQUETA_FASE[compPorDia.get(d.dia).fase]}</span>` : ''}</div>
             </div>
             <div class="dia-kcal">${d.kcal}<small style="font-size:0.55em;font-weight:400"> kcal</small></div>
+            ${kcalFueraHtml(d.dia)}
           </div>
           <div class="dia-macros">P ${d.proteinaG} g · G ${d.grasaG} g · H ${d.hidratoG} g</div>
           ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
