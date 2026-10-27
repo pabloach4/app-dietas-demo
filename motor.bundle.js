@@ -1912,13 +1912,15 @@ zumo de lim\xF3n,sin_gluten_natural,no,"fruta fresca exprimida, sin gluten por n
     const principales = franjas.filter((f2) => PRINCIPALES.includes(f2));
     const secundarias = franjas.filter((f2) => SECUNDARIAS.includes(f2));
     const sesionesCarga = e.tipoDia === "descanso" ? [] : e.sesiones ?? [];
-    const primeraHora = sesionesCarga.find((s) => {
+    const enAyunasTemprano = (s) => {
       if (s.inicio >= p.bordePrimeraHora.sesion_antes_de_h) return false;
       return !e.franjas.some((f2) => PRINCIPALES.includes(f2.franja) && s.inicio - f2.hora >= p.ventana.PRE_hasta_h_antes && s.inicio - f2.hora <= p.ventana.PRE_desde_h_antes);
-    });
+    };
+    const primeraHora = sesionesCarga.find(enAyunasTemprano);
+    const primeraHoraSug = primeraHora ?? (e.tipoDia === "descanso" ? void 0 : (e.sesionesTodas ?? []).find(enAyunasTemprano));
     const horaDesayuno = e.franjas.find((f2) => f2.franja === "desayuno")?.hora;
     const desayunoForzadoPost = primeraHora !== void 0 && horaDesayuno !== void 0 && horaDesayuno >= primeraHora.fin && horaDesayuno - primeraHora.fin <= p.ventana.POST_hasta_h_despues;
-    if (primeraHora) {
+    if (primeraHoraSug) {
       avisos.push(
         `Entrenas antes de las ${p.bordePrimeraHora.sesion_antes_de_h}:00 sin una comida principal cerca: si te sienta bien, toma algo ligero ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes, por ejemplo ${TOMA_AYUNAS.ejemplo} (unas ${TOMA_AYUNAS.kcal} kcal). Es solo una sugerencia: no se ha reservado nada en el plan. Si te lo tomas, m\xE1rcalo en Hoy (\xABMe la he tomado\xBB) y esas kcal se quitan del resto del d\xEDa; si no, el d\xEDa sigue igual.` + (desayunoForzadoPost ? " El desayuno cuenta como la comida de despu\xE9s del entreno, con m\xE1s hidrato." : "")
       );
@@ -2095,7 +2097,7 @@ zumo de lim\xF3n,sin_gluten_natural,no,"fruta fresca exprimida, sin gluten por n
         `${NOMBRE_FRANJA[c2.franja] ?? c2.franja} (${hhmm(c2.hora)}) cae dentro de una sesi\xF3n de ${hhmm(c2.inicio)} a ${hhmm(c2.fin)}: revisa el horario. No se ha movido nada ni se da este horario por viable.`
       );
     }
-    const tomaSugerida = primeraHora && !tomaLigera ? { inicio: primeraHora.inicio, kcal: TOMA_AYUNAS.kcal } : void 0;
+    const tomaSugerida = primeraHoraSug && !tomaLigera ? { inicio: primeraHoraSug.inicio, kcal: TOMA_AYUNAS.kcal } : void 0;
     return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {}, ...cenaTrasEntreno ? { cenaTrasEntreno } : {}, ...tomaSugerida ? { tomaSugerida } : {} };
   }
   function agruparAvisosPorDia(avisos) {
