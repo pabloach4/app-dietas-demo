@@ -1133,7 +1133,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const choques = Motor.choquesHorario(horas, entrenos.filter((s) => s.horaInicio !== undefined).map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 })), (f) => NOMBRE_CHOQUE[f] ?? f);
     // #265 I: entreno en ayunas a primera hora: la toma solo se sugiere; con «Me la he tomado», sus kcal salen del resto del día.
     const tomaSug = otraSemana || hoyReal ? undefined : reparto.tomaSugerida;
-    const tomada = tomasAyunas.includes(iso);
+    const tomada = Boolean(tomaMarcada(iso));
     // #275 (parte 3): la nota dice qué comidas bajan y sus kcal de antes y de ahora (las mismas que enseña el resumen del día).
     const ART_FRANJA = { desayuno: 'el desayuno', media_manana: 'la media mañana', comida: 'la comida', merienda: 'la merienda', cena: 'la cena' };
     const bajadasToma = (descuentoAyunasHoy && descuentoAyunasHoy.bajadas || []).map((b) => `${ART_FRANJA[b.franja] ?? b.franja} (~${b.antes} → ~${b.despues} kcal)`);
@@ -1230,7 +1230,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     });
     const checkToma = document.getElementById('hoy-toma-check');
     if (checkToma) checkToma.addEventListener('change', () => { // #265 I
-      tomasAyunas = tomasAyunas.filter((x) => x !== iso).concat(checkToma.checked ? [iso] : []).slice(-30);
+      const ahora = new Date();
+      const marca = `${iso}T${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+      tomasAyunas = tomasAyunas.filter((x) => x.slice(0, 10) !== iso).concat(checkToma.checked ? [marca] : []).slice(-30);
       try { localStorage.setItem(CLAVE_AYUNAS, JSON.stringify(tomasAyunas)); } catch { falloAlmacenamiento(); }
       mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // el resto del día se regula
       pintarHoy();
@@ -1561,11 +1563,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // #265 I (Pablo, 20/10: «Solo sugerencia… si no marca se entiende que no se la ha comido»): los días en que la persona marcó
   // «Me la he tomado» (la toma ligera antes de entrenar en ayunas). Solo cuenta la de hoy; se guardan las 30 últimas, en este navegador.
   const CLAVE_AYUNAS = 'app-dietas-toma-ayunas';
-  let tomasAyunas = []; // ['YYYY-MM-DD', …]
+  // Revisión de #265 I (detalle 1): se guarda también la hora a la que se marcó ('YYYY-MM-DDTHH:MM'), para no bajar en pantalla lo que
+  // ya se había comido; las de antes, sin hora, siguen valiendo.
+  let tomasAyunas = []; // ['YYYY-MM-DD' o 'YYYY-MM-DDTHH:MM', …]
   try {
     const g = JSON.parse(localStorage.getItem(CLAVE_AYUNAS) || 'null');
-    if (Array.isArray(g)) tomasAyunas = g.filter((x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)).slice(-30);
+    if (Array.isArray(g)) tomasAyunas = g.filter((x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(x)).slice(-30);
   } catch { /* sin almacenamiento o dato corrupto: ninguna */ }
+  const tomaMarcada = (iso) => tomasAyunas.find((x) => x.slice(0, 10) === iso); // la entrada de ese día, o undefined
   let descuentoAyunasHoy = null; // { kcal, descontado } tras el último cálculo, para la nota de Hoy
   // #265 H: la fecha de cada día de la semana del plan, desde hoy (hoy, o el próximo de los 6 siguientes con esa letra).
   function fechaProximaDe(dia) {
@@ -3801,9 +3806,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     descuentoAyunasHoy = null;
     {
       const tomaHoy = (repartosPorDia.find((r) => r.dia.dia === diaHoy) || {}).reparto?.tomaSugerida;
-      if (tomaHoy && tomasAyunas.includes(hoyIso) && !enCompeticion(diaHoy)) {
+      // Revisión de #265 I: solo en la semana de hoy (detalle 2: con el calendario en otra, el mismo día de esa semana no se toca) y solo
+      // en las comidas de después de la toma y de cuando se marcó (detalle 1: el desayuno ya comido no baja).
+      const marca = tomaMarcada(hoyIso);
+      const semanaDeHoy = !calInicio || Boolean(Motor.diaDeLaFecha(calInicio, hoyIso));
+      if (tomaHoy && marca && semanaDeHoy && !enCompeticion(diaHoy)) {
         const horaDe = (franja) => { const h = franjasDelDia(diaHoy).find((x) => x.franja === franja); return h && h.hora !== undefined ? h.hora : undefined; };
-        const r = Motor.descontarTomaPrevia(cuadrado, slotsSemana, recetasCuadre, { dia: diaHoy, kcal: tomaHoy.kcal, hora: tomaHoy.inicio - 0.75, horaDe });
+        const horaMarca = marca.length > 10 ? textoAHora(marca.slice(11)) : undefined;
+        const r = Motor.descontarTomaPrevia(cuadrado, slotsSemana, recetasCuadre, { dia: diaHoy, kcal: tomaHoy.kcal, hora: Math.max(tomaHoy.inicio - 0.75, horaMarca ?? -1), horaDe });
         // #275 (parte 3): qué comidas bajan y de cuánto a cuánto, para decirlo en la nota de Hoy (antes: «llevan un poco menos»).
         const antes = new Map(cuadrado.asignaciones.filter((a) => a.dia === diaHoy).map((a) => [a.franja, a.kcalResultante]));
         const bajadas = r.asignaciones.filter((a) => a.dia === diaHoy && antes.has(a.franja) && a.kcalResultante < antes.get(a.franja))
