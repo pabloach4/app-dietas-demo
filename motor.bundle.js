@@ -3007,6 +3007,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   var MAX_SOJA = 2;
   var MIN_LEGUMBRE = 2;
   var MAX_BASE = 4;
+  var MAX_LEGUMBRE_VEGETARIANO = 7;
   var PESO_VIOLACION_E2 = 300;
   var PESO_GUSTO = 40;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
@@ -3301,6 +3302,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const sinPreferenciaDesayuno = /* @__PURE__ */ new Set();
     const libre = (s) => !fijadasPorSlot.has(claveSlotSiOSi(s)) && !reservas.has(claveSlotSiOSi(s));
     const omnivoro = !opciones.alergiasPreferencias?.vegetariano;
+    const maxBase = (b) => !omnivoro && b === "legumbre" ? MAX_LEGUMBRE_VEGETARIANO : MAX_BASE;
     const vecesBase = /* @__PURE__ */ new Map();
     let vecesSoja = 0, vecesLegumbre = 0;
     const cola = [...slots];
@@ -3337,7 +3339,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         const g = gruposProteina(r, catalogoPorId);
         let n = omnivoro && g.has("soja") && vecesSoja >= MAX_SOJA ? 1 : 0;
         if (forzarLegumbre && !g.has("legumbre")) n++;
-        for (const b of basesDe(r, catalogoPorId)) n += (basesOtra.has(b) ? 1 : 0) + ((vecesBase.get(b) ?? 0) >= topeBase ? 1 : 0);
+        for (const b of basesDe(r, catalogoPorId)) n += (basesOtra.has(b) ? 1 : 0) + ((vecesBase.get(b) ?? 0) >= topeBase ? 1 : 0) + ((vecesBase.get(b) ?? 0) >= maxBase(b) && maxBase(b) > MAX_BASE ? 1 : 0);
         return n;
       };
       const semanaVaria = (r) => !variedadCC || violacionesE2(r) === 0;
@@ -3484,12 +3486,12 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const faltasVariedad = [
       ...omnivoro && vecesSoja > MAX_SOJA ? [`tofu, tempeh o soja ${vecesSoja} veces (m\xE1x. ${MAX_SOJA})`] : [],
       ...vecesLegumbre < MIN_LEGUMBRE && slots.some((s) => s.franja === "comida" || s.franja === "cena") ? [`legumbre ${vecesLegumbre} veces (m\xEDn. ${MIN_LEGUMBRE})`] : [],
-      ...[...vecesBase].filter(([, n]) => n > MAX_BASE).map(([b, n]) => `${b} ${n} veces (m\xE1x. ${MAX_BASE})`)
+      ...[...vecesBase].filter(([b, n]) => n > maxBase(b)).map(([b, n]) => `${b} ${n} veces (m\xE1x. ${maxBase(b)})`)
     ];
     if (faltasVariedad.length) avisos.push(`Variedad de la semana: con las recetas que encajan no se ha podido cumplir del todo (${faltasVariedad.join("; ")}); es lo m\xE1s cerca posible.`);
     const imprescindibles = opciones.imprescindibles?.length ? cubrirImprescindibles(opciones.imprescindibles, slots, recetas, asignaciones, avisos, maxRep, opciones.alergiasPreferencias) : void 0;
     const hayCC = slots.some((s) => s.franja === "comida" || s.franja === "cena");
-    const exceso = (omnivoro ? Math.max(0, vecesSoja - MAX_SOJA) : 0) + (hayCC ? Math.max(0, MIN_LEGUMBRE - vecesLegumbre) : 0) + [...vecesBase.values()].reduce((s, n) => s + Math.max(0, n - MAX_BASE), 0);
+    const exceso = (omnivoro ? Math.max(0, vecesSoja - MAX_SOJA) : 0) + (hayCC ? Math.max(0, MIN_LEGUMBRE - vecesLegumbre) : 0) + [...vecesBase].reduce((s, [b, n]) => s + Math.max(0, n - maxBase(b)), 0);
     return { resultado: { asignaciones, huecos, avisos, ...imprescindibles ? { imprescindibles } : {}, ...estadosSiOSi.length ? { recetasSiOSi: estadosSiOSi } : {}, ...estadosFijadas.length ? { fijadas: estadosFijadas } : {} }, exceso };
   }
   var llevaAlimento = (r, alimento) => r.ingredientes.some((i) => coincideAlimento(i.nombre, alimento));
