@@ -4693,9 +4693,15 @@ r43,cocido,guiso,cuchara_caliente,no
     return cambios <= CAMBIOS_TOLERADOS;
   }
   function ingredientesPrincipales(r, n = 3) {
-    const vale = (nombre) => !/^(aceite|sal)\b/i.test(nombre.trim()) && rolIngrediente(nombre) !== "condimento";
-    const elegidos = r.ingredientes.filter((i) => vale(i.nombre)).sort((x, y) => y.gramos - x.gramos).slice(0, n);
-    return (elegidos.length ? elegidos : [...r.ingredientes].sort((x, y) => y.gramos - x.gramos).slice(0, 1)).map((i) => i.nombre);
+    const vale = (nombre) => !/^(aceite|sal)\b/i.test(nombre.trim()) && !["grasa", "condimento", "aromatico"].includes(rolIngrediente(nombre));
+    const porGramos = [...r.ingredientes].sort((x, y) => y.gramos - x.gramos);
+    const validos = porGramos.filter((i) => vale(i.nombre));
+    const proteina = validos.find((i) => rolIngrediente(i.nombre) === "proteina");
+    const bases = validos.filter((i) => rolIngrediente(i.nombre) === "base");
+    const cabeza = proteina ? [proteina, ...bases.slice(0, 1)] : bases.slice(0, 2);
+    const elegidos = [...cabeza, ...validos.filter((i) => !cabeza.includes(i))].slice(0, n);
+    const limpio = (nombre) => nombre.replace(/\s*\([^)]*\)/g, "").trim();
+    return [...new Set((elegidos.length ? elegidos : porGramos.slice(0, 1)).map((i) => limpio(i.nombre)))];
   }
   function historialGustosValido(crudo, recetas) {
     if (!Array.isArray(crudo)) return [];
