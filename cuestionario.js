@@ -2248,6 +2248,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       detalle.innerHTML = `
         <p class="dia-resumen-titulo">${NOMBRE_DIA_LARGO[diaCal]}${fecha ? ` · ${fechaLegible(fecha)}` : ''} · ${nombreTipoDia(d, hayEntrenoEl(d.dia))}</p>
         <p class="dia-resumen-kcal">${d.kcal} <small style="font-size:0.5em;font-weight:400">kcal</small></p>
+        ${vistaSemana.kcalFueraHtml(diaCal)}
         ${compHtml ? `<h3 style="margin-top:1rem">Competición</h3><ul class="dia-resumen-lista">${compHtml}</ul>` : ''}
         <h3 style="margin-top:1rem">Entrenos</h3><ul class="dia-resumen-lista">${entrenosHtml}</ul>
         <h3>Comidas</h3><ul class="dia-resumen-lista">${comidasHtml}</ul>
@@ -4133,7 +4134,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         vistaHoyReal = { dia: dB, reparto: repB, recetaPorSlot: new Map(conRecB.map((a) => [`${a.dia}|${a.franja}`, a])) };
       }
     }
-    vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana, asignaciones: asignacionSemana.asignaciones, compPorDia, cuadreDias: new Map(cuadrado.dias.map((x) => [x.dia, x])) };
+    vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana, asignaciones: asignacionSemana.asignaciones, compPorDia, cuadreDias: new Map(cuadrado.dias.map((x) => [x.dia, x])), kcalFueraHtml };
     pintarFija(); // ya con la vista y la asignación de esta semana (issue #142: opciones para las fijaciones que no valen)
     pintarZonaSustituciones();
     pintarResumenDia();
