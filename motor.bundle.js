@@ -2119,9 +2119,8 @@ zumo de lim\xF3n,sin_gluten_natural,no,"fruta fresca exprimida, sin gluten por n
     return orden.map((k) => {
       if (k.startsWith("\0")) return sueltos[Number(k.slice(1))];
       const dias = grupos.get(k);
-      if (dias.length === 1) return `${dias[0]}: ${k}`;
       const n = dias.map((d) => NOMBRE2[d]);
-      const lista = `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
+      const lista = n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
       return `${lista.charAt(0).toUpperCase()}${lista.slice(1)}: ${k}`;
     });
   }
@@ -6068,7 +6067,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     if (ecuacion === "mifflin") {
       const noCumple = [];
       if (m.sesionesNoSuaves < 3) noCumple.push(`necesita al menos 3 sesiones de entreno que no sean suaves (tienes ${m.sesionesNoSuaves})`);
-      if (m.imc >= 30) noCumple.push(`IMC menor de 30 (el tuyo es ${f(m.imc, 1)})`);
+      if (m.imc >= 30) noCumple.push("est\xE1 pensada para otra complexi\xF3n");
       if (m.edad >= 50) noCumple.push(`menos de 50 a\xF1os (tienes ${m.edad})`);
       return {
         resumen: `Lo que gastas en reposo (sin moverte), calculado con ${N.mifflin} a partir de tu edad, sexo, peso y talla: ${f(kcal)} kcal al d\xEDa.`,
@@ -6085,7 +6084,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
         resumen: `Lo que gastas en reposo, calculado con tu masa libre de grasa${mlg !== void 0 ? ` (${f(mlg, 1)} kg)` : ""}: ${f(kcal)} kcal al d\xEDa.`,
         detalle: [
           `Datos usados: ${entradas}${perfil.grasa !== void 0 ? `, ${f(perfil.grasa, 1)} % graso indicado` : ""}.`,
-          `Cumples lo de deportista (al menos 3 sesiones que no son suaves, IMC menor de 30 y menos de 50 a\xF1os) y, como conoces tu % graso, se comparan ${N.ten_haaf} (${f(valores.ten_haaf ?? 0)} kcal) y ${N.cunningham} (${f(kcal)} kcal): se toma la m\xE1s prudente, la m\xE1s baja.`,
+          `Cumples lo de deportista y, como conoces tu % graso, se comparan ${N.ten_haaf} (${f(valores.ten_haaf ?? 0)} kcal) y ${N.cunningham} (${f(kcal)} kcal): se toma la m\xE1s prudente, la m\xE1s baja.`,
           `Para comparar, ${N.mifflin} habr\xEDa dado ${f(valores.mifflin ?? 0)} kcal.`
         ]
       };
@@ -6094,7 +6093,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       resumen: `Lo que gastas en reposo, calculado con ${N.ten_haaf} (validada en gente que entrena): ${f(kcal)} kcal al d\xEDa.`,
       detalle: [
         `Datos usados: ${entradas}.`,
-        `Se usa porque cumples lo de deportista: al menos 3 sesiones que no son suaves (tienes ${m.sesionesNoSuaves}), IMC menor de 30 (${f(m.imc, 1)}) y menos de 50 a\xF1os (${m.edad}).`,
+        `Se usa porque cumples lo de deportista.`,
         m.conGrasaMedida ? `Como conoces tu % graso se compar\xF3 con ${N.cunningham} (${f(valores.cunningham ?? 0)} kcal) y ${N.ten_haaf} sali\xF3 igual o m\xE1s baja, as\xED que se queda esta.` : `Sin % graso medido no se puede usar ${N.cunningham}.`,
         `Para comparar, ${N.mifflin} habr\xEDa dado ${f(valores.mifflin ?? 0)} kcal.`
       ]
@@ -6107,10 +6106,10 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     if (a2.objetivo === "mantener") return [`Objetivo \xAB${obj}\xBB: no se a\xF1ade ni se quita nada al gasto.`];
     if (a2.objetivo === "perder_grasa") {
       const l = [
-        `Objetivo \xAB${obj}\xBB: d\xE9ficit de ${f(-a2.kcal)} kcal al d\xEDa. Sale del ritmo de ${f(a2.ritmoPct ?? 0, 2)} % del peso por semana: ritmo \xD7 peso \xD7 kcal por kg de peso perdido (${f(a2.densidadKcalKg ?? 0)} kcal/kg con ${f(a2.grasaPct ?? 0, 1)} % graso) \xF7 7 d\xEDas = ${f(a2.deficitRitmo ?? 0)} kcal/d\xEDa.`
+        `Objetivo \xAB${obj}\xBB: d\xE9ficit de ${f(-a2.kcal)} kcal al d\xEDa, para perder peso poco a poco (un ${f(a2.ritmoPct ?? 0, 2)} % de tu peso por semana).`
       ];
-      if (a2.topeAplicado) l.push(`Ese d\xE9ficit pasaba del tope de seguridad (${f((a2.topeFraccion ?? 0) * 100)} % del gasto medio${a2.topeKcal ? `, y como entrena, nunca m\xE1s de ${f(a2.topeKcal)} kcal` : ""}), as\xED que se limit\xF3 a ${f(-a2.kcal)} kcal.`);
-      else l.push(`Est\xE1 por debajo del tope de seguridad (${f((a2.topeFraccion ?? 0) * 100)} % del gasto medio${a2.topeKcal ? `, y como entrena, nunca m\xE1s de ${f(a2.topeKcal)} kcal` : ""}).`);
+      if (a2.topeAplicado) l.push(`Ese ritmo ped\xEDa recortar m\xE1s de lo prudente, as\xED que el d\xE9ficit se queda en ${f(-a2.kcal)} kcal.`);
+      else l.push("Es un recorte prudente para tu gasto.");
       return l;
     }
     if (a2.objetivo === "recomposicion") return [`Objetivo \xAB${obj}\xBB: d\xE9ficit suave del ${f(a2.porcentaje ?? 0)} % del gasto medio = ${f(-a2.kcal)} kcal al d\xEDa.`];
@@ -6127,7 +6126,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
         `Gasto de un d\xEDa sin entreno = gasto en reposo (${f(plan.basal.kcal)}) \xD7 actividad diaria ${f(d.pal, 2)} (${d.vidaSupuesta ? "no indicada: se supone sedentaria" : NOMBRE_VIDA[d.vida] ?? d.vida}) = ${f(d.gastoBase)} kcal.`,
         `Cada entreno suma solo el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta, porque el cuerpo compensa el resto durante el d\xEDa.`,
         ...lineasAjuste(plan, opts.objetivoElegido),
-        `Despu\xE9s se aplican dos l\xEDmites por d\xEDa: ${d.oscilacion.modo === "compresion" ? `las diferencias entre d\xEDas se comprimen hasta ${f(d.oscilacion.maxKcal ?? 0)} kcal` : d.oscilacion.modo === "tope" ? `ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media (tope de seguridad)` : "sin entrenos no hay diferencias entre d\xEDas que limitar"}, y el suelo de seguridad de ${f(d.suelo)} kcal.`,
+        `Despu\xE9s se aplican dos l\xEDmites por d\xEDa: ${d.oscilacion.modo === "compresion" ? `las diferencias entre d\xEDas se comprimen hasta ${f(d.oscilacion.maxKcal ?? 0)} kcal` : d.oscilacion.modo === "tope" ? `ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media` : "sin entrenos no hay diferencias entre d\xEDas que limitar"}, y un m\xEDnimo diario por prudencia.`,
         `Las cifras se redondean a decenas de kcal.`
       ]
     };
@@ -6143,10 +6142,10 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     let resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son lo que gastas ese d\xEDa (${f(dia.gasto)}) m\xE1s el ajuste de tu objetivo.`;
     if (dia.limitadoPor === "oscilacion") {
       resumen = `Las ${f(dia.kcal)} kcal del ${nombre} salen del gasto del d\xEDa y del objetivo, acercadas a la media de la semana por el l\xEDmite de oscilaci\xF3n.`;
-      detalle.push(d.oscilacion.modo === "compresion" ? `Se aplic\xF3 el l\xEDmite de oscilaci\xF3n: las diferencias entre d\xEDas se comprimen para que no pasen de ${f(d.oscilacion.maxKcal ?? 0)} kcal. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)}.` : `Se aplic\xF3 el tope de seguridad: ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media de la semana. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)}.`);
+      detalle.push(d.oscilacion.modo === "compresion" ? `Se aplic\xF3 el l\xEDmite de oscilaci\xF3n: las diferencias entre d\xEDas se comprimen para que no pasen de ${f(d.oscilacion.maxKcal ?? 0)} kcal. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)}.` : `Ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media de la semana. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)}.`);
     } else if (dia.limitadoPor === "suelo") {
-      resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son el suelo de seguridad: el c\xE1lculo daba menos.`;
-      detalle.push(`El c\xE1lculo daba ${f(dia.kcalSinLimites)} kcal, por debajo del suelo de ${f(d.suelo)} kcal: se prescribe el suelo y hay que revisarlo con Pablo antes de seguir.`);
+      resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son el m\xEDnimo que pone la app: el c\xE1lculo daba menos.`;
+      detalle.push(`El c\xE1lculo daba ${f(dia.kcalSinLimites)} kcal, menos de lo prudente: se queda en ese m\xEDnimo y hay que revisarlo con Pablo antes de seguir.`);
     } else {
       detalle.push("Ning\xFAn l\xEDmite cambi\xF3 esta cifra (solo se redondea a decenas de kcal).");
     }
@@ -6184,7 +6183,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       resumen: `La prote\xEDna es la misma todos los d\xEDas: ${f(p.gKg, 1)} g por kg \xD7 ${f(p.pesoReferencia, 1)} kg de peso de referencia = ${f(p.gDia)} g.`,
       detalle: [
         porQue[rama],
-        ajustado ? `El peso de referencia (${f(p.pesoReferencia, 1)} kg) es un peso ajustado, no tu peso real (${f(perfil.peso, 1)} kg), porque tu IMC es de 30 o m\xE1s (regla 16bis).` : "El peso de referencia es tu peso real.",
+        ajustado ? `El peso de referencia (${f(p.pesoReferencia, 1)} kg) es un peso ajustado, no tu peso real (${f(perfil.peso, 1)} kg): con tu peso y tu altura, as\xED la prote\xEDna sale m\xE1s ajustada a lo que necesitas.` : "El peso de referencia es tu peso real.",
         `Por comida principal, el m\xE9todo recomienda entre ${f(p.porComidaG[0])} y ${f(p.porComidaG[1])} g (0,25-0,4 g/kg).`
       ]
     };
@@ -6245,12 +6244,12 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const ideal = datos.kcalObjetivo / datos.kcalReceta;
     const dentro = ideal >= 0.8 && ideal <= 1.2;
     return {
-      resumen: `La raci\xF3n (${f(datos.racion * 100)} %) es cu\xE1nto crecen o bajan solo la base (arroz, pasta, patata, pan, legumbre), la prote\xEDna y el aceite de la receta para acercarla a las kcal objetivo de esta comida: no baja de 80 % y ning\xFAn ingrediente pasa de su raci\xF3n normal. Verdura, cebolla, condimentos, fruta y l\xE1cteos se quedan en sus gramos.`,
+      resumen: `La raci\xF3n es cu\xE1nto crecen o bajan solo la base (arroz, pasta, patata, pan, legumbre), la prote\xEDna y el aceite de la receta para acercarla a las kcal objetivo de esta comida: no baja de 80 % y ning\xFAn ingrediente pasa de su raci\xF3n normal. Verdura, cebolla, condimentos, fruta y l\xE1cteos se quedan en sus gramos.`,
       detalle: [
         `Objetivo de la comida ${f(datos.kcalObjetivo)} kcal \xF7 kcal de la receta base ${f(datos.kcalReceta)} \u2248 ${f(ideal * 100)} %.`,
-        dentro ? `Est\xE1 dentro de 80-120 %, as\xED que se usa tal cual: ${f(datos.kcalResultante)} kcal.` : ideal > 1.2 ? datos.kcalResultante >= datos.kcalObjetivo * 0.97 ? `Pasa de 120 %, pero el plato sigue dentro de las cantidades normales, as\xED que se sube hasta ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: llega al objetivo.` : `Queda fuera de 80-120 % y no se puede subir m\xE1s: se queda en ${f(datos.racion * 100)} % (pasar de ah\xED har\xEDa que un ingrediente pasara de su raci\xF3n normal) y la receta aporta ${f(datos.kcalResultante)} kcal: por debajo del objetivo (no llega a ${f(datos.kcalObjetivo)}). Faltan ${f(datos.kcalObjetivo - datos.kcalResultante)} kcal. No cabe en una raci\xF3n normal y no se infla nada: puedes repartir lo que falta en otra toma del d\xEDa, cerrar con un postre (fruta o yogur) o cambiar el plato.` : `Queda fuera de 80-120 %, as\xED que se limita a ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: por encima del objetivo (supera los ${f(datos.kcalObjetivo)} aunque es la raci\xF3n m\xEDnima).`,
-        datos.protegidos && datos.protegidos.length ? `Algunos ingredientes van en cantidad fija (no crecen con la raci\xF3n: lo que no es base, prote\xEDna ni aceite, como fruta, verdura, l\xE1cteos o condimentos); aqu\xED ${datos.protegidos.join(", ")} mantiene${datos.protegidos.length > 1 ? "n" : ""} sus gramos. Como no hay composici\xF3n nutricional fiable de la receta de ejemplo, ${f(datos.kcalResultante)} kcal es una cifra aproximada: no se asegura que la raci\xF3n alcance exactamente las kcal ni los macros del objetivo.` : "Al cambiar la raci\xF3n solo crecen la base, la prote\xEDna y el aceite; lo dem\xE1s va en cantidad fija. Las kcal son aproximadas.",
-        "La receta es de EJEMPLO, no una receta real."
+        dentro ? `Est\xE1 dentro de 80-120 %, as\xED que se usa tal cual: ${f(datos.kcalResultante)} kcal.` : ideal > 1.2 ? datos.kcalResultante >= datos.kcalObjetivo * 0.97 ? `Pasa de 120 %, pero el plato sigue dentro de las cantidades normales, as\xED que se sube hasta ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: llega al objetivo.` : `Queda fuera de 80-120 % y no se puede subir m\xE1s: se queda en ${f(datos.racion * 100)} % (pasar de ah\xED har\xEDa que un ingrediente pasara de su raci\xF3n normal) y la receta aporta ${f(datos.kcalResultante)} kcal: por debajo del objetivo (no llega a ${f(datos.kcalObjetivo)}). Faltan ${f(datos.kcalObjetivo - datos.kcalResultante)} kcal. No cabe en una raci\xF3n normal y no se infla nada: puedes repartir lo que falta en otra toma del d\xEDa, a\xF1adir un postre (fruta o yogur) o cambiar el plato.` : `Queda fuera de 80-120 %, as\xED que se limita a ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: por encima del objetivo (supera los ${f(datos.kcalObjetivo)} aunque es la raci\xF3n m\xEDnima).`,
+        datos.protegidos && datos.protegidos.length ? `Algunos ingredientes no cambian con la raci\xF3n (como fruta, verdura, l\xE1cteos o condimentos); aqu\xED ${datos.protegidos.join(", ")} mantiene${datos.protegidos.length > 1 ? "n" : ""} sus gramos. Por eso ${f(datos.kcalResultante)} kcal es una cifra aproximada.` : "Al cambiar la raci\xF3n solo crecen la base, la prote\xEDna y el aceite; lo dem\xE1s no cambia. Las kcal son aproximadas.",
+        "Es una receta de ejemplo, para orientarte."
       ]
     };
   }
@@ -6346,10 +6345,10 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     }
     const avisos = [];
     if (desviacion > slot.kcalObjetivo * 0.1) {
-      avisos.push(`se queda a ${desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun subiendo o bajando la raci\xF3n todo lo que permiten los topes del m\xE9todo (no cabe en una raci\xF3n normal: reparte lo que falta con otras comidas, cierra con postre o cambia el plato)`);
+      avisos.push(`se queda a ${desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun subiendo o bajando la raci\xF3n hasta donde dan las cantidades normales (no cabe en una raci\xF3n normal: reparte lo que falta con otras comidas, cierra con postre o cambia el plato)`);
     }
     if (protegidos.length && factorRedondeado !== 1) {
-      avisos.push(`${protegidos.join(", ")} no se escala${protegidos.length > 1 ? "n" : ""} (protegido): las kcal y macros del plato son aproximados`);
+      avisos.push(`las kcal y macros de este plato son aproximados, porque ${protegidos.join(", ")} no cambia${protegidos.length > 1 ? "n" : ""} con la raci\xF3n`);
     }
     return { receta: r, racionAjustada: factorRedondeado, kcalResultante, desviacion, protegidosSinEscalar: protegidos, avisos };
   }
@@ -6686,7 +6685,7 @@ r43,aceite de oliva,10`;
   }
 
   // src/motor/competicion-semana.ts
-  var NOTA_PAUTA_ORIENTATIVA = "Pauta orientativa, pendiente de validar por Pablo.";
+  var NOTA_PAUTA_ORIENTATIVA = "Pauta orientativa.";
   var ETIQUETA_FASE = {
     descarga: "Descarga",
     previa: "Previa",
@@ -6927,7 +6926,7 @@ r43,aceite de oliva,10`;
   }
 
   // src/motor/dia-competicion.ts
-  var NOTA_PAUTA = "Pauta orientativa, pendiente de validar por Pablo.";
+  var NOTA_PAUTA = "Pauta orientativa.";
   var aMinutos2 = (hora) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
   var aHoraTexto = (min) => {
     const m = (Math.round(min) % 1440 + 1440) % 1440;
@@ -8969,7 +8968,7 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
       }
       const servido = sumar();
       const cuadrado = Math.abs(objetivo - servido) <= margen || objetivo === 0;
-      const aviso = cuadrado ? void 0 : `${dia}: ${objetivo - servido > 0 ? "faltan" : "sobran"} ${Math.abs(Math.round(objetivo - servido))} kcal del d\xEDa (objetivo ${Math.round(objetivo)}, servido ${Math.round(servido)}) con cantidades normales. Se puede repartir en otra toma, cerrar con un postre o cambiar alg\xFAn plato; no se infla nada.`;
+      const aviso = cuadrado ? void 0 : objetivo > servido ? `${dia}: faltan ${Math.round(objetivo - servido)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.` : `${dia}: sobran ${Math.round(servido - objetivo)} kcal del d\xEDa con cantidades normales. Si quieres, cambia alg\xFAn plato por otro m\xE1s ligero.`;
       if (aviso) avisos.push(aviso);
       dias.push({ dia, objetivo: Math.round(objetivo), servidoAntes: Math.round(antes), servido: Math.round(servido), cuadrado, ...aviso ? { aviso } : {} });
     }

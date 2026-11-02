@@ -1085,7 +1085,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       bloqueComida = `
         <div class="hoy-bloque destacado hoy-toca">
           <h3>${tocaAhora ? 'Ahora' : 'Siguiente'} · ${nombreComida} · ${horaDecimalATexto(siguiente.hora)}</h3>
-          ${asignada ? `<div class="hoy-plato${partesPlato.length > 1 ? ' hoy-plato-menu' : ''}">${partesPlato.map((p) => `<span>${escaparHtml(p)}</span>`).join(' ')} <span class="etq-ejemplo">EJEMPLO</span></div>
+          ${asignada ? `<div class="hoy-plato${partesPlato.length > 1 ? ' hoy-plato-menu' : ''}">${partesPlato.map((p) => `<span>${escaparHtml(p)}</span>`).join(' ')}</div>
           <div class="hoy-acciones">${accion('receta', 'Receta')}${accion('cantidades', 'Cantidades')}${accion('cambiar', 'Cambiar')}</div>
           <button type="button" class="hoy-hecha" data-franja="${siguiente.f.franja}" aria-label="Ya he comido: ${nombreComida.toLowerCase()} de hoy">Ya he comido</button>`
             : `<div class="error-inline" style="margin:0">Sin receta de ejemplo que encaje${hueco ? `: ${escaparHtml(hueco.motivo)}` : ''}.</div>
@@ -1116,7 +1116,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         bloqueComida += `
         <div class="hoy-bloque destacado hoy-toca hoy-manana">
           <h3>Mañana · ${nombreM} · ${horaDecimalATexto(primera.hora)}</h3>
-          <div class="hoy-plato${partesM.length > 1 ? ' hoy-plato-menu' : ''}">${partesM.map((x) => `<span>${escaparHtml(x)}</span>`).join(' ')} <span class="etq-ejemplo">EJEMPLO</span></div>
+          <div class="hoy-plato${partesM.length > 1 ? ' hoy-plato-menu' : ''}">${partesM.map((x) => `<span>${escaparHtml(x)}</span>`).join(' ')}</div>
           <div class="hoy-acciones">${accionM('receta', 'Receta')}${accionM('cantidades', 'Cantidades')}${accionM('cambiar', 'Cambiar')}</div>
         </div>`;
       }
@@ -1285,7 +1285,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // El domingo, el resumen de la semana también en Hoy.
     const domingo = new Date(`${iso}T12:00:00`).getDay() === 0;
     const r = domingo ? Motor.resumenSemana(plan, apuntado, Motor.lunesDe(iso), iso) : undefined;
-    return `<div class="hoy-medallas" role="group" aria-label="Medallas de hoy">${fila}</div>${r ? `<p class="hoy-semana" id="hoy-semana">Esta semana: ${escaparHtml(r.texto)}. <strong>${escaparHtml(r.redonda ? T.semanaRedonda : T.animo)}</strong></p>` : ''}`;
+    return `<div class="hoy-medallas" role="group" aria-label="Medallas de hoy">${fila}</div><details class="saber-mas" id="hoy-medallas-info"><summary>¿Qué son estas medallas?</summary>${['completo', 'proteina', 'sincera'].map((k) => `<p class="hoy-nota"><strong>${escaparHtml(T.nombre[k])}:</strong> ${escaparHtml(T.explica[k])}</p>`).join('')}</details>${r ? `<p class="hoy-semana" id="hoy-semana">Esta semana: ${escaparHtml(r.texto)}. <strong>${escaparHtml(r.redonda ? T.semanaRedonda : T.animo)}</strong></p>` : ''}`;
   }
   function avisoMedalla(texto) {
     const a = document.getElementById('medallas-aviso');
@@ -1981,7 +1981,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       // #257 (punto 10): las kcal de lo que se come (las del plato), no las del objetivo de la comida.
       const cabecera = `<strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong><span class="fila-sub">${horaFranja(f.franja)}~${asignada ? asignada.kcalResultante : f.kcalAprox} kcal</span>`;
       return asignada
-        ? `<li class="fila"><span class="fila-icono ic-comida" aria-hidden="true"></span><div class="fila-texto">${cabecera}<span class="fila-sub">EJEMPLO: ${asignada.receta.nombre} (${Math.round(asignada.racionAjustada * 100)} %)</span>${conflicto}</div>${botonVerComida(dia, f.franja)}</li>`
+        ? `<li class="fila"><span class="fila-icono ic-comida" aria-hidden="true"></span><div class="fila-texto">${cabecera}<span class="fila-sub">${asignada.receta.nombre} (${escaparHtml(Motor.racionEnPalabras(asignada.racionAjustada))})</span>${conflicto}</div>${botonVerComida(dia, f.franja)}</li>`
         : `<li class="fila hueco"><span class="fila-icono ic-aviso" aria-hidden="true"></span><div class="fila-texto">${cabecera}<span class="fila-aviso">Sin receta de ejemplo que encaje.</span>${conflicto}</div>${botonVerComida(dia, f.franja)}</li>`;
     }).join('') : '<li>Sin comidas activas este día.</li>';
 
@@ -2335,7 +2335,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           dia: d.dia, franja: f.franja, nombreFranja: NOMBRE_FRANJA_ICS[f.franja] ?? f.franja,
           hora: x && x.hora !== undefined ? horaDecimalATexto(x.hora) : undefined,
           detalle: asignada
-            ? `EJEMPLO: ${asignada.receta.nombre} (${Math.round(asignada.racionAjustada * 100)} %) · ~${asignada.kcalResultante} kcal`
+            ? `${asignada.receta.nombre} (${Motor.racionEnPalabras(asignada.racionAjustada)}) · ~${asignada.kcalResultante} kcal`
             : `~${f.kcalAprox} kcal (sin receta de ejemplo asignada)`,
         });
       });
@@ -3032,7 +3032,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
 
     document.getElementById('lista-compra').innerHTML = `
       <h2>Lista de la compra</h2>
-      <p class="una-linea">Hecha con las recetas de EJEMPLO de tu semana, no definitivas.</p>
+      <p class="una-linea">Hecha con las recetas de tu semana.</p>
       <details class="saber-mas"><summary>Saber más</summary><p>Marca lo que ya has comprado o tienes en casa (el pan olvidado en el congelador también cuenta). Si después cambia la cantidad que hace falta (otra receta, otros días), te avisamos en lugar de darlo por cubierto. «Dieta» es lo que pide el plan; «comprar» está redondeado hacia arriba.</p></details>
       ${periodoDietaHtml()}
       ${proximaHtml}
@@ -3272,7 +3272,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         const c = verCocido && Motor.pesoCocido(i.nombre, i.gramosRacion);
         return `
         <li class="dc-ing">
-          <span class="dc-ing-nombre">${escaparHtml(i.nombre)}${i.protegido ? ' <small class="dc-ing-nota">cantidad fija</small>' : ''}${avisoGlutenHtml(i.nombre)}</span>
+          <span class="dc-ing-nombre">${escaparHtml(i.nombre)}${avisoGlutenHtml(i.nombre)}</span>
           <span class="dc-ing-gramos">${String(i.gramosRacion).replace('.', ',')} g${medidaAlLado(i.nombre, i.gramosRacion)}${c ?` <small class="dc-cocido">≈ ${c.gramos} g cocido</small>` : ''}</span>
           <span class="dc-ing-compra">${enCompra ? `en la compra de la semana: ${escaparHtml(comprados.get(i.nombre) ?? '—')}` : 'día fuera de la compra'}</span>
         </li>`;
@@ -3297,9 +3297,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           </tbody>
         </table>
         ${asignada.ajusteDia ? `<p class="dc-nota">⚖️ ${escaparHtml(asignada.ajusteDia.motivo)}</p>` : ''}
-        <p class="dc-nota">La receta usa valores declarados (ración base ${asignada.receta.kcal} kcal), no medidos: sirve para acercarse a las kcal, no para clavar los macros.${asignada.protegidosSinEscalar && asignada.protegidosSinEscalar.length ? ` ${escaparHtml(asignada.protegidosSinEscalar.join(', '))} no se reescala${asignada.protegidosSinEscalar.length > 1 ? 'n' : ''}, así que las cifras son aproximadas.` : ''}</p>`;
+        <p class="dc-nota">Las cifras de la receta son aproximadas: sirven para acercarse a las kcal, no para clavar los macros.</p>`;
       receta = `
-        <h3 class="dc-plato">${escaparHtml(asignada.receta.nombre)} <span class="etq-ejemplo">EJEMPLO</span> <span class="dc-racion">${escaparHtml(Motor.racionEnPalabras(asignada.racionAjustada))}</span></h3>
+        <h3 class="dc-plato">${escaparHtml(asignada.receta.nombre)} <span class="dc-racion">${escaparHtml(Motor.racionEnPalabras(asignada.racionAjustada))}</span></h3>
         ${vistas}
         <div class="dc-parte" data-parte="cantidades"${vistaDetalle === 'cantidades' ? '' : ' hidden'}>
         <div class="dc-ings-cab"><span>Ingrediente</span><span>Lo que comes</span><span>Lo que compras</span></div>
@@ -3434,7 +3434,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const PRIMERAS_ALT = 8;
     const tarjetas = alternativas.map((a, i) => `
       <li class="alt-card"${i >= PRIMERAS_ALT ? ' hidden data-mas-alt' : ''}>
-        <div class="titulo">${escaparHtml(a.receta.nombre)} <span class="rec-etiqueta">EJEMPLO</span></div>
+        <div class="titulo">${escaparHtml(a.receta.nombre)}</div>
         <div class="dato">~${a.kcalResultante} kcal</div>
         ${a.avisos.length ? `<details class="saber-mas"><summary>Aviso sobre este plato</summary>${a.avisos.map((x) => `<div class="aviso">⚠️ ${escaparHtml(x)}.</div>`).join('')}</details>` : ''}
         <div class="alt-acciones"><button type="button" class="btn-secundario alt-previsualizar" data-i="${i}" aria-label="Ver cómo quedaría: ${escaparHtml(a.receta.nombre)}">Ver cómo quedaría</button></div>
@@ -3626,10 +3626,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const cambios = [...new Set([...la.keys(), ...ld.keys()])].map((n) => [n, (ld.get(n) ?? 0) - (la.get(n) ?? 0)]).filter(([, d]) => Math.abs(d) > 0.05)
       .map(([n, d]) => `<li>${escaparHtml(n)}: ${d > 0 ? '+' : '−'}${String(Math.abs(Math.round(d * 10) / 10)).replace('.', ',')} g</li>`).join('');
     const ings = Motor.ingredientesDeLaRacion(alt.receta, alt.racionAjustada, Motor.noSeReescala)
-      .map((i) => `<li>${escaparHtml(i.nombre)}: <strong>${String(i.gramosRacion).replace('.', ',')} g</strong>${i.protegido ? ' (no se escala)' : ''}${avisoGlutenHtml(i.nombre)}</li>`).join(''); // #256.6: el sello, también aquí
+      .map((i) => `<li>${escaparHtml(i.nombre)}: <strong>${String(i.gramosRacion).replace('.', ',')} g</strong>${avisoGlutenHtml(i.nombre)}</li>`).join(''); // #256.6: el sello, también aquí
     document.getElementById('alt-previa').innerHTML = `
       <div class="cambio-zona" style="margin-top:0.8rem" tabindex="-1" id="alt-previa-caja">
-        <strong>Así quedaría: ${escaparHtml(alt.receta.nombre)} (EJEMPLO, ${escaparHtml(Motor.racionEnPalabras(alt.racionAjustada))})</strong>
+        <strong>Así quedaría: ${escaparHtml(alt.receta.nombre)} (${escaparHtml(Motor.racionEnPalabras(alt.racionAjustada))})</strong>
         <p style="margin:0.3rem 0">Ingredientes de esta comida:</p><ul class="resumen-lista">${ings}</ul>
         <p style="margin:0.3rem 0">Efecto en la compra (días elegidos, gramos de la dieta antes de redondear): ${cambios ? '' : 'sin cambios.'}</p>
         ${cambios ? `<ul class="resumen-lista">${cambios}</ul>` : ''}
@@ -3894,9 +3894,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             : '';
           const cambio = x.kcalDespues !== x.kcalAntes || x.hidratoDespues !== x.hidratoAntes
             ? `${x.kcalAntes} → <strong>${x.kcalDespues}</strong> kcal · H ${x.hidratoAntes} → <strong>${x.hidratoDespues}</strong> g` : 'sin cambio de cifras';
-          return `<li><strong>${x.dia} · ${Motor.ETIQUETA_FASE[x.fase]}</strong>: ${cambio}.<br><span style="color:var(--gris)">${x.motivos.map(escaparHtml).join('; ')}${escaparHtml(faltaTxt)}</span></li>`;
+          return `<li><strong>${NOMBRE_DIA_LARGO[x.dia] ?? x.dia} · ${Motor.ETIQUETA_FASE[x.fase]}</strong>: ${cambio}.<br><span style="color:var(--gris)">${x.motivos.map(escaparHtml).join('; ')}${escaparHtml(faltaTxt)}</span></li>`;
         }).join('');
-        partes.push(`<details class="plegable" open><summary>Qué cambia esta semana</summary><ul class="resumen-lista">${filas}</ul><p class="subt" style="font-size:0.8rem">${escaparHtml(Motor.NOTA_PAUTA_ORIENTATIVA)}</p></details>`);
+        partes.push(`<details class="plegable" open><summary>Qué cambia esta semana por tu competición</summary><ul class="resumen-lista">${filas}</ul><p class="subt" style="font-size:0.8rem">${escaparHtml(Motor.NOTA_PAUTA_ORIENTATIVA)}</p></details>`);
       }
       cajaComp.innerHTML = partes.join('');
     }
@@ -3928,7 +3928,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           <div class="receta-franja hueco">⚠️ ${escaparHtml(textoConflicto(c))}
             <button type="button" class="hor-ir" data-dia="${d.dia}">Editar horario de este día</button></div>`).join('');
         const recetaHtml = asignada
-          ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong> <span class="etq-ejemplo">EJEMPLO</span>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}${asignada.fijada ? ' <span class="etq-pedido">📌 fijada</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div><button type="button" class="btn-texto fijar-btn" data-dia="${d.dia}" data-franja="${f.franja}">${semanaFija.has(`${d.dia}|${f.franja}`) ? '📌 Quitar fijación' : '📌 Fijar'}</button></div>`
+          ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}${asignada.fijada ? ' <span class="etq-pedido">📌 fijada</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div><button type="button" class="btn-texto fijar-btn" data-dia="${d.dia}" data-franja="${f.franja}">${semanaFija.has(`${d.dia}|${f.franja}`) ? '📌 Quitar fijación' : '📌 Fijar'}</button></div>`
           : `<div class="receta-franja hueco">⚠️ Sin receta de ejemplo que encaje${hueco ? `: ${escaparHtml(hueco.motivo)}` : ''}</div>`;
         return `
           <div class="franja-reparto-card ${f.rol !== 'normal' ? 'destacada' : ''}">
@@ -4207,6 +4207,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('cabecera-impresion').innerHTML = `
       <h1>Plan semanal</h1>
       <p>${escaparHtml(respuestas.peso)} kg · objetivo: ${escaparHtml(respuestas.objetivo)} · ${plan.kcalMedia} kcal/día de media</p>
+      <p>Recetas de EJEMPLO.</p>
     `;
 
     // Issue #18: si ya se estaban viendo los resultados (venimos de mover una sesión), no reiniciar el
@@ -4515,6 +4516,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
 
 // --- Issue #137: apartado de Fuentes al final, por tema y con el estado de cada referencia. ---
 (function pintarFuentes() {
+  // #284.3: solo en Perfil y plegadas; nunca al pie de cada pantalla ni debajo del freno o la derivación.
+  document.getElementById('perfil-menu')?.append(document.getElementById('fuentes'));
   const caja = document.getElementById('fuentes-lista');
   if (!caja || !Array.isArray(window.FUENTES)) return;
   const ESTADO = { publicada: 'Publicada · enlace comprobado', doi_aportado: 'DOI aportado · aún sin abrir', criterio_pablo: 'Criterio de Pablo, no un estudio', dato_ejemplo: 'Dato de EJEMPLO, sin validar' };
