@@ -6242,11 +6242,13 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     if (peso && peso > 0) return peso;
     return dia.hidratoGKg > 0 ? dia.hidratoG / dia.hidratoGKg : void 0;
   }
-  function hidratoQueToca(dia, peso) {
+  function rangoHidratoG(dia, peso) {
     const p = pesoDelDia(dia, peso);
-    if (!p) return "lo que toca a este tipo de d\xEDa";
-    const [a2, b] = dia.hidratoRecomendadoGKg.map((x) => Math.round(x * p / 5) * 5);
-    return `entre ${f(a2)} y ${f(b)} g de hidratos`;
+    return p ? dia.hidratoRecomendadoGKg.map((x) => Math.round(x * p / 5) * 5) : void 0;
+  }
+  function hidratoQueToca(dia, peso) {
+    const r = rangoHidratoG(dia, peso);
+    return r ? `entre ${f(r[0])} y ${f(r[1])} g de hidratos` : "lo que toca a este tipo de d\xEDa";
   }
   function explicarTipoDia(dia, peso) {
     const base = {
@@ -6297,9 +6299,10 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     };
   }
   function explicarHidrato(plan, dia, peso) {
-    const [a2, b] = dia.hidratoRecomendadoGKg;
     const hayAviso = plan.avisos.some((x) => x.codigo === "hidrato_bajo" && x.texto.startsWith(dia.dia));
-    const posicion = dia.hidratoGKg < a2 ? "por debajo de" : dia.hidratoGKg > b ? "por encima de" : "dentro de";
+    const [a2, b] = rangoHidratoG(dia, peso) ?? dia.hidratoRecomendadoGKg;
+    const valor = rangoHidratoG(dia, peso) ? Math.round(dia.hidratoG) : dia.hidratoGKg;
+    const posicion = valor < a2 ? "por debajo de" : valor > b ? "por encima de" : "dentro de";
     return {
       resumen: `El hidrato es lo que queda de las kcal del d\xEDa tras la prote\xEDna y la grasa: (${f(dia.kcal)} \u2212 4 \xD7 ${f(dia.proteinaG)} \u2212 9 \xD7 ${f(dia.grasaG)}) \xF7 4 = ${f(dia.hidratoG)} g.`,
       detalle: [
@@ -6319,7 +6322,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const esPrincipal = d.proteinaTipo === "principal";
     const sinCarga = franja.rol === "normal" && (contexto.tipoDia === "descanso" || contexto.tipoDia === "fuerza");
     const lineas = [
-      esPrincipal ? `Prote\xEDna (${f(franja.proteina)} g): las comidas principales (desayuno, comida y cena) se reparten la del d\xEDa (${f(contexto.proteinaDia)} g). Como referencia orientativa, hasta unos ${f(0.4 * contexto.pesoRef, 1)} g por comida principal; no es un m\xE1ximo absoluto.` : `Prote\xEDna (${f(franja.proteina)} g): media ma\xF1ana y merienda se reparten lo que sobra tras las principales, con un tope de 25 g cada una.`,
+      esPrincipal ? `Prote\xEDna (${f(franja.proteina)} g): las comidas principales (desayuno, comida y cena) se reparten la del d\xEDa (${f(contexto.proteinaDia)} g). Como referencia orientativa, hasta unos ${f(Math.round(0.4 * contexto.pesoRef / 5) * 5)} g por comida principal; no es un m\xE1ximo absoluto.` : `Prote\xEDna (${f(franja.proteina)} g): media ma\xF1ana y merienda se reparten lo que sobra tras las principales, con un tope de 25 g cada una.`,
       ...d.proteinaTopeSecundaria ? [esPrincipal ? `Las tomas secundarias (media ma\xF1ana y merienda) llegaron a su tope de 25 g y el sobrante volvi\xF3 a las comidas principales: por eso ${franja.proteina > 0.4 * contexto.pesoRef ? `esta principal pasa de los ${f(0.4 * contexto.pesoRef, 1)} g de referencia` : "esta principal lleva m\xE1s que sin ese tope"}.` : "Esta toma secundaria lleg\xF3 al tope de 25 g y el exceso se movi\xF3 a las comidas principales."] : [],
       // #260 (punto 30): en palabras («su parte del hidrato del día»), sin «peso de la franja × factor».
       `Hidrato (${f(franja.hidrato)} g): de los ${f(contexto.hidratoDia)} g del d\xEDa, a esta comida le toca su parte${d.factor !== 1 ? `, con un extra (\xD7${f(d.factor, 1)}) por el entreno` : ""}: ${f(franja.hidrato)} g.`,
