@@ -7139,11 +7139,17 @@ r43,aceite de oliva,10`;
   var VECES_HAMBRE_ALERTA = 3;
   var ACUSE_HAMBRE = "Anotado: la pr\xF3xima vez esta comida ser\xE1 m\xE1s abundante, con las mismas calor\xEDas.";
   var NOMBRE_FRANJA2 = { desayuno: "desayuno", media_manana: "media ma\xF1ana", comida: "comida", merienda: "merienda", cena: "cena" };
-  function acuseValoracion(valor, antes, despues, manual, avisaPablo = false) {
+  var SUBIDA_QUE_SE_NOTA = 1.05;
+  function acuseHambreSinCambio(peso, nivel, minimoBanda) {
+    const queda = `Anotado. La pr\xF3xima vez esta comida seguir\xE1 igual: ${peso >= minimoBanda ? `ya lleva bastante cantidad (unos ${Math.round(peso / 10) * 10} g)` : "con tus calor\xEDas no hemos encontrado un plato con m\xE1s cantidad"}.`;
+    return nivel >= 2 ? `${queda} Es lo m\xE1ximo que se puede subir con tus calor\xEDas: si te sigue pasando, com\xE9ntaselo a Pablo.` : `${queda} Si te vuelve a pasar, probaremos con un paso m\xE1s de cantidad, con las mismas calor\xEDas.`;
+  }
+  function acuseValoracion(valor, antes, despues, manual, avisaPablo = false, proxima) {
     let t2;
     if (valor === "bien") t2 = "Anotado. Seguimos con esta cantidad.";
     else if (valor === "hambre") {
-      t2 = despues > antes ? ACUSE_HAMBRE : manual ? "Anotado. La cantidad de estas comidas la tienes puesta a mano en Perfil: si quieres que sean m\xE1s abundantes, s\xFAbela all\xED." : "Anotado. Esta comida ya lleva la mayor cantidad posible con tus calor\xEDas.";
+      const seNota = !proxima || proxima.pesoDespues >= proxima.pesoAntes * SUBIDA_QUE_SE_NOTA;
+      t2 = despues > antes && !seNota ? acuseHambreSinCambio(proxima.pesoDespues, despues, proxima.minimoBanda) : despues > antes ? ACUSE_HAMBRE : manual ? "Anotado. La cantidad de estas comidas la tienes puesta a mano en Perfil: si quieres que sean m\xE1s abundantes, s\xFAbela all\xED." : "Anotado. Esta comida ya lleva la mayor cantidad posible con tus calor\xEDas.";
     } else {
       t2 = despues < antes ? "Anotado: la pr\xF3xima vez esta comida ser\xE1 m\xE1s concentrada, con las mismas calor\xEDas." : manual ? "Anotado. La cantidad de estas comidas la tienes puesta a mano en Perfil: si quieres que sean m\xE1s concentradas, b\xE1jala all\xED." : despues <= -2 ? "Anotado. Esta comida ya va lo m\xE1s concentrada posible con tus calor\xEDas." : "Anotado: si se repite, tus platos ser\xE1n m\xE1s concentrados, con las mismas calor\xEDas.";
     }

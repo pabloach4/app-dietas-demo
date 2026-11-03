@@ -1512,9 +1512,22 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   function guardarVolumen() { try { localStorage.setItem(CLAVE_VOLUMEN, JSON.stringify({ valoraciones, manual: nivelManual })); } catch { falloAlmacenamiento(); } }
   const nivelesVolumen = () => Motor.calcularNiveles(valoraciones, nivelManual);
   const NOMBRE_GRUPO_VOL = { desayuno: 'Desayuno', principal: 'Comida y cena', pequena: 'Media mañana y merienda' };
-  function cambioVolumen() {
+  // #285 punto 6: peso servido (g) de la próxima vez que toca esta comida en el plan vigente; undefined sin plan.
+  function pesoProximaComida(franja) {
+    const porId = new Map(RECETAS_EJEMPLO.map((r) => [r.id, r]));
+    const d = new Date();
+    for (let i = 1; i <= 7; i++) {
+      d.setDate(d.getDate() + 1);
+      const a = asignacionSemanaActual.asignaciones.find((x) => x.dia === LETRA_DIA_JS[d.getDay()] && x.franja === franja);
+      const r = a && Motor.recetaDeId(porId, a.receta);
+      if (r) return Motor.pesoServido(r.ingredientes.map((n) => ({ nombre: n.nombre, gramos: n.gramos * a.racionAjustada })));
+    }
+    return undefined;
+  }
+  function cambioVolumen(trasRehacerPlan) {
     guardarVolumen();
     if (vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // el reparto se rehace con el nuevo nivel
+    if (trasRehacerPlan) trasRehacerPlan();
     pintarVolumenPerfil();
     if (panelActual === 'hoy') pintarHoy();
   }
@@ -1610,9 +1623,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // #265 G (punto 35): acuse visible y, a la 3.ª «hambre» de la semana (lunes a domingo), alerta para Pablo no prioritaria.
     const alerta = !yaIgual && b.dataset.valor === 'hambre' ? Motor.alertaHambre(valoraciones, iso, ahora.toISOString(), leerAlertas()) : undefined;
     if (alerta) { guardarAlertas(Motor.anadirAlerta(leerAlertas(), alerta)); pintarAlertas(); }
-    acuseVolumen = yaIgual ? null : { fecha: iso, texto: Motor.acuseValoracion(b.dataset.valor, antes, nivelesVolumen()[g], nivelManual[g] !== undefined, Boolean(alerta)) };
+    const pesoAntes = pesoProximaComida(b.dataset.franja);
     porValorar = null;
-    cambioVolumen();
+    cambioVolumen(() => { // el acuse se escribe con el plan ya rehecho: dice lo que de verdad cambia (#285 punto 6)
+      const pesoDespues = pesoProximaComida(b.dataset.franja);
+      const proxima = pesoAntes !== undefined && pesoDespues !== undefined ? { pesoAntes, pesoDespues, minimoBanda: Motor.bandaPesoServido(b.dataset.franja, nivelesVolumen()[g])[0] } : undefined;
+      acuseVolumen = yaIgual ? null : { fecha: iso, texto: Motor.acuseValoracion(b.dataset.valor, antes, nivelesVolumen()[g], nivelManual[g] !== undefined, Boolean(alerta), proxima) };
+    });
   });
   function pintarVolumenPerfil() {
     const caja = document.getElementById('volumen-perfil');
