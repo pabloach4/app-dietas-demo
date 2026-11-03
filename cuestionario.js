@@ -1727,7 +1727,19 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       if (!historialGustos.length) planAntesGustos = asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta }));
       historialGustos = nuevos;
       guardarGustos();
+      // #286 (último punto, de #285.12): con 4 elecciones cambiaban ~30 platos, porque se recalculaba sin conservar ninguno. Ahora se
+      // calcula el plan solo con los gustos y, en cada comida, se queda el plato nuevo únicamente si gusta claramente más que el de antes
+      // (al menos lo que suma ganar un duelo con todos sus rasgos: 1/LIMITE_AFINIDAD de la escala); el resto se conserva si sigue valiendo,
+      // como al recalcular por el peso (#259.27). Con cuatro elecciones casi todo sube un poco, y sin ese margen cambiaba media semana.
       recalcularConGustos([]);
+      const g = Motor.gustosPorReceta(RECETAS_EJEMPLO, historialGustos, ATRIBUTOS_RECETAS);
+      const gustoDe = (id) => { const xs = String(id).split('+'); return xs.reduce((t, x) => t + (g.get(x) ?? 0), 0) / xs.length; };
+      const conGustos = new Map(asignacionSemanaActual.asignaciones.map((a) => [`${a.dia}|${a.franja}`, a.receta]));
+      recalcularConGustos([...antes].map(([k, receta]) => {
+        const [dia, franja] = k.split('|');
+        const nueva = conGustos.get(k);
+        return { dia, franja, receta: nueva !== undefined && gustoDe(nueva) >= gustoDe(receta) + 1 / Motor.LIMITE_AFINIDAD ? nueva : receta };
+      }));
       // #285 punto 12 (Javi, 4 duelos): se dice cuántos platos han cambiado de verdad y, con pocas elecciones, cuántas faltan para notarlo.
       const cambian = asignacionSemanaActual.asignaciones.filter((a) => antes.has(`${a.dia}|${a.franja}`) && antes.get(`${a.dia}|${a.franja}`) !== a.receta).length;
       const n = nuevos.length;
