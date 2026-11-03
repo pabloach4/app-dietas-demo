@@ -1320,7 +1320,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     ver.checked = !medallasOcultas;
     if (!plan || medallasOcultas) { cont.innerHTML = medallasOcultas ? '<p class="subt">Ocultas. Marca la casilla para volver a verlas.</p>' : ''; return; }
     const T = Motor.TEXTOS_LOGROS;
-    const semanas = Motor.resumenCincoSemanas(plan, apuntado, iso);
+    // #286 (punto 21): quien acaba de empezar veía cinco semanas vacías; las anteriores solo salen si tienen algo apuntado.
+    const semanas = Motor.resumenCincoSemanas(plan, apuntado, iso).filter((s, i) => i === 0 || s.resumen);
     const fecha = (l) => `${Number(l.slice(8, 10))}/${Number(l.slice(5, 7))}`;
     cont.innerHTML = `<ul class="medallas-semanas" id="medallas-semanas">${semanas.map((s, i) => `<li><strong>${i === 0 ? 'Esta semana' : `Semana del ${fecha(s.lunes)}`}</strong>: ${s.resumen ? `${escaparHtml(s.resumen.texto)}${s.resumen.redonda ? ` · <strong>${escaparHtml(T.semanaRedonda)}</strong>` : ''}` : escaparHtml(T.sinRegistro)}</li>`).join('')}</ul>
       <p class="subt">${escaparHtml(T.animo)} Las medallas salen solas de «Ya he comido» y «He comido fuera». Cada día cuenta por sí solo.</p>`;
