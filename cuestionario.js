@@ -1783,8 +1783,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   try { hambreCena = Motor.hambreCenaValida(JSON.parse(localStorage.getItem(CLAVE_HAMBRE_CENA) || 'null')); } catch { /* sin almacenamiento o dato corrupto: sin contestar */ }
   function guardarHambreCena() { try { localStorage.setItem(CLAVE_HAMBRE_CENA, JSON.stringify(hambreCena ?? null)); } catch { falloAlmacenamiento(); } }
   function hayEntrenoNoche(sesiones, franjasDe) {
-    return sesiones.some((s) => Number.isFinite(s.horaInicio) && s.minutos > 0
-      && Motor.entrenoNocheAntesDeCena(franjasDe(s.dia), [{ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }]));
+    return sesiones.some((s) => {
+      if (!Number.isFinite(s.horaInicio) || !(s.minutos > 0)) return false;
+      const ses = [{ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }];
+      return Motor.entrenoNocheAntesDeCena(Motor.sacarTomasDeSesiones(franjasDe(s.dia), ses).franjas, ses); // #285 punto 7: una cena dentro del entreno pasa a después
+    });
   }
   function pintarHambreCena() {
     const sesPlan = semanaActual ? semanaActual.perfil.sesiones ?? [] : [];
@@ -2699,7 +2702,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     } catch { falloAlmacenamiento(); /* solo dura esta sesión */ }
   }
   const diasHorarioAbiertos = new Set();
-  function franjasDelDia(dia) { return excepcionesHorario.get(dia) ?? franjasActuales ?? []; }
+  // #285 punto 7: el horario general, sin tomas dentro de las sesiones de ese día; lo que se fija a mano para un día manda.
+  function horarioGeneralDelDia(dia) {
+    const delPlan = semanaActual ? semanaActual.perfil.sesiones ?? [] : [];
+    const sesiones = sesionesTodasDelDia(dia, ultimasSesiones.map((s, i) => ({ ...s, dia: delPlan[i] ? delPlan[i].dia : s.dia })));
+    return Motor.sacarTomasDeSesiones(franjasActuales ?? [], sesiones);
+  }
+  function franjasDelDia(dia) { return excepcionesHorario.get(dia) ?? horarioGeneralDelDia(dia).franjas; }
   let diasAbiertos = new Set(); // qué tarjetas de día quedan desplegadas al volver a pintar
   const diasMasAbiertos = new Set(); // y en cuáles está abierto «Más opciones de este día» (porqué, contexto y horario)
   let diasContextoAbiertos = new Set(); // issue #37: qué formularios de "contexto del día" quedan desplegados
@@ -3762,6 +3771,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         ...(hambreCena ? { hambreCena } : {}), // #265 F
       });
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
+      if (!excepcionesHorario.has(d.dia)) horarioGeneralDelDia(d.dia).movidas.forEach((m) => avisosReparto.push(`${d.dia}: ${m.texto}`));
       reparto.franjas.forEach((f) => {
         slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()) });
         filasCSV.push({

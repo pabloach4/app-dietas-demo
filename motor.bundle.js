@@ -320,6 +320,7 @@ var Motor = (() => {
     revisarPlanPablo: () => revisarPlanPablo,
     revisarSiguienteGuardada: () => revisarSiguienteGuardada,
     rolIngrediente: () => rolIngrediente,
+    sacarTomasDeSesiones: () => sacarTomasDeSesiones,
     semanaDeLaDieta: () => semanaDeLaDieta,
     semanasValidas: () => semanasValidas,
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
@@ -2124,6 +2125,26 @@ zumo de lim\xF3n,sin_gluten_natural,no,"fruta fresca exprimida, sin gluten por n
       return `${lista.charAt(0).toUpperCase()}${lista.slice(1)}: ${k}`;
     });
   }
+  function sacarTomasDeSesiones(franjas, sesiones) {
+    const movidas = [];
+    const horas = /* @__PURE__ */ new Map();
+    const conHora = franjas.filter((f2) => typeof f2.hora === "number").sort((a2, b) => a2.hora - b.hora);
+    conHora.forEach((f2, i) => {
+      const anterior = i > 0 ? horas.get(conHora[i - 1]) : -Infinity;
+      const s = sesiones.find((x) => f2.hora >= x.inicio && f2.hora < x.fin);
+      if (!s) {
+        horas.set(f2, f2.hora);
+        return;
+      }
+      let a2 = s.fin;
+      for (let otra = sesiones.find((x) => a2 >= x.inicio && a2 < x.fin); otra; otra = sesiones.find((x) => a2 >= x.inicio && a2 < x.fin)) a2 = otra.fin;
+      const siguiente = conHora[i + 1]?.hora;
+      if (siguiente !== void 0 && a2 >= siguiente && s.inicio - 0.5 > anterior) a2 = s.inicio - 0.5;
+      horas.set(f2, a2);
+      movidas.push({ franja: f2.franja, de: f2.hora, a: a2, inicio: s.inicio, fin: s.fin, texto: `${NOMBRE_FRANJA[f2.franja] ?? f2.franja} pasa a las ${hhmm(a2)}: a las ${hhmm(f2.hora)} est\xE1s entrenando (de ${hhmm(s.inicio)} a ${hhmm(s.fin)}).` });
+    });
+    return { franjas: movidas.length ? franjas.map((f2) => horas.has(f2) ? { ...f2, hora: horas.get(f2) } : f2) : franjas, movidas };
+  }
   function choquesHorario(franjas, sesiones, nombre = (f2) => f2) {
     const hh = (h) => `${String(Math.floor(h + 1e-9) % 24).padStart(2, "0")}:${String(Math.round(h % 1 * 60) % 60).padStart(2, "0")}`;
     const conHora = franjas.filter((f2) => typeof f2.hora === "number").sort((a2, b) => a2.hora - b.hora);
@@ -3150,14 +3171,18 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     };
     const conMargen = asignarPasada(slots, recetas, opciones, true, componer);
     const lejos = (r) => r.avisos.filter((a3) => / se queda a \d+ kcal /.test(a3)).length;
-    if (!conMargen.resultado.huecos.length && !lejos(conMargen.resultado)) return conMargen.resultado;
+    if (!conMargen.resultado.huecos.length && !lejos(conMargen.resultado) && !conMargen.exceso) return conMargen.resultado;
     const sinMargen = asignarPasada(slots, recetas, opciones, false, componer);
+    if (!conMargen.resultado.huecos.length && !lejos(conMargen.resultado) && conMargen.exceso && sinMargen.exceso) {
+      const masMargen = asignarPasada(slots, recetas, opciones, true, componer, 2);
+      if (!masMargen.resultado.huecos.length && !lejos(masMargen.resultado) && !masMargen.exceso) return masMargen.resultado;
+    }
     const nota = (x) => [x.resultado.huecos.length, lejos(x.resultado), x.exceso];
     const [a2, b] = [nota(conMargen), nota(sinMargen)];
     const i = a2.findIndex((v, k) => v !== b[k]);
     return i >= 0 && a2[i] < b[i] ? conMargen.resultado : sinMargen.resultado;
   }
-  function asignarPasada(slots, recetas, opciones, conMargen, componer) {
+  function asignarPasada(slots, recetas, opciones, conMargen, componer, reservaBase = 1) {
     const maxRep = opciones.maxRepeticionesSemana ?? 2;
     const usos = /* @__PURE__ */ new Map();
     const asignaciones = [];
@@ -3331,7 +3356,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       const quedanCC = esCC ? cola.slice(iSlot).filter((s) => (s.franja === "comida" || s.franja === "cena") && libre(s)).length : 0;
       const faltaLegumbre = Math.max(0, MIN_LEGUMBRE - vecesLegumbre);
       const forzarLegumbre = faltaLegumbre > 0 && quedanCC <= 2 * faltaLegumbre + (conMargen ? 4 : 0);
-      const topeBase = conMargen ? MAX_BASE - 1 : MAX_BASE;
+      const topeBase = conMargen ? MAX_BASE - reservaBase : MAX_BASE;
       const basesOtra = otraDelDia ? basesDe(otraDelDia, catalogoPorId) : /* @__PURE__ */ new Set();
       let variedadCC = esCC;
       const violacionesE2 = (r) => {
