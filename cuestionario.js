@@ -3931,7 +3931,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         const conflictosHtml = reparto.conflictos.filter((c) => c.franja === f.franja).map((c) => `
           <div class="receta-franja hueco">⚠️ ${escaparHtml(textoConflicto(c))}
             <button type="button" class="hor-ir" data-dia="${d.dia}">Editar horario de este día</button></div>`).join('');
-        const recetaHtml = asignada
+        // #285 punto 5: lo anotado como comida fuera manda sobre la receta, igual que en el resumen del día.
+        const fueraFranja = comidasFuera.find((x) => x.fecha === fechaProximaDe(d.dia) && x.franja === f.franja);
+        const recetaHtml = fueraFranja
+          ? `<div class="receta-franja fuera-marca">🍴 <strong>${fueraFranja.prevista ? 'Vas a comer fuera' : 'Comida fuera'}</strong>${fueraFranja.noSe ? ': todavía sin decidir' : `: ${escaparHtml(fueraFranja.texto)}`}<div class="receta-dato">${fueraFranja.kcal !== undefined ? `~${fueraFranja.kcal} kcal` : fueraFranja.noSe ? `cuenta como ~${f.kcalAprox} kcal de tu plan` : 'kcal sin apuntar'}</div></div>`
+          : asignada
           ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}${asignada.fijada ? ' <span class="etq-pedido">📌 fijada</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div><button type="button" class="btn-texto fijar-btn" data-dia="${d.dia}" data-franja="${f.franja}">${semanaFija.has(`${d.dia}|${f.franja}`) ? '📌 Quitar fijación' : '📌 Fijar'}</button></div>`
           : `<div class="receta-franja hueco">⚠️ Sin receta de ejemplo que encaje${hueco ? `: ${escaparHtml(hueco.motivo)}` : ''}</div>`;
         return `
