@@ -1155,6 +1155,11 @@ reques\xF3n,sin_gluten_natural,no,"leche o derivado natural sin azucarar ni sabo
 semillas de calabaza,sin_gluten_natural,no,"semilla natural, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 semillas de girasol,sin_gluten_natural,no,"semilla natural, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 zumo de lim\xF3n,sin_gluten_natural,no,"fruta fresca exprimida, sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+mermelada,riesgo,si,"producto elaborado: la lista de ingredientes de la mermelada de fresa Hacendado (fresa, az\xFAcar, pectina, \xE1cido c\xEDtrico, concentrados de zanahoria y c\xE1rtamo) no incluye cereal con gluten, pero \xABsin gluten\xBB exige etiqueta del envase",https://tienda.mercadona.es/product/86755/mermelada-fresa-hacendado-tarro
+az\xFAcar,sin_gluten_natural,no,"ingrediente \xFAnico (az\xFAcar blanco), sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+crema de arroz,riesgo,si,"producto elaborado: la papilla Hero (harina de arroz 99 %, minerales, aroma natural, vitaminas) se anuncia sin gluten pero puede contener leche; hace falta etiqueta y no equivale a la crema de arroz USDA",https://tienda.mercadona.es/product/9579/papilla-sin-gluten-crema-arroz-hero-baby-4-meses-0-azucares-anadidos-caja
+bagel,con_gluten,no,"trigo (la ficha Hacendado declara cereales con gluten y trigo; cereal con gluten, anexo II RE 1169/2011)",https://tienda.mercadona.es/product/23843/pan-bagel-hacendado-paquete
+zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendado es zumo de naranja 100 % y vitamina C; sin gluten por naturaleza (FACE: gen\xE9rico),https://tienda.mercadona.es/product/39010/zumo-pura-naranja-hacendado-brick
 `;
 
   // src/motor/gluten.ts
@@ -3375,7 +3380,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       const limitada = esFranjaConLimiteVariedad(slot.franja);
       const ap = opciones.alergiasPreferencias;
       const franjaVale = (r) => r.franjas.includes(slot.franja) || r.tipoPlato === "postre" && (r.franjas.includes("merienda") || r.franjas.includes("media_manana"));
-      const diaVale = (r) => !(r.usoDia === "carga" && !slot.cargaAlta);
+      const diaVale = (r) => !(r.usoDia === "carga" && !slot.cargaAlta && !slot.desayunoCarrera);
       const vale = (r) => franjaVale(r) && diaVale(r) && !fibraExcede(slot, r) && (!ap || evaluarCompatibilidad(r, ap).compatible);
       const esUnico = (r) => !r.tipoPlato || r.tipoPlato === "unico" || r.tipoPlato === "postre" && slot.franja !== "comida" && slot.franja !== "cena";
       const otraDelDia = otraComidaDelDia(slot);
@@ -4023,7 +4028,7 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
     verdura: [0.5, 20],
     fruta_lacteo: [0.5, 20],
     grasa: [1, 30],
-    condimento: [1, 80],
+    condimento: [0.5, 80],
     aromatico: [1, 80]
   };
   var BANDA_L = [0.5, 15];
@@ -4235,6 +4240,11 @@ can\xF3nigos,kg,9.60,"lavados, paquete 125 g; a\xF1adido por el bucle (#265 J, r
 legumbre seca,kg,2.15,"media de lenteja seca (1.85) y alubia blanca seca (2.45) de esta tabla; el garbanzo seco no est\xE1 en ella; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/5330/lenteja-pardina-hacendado-categoria-extra-paquete ; https://tienda.mercadona.es/product/5124/alubia-blanca-hacendado-categoria-extra-paquete,2026-10-26
 legumbre cocida,kg,2.04,"media de lenteja cocida (2.25), garbanzo cocido (2.00) y alubia blanca cocida (1.88) de esta tabla; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/26030/lenteja-cocida-hacendado-tarro ; https://tienda.mercadona.es/product/26029/garbanzo-cocido-hacendado-tarro ; https://tienda.mercadona.es/product/26019/alubia-cocida-blanca-hacendado-tarro,2026-10-26
 zumo de lim\xF3n,kg,2.30,"se usa el zumo de lim\xF3n exprimido; precio de limones en malla de 1 kg",Mercadona: https://tienda.mercadona.es/product/3236/limones-malla,2026-10-26
+mermelada,kg,3.63,"mermelada de fresa Hacendado, tarro 400 g a 1,45 EUR (3,625 EUR/kg)",Mercadona: https://tienda.mercadona.es/product/86755/mermelada-fresa-hacendado-tarro,2026-11-03
+az\xFAcar,kg,0.90,"az\xFAcar blanco Hacendado, paquete 1 kg",Mercadona: https://tienda.mercadona.es/product/19897/azucar-blanco-hacendado-paquete,2026-11-03
+bagel,kg,4.73,"pan bagel Hacendado, paquete 4 ud (300 g) a 1,42 EUR",Mercadona: https://tienda.mercadona.es/product/23843/pan-bagel-hacendado-paquete,2026-11-03
+crema de arroz,kg,13.41,"SOLO CANDIDATO: papilla crema de arroz Hero Solo (producto infantil, caja 220 g a 2,95 EUR); no hay crema de arroz para adulto en Mercadona. Equivalencia con USDA \xABCream of Rice\xBB sin comprobar: recalcular macros con la etiqueta",Mercadona: https://tienda.mercadona.es/product/9579/papilla-sin-gluten-crema-arroz-hero-baby-4-meses-0-azucares-anadidos-caja,2026-11-03
+zumo de naranja,l,1.85,"zumo pura naranja Hacendado, brik 1 l",Mercadona: https://tienda.mercadona.es/product/39010/zumo-pura-naranja-hacendado-brick,2026-11-03
 `;
 
   // src/motor/atributos-datos.ts
@@ -4613,6 +4623,13 @@ r40,plancha,bocadillo_tostada,caliente,no
 r41,cocido,pasta,caliente,no
 r42,sarten,bocadillo_tostada,caliente,no
 r43,cocido,guiso,cuchara_caliente,no
+R478,crudo,bocadillo_tostada,frio,no
+R479,cocido,bol_desayuno,cuchara_caliente,no
+R480,cocido,bol_desayuno,cuchara_caliente,no
+R481,cocido,bol_desayuno,cuchara_caliente,no
+R482,cocido,bol_desayuno,cuchara_caliente,no
+R483,crudo,bocadillo_tostada,frio,no
+R484,crudo,bocadillo_tostada,frio,no
 `;
 
   // src/motor/atributos-recetas.ts
@@ -5256,6 +5273,11 @@ tortita de ma\xEDz,despensa,no,"Seca; guardar cerrada en lugar fresco y seco par
 polenta,despensa,no,"Harina seca; guardar cerrada en lugar fresco y seco. Una vez cocida requiere fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
 copos de avena sin gluten,despensa,no,"Secos; guardar cerrados en lugar fresco y seco. Una vez cocinados requieren fr\xEDo. No se propone congelaci\xF3n para esta presentaci\xF3n.",https://www.ocu.org/alimentacion/platos-preparados/consejos/alimentos-basicos-despensa,no
 zumo de lim\xF3n,nevera,si,"Reci\xE9n exprimido, en recipiente cerrado; consumir pronto. Congelable en porciones (cubitera) para uso en cocina.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf;https://www.aesan.gob.es/AECOSAN/web/para_el_consumidor/ampliacion/colocar_segura.htm,no
+mermelada,despensa,no,"Mermelada de fresa Hacendado: almacenar a temperatura ambiente; una vez abierto, guardar en el frigor\xEDfico (instrucci\xF3n del fabricante en la ficha). No se propone congelaci\xF3n para esta presentaci\xF3n.",https://tienda.mercadona.es/product/86755/mermelada-fresa-hacendado-tarro,no
+az\xFAcar,despensa,no,Az\xFAcar blanco Hacendado: conservar en lugar seco y fresco; la ficha indica que no caduca. No se propone congelaci\xF3n.,https://tienda.mercadona.es/product/19897/azucar-blanco-hacendado-paquete,no
+bagel,despensa,si,"Pan Bagel Hacendado: conservar en lugar fresco y seco (ficha). Para consumo cercano; si se congela, hacerlo en porciones. No garantiza varias semanas a temperatura ambiente.",https://tienda.mercadona.es/product/23843/pan-bagel-hacendado-paquete;https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf,no
+crema de arroz,despensa,no,"Producto candidato Mercadona (papilla infantil, ver precios): en lugar fresco y seco, cerrar bien la bolsa; una vez abierta, consumir en 1 mes (ficha del fabricante). Una vez preparada con leche o bebida requiere fr\xEDo. No se propone congelaci\xF3n.",https://tienda.mercadona.es/product/9579/papilla-sin-gluten-crema-arroz-hero-baby-4-meses-0-azucares-anadidos-caja,no
+zumo de naranja,despensa,no,"Zumo pura naranja Hacendado (brik): cerrado, en lugar fresco y seco; una vez abierto, nevera y consumir antes de 4 d\xEDas (ficha). No se propone congelaci\xF3n.",https://tienda.mercadona.es/product/39010/zumo-pura-naranja-hacendado-brick,no
 `;
 
   // src/motor/limites-ingredientes-datos.ts
@@ -5367,6 +5389,11 @@ tortita de ma\xEDz,10,60,pan_plano,"https://estilosdevidasaludable.sanidad.gob.e
 polenta,30,150,cereal_seco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | Harina de ma\xEDz en seco antes de cocer; misma banda que los cereales secos del cat\xE1logo (30-150 g). | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 copos de avena sin gluten,20,150,avena,"https://www.bda.uk.com/resource/food-facts-portion-sizes.html | Seco; misma banda que los copos de avena del cat\xE1logo (20-150 g): misma semilla en su versi\xF3n certificada sin gluten. | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 zumo de lim\xF3n,5,30,condimento,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Peso a\xF1adido neto para ali\xF1ar o rociar un plato de una persona: de una cucharada (5-10 g) al zumo de un lim\xF3n (~30 g). Condimento: no escalar para completar kcal (#264, R61 lleva 20 g). | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
+mermelada,13,25,endulzante,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Peso a\xF1adido; m\xEDnimo 13 g como cucharada de postre, m\xE1ximo 25 g como cucharada sopera (porci\xF3n de cafeter\xEDa 15 g). Una cucharada para untar, no 40 g. Condimento: no escalar para completar kcal. | Propuesta de Instinct (#293), activada por el bucle en #292; fuente cotejada.",estimacion
+az\xFAcar,4,12,endulzante,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Peso a\xF1adido; m\xEDnimo 4 g (cucharada de caf\xE9 colmada), m\xE1ximo 12 g (cucharada sopera rasa; un sobre son 7 g). No escalar para completar kcal. | Propuesta de Instinct (#293), activada por el bucle en #292; fuente cotejada.",estimacion
+bagel,40,150,pan,"Mercadona Pan Bagel Hacendado: paquete 300 g, 4 ud (75 g/ud) https://tienda.mercadona.es/product/23843/pan-bagel-hacendado-paquete | Tal cual; m\xEDnimo 40 g como medio bagel; m\xE1ximo 150 g conservado del m\xE9todo (familia \xABPan\xBB, 2 bagels de 75 g). | Propuesta de Instinct (#293), activada por el bucle en #292; fuente cotejada.",estimacion
+crema de arroz,30,150,cereal_seco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | En seco sin cocer; m\xEDnimo 30 g como media raci\xF3n de cereal seco; tope 150 g conservado del m\xE9todo (familia \xABCereal crudo\xBB). Producto concreto sin identificar para uso adulto: ver nota de precios. | Propuesta de Instinct (#293), activada por el bucle en #292; fuente cotejada.",estimacion
+zumo de naranja,100,300,zumo,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Tal cual; vaso = 200 g; m\xEDnimo 100 g (medio vaso), m\xE1ximo 300 g (vaso y medio). El m\xE9todo no fija tope para zumo: es estimaci\xF3n de raci\xF3n, no l\xEDmite cl\xEDnico, y no se usa para completar kcal. | Propuesta de Instinct (#293), activada por el bucle en #292; fuente cotejada.",estimacion
 `;
 
   // src/motor/limites-ingredientes.ts
@@ -7670,7 +7697,14 @@ R473,Yogur de soja con compota de manzana y canela,media_manana;merienda,176,5.5
 R474,"Salteado de tofu firme con quinoa, calabac\xEDn y pimiento",cena,535,35.6,26.8,45.7,EJEMPLO,unico,10.13,tofu firme,quinoa,soja,si,si,si,si,no,25,nuevo,"Cocer la quinoa 15 minutos. Saltear el tofu en dados con el aceite, a\xF1adir el calabac\xEDn y el pimiento y saltear 8 minutos; mezclar con la quinoa. Pesar la quinoa en seco.",normal
 R475,Tempeh a la plancha con boniato asado y br\xF3coli,cena,503,27.7,21.5,57.8,EJEMPLO,unico,9.9,tempeh,boniato,soja,si,si,si,si,no,35,nuevo,Asar el boniato 30 minutos. Cocer el br\xF3coli al vapor y hacer el tempeh a la plancha con el aceite. Pesar el boniato en crudo.,normal
 R476,"Soja texturizada con tomate, calabac\xEDn y arroz",cena,415,26.5,11.6,55.4,EJEMPLO,unico,11.87,soja texturizada,arroz,soja,si,si,si,si,no,30,nuevo,"Hidratar la soja texturizada 15 minutos y escurrir. Hervir el arroz. Sofre\xEDr el calabac\xEDn, a\xF1adir la soja y el tomate y cocer 10 minutos; servir con el arroz. Pesar la soja y el arroz en seco.",normal
-R477,Crema de calabac\xEDn con tofu firme y pan sin gluten,cena,390,21.8,22.0,31.9,EJEMPLO,unico,6.45,tofu firme,pan,soja,si,si,si,si,no,25,nuevo,Cocer el calabac\xEDn y triturarlo con el aceite. Hacer el tofu a la plancha en dados y servir sobre la crema con el pan sin gluten tostado.,normal`;
+R477,Crema de calabac\xEDn con tofu firme y pan sin gluten,cena,390,21.8,22.0,31.9,EJEMPLO,unico,6.45,tofu firme,pan,soja,si,si,si,si,no,25,nuevo,Cocer el calabac\xEDn y triturarlo con el aceite. Hacer el tofu a la plancha en dados y servir sobre la crema con el pan sin gluten tostado.,normal
+R478,"Pan blanco con mermelada, miel y leche",desayuno,424,15.0,7.5,74.6,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,2.31,,cereal,gluten;l\xE1cteos,si,no,no,no,si,10,nuevo,Tostar o no el pan; untar la mermelada y la miel. Leche aparte.,carga
+R479,Arroz con leche grande y canela,desayuno,469,13.6,5.5,90.6,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,1.26,,cereal,l\xE1cteos,si,no,no,pendiente_ficha,si,25,nuevo,"Pesar el arroz seco y cocerlo en la leche a fuego suave hasta que est\xE9 hecho; a\xF1adir az\xFAcar, miel y canela.",carga
+R480,"Arroz con bebida de soja, az\xFAcar y canela",desayuno,456,13.5,4.9,88.1,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,2.74,,cereal,soja,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,si,25,nuevo,Pesar el arroz seco y cocerlo en la bebida de soja a fuego suave hasta que est\xE9 hecho; a\xF1adir az\xFAcar y canela.,carga
+R481,Crema de arroz con leche y miel,desayuno,472,13.0,5.3,92.0,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,0.55,,cereal,l\xE1cteos,si,no,no,pendiente_ficha,si,10,nuevo,Cocer la crema de arroz seca en la leche caliente removiendo hasta que espese; a\xF1adir az\xFAcar y miel.,carga
+R482,Crema de arroz con bebida de soja y az\xFAcar,desayuno,459,12.9,4.8,89.5,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,2.02,,cereal,soja,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,si,10,nuevo,Cocer la crema de arroz seca en la bebida de soja caliente removiendo hasta que espese; a\xF1adir el az\xFAcar.,carga
+R483,"Bagel con mermelada, miel y leche",desayuno,423,16.3,6.0,76.8,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,1.49,,pan,gluten;l\xE1cteos,si,no,no,no,si,5,nuevo,"Abrir el bagel, tostarlo si se quiere y untar mermelada y miel. Leche aparte.",carga
+R484,Pan blanco con pavo y zumo de naranja,desayuno,454,35.5,4.7,65.8,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,2.77,pechuga de pavo asada,pan,gluten,no,no,pendiente_ficha,no,si,5,nuevo,Rellenar el pan con el pavo en lonchas. Zumo aparte.,carga`;
   var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
 R01,garbanzo cocido,140,base,173757,peso cocido,
 R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
@@ -9034,7 +9068,34 @@ R476,aceite de oliva,10,grasa,171413,peso a\xF1adido,
 R477,calabac\xEDn,200,verdura,169291,peso crudo,
 R477,tofu firme,100,proteina,172475,peso crudo,
 R477,pan sin gluten,50,base,2707797,tal cual,
-R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
+R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,
+R478,pan blanco,75,base,174924,tal cual,
+R478,mermelada,25,condimento,169641,peso a\xF1adido,
+R478,miel,10,condimento,169640,peso a\xF1adido,
+R478,leche semidesnatada,250,fruta_lacteo,171267,tal cual,
+R479,arroz,75,base,169756,peso seco,
+R479,leche semidesnatada,250,fruta_lacteo,171267,tal cual,
+R479,az\xFAcar,10,condimento,169655,peso a\xF1adido,
+R479,miel,10,condimento,169640,peso a\xF1adido,
+R479,canela,0.5,condimento,171320,peso a\xF1adido,
+R480,arroz,75,base,169756,peso seco,
+R480,bebida de soja,250,fruta_lacteo,172446,tal cual,
+R480,az\xFAcar,12,condimento,169655,peso a\xF1adido,
+R480,canela,0.5,condimento,171320,peso a\xF1adido,
+R481,crema de arroz,75,base,173900,peso seco,
+R481,leche semidesnatada,250,fruta_lacteo,171267,tal cual,
+R481,az\xFAcar,10,condimento,169655,peso a\xF1adido,
+R481,miel,10,condimento,169640,peso a\xF1adido,
+R482,crema de arroz,75,base,173900,peso seco,
+R482,bebida de soja,250,fruta_lacteo,172446,tal cual,
+R482,az\xFAcar,12,condimento,169655,peso a\xF1adido,
+R483,bagel,75,base,174899,tal cual,
+R483,mermelada,25,condimento,169641,peso a\xF1adido,
+R483,miel,10,condimento,169640,peso a\xF1adido,
+R483,leche semidesnatada,250,fruta_lacteo,171267,tal cual,
+R484,pan blanco,75,base,174924,tal cual,
+R484,pechuga de pavo asada,90,proteina,171496,cocido,
+R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
 
   // src/motor/coherencia-nutricional.ts
   var TOLERANCIA_RELATIVA = 0.1;
