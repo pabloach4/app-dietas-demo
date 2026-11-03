@@ -3786,7 +3786,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       if (!excepcionesHorario.has(d.dia)) horarioGeneralDelDia(d.dia).movidas.forEach((m) => avisosReparto.push(`${d.dia}: ${m.texto}`));
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()) });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()), ...((() => { if (f.franja !== 'desayuno' || compPorDia.get(d.dia)?.fase !== 'competicion') return {}; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)); return hf === undefined || salida === undefined || hf < salida ? { desayunoCarrera: 'estricto' } : {}; })()) /* #285 punto 11: el desayuno de la carrera, con la regla de Pablo */ });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,
@@ -3990,17 +3990,27 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             <div class="franja-reparto-macros"><span><span class="chip chip-p" aria-hidden="true">P</span>${f.proteina} g<span class="sr-solo"> de proteína</span></span><span><span class="chip chip-g" aria-hidden="true">G</span>${f.grasa} g<span class="sr-solo"> de grasa</span></span><span><span class="chip chip-h" aria-hidden="true">H</span>${f.hidrato} g<span class="sr-solo"> de hidratos</span></span></div>
             <div class="franja-barra" aria-hidden="true"><span style="width:${pct}%"></span></div>
             ${recetaHtml}
+            ${(() => { // #285 punto 11: el desayuno de la carrera dice cuándo tomarlo (2-3 h antes de la salida) y qué lleva
+              if (!slotsSemana.some((x) => x.dia === d.dia && x.franja === f.franja && x.desayunoCarrera)) return '';
+              const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia));
+              const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora;
+              const justo = salida !== undefined && hf !== undefined && salida - hf < 2 ? ` A las ${horaDecimalATexto(hf)} queda poco margen: si puedes, adelántalo.` : '';
+              return `<p class="subt nota-desayuno-carrera" data-dia="${d.dia}">🏁 Desayuno de la carrera: tómalo 2-3 h antes de la salida${salida !== undefined ? ` (${horaDecimalATexto(salida)})` : ''}, con muchos hidratos y poca grasa y fibra.${justo}</p>`;
+            })()}
             ${conflictosHtml}
             ${botonVerComida(d.dia, f.franja)}
           </div>
         `;
       }).join('');
       const sesionesDelDia = sesiones.map((s, i) => ({ ...s, i })).filter((s) => s.dia === d.dia);
-      const moverHtml = sesionesDelDia.length ? `
+      // #285 punto 11: el día de la prueba, la prueba va primero y las sesiones de siempre dicen que ese día no cuentan (su gasto lo sustituye la prueba).
+      const pruebaHoy = compPorDia.get(d.dia)?.fase === 'competicion' ? compiteEseDia(d.dia).flatMap((c) => { const f = Motor.fechaDelDia(calInicio, d.dia); const ps = (c.pruebas ?? []).filter((p) => (p.fecha ?? c.fecha) === f); return ps.length ? ps.map((p) => `${c.nombre} · ${p.hora} · ${p.duracionMin}'`) : [c.nombre]; }) : [];
+      const pruebaHtml = pruebaHoy.length ? `<div class="dia-sesiones dia-prueba">${pruebaHoy.map((t) => `<div class="sesion-prueba">🏁 ${escaparHtml(t)}</div>`).join('')}</div>` : '';
+      const moverHtml = pruebaHtml + (sesionesDelDia.length ? `
         <div class="dia-sesiones">
           ${sesionesDelDia.map((s) => `
             <div class="sesion-mover">
-              <span>${escaparHtml(nombreSesion({ ...s, deporte: (ultimasSesiones[s.i] ?? {}).deporte }))} · ${s.minutos}'${notaSesionHtml({ nota: (ultimasSesiones[s.i] ?? {}).nota })}</span>
+              <span>${escaparHtml(nombreSesion({ ...s, deporte: (ultimasSesiones[s.i] ?? {}).deporte }))} · ${s.minutos}'${notaSesionHtml({ nota: (ultimasSesiones[s.i] ?? {}).nota })}${pruebaHoy.length ? ' <small class="sesion-no-cuenta">(ese día no cuenta: compites)</small>' : ''}</span>
               <label>mover a
                 <select class="mover-select" data-indice="${s.i}">
                   ${DIAS.map((dd) => `<option value="${dd}" ${dd === d.dia ? 'selected' : ''}>${dd}</option>`).join('')}
@@ -4009,7 +4019,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             </div>
           `).join('')}
         </div>
-      ` : '';
+      ` : '');
       const abierta = diasAbiertos.has(d.dia);
 
       // Issue #37: contexto de vida real del día (turno, táper, tiempo de cocina...). Solo una
@@ -4054,12 +4064,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           <div class="dia-cabecera">
             <div>
               <div class="dia-nombre">${diasConSesion.has(d.dia) ? `<span aria-hidden="true">${iconosDelDia(sesiones, d.dia)}</span> ` : ''}${NOMBRE_DIA_LARGO[d.dia] ?? d.dia}</div>
-              <div class="dia-tipo" data-tipo="${d.tipo}">${nombreTipoDia(d, hayEntrenoEl(d.dia))}${compPorDia.get(d.dia)?.fase ? ` · <span class="etq-fase">${Motor.ETIQUETA_FASE[compPorDia.get(d.dia).fase]}</span>` : ''}</div>
+              <div class="dia-tipo" data-tipo="${d.tipo}">${compPorDia.get(d.dia)?.fase === 'competicion' && compiteEseDia(d.dia).length ? `🏁 ${escaparHtml(compiteEseDia(d.dia).map((c) => Motor.NOMBRE_TIPO_COMPETICION[c.tipo ?? 'otra']).join(' + '))}` /* #285 punto 11: el día de la prueba dice la competición, no el tipo de entreno */ : nombreTipoDia(d, hayEntrenoEl(d.dia))}${compPorDia.get(d.dia)?.fase ? ` · <span class="etq-fase">${Motor.ETIQUETA_FASE[compPorDia.get(d.dia).fase]}</span>` : ''}</div>
             </div>
             <div class="dia-kcal">${d.kcal}<small style="font-size:0.55em;font-weight:400"> kcal</small></div>
             ${kcalFueraHtml(d.dia)}
           </div>
           <div class="dia-macros">P ${d.proteinaG} g · G ${d.grasaG} g · H ${d.hidratoG} g</div>
+          ${(() => { const cd = compPorDia.get(d.dia); if (!cd?.hidratoMinGKg || cd.fase === 'competicion') return ''; const n = Motor.notaHidratosCarga(d.hidratoG, Motor.hidratosServidosDia(cuadrado.asignaciones, recetasCuadre, d.dia)); return n ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(n)}</p>` : ''; })() /* #285 punto 11 */}
           ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
           ${reparto.tomaSugerida ? `<p class="subt toma-sugerida">Antes de entrenar a las ${escaparHtml(horaDecimalATexto(reparto.tomaSugerida.inicio))}: si te sienta bien, algo ligero 30-60 min antes, por ejemplo ${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)} (unas ${reparto.tomaSugerida.kcal} kcal). Es solo una sugerencia.</p>` : ''}
           ${badgesHtml}

@@ -38,6 +38,7 @@ var Motor = (() => {
     DIAS_AVISO_FIN: () => DIAS_AVISO_FIN,
     DIAS_CITA: () => DIAS_CITA,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
+    EJEMPLO_DESAYUNO_CARRERA: () => EJEMPLO_DESAYUNO_CARRERA,
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
     ENCIMAS_PAN: () => ENCIMAS_PAN,
     ETIQUETA_FASE: () => ETIQUETA_FASE,
@@ -73,6 +74,7 @@ var Motor = (() => {
     OPCIONES_GELES: () => OPCIONES_GELES,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
+    PARTE_MINIMA_HIDRATOS_CARGA: () => PARTE_MINIMA_HIDRATOS_CARGA,
     PORCION_COMESTIBLE_CSV: () => PORCION_COMESTIBLE_CSV,
     PRECIOS_CSV: () => PRECIOS_CSV,
     PREGUNTAS_CRIBADO: () => PREGUNTAS_CRIBADO,
@@ -250,6 +252,7 @@ var Motor = (() => {
     gustosPorReceta: () => gustosPorReceta,
     hambreCenaValida: () => hambreCenaValida,
     hambresDeLaSemana: () => hambresDeLaSemana,
+    hidratosServidosDia: () => hidratosServidosDia,
     historialGustosValido: () => historialGustosValido,
     historialPlanes: () => historialPlanes,
     horaDeGuardado: () => horaDeGuardado,
@@ -257,6 +260,7 @@ var Motor = (() => {
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
     ingredientesPrincipales: () => ingredientesPrincipales,
     inicioDeLaSiguiente: () => inicioDeLaSiguiente,
+    inicioPrimeraPruebaH: () => inicioPrimeraPruebaH,
     instantaneaLocal: () => instantaneaLocal,
     itemDesdeGramos: () => itemDesdeGramos,
     kcalConRacion: () => kcalConRacion,
@@ -284,9 +288,11 @@ var Motor = (() => {
     necesitaVentanaNube: () => necesitaVentanaNube,
     nivelVolumenCena: () => nivelVolumenCena,
     noSeReescala: () => noSeReescala,
+    noValeDesayunoCarrera: () => noValeDesayunoCarrera,
     normalizarBusqueda: () => normalizarBusqueda,
     normalizarSobras: () => normalizarSobras,
     normalizarTexto: () => normalizarTexto2,
+    notaHidratosCarga: () => notaHidratosCarga,
     notaTomaCorta: () => notaTomaCorta,
     nubeOfrecida: () => nubeOfrecida,
     ordenarCompeticiones: () => ordenarCompeticiones,
@@ -2234,8 +2240,8 @@ zumo de lim\xF3n,sin_gluten_natural,no,"fruta fresca exprimida, sin gluten por n
   function normalizarSinCache(s) {
     return Array.from(s.normalize("NFD")).filter((c2) => c2.codePointAt(0) < MARCA_DIACRITICA_MIN || c2.codePointAt(0) > MARCA_DIACRITICA_MAX).join("").toLowerCase();
   }
-  function stem(palabra) {
-    let s = palabra;
+  function stem(palabra2) {
+    let s = palabra2;
     if (s.endsWith("es") && s.length > 4) s = s.slice(0, -2);
     else if (s.endsWith("s") && s.length > 3) s = s.slice(0, -1);
     if (s.endsWith("e") && s.length > 4) s = s.slice(0, -1);
@@ -3000,6 +3006,34 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     return !p.con.length || encimasDe(r).some((e) => p.con.includes(e));
   }
 
+  // src/motor/desayuno-carrera.ts
+  var normalizar4 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  var HIDRATO_MIN_DESAYUNO_CARRERA = 0.55;
+  var GRASA_MAX_DESAYUNO_CARRERA = 0.25;
+  var VERDURA_MAX_DESAYUNO_CARRERA = 0.3;
+  var EJEMPLO_DESAYUNO_CARRERA = "tostadas con mermelada y pl\xE1tano, o arroz con leche";
+  var PESCADO = ["pescado", "atun", "salmon", "sardina", "caballa", "bonito", "merluza", "bacalao", "lubina", "dorada", "trucha", "boqueron", "anchoa", "gamba", "langostino", "marisco"];
+  var VERDURA = ["tomate", "pepino", "lechuga", "espinaca", "acelga", "rucula", "canonigo", "brocoli", "coliflor", "calabacin", "calabaza", "berenjena", "pimiento", "cebolla", "puerro", "zanahoria", "champinon", "seta", "esparrago", "alcachofa", "judia verde", "remolacha", "apio", "col", "verdura", "brotes"];
+  var palabra = (nombre, p) => new RegExp(`(^| )${p}(s|es)?( |$)`).test(normalizar4(nombre).replace(/[^a-z0-9]+/g, " ").trim());
+  function llevaHuevoOPescado(r) {
+    if ((r.alergenos ?? []).some((a2) => ["huevo", "pescado"].includes(normalizar4(a2)))) return true;
+    return r.ingredientes.some((i) => palabra(i.nombre, "huevo") || palabra(i.nombre, "clara") || PESCADO.some((p) => palabra(i.nombre, p)));
+  }
+  function muchaVerdura(r) {
+    const total = r.ingredientes.reduce((s, i) => s + i.gramos, 0);
+    const verdura = r.ingredientes.filter((i) => VERDURA.some((v) => palabra(i.nombre, v))).reduce((s, i) => s + i.gramos, 0);
+    return total > 0 && verdura / total >= VERDURA_MAX_DESAYUNO_CARRERA;
+  }
+  function noValeDesayunoCarrera(r, nivel) {
+    if (llevaHuevoOPescado(r)) return "lleva huevo o pescado";
+    if (muchaVerdura(r)) return "lleva mucha verdura";
+    if (r.fibraAlta) return "lleva mucha fibra";
+    if (nivel === "basico" || !(r.kcal > 0)) return void 0;
+    if (r.hidrato * 4 / r.kcal < HIDRATO_MIN_DESAYUNO_CARRERA) return "lleva pocos hidratos";
+    if (r.grasa * 9 / r.kcal > GRASA_MAX_DESAYUNO_CARRERA) return "lleva demasiada grasa";
+    return void 0;
+  }
+
   // src/motor/asignador-recetas.ts
   var MEDIDAS = medidasDesdeCsv(MEDIDAS_CASERAS_CSV);
   function fibraServidaEstimada(r, slot) {
@@ -3007,6 +3041,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     return r.fibraG * Math.min(2, Math.max(0.5, slot.kcalObjetivo / r.kcal));
   }
   function fibraExcede(slot, r) {
+    if (slot.desayunoCarrera && noValeDesayunoCarrera(r, slot.desayunoCarrera)) return true;
     if (slot.sinFibraAlta && r.fibraAlta) return true;
     if (slot.maxFibraG === void 0) return false;
     if (r.fibraAlta) return true;
@@ -3014,8 +3049,10 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     return f2 !== void 0 && f2 > slot.maxFibraG;
   }
   function motivoFibra(slot) {
+    if (slot.desayunoCarrera) return MOTIVO_DESAYUNO_CARRERA;
     return slot.maxFibraG !== void 0 && !slot.sinFibraAlta ? `antes de la prueba la raci\xF3n servida lleva como mucho ${slot.maxFibraG} g de fibra` : "la v\xEDspera de una competici\xF3n evita la fibra alta (legumbre, integral o verdura cruda)";
   }
+  var MOTIVO_DESAYUNO_CARRERA = `el desayuno de la carrera lleva muchos hidratos, poca grasa y poca fibra, sin huevo, pescado ni mucha verdura (por ejemplo, ${EJEMPLO_DESAYUNO_CARRERA})`;
   function validarPeticionSiOSi(franja, veces) {
     if (!Number.isInteger(veces) || veces < 1) return "las veces por semana deben ser un n\xFAmero entero de 1 en adelante";
     const max = franja === "comida" || franja === "cena" ? 2 : 7;
@@ -3221,7 +3258,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         continue;
       }
       if (fibraExcede(slot, receta)) {
-        estadosFijadas.push({ ...base, ok: false, causa: slot.sinFibraAlta ? "es v\xEDspera de competici\xF3n y esta receta lleva fibra alta: ese d\xEDa elige la app" : "es un d\xEDa de competici\xF3n con poca fibra y esta receta lleva demasiada: ese d\xEDa elige la app", arreglo: "Se propone otra receta solo para este d\xEDa." });
+        estadosFijadas.push({ ...base, ok: false, causa: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y esta receta no lo cumple: ese d\xEDa elige la app` : slot.sinFibraAlta ? "es v\xEDspera de competici\xF3n y esta receta lleva fibra alta: ese d\xEDa elige la app" : "es un d\xEDa de competici\xF3n con poca fibra y esta receta lleva demasiada: ese d\xEDa elige la app", arreglo: "Se propone otra receta solo para este d\xEDa." });
         continue;
       }
       if (!receta.franjas.includes(slot.franja)) {
@@ -3372,7 +3409,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       const intentarBase = (lista, filtrar) => {
         const candidatas = filtrar ? lista.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista;
         if (!candidatas.length) {
-          return { motivo: slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
+          return { motivo: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y ninguna receta del cat\xE1logo lo cumple` : slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
         }
         let aptas = candidatas;
         if (ap && filtrar) {
@@ -3473,6 +3510,12 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         const { maxFibraG, ...resto } = slot;
         avisos.push(`${slot.dia} ${slot.franja}: no hay receta que lleve tan poca fibra (m\xE1x. ${maxFibraG} g por raci\xF3n servida); se propone la mejor sin fibra alta. A\xF1adir recetas bajas en fibra al cat\xE1logo lo resuelve.`);
         cola[iSlot] = resto;
+        iSlot--;
+        continue;
+      }
+      if (!res.elegido && slot.desayunoCarrera === "estricto") {
+        avisos.push(`${slot.dia} ${slot.franja}: ninguna receta del cat\xE1logo tiene tantos hidratos y tan poca grasa como pide el desayuno de la carrera; se propone otra sin huevo, pescado ni mucha verdura.`);
+        cola[iSlot] = { ...slot, desayunoCarrera: "basico" };
         iSlot--;
         continue;
       }
@@ -3641,7 +3684,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   }
 
   // src/motor/lista-compra.ts
-  function normalizar4(s) {
+  function normalizar5(s) {
     return Array.from(s.normalize("NFD")).filter((c2) => c2.codePointAt(0) < 768 || c2.codePointAt(0) > 879).join("").toLowerCase();
   }
   var PALABRAS_SECCION = [
@@ -3747,18 +3790,18 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       "salmorejo"
     ]]
   ];
-  function contienePalabra(nombreNormalizado, palabra) {
-    return new RegExp(`(^| )${palabra}(s|es)?( |$)`).test(nombreNormalizado.replace(/[^a-z0-9ñ]+/g, " ").trim());
+  function contienePalabra(nombreNormalizado, palabra2) {
+    return new RegExp(`(^| )${palabra2}(s|es)?( |$)`).test(nombreNormalizado.replace(/[^a-z0-9ñ]+/g, " ").trim());
   }
   function clasificar(ingrediente) {
-    const n = normalizar4(ingrediente);
+    const n = normalizar5(ingrediente);
     for (const [seccion, palabras] of PALABRAS_SECCION) {
       if (palabras.some((p) => contienePalabra(n, p))) return seccion;
     }
     return "otros";
   }
   function redondearCompra(ingrediente, gramos) {
-    if (normalizar4(ingrediente).includes("huevo")) {
+    if (normalizar5(ingrediente).includes("huevo")) {
       const unidades = Math.ceil(gramos / 50);
       return `${unidades} ud${unidades === 1 ? "" : "s"} (huevos, ~50 g/ud)`;
     }
@@ -3936,13 +3979,13 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
     lechuga: "lechuga romana"
   };
   function clavePrecio(ingrediente) {
-    const n = normalizar5(ingrediente);
-    return normalizar5(SINONIMOS[n] ?? n);
+    const n = normalizar6(ingrediente);
+    return normalizar6(SINONIMOS[n] ?? n);
   }
   function gramosPorUnidad(ingrediente) {
-    return MEDIDAS2.find((m) => normalizar5(m.ingrediente) === normalizar5(ingrediente) && /^unidad\b/i.test(m.medida))?.gramos;
+    return MEDIDAS2.find((m) => normalizar6(m.ingrediente) === normalizar6(ingrediente) && /^unidad\b/i.test(m.medida))?.gramos;
   }
-  function normalizar5(s) {
+  function normalizar6(s) {
     return Array.from(s.normalize("NFD")).filter((c2) => c2.codePointAt(0) < 768 || c2.codePointAt(0) > 879).join("").trim().toLowerCase();
   }
   function parsearPrecios(csv) {
@@ -3982,17 +4025,17 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
   function comprobarPrecios(csv, catalogo) {
     const { filas, errores } = parsearPrecios(csv);
     const fallos = errores.map((e) => `fila ${e.fila} (${e.ingrediente}): ${e.problema}`);
-    const rolDe = new Map(catalogo.map((c2) => [normalizar5(c2.ingrediente), c2.rol]));
+    const rolDe = new Map(catalogo.map((c2) => [normalizar6(c2.ingrediente), c2.rol]));
     const vistos = /* @__PURE__ */ new Set();
     if (!errores.some((e) => e.fila === 1)) {
       for (const r of registros(csv)) {
-        const clave2 = normalizar5(r.ingrediente);
+        const clave2 = normalizar6(r.ingrediente);
         if (vistos.has(clave2)) fallos.push(`${r.ingrediente}: fila repetida`);
         vistos.add(clave2);
       }
     }
     for (const f2 of filas) {
-      const clave2 = normalizar5(f2.ingrediente);
+      const clave2 = normalizar6(f2.ingrediente);
       if (!/^https?:\/\//.test(f2.fuente.replace(/^[^:]+:\s*/, ""))) fallos.push(`${f2.ingrediente}: falta la fuente (tienda y enlace a la ficha)`);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(f2.fechaConsulta)) fallos.push(`${f2.ingrediente}: fecha de consulta "${f2.fechaConsulta}" (se espera AAAA-MM-DD)`);
       const rol = rolDe.get(clave2);
@@ -4002,7 +4045,7 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
       }
     }
     for (const [clave2, rol] of rolDe) {
-      if (!vistos.has(clavePrecio(clave2))) fallos.push(`${catalogo.find((c2) => normalizar5(c2.ingrediente) === clave2).ingrediente} (${rol}): sin precio`);
+      if (!vistos.has(clavePrecio(clave2))) fallos.push(`${catalogo.find((c2) => normalizar6(c2.ingrediente) === clave2).ingrediente} (${rol}): sin precio`);
     }
     return fallos;
   }
@@ -4011,20 +4054,20 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
     const m = /* @__PURE__ */ new Map();
     for (const r of registros(csv)) {
       const f2 = Number(r.fraccion);
-      if (r.ingrediente && f2 > 0 && f2 <= 1) m.set(normalizar5(r.ingrediente), f2);
+      if (r.ingrediente && f2 > 0 && f2 <= 1) m.set(normalizar6(r.ingrediente), f2);
     }
     return m;
   }
   function comprobarPorcionComestible(csv, precios) {
-    const conPrecio = new Set(precios.map((p) => normalizar5(p.ingrediente)));
+    const conPrecio = new Set(precios.map((p) => normalizar6(p.ingrediente)));
     const vistos = /* @__PURE__ */ new Set();
     const fallos = [];
     for (const r of registros(csv)) {
       const n = r.ingrediente ?? "";
       const f2 = Number(r.fraccion);
-      if (vistos.has(normalizar5(n))) fallos.push(`${n}: repetido`);
-      vistos.add(normalizar5(n));
-      if (!conPrecio.has(normalizar5(n))) fallos.push(`${n}: sin precio en la tabla de precios`);
+      if (vistos.has(normalizar6(n))) fallos.push(`${n}: repetido`);
+      vistos.add(normalizar6(n));
+      if (!conPrecio.has(normalizar6(n))) fallos.push(`${n}: sin precio en la tabla de precios`);
       if (!(f2 > 0 && f2 <= 1)) fallos.push(`${n}: fracci\xF3n ${r.fraccion} fuera de (0, 1]`);
       if (!r.fuente) fallos.push(`${n}: sin fuente`);
       if (!r.pasaje) fallos.push(`${n}: sin pasaje`);
@@ -4037,7 +4080,7 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
     return Math.round(n * 100) / 100;
   }
   function estimarCoste(lista, precios, fracciones = FRACCIONES2) {
-    const porNombre = new Map(precios.map((p) => [normalizar5(p.ingrediente), p]));
+    const porNombre = new Map(precios.map((p) => [normalizar6(p.ingrediente), p]));
     let total = 0;
     const porSeccion = {};
     const sinPrecio = [];
@@ -4048,11 +4091,11 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
         continue;
       }
       let coste;
-      const comprados = item.gramosTotales / (fracciones.get(normalizar5(precio.ingrediente)) ?? 1);
+      const comprados = item.gramosTotales / (fracciones.get(normalizar6(precio.ingrediente)) ?? 1);
       if (precio.unidad === "kg") {
         coste = comprados / 1e3 * precio.precioMedio;
       } else if (precio.unidad === "l") {
-        coste = comprados / (GRAMOS_POR_ML[normalizar5(precio.ingrediente)] ?? 1) / 1e3 * precio.precioMedio;
+        coste = comprados / (GRAMOS_POR_ML[normalizar6(precio.ingrediente)] ?? 1) / 1e3 * precio.precioMedio;
       } else {
         const gramos = gramosPorUnidad(precio.ingrediente);
         if (!gramos) {
@@ -6770,17 +6813,25 @@ r43,aceite de oliva,10`;
     if (fase === "competicion" && (finUltimaPruebaH2 === void 0 || horaH === void 0 || horaH < finUltimaPruebaH2)) return FIBRA_ANTES_PRUEBA_G;
     return void 0;
   }
-  function finUltimaPruebaH(competiciones, fecha) {
-    let fin;
+  function horasDePruebas(competiciones, fecha) {
+    const salida = [];
     for (const c2 of competiciones) {
       if (c2.tipo === "categoria_peso") continue;
       const pruebas = c2.pruebas?.length ? c2.pruebas.filter((p) => (p.fecha ?? c2.fecha) === fecha) : fecha >= c2.fecha && fecha <= (c2.fechaFin ?? c2.fecha) && c2.hora ? [{ hora: c2.hora, duracionMin: DURACION_PROPUESTA_MIN[c2.tipo ?? "otra"] }] : [];
       for (const p of pruebas) {
-        const h = Number(p.hora.slice(0, 2)) + Number(p.hora.slice(3, 5)) / 60 + p.duracionMin / 60;
-        fin = fin === void 0 ? h : Math.max(fin, h);
+        const h = Number(p.hora.slice(0, 2)) + Number(p.hora.slice(3, 5)) / 60;
+        salida.push({ inicio: h, fin: h + p.duracionMin / 60 });
       }
     }
-    return fin;
+    return salida;
+  }
+  function finUltimaPruebaH(competiciones, fecha) {
+    const h = horasDePruebas(competiciones, fecha);
+    return h.length ? Math.max(...h.map((x) => x.fin)) : void 0;
+  }
+  function inicioPrimeraPruebaH(competiciones, fecha) {
+    const h = horasDePruebas(competiciones, fecha);
+    return h.length ? Math.min(...h.map((x) => x.inicio)) : void 0;
   }
   var aUTC3 = (f2) => Date.UTC(Number(f2.slice(0, 4)), Number(f2.slice(5, 7)) - 1, Number(f2.slice(8, 10)));
   var diasEntre = (a2, b) => Math.round((aUTC3(b) - aUTC3(a2)) / MS_DIA3);
@@ -9083,6 +9134,21 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
     const base = `Esta comida se queda en ~${Math.round(a2.kcalResultante)} kcal de las ~${Math.round(kcalObjetivo)} previstas: con cantidades normales no cabe m\xE1s.`;
     if (!dia) return base;
     return dia.cuadrado || dia.servido >= dia.objetivo ? `${base} Lo que falta va repartido en las otras comidas del d\xEDa.` : `${base} Aun reparti\xE9ndolo entre las otras comidas, al d\xEDa le faltan ~${Math.round(dia.objetivo - dia.servido)} kcal.`;
+  }
+  var PARTE_MINIMA_HIDRATOS_CARGA = 0.9;
+  function hidratosServidosDia(asignaciones, recetas, dia) {
+    const porId = new Map(recetas.map((r) => [r.id, r]));
+    let total = 0;
+    for (const a2 of asignaciones) {
+      if (a2.dia !== dia) continue;
+      const r = recetaDeId(porId, a2.receta);
+      if (r && r.kcal > 0) total += r.hidrato * (a2.kcalResultante / r.kcal);
+    }
+    return total;
+  }
+  function notaHidratosCarga(objetivoG, servidosG) {
+    if (!(objetivoG > 0) || servidosG >= objetivoG * PARTE_MINIMA_HIDRATOS_CARGA) return void 0;
+    return `Con estos platos el d\xEDa lleva unos ${Math.round(servidosG / 10) * 10} g de hidratos de los ~${Math.round(objetivoG)} g que pide la carga. Para acercarte, cambia alg\xFAn plato por otro con m\xE1s arroz, pasta o pan, o a\xF1ade pan o fruta a las comidas; si tienes dudas, com\xE9ntalo con Pablo.`;
   }
 
   // src/motor/nube-datos.ts
