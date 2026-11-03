@@ -6218,7 +6218,43 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       ]
     };
   }
-  function explicarKcalDia(plan, dia) {
+  var FASE_DIA = {
+    descarga: "semana de la competici\xF3n",
+    previa: "d\xEDa antes de la v\xEDspera",
+    carga: "d\xEDa de carga de hidratos",
+    vispera: "v\xEDspera de la competici\xF3n",
+    competicion: "d\xEDa de la competici\xF3n",
+    recuperacion: "d\xEDa despu\xE9s de la competici\xF3n"
+  };
+  var conArticulo = (fase) => `${fase === "vispera" || fase === "descarga" ? "la" : "el"} ${FASE_DIA[fase]}`;
+  var deLaCompeticion = (comp) => comp.competicion ? ` (${comp.competicion})` : "";
+  var minimoHidratoG = (comp, dia, peso) => {
+    const p = pesoDelDia(dia, peso);
+    return comp.hidratoMinGKg && p ? Math.ceil(comp.hidratoMinGKg * p) : void 0;
+  };
+  function explicarKcalDiaCompeticion(plan, dia, comp) {
+    const d = plan.detalle;
+    const nombre = NOMBRE_DIA_LARGO[dia.dia] ?? dia.dia;
+    const fase = `${conArticulo(comp.fase)}${deLaCompeticion(comp)}`;
+    const g = comp.gastoPrueba;
+    const detalle = [g ? `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno + el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta la prueba (unos ${f(g.kcal)} kcal en ${f(g.minutos)} min) = ${f(dia.gasto)} kcal. La prueba sustituye al entreno de ese d\xEDa.` : dia.kcalEntreno > 0 ? `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno + el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta el entreno (${f(dia.kcalEntreno)} kcal) = ${f(dia.gasto)} kcal.` : `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno (no hay entreno ese d\xEDa) = ${f(dia.gasto)} kcal.`];
+    let resumen;
+    if (comp.hidratoSubido) {
+      if (comp.kcalSinRecorte !== void 0) detalle.push(`Estos d\xEDas no hay recorte de kcal: partir\xEDas de lo que gastas, ${f(comp.kcalSinRecorte)} kcal.`);
+      detalle.push(`La prueba pide m\xE1s hidratos: suben a ${f(dia.hidratoG)} g. Con la misma prote\xEDna (${f(dia.proteinaG)} g) y la misma grasa (${f(dia.grasaG)} g), contando 4 kcal por gramo de hidrato y de prote\xEDna y 9 por gramo de grasa, salen ${f(dia.kcal)} kcal.`);
+      resumen = `Las ${f(dia.kcal)} kcal del ${nombre}: es ${fase}, ${comp.kcalSinRecorte !== void 0 ? "no hay recorte de kcal y " : ""}los hidratos suben a lo que pide la prueba (${f(dia.hidratoG)} g); por eso suben las kcal.`;
+    } else if (comp.kcalSinRecorte !== void 0) {
+      detalle.push(`Estos d\xEDas no hay recorte de kcal: comes lo que gastas, ${f(dia.kcal)} kcal.`);
+      resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son lo que gastas ese d\xEDa${g ? ", con la prueba incluida" : ""}: es ${fase} y no hay recorte de kcal.`;
+    } else {
+      const extra = dia.kcal - comp.kcalAntes;
+      detalle.push(`Un ${nombre} normal te tocar\xEDan ${f(comp.kcalAntes)} kcal; ${Math.abs(extra) < 1 ? "la prueba gasta lo mismo que tu entreno" : `la prueba gasta ${extra > 0 ? "m\xE1s" : "menos"} que tu entreno habitual y se ${extra > 0 ? "suman" : "restan"} ${f(Math.abs(extra))} kcal`}: salen ${f(dia.kcal)} kcal.`);
+      resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son las de un d\xEDa normal ajustadas a lo que gasta la prueba (${fase}).`;
+    }
+    return { resumen, detalle };
+  }
+  function explicarKcalDia(plan, dia, comp) {
+    if (comp?.fase && (comp.kcalDespues !== comp.kcalAntes || comp.gastoPrueba)) return explicarKcalDiaCompeticion(plan, dia, comp);
     const d = plan.detalle;
     const ajusteDia = dia.kcalSinLimites - dia.gasto;
     const nombre = NOMBRE_DIA_LARGO[dia.dia] ?? dia.dia;
@@ -6229,10 +6265,10 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     let resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son lo que gastas ese d\xEDa (${f(dia.gasto)}) m\xE1s el ajuste de tu objetivo.`;
     if (dia.limitadoPor === "oscilacion") {
       resumen = `Las ${f(dia.kcal)} kcal del ${nombre} salen del gasto del d\xEDa y del objetivo, acercadas a la media de la semana por el l\xEDmite de oscilaci\xF3n.`;
-      detalle.push(d.oscilacion.modo === "compresion" ? `Se aplic\xF3 el l\xEDmite de oscilaci\xF3n: las diferencias entre d\xEDas se comprimen para que no pasen de ${f(d.oscilacion.maxKcal ?? 0)} kcal. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)}.` : `Ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media de la semana. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)}.`);
+      detalle.push(d.oscilacion.modo === "compresion" ? `Se aplic\xF3 el l\xEDmite de oscilaci\xF3n: las diferencias entre d\xEDas se comprimen para que no pasen de ${f(d.oscilacion.maxKcal ?? 0)} kcal. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)} kcal.` : `Ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media de la semana. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)} kcal.`);
     } else if (dia.limitadoPor === "suelo") {
       resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son el m\xEDnimo que pone la app: el c\xE1lculo daba menos.`;
-      detalle.push(`El c\xE1lculo daba ${f(dia.kcalSinLimites)} kcal, menos de lo prudente: se queda en ese m\xEDnimo y hay que revisarlo con Pablo antes de seguir.`);
+      detalle.push(`El c\xE1lculo daba ${f(dia.kcalSinLimites)} kcal, menos de lo prudente: se queda en ese m\xEDnimo (${f(dia.kcal)} kcal) y hay que revisarlo con Pablo antes de seguir.`);
     } else {
       detalle.push("Ning\xFAn l\xEDmite cambi\xF3 esta cifra (solo se redondea a decenas de kcal).");
     }
@@ -6250,7 +6286,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const r = rangoHidratoG(dia, peso);
     return r ? `entre ${f(r[0])} y ${f(r[1])} g de hidratos` : "lo que toca a este tipo de d\xEDa";
   }
-  function explicarTipoDia(dia, peso) {
+  function explicarTipoDia(dia, peso, comp) {
     const base = {
       carga_alta: `D\xEDa de carga alta: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), a partir de 180 min.`,
       duro: `D\xEDa exigente: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), entre 60 y 179 min.`,
@@ -6259,6 +6295,19 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       fuerza: "D\xEDa de fuerza: solo hay fuerza, que no cuenta como carga; reparte igual que un d\xEDa de descanso, pero se etiqueta para que se vea que la sesi\xF3n est\xE1 registrada.",
       descanso: "D\xEDa de descanso: no hay entreno de carga ni de fuerza ese d\xEDa (caminar r\xE1pido o similar no cuenta como carga)."
     };
+    if (comp?.fase) {
+      const minimo = minimoHidratoG(comp, dia, peso);
+      const fase = FASE_DIA[comp.fase];
+      const enEntreno = comp.fase === "descarga" || comp.fase === "previa" || comp.fase === "recuperacion";
+      return {
+        resumen: `${fase[0].toUpperCase()}${fase.slice(1)}${deLaCompeticion(comp)}.${comp.gastoPrueba ? ` La prueba cuenta como ${f(dia.minutosCarga)} min de entreno de carga.` : ""}`,
+        detalle: [
+          ...enEntreno ? [`Por el entreno ser\xEDa ${(base[dia.tipo] ?? `D\xEDa ${dia.tipo}.`).replace(/^D/, "d")}`] : [],
+          minimo !== void 0 ? `Este d\xEDa mandan los hidratos que pide la prueba: para ti, al menos ${f(minimo)} g.` : `Los hidratos de este d\xEDa siguen al entreno${comp.gastoPrueba ? " (aqu\xED, la prueba)" : ""}: para ti, ${hidratoQueToca(dia, peso)}.`,
+          `Este d\xEDa el plan lleva ${f(dia.hidratoG)} g.`
+        ]
+      };
+    }
     return {
       resumen: base[dia.tipo] ?? `D\xEDa ${dia.tipo}.`,
       detalle: [
@@ -6298,15 +6347,24 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       ]
     };
   }
-  function explicarHidrato(plan, dia, peso) {
+  function explicarHidrato(plan, dia, peso, comp) {
+    const minimo = comp ? minimoHidratoG(comp, dia, peso) : void 0;
+    if (comp && minimo !== void 0) {
+      const lleva = Math.round(dia.hidratoG);
+      return {
+        resumen: `Este d\xEDa mandan los hidratos: la prueba pide al menos ${f(minimo)} g y el plan lleva ${f(dia.hidratoG)} g. La prote\xEDna (${f(dia.proteinaG)} g) y la grasa (${f(dia.grasaG)} g) son las de siempre, y las kcal del d\xEDa salen de sumar los tres.`,
+        detalle: [`Este d\xEDa queda ${lleva < minimo ? "por debajo de" : lleva > minimo ? "por encima de" : "justo en"} lo que pide la prueba.`]
+      };
+    }
     const hayAviso = plan.avisos.some((x) => x.codigo === "hidrato_bajo" && x.texto.startsWith(dia.dia));
     const [a2, b] = rangoHidratoG(dia, peso) ?? dia.hidratoRecomendadoGKg;
     const valor = rangoHidratoG(dia, peso) ? Math.round(dia.hidratoG) : dia.hidratoGKg;
     const posicion = valor < a2 ? "por debajo de" : valor > b ? "por encima de" : "dentro de";
+    const porFase = comp?.fase && posicion === "por encima de" ? `Por el entreno te tocar\xEDa ${hidratoQueToca(dia, peso)}; en ${conArticulo(comp.fase)} lleva m\xE1s porque ${comp.kcalSinRecorte !== void 0 ? "no hay recorte de kcal" : "la prueba gasta m\xE1s"} y esas kcal de m\xE1s van a hidratos.` : void 0;
     return {
       resumen: `El hidrato es lo que queda de las kcal del d\xEDa tras la prote\xEDna y la grasa: (${f(dia.kcal)} \u2212 4 \xD7 ${f(dia.proteinaG)} \u2212 9 \xD7 ${f(dia.grasaG)}) \xF7 4 = ${f(dia.hidratoG)} g.`,
       detalle: [
-        `Para un d\xEDa as\xED te toca ${hidratoQueToca(dia, peso)}: este d\xEDa queda ${posicion} lo que toca.`,
+        porFase ?? `Para un d\xEDa as\xED te toca ${hidratoQueToca(dia, peso)}: este d\xEDa queda ${posicion} lo que toca.`,
         ...hayAviso ? ["Hay un aviso de hidrato bajo para este d\xEDa (ver Avisos): el plan no afirma que cumpla el rango."] : []
       ]
     };
@@ -6950,8 +7008,11 @@ r43,aceite de oliva,10`;
         motivos.push(`gasto estimado de la prueba: ~${gastoPrueba.kcal} kcal (tu peso, ${minPrueba} min de ${gastoPrueba.actividad}); sustituye al entreno habitual de este d\xEDa`);
       }
       let kcal = kcalDia;
+      let kcalSinRecorte;
+      let hidratoSubido = false;
       if (pausa && gastoDia - kcal >= 20) {
         kcal = gastoDia;
+        kcalSinRecorte = Math.round(gastoDia);
         motivos.push(`sin recorte de kcal estos d\xEDas: comes lo que gastas (${Math.round(gastoDia)} kcal)`);
       }
       const base4 = 4 * d.proteinaG + 9 * d.grasaG;
@@ -6963,6 +7024,7 @@ r43,aceite de oliva,10`;
         if (hidrato < minimo) {
           kcal = base4 + KCAL_POR_G_HIDRATO * minimo;
           hidrato = minimo;
+          hidratoSubido = true;
           motivos.push(`hidratos subidos a lo que pide la prueba (${minimo} g): las kcal suben lo mismo; prote\xEDna y grasa no cambian`);
         } else {
           motivos.push(`hidratos ya por encima de lo que pide la prueba (${Math.ceil(minGKg * perfil.peso)} g)`);
@@ -6996,6 +7058,8 @@ r43,aceite de oliva,10`;
         ...minGKg ? { hidratoMinGKg: minGKg } : {},
         sinFibraAlta: sinFibra,
         ...gastoPrueba ? { gastoPrueba } : {},
+        ...kcalSinRecorte !== void 0 && kcalFinal !== d.kcal ? { kcalSinRecorte } : {},
+        ...hidratoSubido ? { hidratoSubido } : {},
         kcalAntes: d.kcal,
         kcalDespues: kcalFinal,
         hidratoAntes: d.hidratoG,

@@ -905,12 +905,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   }
   function porqueDiaHtml(clave, dia) {
     const d = planActual.dias.find((x) => x.dia === dia);
+    const cd = compPorDiaActual.get(dia); // #295: en la semana de una competición, explica la fase (no un día normal)
     return porqueHtml(clave, [
-      ['Calorías del día', Motor.explicarKcalDia(planActual, d)],
-      ['Tipo de día', Motor.explicarTipoDia(d, semanaActual.perfil.peso)],
+      ['Calorías del día', Motor.explicarKcalDia(planActual, d, cd)],
+      ['Tipo de día', Motor.explicarTipoDia(d, semanaActual.perfil.peso, cd)],
       ['Proteína', Motor.explicarProteina(planActual, semanaActual.perfil)],
       ['Grasa', Motor.explicarGrasa(planActual, d)],
-      ['Hidrato', Motor.explicarHidrato(planActual, d, semanaActual.perfil.peso)],
+      ['Hidrato', Motor.explicarHidrato(planActual, d, semanaActual.perfil.peso, cd)],
     ], '¿Por qué estas cifras?');
   }
   // --- Issue #43: navegación por secciones (Mi plan / Compra) y resumen del día ---
@@ -2747,6 +2748,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // recalcula los días afectados, el resto del plan se conserva tal cual.
   let semanaActual = null;
   let planActual = null;
+  let compPorDiaActual = new Map(); // #295: días de Motor.aplicarCompeticion de la semana de planActual
   let respuestasActuales = null;
   let franjasActuales = null;
   // Issue #50: horas de comidas de un día concreto como excepción al horario general (franjasActuales).
@@ -3428,7 +3430,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const contexto = `
       ${reparto.conflictos.filter((c) => c.franja === franja).map((c) => `<p class="error-inline">⚠️ ${escaparHtml(textoConflicto(c))}</p>`).join('')}
       <details class="dc-notas"><summary>¿Por qué estas cifras?</summary>
-        <p class="dc-nota" data-tipo="${d.tipo}">${NOMBRE_DIA_LARGO[dia]} (${nombreTipoDia(d, hayEntrenoEl(d.dia))}) · ${NOMBRE[franja] ?? franja}${hora ? ` a las ${hora}` : ''}.</p>
+        <p class="dc-nota" data-tipo="${d.tipo}">${NOMBRE_DIA_LARGO[dia]} (${(() => { const fase = vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia)?.fase; return fase ? Motor.ETIQUETA_FASE[fase].toLowerCase() : nombreTipoDia(d, hayEntrenoEl(d.dia)); })() /* #295: en la semana de una competición, la fase */}) · ${NOMBRE[franja] ?? franja}${hora ? ` a las ${hora}` : ''}.</p>
         ${cuerpoPorque(Motor.explicarComida(f0, { tipoDia: d.tipo, pesoRef: planActual.proteina.pesoReferencia, proteinaDia: d.proteinaG, hidratoDia: d.hidratoG, grasaDia: d.grasaG }))}
         ${asignada ? cuerpoPorque(Motor.explicarRacion({ kcalReceta: asignada.receta.kcal, kcalObjetivo: f0.kcalAprox, racion: asignada.racionAjustada, kcalResultante: asignada.kcalResultante, protegidos: Motor.ingredientesDeLaRacion(asignada.receta, asignada.racionAjustada, Motor.noSeReescala).filter((i) => i.protegido).map((i) => i.nombre) })) : ''}
       </details>`;
@@ -3805,6 +3807,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const compPorDia = new Map((compSem ? compSem.dias : []).map((x) => [x.dia, x]));
     semanaActual = semana;
     planActual = plan;
+    compPorDiaActual = compPorDia;
     respuestasActuales = respuestas;
     franjasActuales = franjasBloque7;
 
