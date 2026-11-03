@@ -3532,13 +3532,16 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         </li>`).join('');
       desglose.innerHTML = `
         ${items.length ? `<ul class="resumen-lista">${lineas}</ul>
-        <p><strong>Total: ${items.some((i) => i.linea.comoMinimo) ? `como mínimo ${miles(t.min)} kcal` : rangoTxt(t.min, t.max)}</strong>${t.min === t.max ? '' : ` · para ajustar el día se usa el punto medio (${miles((t.min + t.max) / 2)} kcal)`}${items.some((i) => i.linea.comoMinimo) ? ' · para ajustar el día se usa ese mínimo' : ''}</p>` : ''}
+        ${sinReconocer.length ? '' : `<p><strong>Total: ${items.some((i) => i.linea.comoMinimo) ? `como mínimo ${miles(t.min)} kcal` : rangoTxt(t.min, t.max)}</strong>${t.min === t.max ? '' : ` · para ajustar el día se usa el punto medio (${miles((t.min + t.max) / 2)} kcal)`}${items.some((i) => i.linea.comoMinimo) ? ' · para ajustar el día se usa ese mínimo' : ''}</p>`}` : ''}
         ${sinReconocer.length ? `<p class="una-linea" id="fuera-no-reconocido">No lo encuentro: ${sinReconocer.map(escaparHtml).join('; ')}. Pon las kcal del total si las sabes, o escríbelo de otra forma (por ejemplo, «ración de croquetas»).</p>` : ''}
+        ${sinReconocer.length && items.length ? `<p><button type="button" class="btn-texto" id="fuera-usar-minimo">Usar ~${miles(Math.round(t.min / 10) * 10)} kcal como mínimo</button></p>` : ''}
         ${!items.length && !sinReconocer.length ? '<p class="una-linea">No he reconocido nada: escribe las calorías tú.</p>' : ''}`;
       if (!items.length && campoKcal.value === kcalAuto) { campoKcal.value = ''; kcalAuto = ''; } // nada reconocido: no queda la cifra del cálculo anterior (#189)
       // #258 (punto 12): si falta algo por encontrar, no se deja puesta una cifra parcial (al guardar parecería el total de la comida).
       if (sinReconocer.length && campoKcal.value === kcalAuto) { campoKcal.value = ''; kcalAuto = ''; }
       if (items.length && !sinReconocer.length) { campoKcal.value = String(items.some((i) => i.linea.comoMinimo) ? Math.round(t.min / 10) * 10 : Math.round((t.min + t.max) / 20) * 10); kcalAuto = campoKcal.value; }
+      // #285 punto 4: lo reconocido vale como mínimo solo si la persona lo elige. Es cifra del cálculo: si cambia la cantidad, vuelve a pedirse.
+      document.getElementById('fuera-usar-minimo')?.addEventListener('click', () => { campoKcal.value = String(Math.round(t.min / 10) * 10); kcalAuto = campoKcal.value; document.getElementById('fuera-error').hidden = true; });
       desglose.querySelectorAll('.fuera-menos, .fuera-mas').forEach((b) => b.addEventListener('click', () => {
         const it = items[Number(b.dataset.k)];
         it.cantidad = Math.max(0.5, Math.min(20, it.cantidad + (b.classList.contains('fuera-mas') ? 0.5 : -0.5)));
@@ -3589,6 +3592,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         calcular();
         return;
       }
+      if (campoKcal.value.trim() === '' && items.length && sinReconocer.length) { avisar('Falta una parte por encontrar: usa lo que sí he encontrado como mínimo o escribe las kcal del total.', campoKcal); return; } // #285 punto 4
       if (kcal !== undefined && !(Number.isFinite(kcal) && kcal >= 0 && kcal <= 5000)) { avisar('Las calorías tienen que ser un número entre 0 y 5000; si no las sabes, déjalo vacío.', campoKcal); return; }
       comidasFuera = comidasFuera.filter((x) => !(x.fecha === iso && x.franja === franja))
         .concat({ fecha: iso, franja, texto, ...(kcal !== undefined ? { kcal: Math.round(kcal) } : {}), ...(prevista ? { prevista: true } : {}) }).slice(-30);
