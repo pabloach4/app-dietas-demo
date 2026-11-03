@@ -3047,6 +3047,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       }
 
       const estimacion = Motor.estimarCoste(lista, PRECIOS);
+      const tachados = lista.filter((i) => i.yaEnCasa).length; // #286 (punto 20): el total cuenta toda la lista; lo que falta, sin lo tachado
+      const falta = tachados ? Motor.estimarCoste(lista.filter((i) => !i.yaEnCasa), PRECIOS) : null;
       porqueCompra = porqueHtml('compra', Motor.explicarCompra({ dias: diasElegidos.length, huecos: huecos.length, sinPrecio: estimacion.sinPrecio.length }), '¿Por qué estas cantidades y este coste?');
       const filasSeccionCoste = Object.entries(estimacion.porSeccion)
         .sort(([a], [b]) => a.localeCompare(b))
@@ -3059,8 +3061,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       ` : '';
       costeHtml = `
         <div class="coste-estimado">
-          <p style="margin:0 0 0.4rem"><strong>≈ ${euros(estimacion.total)} €</strong> en total, con los días elegidos
+          <p style="margin:0 0 0.4rem"><strong>≈ ${euros(estimacion.total)} €</strong> en total, con los días elegidos${tachados ? ', contando lo que has tachado' : ''}
             <span style="font-size:0.8rem;color:var(--gris)">(precio aproximado de supermercado, consultado en ${CUANDO_PRECIOS})</span></p>
+          <p style="margin:0 0 0.4rem" id="coste-falta">${falta ? `Te falta por comprar: <strong>≈ ${euros(falta.total)} €</strong> (sin lo que ya has tachado).` : 'Lo que taches como comprado o en casa se resta en «te falta por comprar».'}</p>
           <ul class="resumen-lista">${filasSeccionCoste}</ul>
           ${sinPrecioHtml}
         </div>
@@ -3106,6 +3109,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       <h2>Lista de la compra</h2>
       <p class="una-linea">Hecha con las recetas de tu semana.</p>
       <details class="saber-mas"><summary>Saber más</summary><p>Marca lo que ya has comprado o tienes en casa (el pan olvidado en el congelador también cuenta). Si después cambia la cantidad que hace falta (otra receta, otros días), te avisamos en lugar de darlo por cubierto. «Dieta» es lo que pide el plan; «comprar» está redondeado hacia arriba.</p></details>
+      <p class="una-linea" id="compra-periodo-ayuda">«Esta dieta dura» y «Empiezo el» le dicen a la lista para cuántas semanas es y qué semana toca. Cuando se acabe la dieta, «Generar próxima lista de la compra» prepara la de la siguiente y descuenta lo que te haya sobrado.</p>
       ${periodoDietaHtml()}
       ${proximaHtml}
       <p style="font-size:0.85rem;color:var(--gris);margin:0 0 0.4rem">¿Qué días seguirás el plan esta semana?</p>
