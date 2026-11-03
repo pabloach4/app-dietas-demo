@@ -287,6 +287,7 @@ var Motor = (() => {
     normalizarBusqueda: () => normalizarBusqueda,
     normalizarSobras: () => normalizarSobras,
     normalizarTexto: () => normalizarTexto2,
+    notaTomaCorta: () => notaTomaCorta,
     nubeOfrecida: () => nubeOfrecida,
     ordenarCompeticiones: () => ordenarCompeticiones,
     parsearParametrosCSV: () => parsearParametrosCSV,
@@ -9076,6 +9077,13 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
   }
   var UMBRAL_FALTA_COMPETICION = 0.08;
   var faltaVisibleCompeticion = (falta, kcalDia) => falta > UMBRAL_FALTA_COMPETICION * kcalDia;
+  var PARTE_MINIMA_TOMA = 0.8;
+  function notaTomaCorta(kcalObjetivo, a2, dia) {
+    if (a2.kcalResultante >= kcalObjetivo * PARTE_MINIMA_TOMA || (a2.ajusteDia?.kcal ?? 0) < 0) return void 0;
+    const base = `Esta comida se queda en ~${Math.round(a2.kcalResultante)} kcal de las ~${Math.round(kcalObjetivo)} previstas: con cantidades normales no cabe m\xE1s.`;
+    if (!dia) return base;
+    return dia.cuadrado || dia.servido >= dia.objetivo ? `${base} Lo que falta va repartido en las otras comidas del d\xEDa.` : `${base} Aun reparti\xE9ndolo entre las otras comidas, al d\xEDa le faltan ~${Math.round(dia.objetivo - dia.servido)} kcal.`;
+  }
 
   // src/motor/nube-datos.ts
   var CLAVES_NUBE = [

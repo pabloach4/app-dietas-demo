@@ -3334,6 +3334,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             ${fila('H', 'h', `${f.hidrato} g`, `~${nf(servido.hidrato)} g`)}
           </tbody>
         </table>
+        ${(() => { const n = Motor.notaTomaCorta(f.kcalAprox, asignada, vistaSemana.cuadreDias.get(dia)); return n ? `<p class="dc-nota">⚖️ ${escaparHtml(n)}</p>` : ''; })()}
         ${asignada.ajusteDia ? `<p class="dc-nota">⚖️ ${escaparHtml(asignada.ajusteDia.motivo)}</p>` : ''}
         <p class="dc-nota">Las cifras de la receta son aproximadas: sirven para acercarse a las kcal, no para clavar los macros.</p>`;
       receta = `
@@ -3975,7 +3976,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         const recetaHtml = fueraFranja
           ? `<div class="receta-franja fuera-marca">🍴 <strong>${fueraFranja.prevista ? 'Vas a comer fuera' : 'Comida fuera'}</strong>${fueraFranja.noSe ? ': todavía sin decidir' : `: ${escaparHtml(fueraFranja.texto)}`}<div class="receta-dato">${fueraFranja.kcal !== undefined ? `~${fueraFranja.kcal} kcal` : fueraFranja.noSe ? `cuenta como ~${f.kcalAprox} kcal de tu plan` : 'kcal sin apuntar'}</div></div>`
           : asignada
-          ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}${asignada.fijada ? ' <span class="etq-pedido">📌 fijada</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div><button type="button" class="btn-texto fijar-btn" data-dia="${d.dia}" data-franja="${f.franja}">${semanaFija.has(`${d.dia}|${f.franja}`) ? '📌 Quitar fijación' : '📌 Fijar'}</button></div>`
+          ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}${asignada.fijada ? ' <span class="etq-pedido">📌 fijada</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div>${(() => { const n = Motor.notaTomaCorta(f.kcalAprox, asignada, cuadrado.dias.find((x) => x.dia === d.dia)); return n ? `<p class="subt nota-toma-corta" data-slot="${d.dia}|${f.franja}">⚖️ ${escaparHtml(n)}</p>` : ''; })()}<button type="button" class="btn-texto fijar-btn" data-dia="${d.dia}" data-franja="${f.franja}">${semanaFija.has(`${d.dia}|${f.franja}`) ? '📌 Quitar fijación' : '📌 Fijar'}</button></div>`
           : `<div class="receta-franja hueco">⚠️ Sin receta de ejemplo que encaje${hueco ? `: ${escaparHtml(hueco.motivo)}` : ''}</div>`;
         return `
           <div class="franja-reparto-card ${f.rol !== 'normal' ? 'destacada' : ''}">
