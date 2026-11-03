@@ -246,6 +246,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   function leerCita() {
     try { const c = JSON.parse(localStorage.getItem(CLAVE_CITA) || 'null'); return c && typeof c.fecha === 'string' ? c : null; } catch { return null; }
   }
+  // #285 punto 9: sin la nube la app no envía nada, solo prepara un correo, y hasta que vuelva no sabe si se envió.
+  const textoBotonCita = () => (nubeActiva() === true ? 'Enviar la petición' : 'Preparar el correo para Pablo');
+  const textoCitaGuardada = (cita) => (cita.via === 'nube' || (!cita.via && nubeActiva() === true)
+    ? `Pediste cita el ${fechaLegible(cita.fecha.slice(0, 10))}. Pablo te contestará para cerrarla.`
+    : `Si ya has enviado el correo del ${fechaLegible(cita.fecha.slice(0, 10))}, Pablo te contestará para cerrar la cita. Si no, vuelve a pulsar «Pedir cita».`);
   function pintarHablarPablo() {
     const cita = leerCita();
     const wa = Motor.whatsappPablo(Boolean(cita));
@@ -259,9 +264,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           <fieldset><legend>¿Qué días te vienen bien?</legend>${dias.replace(/name="hp-dia"/g, `name="hp-dia-${n}"`)}</fieldset>
           <fieldset><legend>¿A qué hora?</legend>${franjas.replace(/name="hp-franja"/g, `name="hp-franja-${n}"`)}</fieldset>
           <label class="hp-motivo-l">Motivo (si quieres)<textarea class="hp-motivo" rows="3" maxlength="${Motor.MAX_MOTIVO_CITA}"></textarea></label>
-          <button type="submit" class="btn-principal">Enviar la petición</button>
+          <button type="submit" class="btn-principal">${textoBotonCita()}</button>
         </form>
-        <p class="subt hp-estado" aria-live="polite">${cita ? escaparHtml(`Pediste cita el ${fechaLegible(cita.fecha.slice(0, 10))}. Pablo te contestará para cerrarla.`) : ''}</p>
+        <p class="subt hp-estado" aria-live="polite">${cita ? escaparHtml(textoCitaGuardada(cita)) : ''}</p>
         ${!wa ? '' : wa.href
     ? `<a class="btn-secundario hp-whatsapp" href="${escaparHtml(wa.href)}" target="_blank" rel="noopener">💬 Escribir a Pablo por WhatsApp para cerrar la cita</a>`
     : `<button type="button" class="btn-secundario hp-whatsapp">💬 Escribir a Pablo por WhatsApp para cerrar la cita</button><p class="subt hp-wa-nota" hidden>${escaparHtml(wa.nota)}</p>`}`;
@@ -271,6 +276,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const abrir = e.target.closest && e.target.closest('.hp-cita-abrir');
     if (abrir) {
       const f = abrir.parentElement.querySelector('.hp-cita');
+      f.querySelector('button[type="submit"]').textContent = textoBotonCita(); // la nube puede haberse activado después de pintar
       f.hidden = !f.hidden; abrir.setAttribute('aria-expanded', String(!f.hidden));
       return;
     }
@@ -288,7 +294,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     };
     const ahora = new Date().toISOString();
     let estado;
-    if (nubeActiva() === true) {
+    const via = nubeActiva() === true ? 'nube' : 'correo';
+    if (via === 'nube') {
       guardarAlertas(Motor.anadirAlerta(leerAlertas(), Motor.alertaCita(peticion, ahora)));
       document.querySelector('#nube-subir')?.click(); // la sube ya, por el mismo camino que las demás (web/nube.js)
       estado = 'Petición enviada. Pablo te contestará para cerrar la cita.';
@@ -296,7 +303,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       location.href = Motor.correoCita(peticion);
       estado = 'Se ha abierto tu correo con la petición: envíalo y Pablo te contestará para cerrar la cita.';
     }
-    try { localStorage.setItem(CLAVE_CITA, JSON.stringify({ fecha: ahora })); } catch { falloAlmacenamiento(); }
+    try { localStorage.setItem(CLAVE_CITA, JSON.stringify({ fecha: ahora, via })); } catch { falloAlmacenamiento(); }
     pintarHablarPablo();
     document.querySelectorAll('.hp-estado').forEach((p) => { p.textContent = estado; });
   });

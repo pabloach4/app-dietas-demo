@@ -9236,7 +9236,7 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
   }
   var correoCita = (p) => `mailto:${CORREO_PABLO}?subject=${encodeURIComponent("Pedir cita (desde la app)")}&body=${encodeURIComponent(`Hola, Pablo:
 
-${textoCita(p)}
+${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
 `)}`;
   var TEXTO_WHATSAPP_DEMO = "En la app de verdad, este bot\xF3n abre el WhatsApp de Pablo para cerrar la cita. En esta demo no hay n\xFAmero.";
   function whatsappPablo(citaPedida, numero = WHATSAPP_PABLO) {
