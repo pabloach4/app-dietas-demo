@@ -3002,7 +3002,8 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   var AJUSTE_MAX = 0.2;
   var FRANJAS_CON_LIMITE_VARIEDAD = ["comida", "cena"];
   var GRUPO_VARIEDAD = { desayuno: "desayuno", media_manana: "tentempie", merienda: "tentempie" };
-  var MIN_DISTINTAS_GRUPO = 2;
+  var MAX_VECES_GRUPO = 4;
+  var HOLGURA_VARIEDAD_KCAL = 30;
   var MAX_SOJA = 2;
   var MIN_LEGUMBRE = 2;
   var MAX_BASE = 4;
@@ -3298,6 +3299,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     };
     const usadosPorGrupo = /* @__PURE__ */ new Map();
     const ultimoPorGrupo = /* @__PURE__ */ new Map();
+    const vecesPorGrupo = /* @__PURE__ */ new Map();
     const sinPreferenciaDesayuno = /* @__PURE__ */ new Set();
     const libre = (s) => !fijadasPorSlot.has(claveSlotSiOSi(s)) && !reservas.has(claveSlotSiOSi(s));
     const omnivoro = !(opciones.alergiasPreferencias?.vegetariano || opciones.alergiasPreferencias?.vegano);
@@ -3317,12 +3319,11 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       let distintaDelDia = true;
       const grupo = GRUPO_VARIEDAD[slot.franja];
       const usadosGrupo = grupo ? usadosPorGrupo.get(grupo) ?? /* @__PURE__ */ new Set() : void 0;
-      const quedan = grupo ? cola.slice(iSlot).filter((s) => GRUPO_VARIEDAD[s.franja] === grupo && libre(s)).length : 0;
       const prefDesayuno = slot.franja === "desayuno" && !sinPreferenciaDesayuno.has(claveSlotSiOSi(slot)) && opciones.desayuno?.modo !== "variado" ? opciones.desayuno : void 0;
       const desayunoVale = (r) => desayunoCumple(r, prefDesayuno);
-      const forzarVariedad = !!usadosGrupo && usadosGrupo.size > 0 && usadosGrupo.size < MIN_DISTINTAS_GRUPO && quedan <= MIN_DISTINTAS_GRUPO - usadosGrupo.size;
+      const agotadas = new Set([...grupo ? vecesPorGrupo.get(grupo) ?? [] : []].filter(([, n]) => n >= MAX_VECES_GRUPO).map(([id]) => id));
       const ultimo = grupo ? ultimoPorGrupo.get(grupo) : void 0;
-      const pasesVariedad = prefDesayuno?.modo === "mismo" ? [void 0] : prefDesayuno?.modo === "pan" && usadosGrupo?.size ? [usadosGrupo, ...ultimo ? [/* @__PURE__ */ new Set([ultimo])] : [], void 0] : forzarVariedad ? [usadosGrupo, void 0] : [void 0];
+      const pasesVariedad = prefDesayuno?.modo === "mismo" ? [void 0] : prefDesayuno?.modo === "pan" && usadosGrupo?.size ? [usadosGrupo, ...ultimo ? [/* @__PURE__ */ new Set([ultimo])] : [], void 0] : agotadas.size ? [agotadas, void 0] : [void 0];
       let excluir;
       const variado = (r) => !excluir || !idsDe(r).some((id) => excluir.has(id));
       const delDia = (r) => !distintaDelDia || !chocaConElDia(r, otraDelDia, catalogoPorId);
@@ -3427,7 +3428,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
             break;
           }
         }
-        if (!pase || alcanza(res.elegido)) break;
+        if (!pase || alcanza(res.elegido) || pase === agotadas && res.elegido && res.elegido.desviacion <= HOLGURA_VARIEDAD_KCAL) break;
       }
       if (!res.elegido && prefDesayuno) {
         const nombre = prefDesayuno.modo === "mismo" ? catalogoPorId.get(prefDesayuno.receta)?.nombre : void 0;
@@ -3453,6 +3454,9 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       if (grupo) {
         usadosPorGrupo.set(grupo, /* @__PURE__ */ new Set([...usadosGrupo, elegido.receta.id]));
         ultimoPorGrupo.set(grupo, elegido.receta.id);
+        const veces = vecesPorGrupo.get(grupo) ?? /* @__PURE__ */ new Map();
+        veces.set(elegido.receta.id, (veces.get(elegido.receta.id) ?? 0) + 1);
+        vecesPorGrupo.set(grupo, veces);
       }
       if (esCC) {
         const g = gruposProteina(elegido.receta, catalogoPorId);
@@ -3476,7 +3480,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         ...fijada ? { fijada: true } : {}
       });
       if (slot.bandaPeso && (elegido.dist ?? 0) > 0) avisos.push(`${slot.dia} ${slot.franja}: con comida normal no se puede ajustar m\xE1s el volumen (queda a ${elegido.dist} g de la banda de peso servido): si quieres, reparte esta comida en una toma m\xE1s.`);
-      if (elegido.desviacion > slot.kcalObjetivo * 0.1) {
+      if (elegido.desviacion > Math.max(slot.kcalObjetivo * 0.1, excluir === agotadas && agotadas.size ? HOLGURA_VARIEDAD_KCAL : 0)) {
         avisos.push(
           `${slot.dia} ${slot.franja}: "${elegido.receta.nombre}" se queda a ${elegido.desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun ajustando la raci\xF3n todo lo que permiten los topes del m\xE9todo: no cabe en una raci\xF3n normal y no se infla nada. Reparte lo que falta entre las otras comidas del d\xEDa, cierra con un postre (fruta o yogur) o cambia el plato.`
         );
@@ -3488,6 +3492,9 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       ...[...vecesBase].filter(([b, n]) => n > maxBase(b)).map(([b, n]) => `${b} ${n} veces (m\xE1x. ${maxBase(b)})`)
     ];
     if (faltasVariedad.length) avisos.push(`Variedad de la semana: con las recetas que encajan no se ha podido cumplir del todo (${faltasVariedad.join("; ")}); es lo m\xE1s cerca posible.`);
+    const pedidasPorCliente = /* @__PURE__ */ new Set([...idsPedidos, ...(opciones.fijadas ?? []).map((f2) => f2.receta)]);
+    const faltasGrupo = [...vecesPorGrupo].flatMap(([g, veces]) => g === "desayuno" && opciones.desayuno && opciones.desayuno.modo !== "variado" ? [] : [...veces].filter(([id, n]) => n > MAX_VECES_GRUPO && !pedidasPorCliente.has(id)).map(([id, n]) => `\xAB${catalogoPorId.get(id)?.nombre ?? id}\xBB ${n} veces`));
+    if (faltasGrupo.length) avisos.push(`Variedad de desayunos y tentempi\xE9s: con las recetas que encajan no se ha podido cumplir el m\xE1ximo de ${MAX_VECES_GRUPO} veces (${faltasGrupo.join("; ")}); es lo m\xE1s cerca posible.`);
     const imprescindibles = opciones.imprescindibles?.length ? cubrirImprescindibles(opciones.imprescindibles, slots, recetas, asignaciones, avisos, maxRep, opciones.alergiasPreferencias) : void 0;
     const hayCC = slots.some((s) => s.franja === "comida" || s.franja === "cena");
     const exceso = (omnivoro ? Math.max(0, vecesSoja - MAX_SOJA) : 0) + (hayCC ? Math.max(0, MIN_LEGUMBRE - vecesLegumbre) : 0) + [...vecesBase].reduce((s, [b, n]) => s + Math.max(0, n - maxBase(b)), 0);
