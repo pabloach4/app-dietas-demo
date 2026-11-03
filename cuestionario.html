@@ -1082,7 +1082,7 @@
 
     <div class="paso activo" data-paso="1">
       <div class="tarjeta">
-        <h2>1. Tus datos</h2>
+        <h2>Tus datos</h2>
         <div class="campo"><label for="peso">Peso (kg)</label><input id="peso" type="number" step="0.1" required></div>
         <div class="fila2">
           <div class="campo"><label for="altura">Altura (cm)</label><input id="altura" type="number" step="0.1" required></div>
@@ -1105,7 +1105,7 @@
 
     <div class="paso" data-paso="2">
       <div class="tarjeta">
-        <h2>2. Objetivo y vida diaria</h2>
+        <h2>Objetivo y vida diaria</h2>
         <div class="campo"><label for="objetivo">¿Qué buscas?</label>
           <select id="objetivo" required>
             <option value="">Elige…</option>
@@ -1138,7 +1138,7 @@
 
     <div class="paso" data-paso="3">
       <div class="tarjeta">
-        <h2>3. Sesiones de la semana</h2>
+        <h2>Sesiones de la semana</h2>
         <p class="dp-pregunta"><strong>¿Cuál es tu deporte principal?</strong></p>
         <div id="deporte-principal" class="dp-botones" role="group" aria-label="Deporte principal"></div>
         <div id="sesiones"></div>
@@ -1147,12 +1147,14 @@
     </div>
 
     <div class="paso" data-paso="4">
+      <!-- #286 (punto 19): el último paso avisa de lo que pregunta antes de preguntarlo, y sus secciones ya no van numeradas (chocaba con «Paso 4 de 4»). -->
+      <p class="subt" id="entrada-paso4" style="margin:0 0 0.8rem">Último paso: tu salud, tus alergias, lo que comes y cuándo. Justo después de «Salud» van unas <strong>preguntas opcionales sobre tu energía y tu salud</strong> (la regla, cómo comes…): puedes saltarlas.</p>
       <div class="tarjeta">
         <div id="revision-precargado" class="revision-precargado" hidden>
           <p><strong>Revisa este bloque antes de continuar.</strong> Tu perfil anterior se ha precargado, pero <strong>no se guardaron</strong> la salud, las alergias e intolerancias ni los alimentos a evitar. Lo que ves ahora en blanco no significa que no tengas restricciones.</p>
           <label class="check"><input type="checkbox" id="revision-confirmada"> He revisado salud, alergias e intolerancias y alimentos a evitar, y están como corresponde</label>
         </div>
-        <h2>4. Salud</h2>
+        <h2>Salud</h2>
         <details class="plegable"><summary style="font-size:0.9rem;font-weight:600">Saber más</summary><small class="ayuda">Si marcas algo aquí, no calculamos nada: te decimos que lo hables con Pablo en consulta.</small></details>
         <label class="check"><input type="checkbox" class="salud" value="FODMAP / SII"> FODMAP / síndrome del intestino irritable</label>
         <label class="check"><input type="checkbox" class="salud" value="diabetes"> Diabetes</label>
@@ -1163,12 +1165,13 @@
 
       <div class="tarjeta" id="tarjeta-cribado">
         <h2>Energía y bienestar (opcional)</h2>
+        <p class="una-linea" id="cribado-opcional">Son opcionales: puedes dejar en blanco las que quieras.</p>
         <details class="plegable"><summary style="font-size:0.9rem;font-weight:600">Saber más</summary><small class="ayuda">Unas preguntas para saber cómo vas de energía y de alimentación. Son opcionales, puedes saltártelas y no son un diagnóstico. Si alguna señal lo pide, Pablo hablará contigo.</small></details>
         <div id="cribado-preguntas"></div>
       </div>
 
       <div class="tarjeta">
-        <h2>5. Alergias e intolerancias</h2>
+        <h2>Alergias e intolerancias</h2>
         <label class="check"><input type="checkbox" id="al-celiaquia"> Celiaquía</label>
         <label class="check"><input type="checkbox" id="al-lactosa"> Intolerancia a la lactosa</label>
         <label class="check"><input type="checkbox" id="al-vegetariano"> Vegetariano/a</label>
@@ -1187,7 +1190,7 @@
       </div>
 
       <div class="tarjeta">
-        <h2>6. Preferencias</h2>
+        <h2>Preferencias</h2>
         <details class="plegable"><summary style="font-size:0.9rem;font-weight:600">Cómo funciona esto</summary><small class="ayuda">Cualquier alimento puede entrar en una dieta en su justa medida. Este espacio es para que nos cuentes cuáles son los tuyos y poder hacer magia para que los disfrutes a lo largo de la semana. Sepáralos con comas.</small></details>
         <div class="campo"><label for="pref-gustan">Alimentos que tienen que estar sí o sí en mi semana</label><input id="pref-gustan" type="text" placeholder="Ej.: chocolate negro, pizza, aguacate"></div>
         <div class="campo"><label for="pref-evitas">Alimentos que seguro que no me voy a comer ni de broma</label><input id="pref-evitas" type="text" placeholder="Ej.: hígado, coliflor, atún en lata"></div>
@@ -1195,7 +1198,7 @@
       </div>
 
       <div class="tarjeta">
-        <h2>7. Tus comidas</h2>
+        <h2>Tus comidas</h2>
         <details class="plegable"><summary style="font-size:0.9rem;font-weight:600">Saber más</summary><small class="ayuda">Desmarca las que no hagas (versión de 3-4 comidas); la hora coloca la toma antes/después del entreno.</small></details>
         <div id="franjas"></div>
         <p class="error-inline" id="franjas-error" role="alert" hidden>Activa al menos una comida para poder repartir el día. La app no impone cuántas: eliges tú.</p>
@@ -1206,7 +1209,7 @@
       </div>
 
       <div class="tarjeta">
-        <h2>8. Comunidad autónoma</h2>
+        <h2>Comunidad autónoma</h2>
         <div class="campo"><label for="comunidad">Para recetas regionales</label>
           <select id="comunidad">
             <option>Andalucía</option><option>Aragón</option><option>Asturias</option><option>Baleares</option>
@@ -1220,13 +1223,13 @@
       </div>
 
       <div class="tarjeta">
-        <h2>9. Tu desayuno (opcional)</h2>
+        <h2>Tu desayuno (opcional)</h2>
         <p class="una-linea">Si siempre desayunas lo mismo, o siempre pan con algo, dínoslo. Lo puedes cambiar luego en Perfil.</p>
         <div id="desayuno-cuestionario"></div>
       </div>
 
       <div class="tarjeta" id="tarjeta-hambre-cena-c" hidden>
-        <h2>10. Después de entrenar por la noche (opcional)</h2>
+        <h2>Después de entrenar por la noche (opcional)</h2>
         <p class="una-linea">Cuando llegas de entrenar por la noche y te toca cenar, ¿llegas con mucha hambre o con poca?</p>
         <div id="hambre-cena-cuestionario"></div>
       </div>
@@ -1458,15 +1461,24 @@
       <details class="saber-mas"><summary>Saber más</summary><p>Con poca hambre, la cena es algo más ligera y eso pasa a lo que tomas antes de entrenar: el total del día no cambia. Con mucha, la cena lleva más cantidad con las mismas calorías. Solo cambia los días que acabas de entrenar a partir de las 20:00 y cenas después. Se guarda en este navegador.</p></details>
       <div id="hambre-cena-perfil"></div>
     </div>
+    <!-- #286 (punto 18): las alergias e intolerancias, a la vista en Perfil y con su enlace para cambiarlas; el aviso de seguridad, aquí y no en «Para más adelante». -->
+    <div class="tarjeta" id="tarjeta-alergias" data-sub="alergias">
+      <h2>Alergias e intolerancias</h2>
+      <p class="una-linea" id="perfil-alergias-txt">Todavía no has calculado tu plan.</p>
+      <p class="subt" id="aviso-seguridad-alergias" style="margin:0.4rem 0"><strong>Importante:</strong> con alergias o celiaquía, las recetas de ejemplo no garantizan seguridad alimentaria. Revisa siempre las etiquetas de lo que compres.</p>
+      <p class="subt" id="alergias-rehecho" role="status" hidden></p>
+      <button type="button" class="btn-secundario" id="cambiar-alergias">Cambiar alergias e intolerancias</button>
+    </div>
     <div class="tarjeta" id="lista-negra" data-sub="alergias">
       <h2>Mi lista negra</h2>
       <p class="una-linea">Alimentos que no te vas a comer (gustos, no alergias).</p>
-      <details class="saber-mas"><summary>Saber más</summary><p>No aparecerán en tus recetas y se quedan guardados en este navegador. Para alergias e intolerancias usa el paso 5 del cuestionario: aquí solo van los gustos.</p></details>
+      <details class="saber-mas"><summary>Saber más</summary><p>No aparecerán en tus recetas y se quedan guardados en este navegador. Las alergias e intolerancias van en su tarjeta, aquí arriba: aquí solo van los gustos.</p></details>
       <div class="ln-fila">
         <input id="ln-nuevo" type="text" maxlength="40" aria-label="Alimento que no quieres comer" placeholder="Ej.: hígado, coliflor…">
         <button type="button" class="btn-secundario" id="ln-anadir">Añadir</button>
       </div>
       <ul class="ln-chips" id="ln-lista" aria-live="polite"></ul>
+      <p class="subt" id="ln-rehecho" role="status" hidden></p>
       <p class="subt" id="ln-vacio">Todavía no has añadido ninguno. ¡Aquí no se juzga a nadie!</p>
       <div id="perfil-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
     </div>
@@ -1536,7 +1548,7 @@
     </details>
     <div class="tarjeta" data-sub="datos">
       <h2>Para más adelante</h2>
-      <p class="una-linea">Con alergias o celiaquía, las recetas de ejemplo no garantizan seguridad alimentaria.</p>
+      <p class="una-linea">Lo que nos has contado y todavía no cambia tus kcal ni tus macros.</p>
       <details class="saber-mas"><summary>Saber más</summary><p>Estos datos no cambian las kcal ni los macros. Sí se usan ya en las recetas de ejemplo: las alergias e intolerancias (y lo que evitas) excluyen las recetas que los contienen, sin garantía de seguridad alimentaria (con celiaquía, ninguna receta de ejemplo se da por segura). Lo demás todavía no cambia nada.</p></details>
       <ul class="resumen-lista" id="r-resumen"></ul>
     </div>
@@ -1617,12 +1629,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=71f4f7c"></script>
-<script src="fuentes.js?v=71f4f7c"></script>
-<script src="motor.bundle.js?v=71f4f7c"></script>
-<script src="cuestionario.js?v=71f4f7c"></script>
-<script src="nube.js?v=71f4f7c"></script>
-<script src="pwa.js?v=71f4f7c"></script>
+<script src="novedades.js?v=5a96a77"></script>
+<script src="fuentes.js?v=5a96a77"></script>
+<script src="motor.bundle.js?v=5a96a77"></script>
+<script src="cuestionario.js?v=5a96a77"></script>
+<script src="nube.js?v=5a96a77"></script>
+<script src="pwa.js?v=5a96a77"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

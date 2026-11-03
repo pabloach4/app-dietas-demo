@@ -934,6 +934,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     });
     document.getElementById('perfil-atras').hidden = vista === 'menu';
     if (vista === 'gustos') pintarGustos();
+    ['alergias-rehecho', 'ln-rehecho'].forEach((id) => { document.getElementById(id).hidden = true; }); // #286.18: el aviso es del cambio que se acaba de hacer
     if (vista !== 'menu') window.scrollTo({ top: 0 });
   }
   document.querySelectorAll('#perfil-menu [data-ir]').forEach((b) => b.addEventListener('click', () => irPerfilSub(b.dataset.ir)));
@@ -1361,10 +1362,19 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       cambioListaNegra();
     }));
   }
+  // #286 (punto 18): cuando el plan se rehace por un cambio hecho en Perfil, se dice ahí mismo.
+  function avisarPlanRehecho(id, texto) {
+    const p = document.getElementById(id);
+    p.textContent = texto;
+    p.hidden = false;
+  }
   function cambioListaNegra() {
     guardarListaNegra();
     pintarListaNegra();
-    if (vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // las recetas se recalculan con la lista nueva
+    if (vistaSemana && planActual) {
+      mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); // las recetas se recalculan con la lista nueva
+      avisarPlanRehecho('ln-rehecho', 'Hecho: tu plan de la semana se ha rehecho con tu lista negra nueva.');
+    }
   }
   function anadirListaNegra() {
     const campo = document.getElementById('ln-nuevo');
@@ -2590,7 +2600,20 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // #260 (punto 34): con un plan ya hecho, «Editar perfil» se puede cancelar y volver al plan sin repetir los pasos.
     document.getElementById('btn-cancelar-edicion').hidden = !planActual;
   });
+  // #286 (punto 18): «Cambiar alergias e intolerancias» abre el paso del cuestionario donde están y, al guardar, vuelve aquí.
+  let volverAAlergias = false;
+  document.getElementById('cambiar-alergias').addEventListener('click', () => {
+    document.getElementById('resultado').hidden = true;
+    mostrarFormulario();
+    mostrarPaso(4); // las alergias están en el paso 4
+    document.getElementById('btn-cancelar-edicion').hidden = !planActual;
+    volverAAlergias = true;
+    const primera = document.getElementById('al-celiaquia');
+    primera.scrollIntoView({ block: 'center' });
+    primera.focus({ preventScroll: true });
+  });
   document.getElementById('btn-cancelar-edicion').addEventListener('click', () => {
+    volverAAlergias = false;
     // Lo que se haya tocado en el formulario no se aplica: vuelve el perfil guardado, tal cual estaba.
     try { const g = JSON.parse(localStorage.getItem(CLAVE_GUARDADO) || 'null'); if (g && typeof g === 'object') rellenarFormulario(g, { conservarSustituciones: true }); } catch { /* sin perfil guardado: se queda el formulario como esté */ }
     ocultarFormulario();
@@ -4266,6 +4289,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       respuestas.preferencias.evitan && `evita: ${respuestas.preferencias.evitan}`,
     ].filter(Boolean).join(' · ') || 'sin indicar';
     const vidaRealTxt = `${respuestas.vidaReal.turnos ? 'con turnos/guardias' : 'sin turnos'}, tiempo de cocina: ${respuestas.vidaReal.tiempoCocina}`;
+    document.getElementById('perfil-alergias-txt').textContent = alergiasTxt === 'ninguna indicada' ? 'No has indicado ninguna.' : `Tienes indicado: ${alergiasTxt}.`;
     document.getElementById('r-resumen').innerHTML = `
       <li><strong>Alergias e intolerancias:</strong> ${escaparHtml(alergiasTxt)}</li>
       <li><strong>Preferencias:</strong> ${escaparHtml(prefTxt)}</li>
@@ -4288,8 +4312,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       ocultarFormulario();
       document.getElementById('resultado').hidden = false;
       scrollPorPanel = {}; // plan nuevo: ninguna pestaña conserva la posición del anterior
-      mostrarPanel('hoy');
+      if (volverAAlergias) {
+        mostrarPanel('perfil');
+        irPerfilSub('alergias');
+        avisarPlanRehecho('alergias-rehecho', 'Hecho: tu plan se ha rehecho con estas alergias e intolerancias. Las recetas que no te encajan ya no salen.');
+      } else mostrarPanel('hoy');
     }
+    volverAAlergias = false;
   }
 
   // Issue #60: salidas de la pantalla de derivación. Volver NO desbloquea nada: al enviar de nuevo se vuelve a
