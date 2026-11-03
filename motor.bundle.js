@@ -3393,13 +3393,18 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       const fijada = fijadasPorSlot.get(claveSlotSiOSi(slot));
       const reservada = fijada ? void 0 : reservas.get(claveSlotSiOSi(slot));
       const preferida = fijada || reservada ? void 0 : preferidasPorSlot.get(claveSlotSiOSi(slot));
+      const cabeEnVolumen = (r, factor) => {
+        if (!slot.bandaPeso) return true;
+        const peso = pesoServido(gramosEscalados(r, factor));
+        return slot.bandaPeso[0] > bandaPesoServido(slot.franja, 0)[0] ? peso >= slot.bandaPeso[0] : distanciaABanda(peso, slot.bandaPeso) === 0;
+      };
       let res = { motivo: "ninguna receta disponible" };
       for (const pase of !fijada && !reservada ? pasesVariedad : [void 0]) {
         excluir = pase;
         variedadCC = esCC;
         const conservada = preferida && vale(preferida) && delDia(preferida) && variado(preferida) && semanaVaria(preferida) && desayunoVale(preferida) && !idsPedidos.has(preferida.id) && !idsDe(preferida).some((id) => evitarIds.has(id)) ? (() => {
           const e = intentarBase([preferida], false);
-          return e.elegido && alcanza(e.elegido) ? e : void 0;
+          return e.elegido && alcanza(e.elegido) && cabeEnVolumen(preferida, e.elegido.factor) ? e : void 0;
         })() : void 0;
         const libreAqui = !fijada && !reservada && !conservada;
         const niveles = !libreAqui ? [2] : otraDelDia ? [0, 1, 2] : esCC ? [0, 2] : [2];
