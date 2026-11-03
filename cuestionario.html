@@ -424,7 +424,10 @@
   .dc-ing { grid-template-columns: minmax(0, 1fr) auto auto; }
   .dc-ing-nombre { min-width: 0; overflow-wrap: anywhere; }
   .dc-ing-gramos .dc-medida { display: block; max-width: 9rem; white-space: normal; font-weight: 500; font-size: 0.78rem; color: var(--gris); }
-  @media (max-width: 359px) { .dc-ing { grid-template-columns: 1fr auto; } .dc-ing-compra { grid-column: 1 / -1; text-align: left; } .dc-ings-cab span:nth-child(3) { display: none; } }
+  /* #286 punto 22 (Andrés y Nuria): «en la compra de la semana: …» ocupaba su columna y dejaba al nombre 0-60 px, letra a letra.
+     La compra va siempre en su propia línea, debajo, y el nombre nunca parte palabras. */
+  .dc-ing { grid-template-columns: minmax(0, 1fr) auto; } .dc-ing-compra { grid-column: 1 / -1; text-align: left; min-width: 0; } .dc-ings-cab { grid-template-columns: 1fr auto; } .dc-ings-cab span:nth-child(3) { display: none; }
+  .dc-ing-nombre { overflow-wrap: break-word; }
   .dc-chiste { font-size: 0.85rem; background: var(--nota); border: 1px solid var(--nota-borde); border-radius: 8px; padding: 0.4rem 0.6rem; margin: 0.4rem 0; }
   .dc-pasos { padding-left: 1.2rem; } .dc-pasos li { margin-bottom: 0.3rem; }
   .dc-cuadre { width: 100%; border-collapse: collapse; }
@@ -484,7 +487,7 @@
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    font-size: 16px; line-height: 1.45; -webkit-font-smoothing: antialiased; padding-bottom: 7rem;
+    font-size: 16px; line-height: 1.45; -webkit-font-smoothing: antialiased; padding-bottom: calc(7rem + env(safe-area-inset-bottom)); /* #286.22: la barra flotante sube con la barra de inicio del iPhone */
   }
   header.top { padding-top: 1.4rem; }
   h1 { font-size: 1.75rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
@@ -1074,6 +1077,8 @@
     dialog#detalle-comida::backdrop, dialog#detalle-comida[open]::backdrop { background: rgba(0, 0, 0, .62); }
     input, select, textarea { color-scheme: dark; }
     .btn-principal, .tabs-app button[aria-selected="true"] { color: #fff; }
+    /* #286.22 (Javi y Elena): el elegido era --tarjeta, más oscuro que su carril (--pista), y parecía texto suelto. */
+    .subvista button[aria-pressed="true"], .dias-chips button[aria-pressed="true"] { background: #3A404C; color: var(--texto); box-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
     .tabs-app button[aria-selected="true"] { background: var(--acento-cta); border-color: var(--acento-cta); }
     .chip { color: #0F1115; }
   }
@@ -1641,12 +1646,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=bdf027b"></script>
-<script src="fuentes.js?v=bdf027b"></script>
-<script src="motor.bundle.js?v=bdf027b"></script>
-<script src="cuestionario.js?v=bdf027b"></script>
-<script src="nube.js?v=bdf027b"></script>
-<script src="pwa.js?v=bdf027b"></script>
+<script src="novedades.js?v=488a338"></script>
+<script src="fuentes.js?v=488a338"></script>
+<script src="motor.bundle.js?v=488a338"></script>
+<script src="cuestionario.js?v=488a338"></script>
+<script src="nube.js?v=488a338"></script>
+<script src="pwa.js?v=488a338"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>
