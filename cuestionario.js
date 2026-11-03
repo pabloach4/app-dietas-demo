@@ -1177,8 +1177,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const previstas = (franja) => comidas.find((c) => c.f.franja === franja).f.kcalAprox;
     const cuadreHoy = vistaSemana.cuadreDias && vistaSemana.cuadreDias.get(dia);
     const desvioHoy = cuadreHoy ? Math.round((cuadreHoy.servido - cuadreHoy.objetivo) / 10) * 10 : 0;
+    // #285 punto 12 (Laura): como en el motor, solo se ajustan las comidas de después de la primera fuera con kcal. Si no queda
+    // ninguna, no se dice «el resto del día se ha ajustado».
+    const primeraFueraHoy = Math.min(...fueraHoy.filter((x) => x.kcal !== undefined).map((x) => { const c = comidas.find((y) => y.f.franja === x.franja); return c && c.hora !== undefined ? c.hora : -1; }));
+    const quedaResto = comidas.some((c) => !fueraHoy.some((x) => x.franja === c.f.franja) && (c.hora ?? 24) > primeraFueraHoy);
     const notaFuera = fueraHoy.every((x) => x.noSe) ? 'Cuando sepas lo que has comido, apúntalo en «He comido fuera» y se ajusta el resto del día.'
       : !fueraHoy.some((x) => x.kcal !== undefined) ? 'Sin calorías apuntadas, el resto del día no se ajusta.'
+      : !quedaResto ? `Después de esta no te queda ninguna comida hoy, así que no hay nada que ajustar${!cuadreHoy || cuadreHoy.cuadrado || !desvioHoy ? ': el día queda en lo previsto.' : `: hoy te quedas unas ${Math.abs(desvioHoy)} kcal ${desvioHoy > 0 ? 'por encima' : 'por debajo'}. Mañana se sigue con el plan normal.`}`
       : !cuadreHoy || cuadreHoy.cuadrado ? 'El resto del día está ajustado a la comida fuera, con raciones normales.'
         : `El resto del día se ha ajustado hasta donde dan las raciones normales: hoy te quedas unas ${Math.abs(desvioHoy)} kcal ${desvioHoy > 0 ? 'por encima' : 'por debajo'}. Mañana se sigue con el plan normal.`;
     const bloqueFuera = fueraHoy.length ? `<div class="hoy-bloque hoy-despues"><h3>${fueraHoy.every((x) => x.prevista) ? 'Vas a comer fuera' : 'Has comido fuera'}</h3>${fueraHoy.map((x) => `<button type="button" class="hoy-fila-comida" data-dia="${dia}" data-franja="${x.franja}" data-vista="fuera" aria-label="Editar la comida fuera: ${(NOMBRE[x.franja] ?? x.franja).toLowerCase()}"><span class="texto"><strong>${NOMBRE[x.franja] ?? x.franja}</strong>${escaparHtml(x.texto)}${x.kcal !== undefined ? ` · ~${x.kcal} kcal (tu plan preveía ~${previstas(x.franja)})` : x.noSe ? ` · cuentan las de tu plan (~${previstas(x.franja)} kcal)` : ''}</span></button>`).join('')}<p class="hoy-nota hoy-nota-fuera">${notaFuera}</p></div>` : '';
@@ -1703,11 +1708,17 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const nuevos = duelosEnCurso || [];
     duelosEnCurso = null;
     if (nuevos.length && JSON.stringify(nuevos) !== JSON.stringify(historialGustos)) {
+      const antes = new Map(asignacionSemanaActual.asignaciones.map((a) => [`${a.dia}|${a.franja}`, a.receta]));
       if (!historialGustos.length) planAntesGustos = asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta }));
       historialGustos = nuevos;
       guardarGustos();
       recalcularConGustos([]);
-      gustosHecho = 'Tu plan tendrá más platos parecidos a los que te gustan.';
+      // #285 punto 12 (Javi, 4 duelos): se dice cuántos platos han cambiado de verdad y, con pocas elecciones, cuántas faltan para notarlo.
+      const cambian = asignacionSemanaActual.asignaciones.filter((a) => antes.has(`${a.dia}|${a.franja}`) && antes.get(`${a.dia}|${a.franja}`) !== a.receta).length;
+      const n = nuevos.length;
+      const faltan = Motor.MIN_DUELOS - n;
+      gustosHecho = (cambian ? `Con tus ${n} elecciones ${cambian === 1 ? 'ha cambiado 1 plato' : `han cambiado ${cambian} platos`} de la semana.` : `Con tus ${n} elecciones no ha cambiado ningún plato de la semana todavía.`)
+        + (faltan > 0 && !Motor.duelosTerminados(RECETAS_EJEMPLO, nuevos, ATRIBUTOS_RECETAS) ? ` Se nota más a partir de unas ${Motor.MIN_DUELOS}: te ${faltan === 1 ? 'falta 1' : `faltan ${faltan}`} (pulsa «Seguir eligiendo»).` : '');
     }
     pintarGustos();
   }
