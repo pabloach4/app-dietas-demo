@@ -3490,6 +3490,11 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
                 if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
               }
             }
+            const solo = res.elegido?.receta;
+            if (solo && !solo.platos && !alcanza(res.elegido)) {
+              const conPostre = postres.filter((po) => po.id !== solo.id && (!limitada || usosDe(po) < maxRep)).map((po) => componer([solo, po])).filter((c2) => !fibraExcede(slot, c2));
+              if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
+            }
           }
           if (res.elegido && (nivel !== 0 || alcanza(res.elegido) || nivel === niveles[niveles.length - 1])) {
             if (otraDelDia && !conFiltroDia && chocaConElDia(res.elegido.receta, otraDelDia, catalogoPorId)) avisos.push(`${slot.dia} ${slot.franja}: no hay ninguna receta que encaje sin repetir el plato o la prote\xEDna de la otra comida del d\xEDa; se repite.`);
@@ -3657,8 +3662,9 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     }
     return estados;
   }
+  var LEGUMBRE = /\b(lentejas?|garbanzos?|alubias?)\b/i;
   function proteinaServida(r, factor) {
-    const crece = r.ingredientes.some((i) => esPalanca(i.nombre) && rolIngrediente(i.nombre) === "proteina");
+    const crece = r.ingredientes.some((i) => esPalanca(i.nombre) && (rolIngrediente(i.nombre) === "proteina" || LEGUMBRE.test(i.nombre)));
     return r.proteina * (crece ? factor : 1);
   }
   function kcalConRacion(receta, factor) {
@@ -7472,7 +7478,7 @@ R326,Pasta con soja texturizada al tomate,comida;cena,583,37.6,12.2,85.3,EJEMPLO
 R327,Arroz con verduras y tofu a la plancha,comida;cena,631,36.0,24.3,74.7,EJEMPLO,unico,9.96,tofu firme,cereal,soja,si,si,si,pendiente_ficha,no,30,nuevo,Cocer el arroz con el piment\xF3n. Saltear el br\xF3coli y el pimiento y hacer el tofu a la plancha; servir junto. Pesar el arroz en seco.,normal
 R328,"Quinoa con tempeh, berenjena y tomate",comida;cena,608,35.7,27.2,63.3,EJEMPLO,unico,11.40,tempeh,cereal,soja,si,si,si,pendiente_ficha,no,30,nuevo,"Cocer la quinoa. Saltear la berenjena y el tempeh en dados, a\xF1adir el tomate al final; servir sobre la quinoa. Pesar la quinoa en seco.",normal
 R329,Alubia roja guisada con verduras,comida;cena,433,20.4,11.9,66.4,EJEMPLO | fibraAlta,unico,22.55,alubia roja cocida,legumbre,,si,si,si,pendiente_ficha,no,30,nuevo,"Sofre\xEDr la zanahoria y el pimiento (5 min a fuego medio), a\xF1adir la alubia cocida y el tomate triturado; cocer 15 minutos. Pesar la alubia ya cocida.",normal
-R330,"Pasta con berenjena, tomate y almendra",comida;cena,516,15.7,19.3,74.2,EJEMPLO,unico,13.07,pasta,cereal,frutos de c\xE1scara;gluten,si,si,si,no,no,30,nuevo,"Cocer la pasta (10-12 min). Saltear el ajo picado y la berenjena (8 min), a\xF1adir el tomate triturado (10 min); mezclar con la pasta y coronar con la almendra picada. Pesar la pasta en seco.",normal
+R330,"Pasta con berenjena, tomate y almendra",comida;cena,516,15.7,19.3,74.2,EJEMPLO,primero,13.07,pasta,cereal,frutos de c\xE1scara;gluten,si,si,si,no,no,30,nuevo,"Cocer la pasta (10-12 min). Saltear el ajo picado y la berenjena (8 min), a\xF1adir el tomate triturado (10 min); mezclar con la pasta y coronar con la almendra picada. Pesar la pasta en seco.",normal
 R331,Patata asada con ensalada y tofu marinado,comida;cena,573,34.4,23.7,64.6,EJEMPLO,unico,12.16,tofu firme,patata,soja,si,si,si,pendiente_ficha,no,45,nuevo,Asar la patata (40 min a 200 \xBAC). Marinar el tofu en parte del aceite con el ajo picado y el perejil (10 min) y dorarlo a la plancha (5 min); servir con la lechuga y el tomate ali\xF1ados.,normal
 R332,Yogur de soja con nueces y manzana,media_manana;merienda,282,7.8,13.5,35.2,EJEMPLO,unico,4.21,yogur de soja,,frutos de c\xE1scara;soja,si,si,si,pendiente_ficha,si,5,nuevo,Mezclar el yogur con la manzana en dados y las nueces.,normal
 R333,Hummus con zanahoria y pepino,media_manana;merienda,198,6.2,11.0,22.2,EJEMPLO | fibraAlta,unico,6.60,hummus,legumbre,s\xE9samo,si,si,si,pendiente_ficha,no,5,nuevo,Bastones de zanahoria y pepino con el hummus.,normal
@@ -7530,7 +7536,7 @@ R407,Ensalada de alubia roja con pimiento y aguacate,comida;cena,365,16.2,13.5,4
 R408,Lentejas con arroz y yogur,comida;cena,624,27.1,15.3,96.5,EJEMPLO | fibraAlta | doble_base | carga,unico,18.98,lenteja cocida,legumbre;cereal,l\xE1cteos,si,no,no,pendiente_ficha,no,30,nuevo,"Sofre\xEDr la cebolla y la zanahoria, a\xF1adir la lenteja y cocer 10 minutos. Cocer el arroz aparte y servir con el yogur. Pesar la lenteja cocida y el arroz en seco.",carga
 R410,Pasta con verduras y mozzarella,comida;cena,593,26.0,25.4,67.4,EJEMPLO,unico,7.70,mozzarella,cereal,gluten;l\xE1cteos,si,no,no,no,no,25,nuevo,"Cocer la pasta. Sofre\xEDr el calabac\xEDn y el pimiento con el tomate, mezclar con la pasta y fundir la mozzarella encima. Pesar la pasta en seco.",normal
 R411,Arroz con verduras y queso fresco,comida;cena,622,23.5,30.1,66.1,EJEMPLO,unico,6.36,queso fresco,cereal,l\xE1cteos,si,no,no,pendiente_ficha,no,25,nuevo,"Cocer el arroz y el br\xF3coli. Saltear la zanahoria, mezclar con el arroz y desmigar el queso fresco por encima. Pesar el arroz en seco.",normal
-R412,Cusc\xFAs con verduras asadas y yogur,comida;cena,469,14.8,15.0,70.6,EJEMPLO,unico,10.03,yogur natural,cereal,gluten;l\xE1cteos,si,no,no,no,no,30,nuevo,"Asar la berenjena, el pimiento y la cebolla. Preparar el cusc\xFAs y servir con las verduras y el yogur. Pesar el cusc\xFAs en seco.",normal
+R412,Cusc\xFAs con verduras asadas y yogur,comida;cena,469,14.8,15.0,70.6,EJEMPLO,primero,10.03,yogur natural,cereal,gluten;l\xE1cteos,si,no,no,no,no,30,nuevo,"Asar la berenjena, el pimiento y la cebolla. Preparar el cusc\xFAs y servir con las verduras y el yogur. Pesar el cusc\xFAs en seco.",normal
 R413,Pisto con queso fresco y pan integral,comida;cena,522,24.0,31.5,39.6,EJEMPLO | fibraAlta,unico,9.47,queso fresco,pan,gluten;l\xE1cteos,si,no,no,no,no,30,nuevo,"Pochar la cebolla, el pimiento y el calabac\xEDn; a\xF1adir el tomate y cocer. Servir con el queso fresco desmigado y el pan. Pesar el pan tal cual.",normal
 R414,Ensalada templada de lenteja con queso fresco,comida;cena,530,30.3,25.3,48.8,EJEMPLO | fibraAlta,unico,17.40,queso fresco,legumbre,l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,"Templar la lenteja y mezclar con el tomate, el pepino y el queso fresco; ali\xF1ar con el aceite. Pesar la lenteja cocida.",normal
 R417,Ensalada de garbanzo con yogur y pepino,comida;cena,416,20.0,13.5,57.2,EJEMPLO | fibraAlta,unico,13.86,garbanzo cocido,legumbre,l\xE1cteos,si,no,no,pendiente_ficha,no,10,nuevo,Mezclar el garbanzo con el pepino y el tomate; ali\xF1ar con el yogur y el aceite. Pesar el garbanzo cocido.,normal
@@ -8994,7 +9000,7 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
       const antes = sumar();
       const margen = TOLERANCIA_DIA * objetivo;
       let resto = objetivo - antes;
-      if (Math.abs(resto) > margen && objetivo > 0) {
+      if ((Math.abs(resto) > margen || resto > margen * 0.5) && objetivo > 0) {
         const subir = resto > 0;
         const orden = subir ? ORDEN_SUBIDA : ORDEN_BAJADA;
         const candidatas = [...mias].sort((a2, b) => orden.indexOf(a2.franja) - orden.indexOf(b.franja));
@@ -9030,11 +9036,11 @@ R477,aceite de oliva,10,grasa,171413,peso a\xF1adido,`;
           resto = objetivo - sumar();
         }
       }
-      if (opciones.admite && objetivo - sumar() > margen) {
+      if (opciones.admite && objetivo - sumar() > margen * 0.5) {
         const postres = recetas.filter((x) => x.tipoPlato === "postre" && opciones.admite(x));
         for (const fr of ["comida", "cena"]) {
           const falta = objetivo - sumar();
-          if (falta <= margen) break;
+          if (falta <= margen * 0.5) break;
           const a2 = mias.find((x) => x.franja === fr);
           if (!a2 || opciones.noMover?.(dia, fr)) continue;
           const base = recetaDeId(porId, a2.receta);
