@@ -251,6 +251,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   const textoCitaGuardada = (cita) => (cita.via === 'nube' || (!cita.via && nubeActiva() === true)
     ? `Pediste cita el ${fechaLegible(cita.fecha.slice(0, 10))}. Pablo te contestará para cerrarla.`
     : `Si ya has enviado el correo del ${fechaLegible(cita.fecha.slice(0, 10))}, Pablo te contestará para cerrar la cita. Si no, vuelve a pulsar «Pedir cita».`);
+  // #286 punto 21 e (Rosa y Pedro): no decía cómo contestaría Pablo. El plazo no se promete: es decisión de Pablo (preguntado en #286).
+  const TEXTO_COMO_CONTESTA = 'Te contesta Pablo en persona, no un sistema automático: por correo y, si pides cita, para cerrarla contigo. No es un chat en directo: si es urgente para tu salud, llama al 112 o ve a tu centro de salud.';
   function pintarHablarPablo() {
     const cita = leerCita();
     const wa = Motor.whatsappPablo(Boolean(cita));
@@ -258,6 +260,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const franjas = Object.entries(Motor.FRANJAS_CITA).map(([k, v], i) => `<label class="hp-op"><input type="radio" name="hp-franja" value="${k}"${i === 2 ? ' checked' : ''}> ${v}</label>`).join('');
     document.querySelectorAll('.hablar-pablo').forEach((caja, n) => {
       caja.innerHTML = `<h3 class="hp-titulo">Hablar con Pablo</h3>
+        <p class="subt hp-como">${escaparHtml(TEXTO_COMO_CONTESTA)}</p>
         <a class="btn-secundario hp-correo" href="${escaparHtml(Motor.enlaceCorreoPablo())}">✉️ Escribir un correo</a>
         <button type="button" class="btn-secundario hp-cita-abrir" aria-expanded="false" style="margin-top:0.5rem">📅 Pedir cita</button>
         <form class="hp-cita" hidden>
@@ -2423,7 +2426,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     }
     const conflictos = Motor.conflictosComidaEntreno(eventos);
     boton.disabled = conflictos.length > 0; // con choques, se habilita al marcar «he revisado los horarios»
-    const cuenta = (cat) => eventos.filter((e) => e.categoria === cat).length;
+    // #286 punto 21 d (Nuria): las comidas y los entrenos son de UNA semana; el aviso de fin de la dieta o una competición pueden caer
+    // semanas después, y «Del 26 de octubre al 15 de noviembre» hacía creer que traía tres semanas de comidas.
+    const finSemana = Motor.fechaDelDia(calInicio, Motor.DIAS[6]);
+    const enSemana = eventos.filter((e) => e.fecha >= calInicio && e.fecha <= finSemana);
+    const fuera = eventos.filter((e) => e.fecha < calInicio || e.fecha > finSemana);
+    const cuenta = (cat) => enSemana.filter((e) => e.categoria === cat).length;
     const bloqueConflictos = conflictos.length ? `
       <div class="error-inline" id="cal-exp-conflictos" role="alert">
         <strong>Revisa los horarios antes de descargar:</strong> ${conflictos.length === 1 ? 'una comida cae' : `${conflictos.length} comidas caen`} durante un entreno. No se ha movido ni borrado nada.
@@ -2431,9 +2439,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         <label class="check"><input type="checkbox" id="cal-exp-revisado"> He revisado los horarios y quiero descargar igualmente</label>
       </div>` : '';
     preview.innerHTML = `${bloqueConflictos}
-      <p style="margin:0">Del <strong>${fechaLegible(eventos[0].fecha)}</strong> al <strong>${fechaLegible(eventos[eventos.length - 1].fecha)}</strong> ·
-        ${eventos.length} eventos (${cuenta('comidas')} comidas, ${cuenta('entrenos')} entrenos, ${cuenta('competiciones')} competiciones) ·
-        zona: ${zona.id}</p>
+      <p style="margin:0">Trae <strong>una semana</strong>: la del <strong>${fechaLegible(calInicio, false)}</strong> al <strong>${fechaLegible(finSemana)}</strong> ·
+        ${cuenta('comidas')} comidas, ${cuenta('entrenos')} entrenos${cuenta('competiciones') ? ` y ${cuenta('competiciones')} de competición` : ''} · zona: ${zona.id}</p>
+      ${fuera.length ? `<p style="margin:0.3rem 0 0" id="cal-exp-fuera">Además, fuera de esa semana: ${fuera.map((e) => `${escaparHtml(e.titulo)} (${fechaLegible(e.fecha, false)})`).join('; ')}.</p>` : ''}
+      <p class="subt" style="margin:0.3rem 0 0">Para otra semana, cambia arriba el lunes de inicio y descárgalo otra vez.</p>
       <ul class="exp-preview-lista">
         ${eventos.map((e) => `<li><strong>${fechaLegible(e.fecha, false)}</strong> · ${e.hora ? `${e.hora}${e.duracionMin ? ` (${e.duracionMin} min)` : ''}` : 'todo el día'} — ${escaparHtml(e.titulo)}${e.detalle ? `<br><span style="color:var(--gris)">${escaparHtml(e.detalle)}</span>` : ''}</li>`).join('')}
       </ul>
@@ -4337,6 +4346,21 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const primero = document.querySelector('.paso[data-paso="4"] input');
     if (primero) primero.focus();
   });
+  // #286 punto 21 g (Sara): el freno no decía por qué. En palabras llanas y sin cifras del cuerpo (las cifras las ve Pablo en la alerta).
+  const POR_QUE_FRENO = {
+    ffmi_bajo: 'tu peso y tu masa muscular ya están en la parte baja para tu altura',
+    imc_bajo: 'tu peso ya está en la parte baja para tu altura',
+    grasa_minima: 'tu grasa corporal ya está muy baja',
+    perdida_3m: 'has perdido peso en los últimos meses sin buscarlo',
+    perdida_habitual: 'pesas bastante menos de lo habitual sin haberlo buscado',
+    disponibilidad_baja: 'con lo que entrenas, comer menos te dejaría con poca energía para tu cuerpo',
+  };
+  function porQueFreno(motivos) {
+    const r = [...new Set((motivos || []).map((m) => POR_QUE_FRENO[m.codigo]).filter(Boolean))];
+    if (!r.length) return '';
+    const lista = r.length === 1 ? r[0] : `${r.slice(0, -1).join(', ')} y ${r[r.length - 1]}`;
+    return `Por qué: según tus respuestas, ${lista}. Perder grasa ahora podría quitarte energía y salud, y eso lo tiene que ver Pablo contigo.`;
+  }
   // #229: salidas de la pantalla del freno de «perder grasa».
   document.querySelectorAll('#freno-peso [data-objetivo]').forEach((b) => b.addEventListener('click', () => {
     document.getElementById('objetivo').value = b.dataset.objetivo;
@@ -4472,6 +4496,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const freno = Motor.frenoBajoPeso(resultado.perfil, respuestas.cribado);
     if (freno.salta) {
       const alerta = Motor.alertaFreno(freno, new Date().toISOString());
+      document.getElementById('freno-por-que').textContent = porQueFreno(freno.motivos);
       guardarAlertas(Motor.anadirAlerta(leerAlertas(), alerta));
       pintarAlertas();
       descartarPlanAnterior();

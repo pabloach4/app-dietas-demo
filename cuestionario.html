@@ -150,7 +150,9 @@
   .aviso-gluten { display: block; font-size: 0.875rem; font-weight: 600; color: var(--ambar); } /* #242 */
   .aviso-suelo { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: var(--radio); padding: 0.8rem 1rem; margin: 0 0 1rem; color: var(--texto); } /* #230 */
   #freno-peso { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: var(--radio); padding: 1.2rem; margin-bottom: 1rem; color: var(--texto); } /* #229: tono amable, no de error */
-  #derivar { background: var(--derivar); border: 1px solid var(--derivar-borde); border-radius: var(--radio); padding: 1.2rem; font-weight: 600; color: var(--peligro); margin-bottom: 1rem; text-align: center; }
+  #derivar { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: var(--radio); padding: 1.2rem; color: var(--texto); margin-bottom: 1rem; } /* #286.21f: tono amable, no de alarma (como el freno) */
+  #derivar-pasos, #freno-pasos { margin: 0 0 0.8rem; padding-left: 1.3rem; }
+  #derivar-pasos li, #freno-pasos li { margin-bottom: 0.3rem; }
   #elegir-deporte { background: var(--nota); border: 1px solid var(--nota-borde); border-radius: var(--radio); padding: 1rem; margin-bottom: 1rem; }
   #elegir-deporte select { margin: 0.6rem 0; }
 
@@ -1239,6 +1241,11 @@
   <div id="incompleto" hidden></div>
   <div id="derivar" hidden tabindex="-1">
     <p id="derivar-texto" style="margin:0 0 0.8rem"></p>
+    <h2 style="font-size:1.05rem;margin:0 0 0.4rem">Qué hacer ahora</h2>
+    <ol id="derivar-pasos">
+      <li><strong>Habla con Pablo:</strong> escríbele un correo o pide cita aquí debajo. Es lo primero.</li>
+      <li><strong>Mientras tanto,</strong> más abajo tienes recetas de ejemplo y consejos generales. Las cantidades te las da Pablo.</li>
+    </ol>
     <div class="hablar-pablo" data-donde="derivar"></div>
     <section id="derivar-extra" style="text-align:left;font-weight:400;color:inherit;margin-top:1rem">
       <h2 style="font-size:1.05rem">Mientras tanto: recetas y consejos</h2>
@@ -1254,7 +1261,12 @@
   </div>
   <div id="freno-peso" hidden tabindex="-1">
     <p style="margin:0 0 0.8rem"><strong>Ahora mismo no es buen momento para perder grasa:</strong> Pablo prefiere verlo contigo antes. <span id="freno-aviso-pablo"></span></p>
-    <p style="margin:0 0 0.8rem">Mientras tanto, puedes tener un plan para:</p>
+    <p id="freno-por-que" style="margin:0 0 0.8rem"></p>
+    <h2 style="font-size:1.05rem;margin:0 0 0.4rem">Qué hacer ahora</h2>
+    <ol id="freno-pasos">
+      <li><strong>Elige aquí debajo un plan</strong> para mantener tu peso o para ganar músculo. Puedes usarlo desde hoy.</li>
+      <li><strong>Habla con Pablo</strong> (correo o cita, más abajo): con él decides si te conviene perder grasa y cómo.</li>
+    </ol>
     <button type="button" class="btn-principal" data-objetivo="mantener">Ver un plan para mantener mi peso</button>
     <button type="button" class="btn-secundario" data-objetivo="ganar músculo" style="margin-top:0.5rem">Ver un plan para ganar músculo</button>
     <div class="hablar-pablo" data-donde="freno"></div>
@@ -1629,12 +1641,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=e4ff002"></script>
-<script src="fuentes.js?v=e4ff002"></script>
-<script src="motor.bundle.js?v=e4ff002"></script>
-<script src="cuestionario.js?v=e4ff002"></script>
-<script src="nube.js?v=e4ff002"></script>
-<script src="pwa.js?v=e4ff002"></script>
+<script src="novedades.js?v=bdf027b"></script>
+<script src="fuentes.js?v=bdf027b"></script>
+<script src="motor.bundle.js?v=bdf027b"></script>
+<script src="cuestionario.js?v=bdf027b"></script>
+<script src="nube.js?v=bdf027b"></script>
+<script src="pwa.js?v=bdf027b"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>
