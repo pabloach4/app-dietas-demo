@@ -907,10 +907,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const d = planActual.dias.find((x) => x.dia === dia);
     return porqueHtml(clave, [
       ['Calorías del día', Motor.explicarKcalDia(planActual, d)],
-      ['Tipo de día', Motor.explicarTipoDia(d)],
+      ['Tipo de día', Motor.explicarTipoDia(d, semanaActual.perfil.peso)],
       ['Proteína', Motor.explicarProteina(planActual, semanaActual.perfil)],
       ['Grasa', Motor.explicarGrasa(planActual, d)],
-      ['Hidrato', Motor.explicarHidrato(planActual, d)],
+      ['Hidrato', Motor.explicarHidrato(planActual, d, semanaActual.perfil.peso)],
     ], '¿Por qué estas cifras?');
   }
   // --- Issue #43: navegación por secciones (Mi plan / Compra) y resumen del día ---
@@ -1170,7 +1170,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         const fin = s.horaInicio + s.minutos / 60;
         estado = horaAct < s.horaInicio ? `hoy a las ${horaDecimalATexto(s.horaInicio)}`
           : horaAct < fin ? `según el horario previsto, ahora (${horaDecimalATexto(s.horaInicio)}-${horaDecimalATexto(fin % 24)})`
-            : `su hora prevista (${horaDecimalATexto(s.horaInicio)}) ya pasó; no se registra si la hiciste`;
+            : `su hora prevista (${horaDecimalATexto(s.horaInicio)}) ya pasó`; // #286: sin la nota interna de #260.30
       }
       return `<div class="hoy-bloque"><h3>Entreno de hoy</h3><div class="titulo">${escaparHtml(nombre)} · ${s.minutos}'${notaSesionHtml(s)}</div><div>${estado}</div></div>`;
     }).join('') : '<div class="hoy-bloque"><h3>Entreno de hoy</h3><div class="titulo">Sin entreno previsto hoy. Descansar también es parte del plan (y de los buenos).</div></div>';

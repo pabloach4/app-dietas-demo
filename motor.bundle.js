@@ -6193,14 +6193,14 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     if (a2.objetivo === "mantener") return [`Objetivo \xAB${obj}\xBB: no se a\xF1ade ni se quita nada al gasto.`];
     if (a2.objetivo === "perder_grasa") {
       const l = [
-        `Objetivo \xAB${obj}\xBB: d\xE9ficit de ${f(-a2.kcal)} kcal al d\xEDa, para perder peso poco a poco (un ${f(a2.ritmoPct ?? 0, 2)} % de tu peso por semana).`
+        `Objetivo \xAB${obj}\xBB: comes ${f(-a2.kcal)} kcal al d\xEDa menos de lo que gastas, para perder peso poco a poco (un ${f(a2.ritmoPct ?? 0, 2)} % de tu peso por semana).`
       ];
-      if (a2.topeAplicado) l.push(`Ese ritmo ped\xEDa recortar m\xE1s de lo prudente, as\xED que el d\xE9ficit se queda en ${f(-a2.kcal)} kcal.`);
+      if (a2.topeAplicado) l.push(`Ese ritmo ped\xEDa recortar m\xE1s de lo prudente, as\xED que el recorte se queda en ${f(-a2.kcal)} kcal al d\xEDa.`);
       else l.push("Es un recorte prudente para tu gasto.");
       return l;
     }
-    if (a2.objetivo === "recomposicion") return [`Objetivo \xAB${obj}\xBB: d\xE9ficit suave del ${f(a2.porcentaje ?? 0)} % del gasto medio = ${f(-a2.kcal)} kcal al d\xEDa.`];
-    return [`Objetivo \xAB${obj}\xBB: super\xE1vit del ${f(a2.porcentaje ?? 0, 1)} % del gasto medio = ${f(a2.kcal)} kcal al d\xEDa.`];
+    if (a2.objetivo === "recomposicion") return [`Objetivo \xAB${obj}\xBB: un recorte suave, el ${f(a2.porcentaje ?? 0)} % de lo que gastas de media: ${f(-a2.kcal)} kcal menos al d\xEDa.`];
+    return [`Objetivo \xAB${obj}\xBB: comes un ${f(a2.porcentaje ?? 0, 1)} % m\xE1s de lo que gastas de media: ${f(a2.kcal)} kcal m\xE1s al d\xEDa.`];
   }
   function explicarKcalMedia(plan, opts = {}) {
     const d = plan.detalle;
@@ -6224,7 +6224,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const nombre = NOMBRE_DIA_LARGO[dia.dia] ?? dia.dia;
     const detalle = [
       dia.kcalEntreno > 0 ? `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno + el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta el entreno (${f(dia.kcalEntreno)} kcal) = ${f(dia.gasto)} kcal.` : `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno (no hay entreno ese d\xEDa) = ${f(dia.gasto)} kcal.`,
-      Math.abs(ajusteDia) < 0.5 ? `Tu objetivo no a\xF1ade ni quita nada, as\xED que salen ${f(dia.kcalSinLimites)} kcal.` : `Con el ajuste del objetivo (${ajusteDia < 0 ? "d\xE9ficit" : "super\xE1vit"} de ${f(Math.abs(ajusteDia))} kcal) salen ${f(dia.kcalSinLimites)} kcal.`
+      Math.abs(ajusteDia) < 0.5 ? `Tu objetivo no a\xF1ade ni quita nada, as\xED que salen ${f(dia.kcalSinLimites)} kcal.` : `Con el ajuste de tu objetivo (${f(Math.abs(ajusteDia))} kcal ${ajusteDia < 0 ? "menos" : "m\xE1s"}) salen ${f(dia.kcalSinLimites)} kcal.`
     ];
     let resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son lo que gastas ese d\xEDa (${f(dia.gasto)}) m\xE1s el ajuste de tu objetivo.`;
     if (dia.limitadoPor === "oscilacion") {
@@ -6238,9 +6238,17 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     }
     return { resumen, detalle };
   }
-  function explicarTipoDia(dia) {
-    const [a2, b] = dia.hidratoRecomendadoGKg;
-    const rango = `${a2}-${b} g/kg de hidrato`;
+  function pesoDelDia(dia, peso) {
+    if (peso && peso > 0) return peso;
+    return dia.hidratoGKg > 0 ? dia.hidratoG / dia.hidratoGKg : void 0;
+  }
+  function hidratoQueToca(dia, peso) {
+    const p = pesoDelDia(dia, peso);
+    if (!p) return "lo que toca a este tipo de d\xEDa";
+    const [a2, b] = dia.hidratoRecomendadoGKg.map((x) => Math.round(x * p / 5) * 5);
+    return `entre ${f(a2)} y ${f(b)} g de hidratos`;
+  }
+  function explicarTipoDia(dia, peso) {
     const base = {
       carga_alta: `D\xEDa de carga alta: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), a partir de 180 min.`,
       duro: `D\xEDa exigente: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), entre 60 y 179 min.`,
@@ -6252,8 +6260,8 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     return {
       resumen: base[dia.tipo] ?? `D\xEDa ${dia.tipo}.`,
       detalle: [
-        `El tipo de d\xEDa decide el rango recomendado de hidrato: ${rango}.`,
-        `Hoy el plan da ${f(dia.hidratoGKg, 1)} g/kg.`
+        `El tipo de d\xEDa decide cu\xE1nto hidrato toca: para ti, ${hidratoQueToca(dia, peso)}.`,
+        `Este d\xEDa el plan lleva ${f(dia.hidratoG)} g.`
       ]
     };
   }
@@ -6261,18 +6269,18 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const p = plan.proteina;
     const rama = plan.detalle.proteina.rama;
     const porQue = {
-      deficit_magro: "En d\xE9ficit, con poca grasa corporal y entrenando, sube a 2,2 g/kg para proteger el m\xFAsculo.",
-      deficit_deportista: "En d\xE9ficit y entrenando sube a 2,0 g/kg para proteger el m\xFAsculo.",
-      deportista: "Entrenando de forma regular se usa 1,8 g/kg.",
-      general: "Sin entreno regular se usa 1,6 g/kg, que tambi\xE9n es el suelo del m\xE9todo."
+      deficit_magro: "Comes algo menos de lo que gastas, tienes poca grasa corporal y entrenas: la prote\xEDna sube al m\xE1ximo para proteger el m\xFAsculo.",
+      deficit_deportista: "Comes algo menos de lo que gastas y entrenas: la prote\xEDna sube para proteger el m\xFAsculo.",
+      deportista: "Entrenas de forma regular: llevas algo m\xE1s de prote\xEDna que alguien que no entrena.",
+      general: "Sin entreno regular llevas la cantidad de prote\xEDna de base, la que se pone a cualquier persona."
     };
     const ajustado = Math.abs(p.pesoReferencia - perfil.peso) > 0.05;
     return {
-      resumen: `La prote\xEDna es la misma todos los d\xEDas: ${f(p.gKg, 1)} g por kg \xD7 ${f(p.pesoReferencia, 1)} kg de peso de referencia = ${f(p.gDia)} g.`,
+      resumen: `La prote\xEDna es la misma todos los d\xEDas: ${f(p.gDia)} g, seg\xFAn tu peso y lo que entrenas.`,
       detalle: [
         porQue[rama],
         ajustado ? `El peso de referencia (${f(p.pesoReferencia, 1)} kg) es un peso ajustado, no tu peso real (${f(perfil.peso, 1)} kg): con tu peso y tu altura, as\xED la prote\xEDna sale m\xE1s ajustada a lo que necesitas.` : "El peso de referencia es tu peso real.",
-        `Por comida principal, el m\xE9todo recomienda entre ${f(p.porComidaG[0])} y ${f(p.porComidaG[1])} g (0,25-0,4 g/kg).`
+        `En cada comida principal conviene tomar entre ${f(p.porComidaG[0])} y ${f(p.porComidaG[1])} g.`
       ]
     };
   }
@@ -6288,15 +6296,14 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       ]
     };
   }
-  function explicarHidrato(plan, dia) {
+  function explicarHidrato(plan, dia, peso) {
     const [a2, b] = dia.hidratoRecomendadoGKg;
     const hayAviso = plan.avisos.some((x) => x.codigo === "hidrato_bajo" && x.texto.startsWith(dia.dia));
     const posicion = dia.hidratoGKg < a2 ? "por debajo de" : dia.hidratoGKg > b ? "por encima de" : "dentro de";
     return {
       resumen: `El hidrato es lo que queda de las kcal del d\xEDa tras la prote\xEDna y la grasa: (${f(dia.kcal)} \u2212 4 \xD7 ${f(dia.proteinaG)} \u2212 9 \xD7 ${f(dia.grasaG)}) \xF7 4 = ${f(dia.hidratoG)} g.`,
       detalle: [
-        `Son ${f(dia.hidratoGKg, 1)} g por kg de peso.`,
-        `Para un d\xEDa de tipo \xAB${dia.tipo}\xBB el rango recomendado es ${a2}-${b} g/kg: este d\xEDa queda ${posicion} ese rango.`,
+        `Para un d\xEDa as\xED te toca ${hidratoQueToca(dia, peso)}: este d\xEDa queda ${posicion} lo que toca.`,
         ...hayAviso ? ["Hay un aviso de hidrato bajo para este d\xEDa (ver Avisos): el plan no afirma que cumpla el rango."] : []
       ]
     };
@@ -6312,7 +6319,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const esPrincipal = d.proteinaTipo === "principal";
     const sinCarga = franja.rol === "normal" && (contexto.tipoDia === "descanso" || contexto.tipoDia === "fuerza");
     const lineas = [
-      esPrincipal ? `Prote\xEDna (${f(franja.proteina)} g): las comidas principales (desayuno, comida y cena) se reparten la del d\xEDa (${f(contexto.proteinaDia)} g). La referencia orientativa es 0,25-0,4 g/kg por principal (hasta ${f(0.4 * contexto.pesoRef, 1)} g); no es un m\xE1ximo absoluto.` : `Prote\xEDna (${f(franja.proteina)} g): media ma\xF1ana y merienda se reparten lo que sobra tras las principales, con un tope de 25 g cada una.`,
+      esPrincipal ? `Prote\xEDna (${f(franja.proteina)} g): las comidas principales (desayuno, comida y cena) se reparten la del d\xEDa (${f(contexto.proteinaDia)} g). Como referencia orientativa, hasta unos ${f(0.4 * contexto.pesoRef, 1)} g por comida principal; no es un m\xE1ximo absoluto.` : `Prote\xEDna (${f(franja.proteina)} g): media ma\xF1ana y merienda se reparten lo que sobra tras las principales, con un tope de 25 g cada una.`,
       ...d.proteinaTopeSecundaria ? [esPrincipal ? `Las tomas secundarias (media ma\xF1ana y merienda) llegaron a su tope de 25 g y el sobrante volvi\xF3 a las comidas principales: por eso ${franja.proteina > 0.4 * contexto.pesoRef ? `esta principal pasa de los ${f(0.4 * contexto.pesoRef, 1)} g de referencia` : "esta principal lleva m\xE1s que sin ese tope"}.` : "Esta toma secundaria lleg\xF3 al tope de 25 g y el exceso se movi\xF3 a las comidas principales."] : [],
       // #260 (punto 30): en palabras («su parte del hidrato del día»), sin «peso de la franja × factor».
       `Hidrato (${f(franja.hidrato)} g): de los ${f(contexto.hidratoDia)} g del d\xEDa, a esta comida le toca su parte${d.factor !== 1 ? `, con un extra (\xD7${f(d.factor, 1)}) por el entreno` : ""}: ${f(franja.hidrato)} g.`,
@@ -6942,7 +6949,7 @@ r43,aceite de oliva,10`;
       let kcal = kcalDia;
       if (pausa && gastoDia - kcal >= 20) {
         kcal = gastoDia;
-        motivos.push(`d\xE9ficit en pausa: comes lo que gastas (${Math.round(gastoDia)} kcal)`);
+        motivos.push(`sin recorte de kcal estos d\xEDas: comes lo que gastas (${Math.round(gastoDia)} kcal)`);
       }
       const base4 = 4 * d.proteinaG + 9 * d.grasaG;
       let hidrato = d.hidratoG;
@@ -6953,9 +6960,9 @@ r43,aceite de oliva,10`;
         if (hidrato < minimo) {
           kcal = base4 + KCAL_POR_G_HIDRATO * minimo;
           hidrato = minimo;
-          motivos.push(`hidratos al m\xEDnimo de ${minGKg} g/kg (${minimo} g): suben las kcal lo mismo (4 kcal/g); prote\xEDna y grasa no cambian`);
+          motivos.push(`hidratos subidos a lo que pide la prueba (${minimo} g): las kcal suben lo mismo; prote\xEDna y grasa no cambian`);
         } else {
-          motivos.push(`hidratos ya por encima del m\xEDnimo de ${minGKg} g/kg (${Math.ceil(minGKg * perfil.peso)} g)`);
+          motivos.push(`hidratos ya por encima de lo que pide la prueba (${Math.ceil(minGKg * perfil.peso)} g)`);
         }
       }
       if (sinFibra && fibraIntestino && fase !== "vispera") motivos.push("has tenido problemas intestinales compitiendo: poca fibra desde 2 d\xEDas antes (sin legumbre, integrales ni verdura cruda)");
