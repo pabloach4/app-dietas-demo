@@ -1142,7 +1142,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       : !listaBajadas ? 'Con raciones normales no se ha podido quitar nada del resto del día.'
         : descuentoAyunasHoy.descontado < descuentoAyunasHoy.kcal - 25 ? `Con raciones normales solo se han podido quitar unas ${descuentoAyunasHoy.descontado} kcal: baja${bajadasToma.length > 1 ? 'n' : ''} ${listaBajadas}.`
           : `Hecho: baja${bajadasToma.length > 1 ? 'n' : ''} ${listaBajadas}.`;
-    const bloqueAyunas = tomaSug ? `<div class="hoy-bloque" id="hoy-toma-ayunas"><h3>Antes de entrenar</h3><p style="margin:0 0 0.4rem">Entrenas a las ${escaparHtml(horaDecimalATexto(tomaSug.inicio))} sin comer antes. Si te sienta bien, toma algo ligero 30-60 min antes, por ejemplo ${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)} (unas ${tomaSug.kcal} kcal). Es solo una sugerencia.</p><label class="hoy-check"><input type="checkbox" id="hoy-toma-check"${tomada ? ' checked' : ''}> Me la he tomado</label><p class="hoy-nota" id="hoy-toma-nota">${escaparHtml(notaToma)}</p></div>` : '';
+    // #285 punto 8: la sugerencia, solo antes de la hora del entreno. Después solo se puede apuntar, si queda alguna comida de la que quitarla (o desmarcar).
+    const tomaPasada = Boolean(tomaSug) && horaAct >= tomaSug.inicio;
+    const verToma = Boolean(tomaSug) && (!tomaPasada || tomada || conHora.some((c) => c.hora > horaAct));
+    const textoToma = !tomaSug ? '' : tomaPasada ? `¿Tomaste algo ligero antes de entrenar a las ${escaparHtml(horaDecimalATexto(tomaSug.inicio))}? Apúntalo aquí (${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)}, unas ${tomaSug.kcal} kcal).`
+      : `Entrenas a las ${escaparHtml(horaDecimalATexto(tomaSug.inicio))} sin comer antes. Si te sienta bien, toma algo ligero 30-60 min antes, por ejemplo ${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)} (unas ${tomaSug.kcal} kcal). Es solo una sugerencia.`;
+    const bloqueAyunas = verToma ? `<div class="hoy-bloque" id="hoy-toma-ayunas"><h3>Antes de entrenar</h3><p style="margin:0 0 0.4rem">${textoToma}</p><label class="hoy-check"><input type="checkbox" id="hoy-toma-check"${tomada ? ' checked' : ''}> Me la he tomado</label><p class="hoy-nota" id="hoy-toma-nota">${escaparHtml(notaToma)}</p></div>` : '';
     const avisoHorarioHtml = choques.length ? `<div class="hoy-bloque" id="hoy-choques" role="status"><h3>Revisa el horario de hoy</h3>${choques.map((c) => `<p style="margin:0 0 0.3rem">${escaparHtml(c.texto)}</p>`).join('')}<button type="button" class="btn-secundario" id="hoy-cambiar-hora" data-dia="${dia}">Cambiar la hora</button></div>` : '';
     const compiteHoy = otraSemana ? [] : compiteEseDia(dia);
     const bloqueEntreno = compiteHoy.length ? `<div class="hoy-bloque"><h3>Hoy compites</h3><div class="titulo">${escaparHtml(compiteHoy.map((c) => c.nombre).join(' y '))}: la prueba sustituye al entreno habitual de hoy.</div></div>` // #257.14
@@ -4048,6 +4053,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           </div>
           <div class="dia-macros">P ${d.proteinaG} g · G ${d.grasaG} g · H ${d.hidratoG} g</div>
           ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
+          ${reparto.tomaSugerida ? `<p class="subt toma-sugerida">Antes de entrenar a las ${escaparHtml(horaDecimalATexto(reparto.tomaSugerida.inicio))}: si te sienta bien, algo ligero 30-60 min antes, por ejemplo ${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)} (unas ${reparto.tomaSugerida.kcal} kcal). Es solo una sugerencia.</p>` : ''}
           ${badgesHtml}
           ${moverHtml}
           <button type="button" class="dia-toggle" aria-expanded="${abierta}" aria-controls="panel-franjas-${d.dia}">${abierta ? 'Ocultar reparto por comidas ▴' : 'Ver reparto por comidas ▾'}</button>
