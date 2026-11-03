@@ -6243,8 +6243,9 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const rango = `${a2}-${b} g/kg de hidrato`;
     const base = {
       carga_alta: `D\xEDa de carga alta: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), a partir de 180 min.`,
-      duro: `D\xEDa duro: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), entre 60 y 179 min.`,
-      suave: `D\xEDa suave: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), menos de 60 min.`,
+      duro: `D\xEDa exigente: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), entre 60 y 179 min.`,
+      // #286 (punto 21): se llamaba «día suave» y salía en días de series; el tipo cuenta los minutos, no la intensidad.
+      suave: `D\xEDa de entreno corto: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), menos de 60 min. Cuenta el tiempo, no la intensidad: unas series cortas tambi\xE9n entran aqu\xED.`,
       fuerza: "D\xEDa de fuerza: solo hay fuerza, que no cuenta como carga; reparte igual que un d\xEDa de descanso, pero se etiqueta para que se vea que la sesi\xF3n est\xE1 registrada.",
       descanso: "D\xEDa de descanso: no hay entreno de carga ni de fuerza ese d\xEDa (caminar r\xE1pido o similar no cuenta como carga)."
     };

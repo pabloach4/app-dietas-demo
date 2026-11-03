@@ -406,7 +406,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
 
   // --- Sesiones (bloque 3) ---
   function opcionesDeporteRapido() {
-    return DEPORTES_RAPIDOS.map((d) => `<option value="${d}">${d}</option>`).join('') + '<option value="__otro__">Otro (elegir de la lista completa)…</option>';
+    // #286 (punto 21): antes «Otro (elegir de la lista completa)…», y no es la lista de todos los deportes.
+    return DEPORTES_RAPIDOS.map((d) => `<option value="${d}">${d}</option>`).join('') + '<option value="__otro__">Otra actividad (más opciones)…</option>';
   }
   function opcionesActividadCompleta() {
     return Object.entries(Motor.ACTIVIDADES).map(([clave, act]) => `<option value="${clave}">${act.nombre}</option>`).join('');
@@ -791,7 +792,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   const cmpDia = document.getElementById('cmp-extra-dia');
   const cmpDeporte = document.getElementById('cmp-extra-deporte');
   cmpDia.innerHTML = DIAS.map((d) => `<option value="${d}">${d}</option>`).join('');
-  cmpDeporte.innerHTML = opcionesDeporteRapido().replace('<option value="__otro__">Otro (elegir de la lista completa)…</option>', '');
+  cmpDeporte.innerHTML = opcionesDeporteRapido().replace('<option value="__otro__">Otra actividad (más opciones)…</option>', '');
 
   document.getElementById('cmp-extra-activa').addEventListener('change', (ev) => {
     document.getElementById('cmp-extra-detalle').hidden = !ev.target.checked;
@@ -3316,7 +3317,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   }
   // #260 (puntos 32 y 30): el tipo de día en palabras («día de carga», no «carga_alta»); un día con entreno no se llama «descanso».
   function nombreTipoDia(d, conEntreno) {
-    const N = { fuerza: 'día de fuerza', suave: 'día suave', duro: 'día exigente', carga_alta: 'día de carga' };
+    // #286 (punto 21): «suave» del motor cuenta minutos (menos de 60), no intensidad: unas series cortas no son un «día suave».
+    const N = { fuerza: 'día de fuerza', suave: 'día de entreno corto', duro: 'día exigente', carga_alta: 'día de carga' };
     return d.tipo === 'descanso' ? (conEntreno ? 'día suave' : 'día sin entreno') : (N[d.tipo] ?? d.tipo);
   }
   const hayEntrenoEl = (dia) => (semanaActual && (semanaActual.perfil.sesiones ?? []).some((s) => s.dia === dia));
