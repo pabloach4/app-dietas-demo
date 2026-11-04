@@ -199,6 +199,19 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const n = (id) => { const v = document.getElementById(id).value; return v === '' ? undefined : Number(v); };
     return { respuestas, pesoHace3m: n('cribado-peso-antes'), pesoAhora: n('cribado-peso-ahora'), pesoHabitual: n('cribado-peso-habitual') }; // #229: el habitual, para el freno
   }
+  // #299 parte 3: las preguntas de diabetes solo salen al marcarla, y no viajan entre ejemplos.
+  const casillaDiabetes = () => document.querySelector('.salud[value="diabetes"]');
+  const verPreguntasDiabetes = () => { document.getElementById('diabetes-preguntas').hidden = !casillaDiabetes().checked; };
+  casillaDiabetes().addEventListener('change', verPreguntasDiabetes);
+  function limpiarDiabetes() {
+    ['dm-tipo', 'dm-bajadas', 'dm-hba1c'].forEach((id) => { document.getElementById(id).value = ''; });
+    document.querySelectorAll('.dm-med').forEach((c) => { c.checked = false; });
+  }
+  const leerDiabetes = () => (casillaDiabetes().checked ? Motor.diabetesValida({
+    tipo: document.getElementById('dm-tipo').value, bajadas: document.getElementById('dm-bajadas').value,
+    medicacion: [...document.querySelectorAll('.dm-med:checked')].map((c) => c.value),
+    hba1c: document.getElementById('dm-hba1c').value.replace(',', '.') || undefined,
+  }) : undefined);
   function limpiarCribado() {
     document.querySelectorAll('.cribado-sel').forEach((s) => { s.value = ''; });
     ['cribado-peso-antes', 'cribado-peso-ahora', 'cribado-peso-habitual'].forEach((id) => { document.getElementById(id).value = ''; });
@@ -249,10 +262,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // #285 punto 9: sin la nube la app no envía nada, solo prepara un correo, y hasta que vuelva no sabe si se envió.
   const textoBotonCita = () => (nubeActiva() === true ? 'Enviar la petición' : 'Preparar el correo para Pablo');
   const textoCitaGuardada = (cita) => (cita.via === 'nube' || (!cita.via && nubeActiva() === true)
-    ? `Pediste cita el ${fechaLegible(cita.fecha.slice(0, 10))}. Pablo te contestará para cerrarla.`
-    : `Si ya has enviado el correo del ${fechaLegible(cita.fecha.slice(0, 10))}, Pablo te contestará para cerrar la cita. Si no, vuelve a pulsar «Pedir cita».`);
-  // #286 punto 21 e (Rosa y Pedro): no decía cómo contestaría Pablo. El plazo no se promete: es decisión de Pablo (preguntado en #286).
-  const TEXTO_COMO_CONTESTA = 'Te contesta Pablo en persona, no un sistema automático: por correo y, si pides cita, para cerrarla contigo. No es un chat en directo: si es urgente para tu salud, llama al 112 o ve a tu centro de salud.';
+    ? `Pediste cita el ${fechaLegible(cita.fecha.slice(0, 10))}. ${PLAZO_PABLO} para cerrarla.`
+    : `Si ya has enviado el correo del ${fechaLegible(cita.fecha.slice(0, 10))}, ${PLAZO_PABLO} para cerrar la cita. Si no, vuelve a pulsar «Pedir cita».`);
+  // #286 punto 21 e (Rosa y Pedro): no decía cómo contestaría Pablo. El plazo lo decidió Pablo el 03/11 («8. B», #298).
+  const PLAZO_PABLO = 'Pablo te contesta en 1-2 días laborables';
+  const TEXTO_COMO_CONTESTA = `${PLAZO_PABLO}, en persona y no un sistema automático: por correo y, si pides cita, para cerrarla contigo. No es un chat en directo: si es urgente para tu salud, llama al 112 o ve a tu centro de salud.`;
   function pintarHablarPablo() {
     const cita = leerCita();
     const wa = Motor.whatsappPablo(Boolean(cita));
@@ -301,10 +315,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (via === 'nube') {
       guardarAlertas(Motor.anadirAlerta(leerAlertas(), Motor.alertaCita(peticion, ahora)));
       document.querySelector('#nube-subir')?.click(); // la sube ya, por el mismo camino que las demás (web/nube.js)
-      estado = 'Petición enviada. Pablo te contestará para cerrar la cita.';
+      estado = `Petición enviada. ${PLAZO_PABLO} para cerrar la cita.`;
     } else {
       location.href = Motor.correoCita(peticion);
-      estado = 'Se ha abierto tu correo con la petición: envíalo y Pablo te contestará para cerrar la cita.';
+      estado = `Se ha abierto tu correo con la petición: envíalo y ${PLAZO_PABLO} para cerrar la cita.`;
     }
     try { localStorage.setItem(CLAVE_CITA, JSON.stringify({ fecha: ahora, via })); } catch { falloAlmacenamiento(); }
     pintarHablarPablo();
@@ -449,7 +463,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         sesionesDiv.appendChild(bloque);
       });
     }
-    sesiones.forEach((s) => nuevaFilaSesion(s.dia, s.deporte, s.minutos, s.horaInicio, s.actividad, s.nota));
+    sesiones.forEach((s) => nuevaFilaSesion(s.dia, s.deporte, s.minutos, s.horaInicio, s.actividad, s.nota, undefined, s.dura));
     rotularDias();
   }
   function rotularDias() {
@@ -469,7 +483,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   botonesDeporte.addEventListener('click', (ev) => { const b = ev.target.closest('.dp-btn'); if (b) elegirDeporte(b.dataset.deporte); });
 
   /** `tipoInicial`: nombre del tipo recién elegido en el día, o '__otra__' («Otra actividad…»). */
-  function nuevaFilaSesion(dia, deporte, minutos, horaInicio, actividad, nota, tipoInicial) {
+  function nuevaFilaSesion(dia, deporte, minutos, horaInicio, actividad, nota, tipoInicial, dura) {
     const fila = document.createElement('div');
     fila.className = 'sesion sesion-card';
     // Por días solo si se sabe la actividad (un deporte escrito que no se reconoce sigue a la pantalla de elegir deporte).
@@ -488,11 +502,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         <label class="campo-mini"><span>Minutos</span><input class="s-minutos" type="number" min="1" step="1" placeholder="Ej.: 60"></label>
       </div>
       <div class="campo" style="margin:0.4rem 0 0"><input class="s-nota" type="text" maxlength="120" aria-label="Nombre o estructura de la sesión (opcional)" placeholder="Nombre o estructura (opcional): «4×6 min progresivos, 12,9 km»"></div>
+      <label class="check" style="margin:0.4rem 0 0"><input type="checkbox" class="s-dura"> Sesión dura (series, cambios de ritmo, competición o test)</label>
       <button type="button" class="quitar">✕ Quitar esta sesión</button>
     `;
     fila.querySelector('.s-dia').value = dia;
     fila.querySelector('.s-minutos').value = minutos;
     fila.querySelector('.s-nota').value = Motor.limpiarNotaSesion(nota) ?? '';
+    fila.querySelector('.s-dura').checked = dura === true; // #300
     // Issue #55: los perfiles guardados traen la hora como número decimal (7.5) y los ejemplos como 'HH:MM';
     // el <input type="time"> solo entiende 'HH:MM'. Sin hora (o dato inválido) queda vacío: no se inventa.
     fila.querySelector('.s-hora').value = Motor.horaDeGuardado(horaInicio);
@@ -539,6 +555,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         minutos: Number(fila.querySelector('.s-minutos').value),
         horaInicio: textoAHora(fila.querySelector('.s-hora').value),
         nota: Motor.limpiarNotaSesion(fila.querySelector('.s-nota').value), // se conserva y se muestra; no entra en el cálculo (#69)
+        ...(fila.querySelector('.s-dura').checked ? { dura: true } : {}), // #300: dura y corta cuenta como día de entreno normal
       };
       return deporteSel === '__otro__'
         ? { ...base, deporte: fila.querySelector('.s-actividad-completa').selectedOptions[0].textContent, actividad: fila.querySelector('.s-actividad-completa').value }
@@ -637,6 +654,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const marcada = Array.from(document.querySelectorAll('.salud')).find((c) => texto.includes(c.value));
       if (marcada) marcada.checked = true; else document.getElementById('salud-otra').value = texto;
     });
+    limpiarDiabetes(); verPreguntasDiabetes();
     // Issue #56: un ejemplo, «Empezar de cero» o un perfil guardado rellenan explícitamente lo que traen y
     // limpian lo que no traen (alergias, preferencias, turnos…), y se olvida el estado del plan anterior
     // (horarios por día, contexto por día, deshacer). Lo que NO se toca: la lista de la compra a mano (#34)
@@ -840,7 +858,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       vida: { trabajo: document.getElementById('cmp-vida-trabajo').value, pasos: document.getElementById('cmp-vida-pasos').value || undefined },
       sesiones: sesionesB,
     };
-    const resultadoB = Motor.perfilDesdeCuestionario(respuestasB);
+    const resultadoB = Motor.perfilDesdeCuestionario(respuestasB, opcionesRevision());
     if (resultadoB.estado !== 'ok') {
       document.getElementById('comparacion-resultado').innerHTML = `<p style="color:var(--peligro)">No se pudo calcular el escenario B (${resultadoB.estado}). Prueba con otro cambio.</p>`;
       return;
@@ -1006,6 +1024,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   }
   leerPlanPablo();
   const planPabloVigente = () => (planPablo && Motor.estadoDeLaPreparada(Motor.fechaLocalISO(new Date()), planPablo.inicio, Motor.semanasValidas(planPablo.semanas)) === 'activa' ? planPablo : null);
+  // #299.5: lo que Pablo revisó al publicar (lo nuevo vuelve a revisión) y si su plan vale hoy (con diabetes, solo vale ese).
+  const opcionesRevision = () => ({ revisadoPorPablo: planPablo ? Motor.peculiaridadesDePlan(planPablo.plan) : undefined, planPabloVigente: Boolean(planPabloVigente()) });
   let avisoPabloHoy = ''; // «Revisado por Pablo…» y lo que se quitó, para Hoy y Semana
   window.addEventListener('app-dietas:plan-pablo', () => { leerPlanPablo(); if (semanaActual && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); });
 
@@ -2667,7 +2687,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       vidaTrabajo: document.getElementById('vida-trabajo').value,
       vidaPasos: document.getElementById('vida-pasos').value || undefined,
       deportePrincipal: deporteElegido,
-      sesiones: leerSesiones().map(({ dia, deporte, minutos, horaInicio, actividad, nota }) => ({ dia, deporte, minutos, horaInicio, actividad, nota })),
+      sesiones: leerSesiones().map(({ dia, deporte, minutos, horaInicio, actividad, nota, dura }) => ({ dia, deporte, minutos, horaInicio, actividad, nota, ...(dura ? { dura } : {}) })),
       franjas: Object.fromEntries(Array.from(franjasDiv.children).map((fila) => [
         fila.dataset.franja, { activa: fila.querySelector('.f-activa').checked, hora: fila.querySelector('.f-hora').value },
       ])),
@@ -2841,12 +2861,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       grasa: document.getElementById('grasa-conocida').checked ? num('grasa') : undefined,
       grasaMetodo: document.getElementById('grasa-conocida').checked ? document.getElementById('grasa-metodo').value : undefined,
       objetivo: document.getElementById('objetivo').value,
-      sesiones: ultimasSesiones.map(({ dia, deporte, minutos, actividad }) => ({ dia, deporte, minutos, actividad })),
+      sesiones: ultimasSesiones.map(({ dia, deporte, minutos, actividad, dura }) => ({ dia, deporte, minutos, actividad, ...(dura ? { dura } : {}) })), // #300: la sesión dura
       vida: {
         trabajo: document.getElementById('vida-trabajo').value,
         pasos: document.getElementById('vida-pasos').value || undefined,
       },
       salud,
+      diabetes: leerDiabetes(), // #299 parte 3
       cribado: leerCribado(),
       alergias: {
         celiaquia: document.getElementById('al-celiaquia').checked,
@@ -2864,6 +2885,23 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // #210: en la pantalla de freno (derivación a consulta) la tarjeta «Que Pablo vea mis datos» (solo con ?nube=1) va debajo, para que quien
   // más necesita que Pablo le contacte pueda dejarle su correo. Es el mismo nodo que gestiona web/nube.js: se mueve, no se duplica.
   const nubeOriginal = { padre: null, siguiente: null };
+  // #299.5: si deriva por diabetes, alergia o intolerancia (y nada más), sube sus cifras y comidas del día sin platos, para que Pablo le
+  // prepare el plan en el centro (#207). La persona no ve nada: solo web/nube.js lo sube, si la nube está activa.
+  function subirBaseParaPablo(respuestas, resultado) {
+    if (resultado.motivo !== 'alergia' && resultado.motivo !== 'salud') return;
+    const todo = Motor.perfilDesdeCuestionario(respuestas, { revisadoPorPablo: true, planPabloVigente: true });
+    if (todo.estado !== 'ok') return; // otra condición, edad, datos que faltan…: el plan es de consulta
+    let base;
+    try { base = Motor.calcular(todo.perfil); } catch { return; }
+    window.dispatchEvent(new CustomEvent('app-dietas:plan', { detail: {
+      kcalMedia: base.kcalMedia,
+      dias: base.dias.map((d) => ({ dia: d.dia, tipo: d.tipo, kcal: d.kcal, proteinaG: d.proteinaG, grasaG: d.grasaG, hidratoG: d.hidratoG })),
+      asignaciones: [], huecos: 0, sinPlatos: true, franjas: leerFranjas().map((f) => f.franja),
+      avisos: base.avisos.map((a) => ({ codigo: a.codigo, texto: a.texto })), notas: [...base.notas],
+      restricciones: { alergias: respuestas.alergias, evitan: respuestas.preferencias.evitan, gustan: respuestas.preferencias.gustan, listaNegra: [...listaNegra] },
+      revision: Motor.peculiaridadesRevision(respuestas),
+    } }));
+  }
   function nubeAlFreno(pantalla = 'derivar') {
     const tarjeta = document.getElementById('tarjeta-nube');
     if (!tarjeta || tarjeta.hidden) return; // sin ?nube=1 nada cambia
@@ -3015,7 +3053,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       // #164: la próxima lista de la compra, con las sobras de la dieta anterior descontadas.
       const nombresLista = lista.map((i) => i.ingrediente).sort((a, b) => a.localeCompare(b, 'es'));
       const gramosCorto = (g) => String(Math.round(g * 10) / 10).replace('.', ',');
-      if (!proxima.abierta) {
+      if (planPablo && respuestasActuales && Motor.peculiaridadesRevision(respuestasActuales).diabetes) { // #299.5: sin filtro de diabetes, la próxima no la genera la app
+        proximaHtml = '<p class="subt" id="prox-pablo">Como tienes diabetes, tu próximo plan lo prepara Pablo. Escríbele cuando se acerque el final de este.</p>';
+      } else if (!proxima.abierta) {
         proximaHtml = '<button type="button" class="btn-secundario" id="prox-abrir" style="margin:0 0 0.8rem">Generar próxima lista de la compra</button>';
       } else {
         const r = proxima.resultado;
@@ -4279,6 +4319,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       avisos: plan.avisos.map((a) => ({ codigo: a.codigo, texto: a.texto })), notas: [...plan.notas],
       // #207: lo que Pablo necesita para editar con seguridad (NO las respuestas del cribado: esas viajan como alertas).
       restricciones: { alergias: respuestas.alergias, evitan: respuestas.preferencias.evitan, gustan: respuestas.preferencias.gustan, listaNegra: [...listaNegra] },
+      revision: Motor.peculiaridadesRevision(respuestas), // #299.5: lo que Pablo verá; si publica sobre este plan, eso queda revisado
     } }));
 
     // Issue #21: mensaje en español llano primero, el código técnico se queda visible pero en pequeño.
@@ -4469,7 +4510,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     }
     ocultarPantallas();
     const respuestas = construirRespuestas();
-    const resultado = Motor.perfilDesdeCuestionario(respuestas);
+    leerPlanPablo();
+    const resultado = Motor.perfilDesdeCuestionario(respuestas, opcionesRevision()); // #299: lo que Pablo revisó al publicar su plan ya no frena
     if (resultado.estado === 'derivar' || resultado.estado === 'ok') {
       procesarCribado(respuestas); // #195
       const espera = esperarNube(); // #211: con ?nube=1, ventana obligatoria con el correo antes de enseñar nada
@@ -4482,9 +4524,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       ocultarFormulario();
       document.getElementById('derivar').hidden = false;
       // #256 (punto 3): la derivación deja aviso a Pablo (como el freno) y el texto dice qué pasa ahora, sin cara triste.
-      const alertaDer = Motor.alertaDerivacion({ motivo: resultado.motivo, salud: respuestas.salud || [], edad: respuestas.edad }, new Date().toISOString());
+      const alertaDer = Motor.alertaDerivacion({ motivo: resultado.motivo, salud: respuestas.salud || [], edad: respuestas.edad, revision: Motor.peculiaridadesRevision(respuestas), diabetes: respuestas.diabetes }, new Date().toISOString()); // #299: también alergias e intolerancias, y las respuestas de diabetes
       if (alertaDer) { guardarAlertas(Motor.anadirAlerta(leerAlertas(), alertaDer)); pintarAlertas(); }
       pintarDerivadoExtra(respuestas); // #265 parte B: recetas y consejos, sin plan ni cifras
+      subirBaseParaPablo(respuestas, resultado);
       nubeAlFreno(); document.getElementById('derivar-texto').textContent = `${resultado.mensaje} ${Motor.TEXTO_ALERTA_PERSONA} ${Motor.textoLlegaAPablo(nubeActiva())}`;
       document.getElementById('derivar').focus();
       return;

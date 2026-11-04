@@ -328,7 +328,10 @@
     if (!plan || !plan.plan || !Array.isArray(plan.plan.asignaciones)) return;
     edicion = {
       u, base: { inicio: plan.inicio, semanas: plan.semanas, plan: plan.plan },
-      casillas: plan.plan.asignaciones.map((a) => ({ dia: a.dia, franja: a.franja, receta: a.receta, racionAjustada: a.racionAjustada ?? 1 })),
+      // #299.5: si la app subió sus comidas sin platos (persona en revisión), Pablo parte de la semana vacía.
+      casillas: plan.plan.asignaciones.length || !Array.isArray(plan.plan.franjas)
+        ? plan.plan.asignaciones.map((a) => ({ dia: a.dia, franja: a.franja, receta: a.receta, racionAjustada: a.racionAjustada ?? 1 }))
+        : (plan.plan.dias || []).flatMap((d) => plan.plan.franjas.filter((f) => FRANJAS.includes(f)).map((f) => ({ dia: d.dia, franja: f, receta: '', racionAjustada: 1 }))),
       ap: Motor.restriccionesComoApp(plan.plan.restricciones), sinRestricciones: !plan.plan.restricciones, estado: '',
     };
     pintar(); window.scrollTo(0, 0);
@@ -363,6 +366,7 @@
     return '<button class="sec" id="ed-volver">← Volver a la ficha</button>'
       + '<div class="tarjeta"><h2>Revisar plan de ' + esc(p.nombre || p.contacto || 'la persona') + '</h2>'
       + '<p class="subt">Periodo: desde ' + esc(e.base.inicio) + ', ' + esc(e.base.semanas) + ' semana(s). Cambia la receta (solo salen las que valen con sus alergias y lista negra), la ración o quita una comida. Los avisos en rojo no te bloquean.</p>'
+      + (e.base.plan.revision && e.base.plan.revision.diabetes ? '<p style="color:var(--rojo)" id="ed-diabetes">⚠ Tiene diabetes y este plan no tiene filtro de diabetes: revisa los hidratos a mano. La app solo usará el plan que publiques, mientras esté vigente.</p>' : '')
       + (e.sinRestricciones ? '<p style="color:var(--rojo)">⚠ Este plan se subió antes de guardar sus alergias y preferencias: no puedo comprobar que las recetas valgan. Pídele que lo vuelva a subir antes de publicar.</p>' : '')
       + listas + '<div class="tabla"><table><thead><tr><th>Día</th>' + franjas.map((f) => '<th>' + esc(f.replace('_', ' ')) + '</th>').join('') + '<th>Día</th></tr></thead><tbody>' + filas + '</tbody></table></div>'
       + '<div class="fila" style="margin-top:0.8rem"><button id="ed-publicar">Publicar para ' + esc(p.nombre || p.contacto || 'la persona') + '</button><span class="subt" id="ed-estado" aria-live="polite">' + esc(e.estado) + (hayRojo ? ' Hay avisos en rojo.' : '') + '</span></div></div>';

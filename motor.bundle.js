@@ -65,6 +65,7 @@ var Motor = (() => {
     MENSAJE_CRIBADO_NEUTRO: () => MENSAJE_CRIBADO_NEUTRO,
     MENSAJE_CRIBADO_PRIORITARIO: () => MENSAJE_CRIBADO_PRIORITARIO,
     MENSAJE_DERIVACION_SALUD: () => MENSAJE_DERIVACION_SALUD,
+    MENSAJE_DIABETES_PLAN_PABLO: () => MENSAJE_DIABETES_PLAN_PABLO,
     MENSAJE_LLANO_AVISOS: () => MENSAJE_LLANO_AVISOS,
     MENSAJE_SUELO: () => MENSAJE_SUELO,
     MIN_DUELOS: () => MIN_DUELOS,
@@ -192,8 +193,10 @@ var Motor = (() => {
     desayunoCumple: () => desayunoCumple,
     descontarSobras: () => descontarSobras,
     descontarTomaPrevia: () => descontarTomaPrevia,
+    describirPeculiaridades: () => describirPeculiaridades,
     deshacer: () => deshacer,
     diaDeLaFecha: () => diaDeLaFecha,
+    diabetesValida: () => diabetesValida,
     diasConSuelo: () => diasConSuelo,
     duelosTerminados: () => duelosTerminados,
     editarCompeticion: () => editarCompeticion,
@@ -282,6 +285,7 @@ var Motor = (() => {
     medallasNuevas: () => medallasNuevas,
     medidaCasera: () => medidaCasera,
     medidasDesdeCsv: () => medidasDesdeCsv,
+    mensajeRevision: () => mensajeRevision,
     mezclarAlerta: () => mezclarAlerta,
     motivosAlerta: () => motivosAlerta,
     moverSesion: () => moverSesion,
@@ -301,6 +305,9 @@ var Motor = (() => {
     parsearRecetas: () => parsearRecetas,
     parsearTablaLimites: () => parsearTablaLimites,
     pasoDosPasos: () => pasoDosPasos,
+    peculiaridadesDePlan: () => peculiaridadesDePlan,
+    peculiaridadesNuevas: () => peculiaridadesNuevas,
+    peculiaridadesRevision: () => peculiaridadesRevision,
     perfilDesdeCuestionario: () => perfilDesdeCuestionario,
     pesoCocido: () => pesoCocido,
     pesoServido: () => pesoServido,
@@ -335,6 +342,7 @@ var Motor = (() => {
     sinFilaDeGluten: () => sinFilaDeGluten,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
     textoCita: () => textoCita,
+    textoDiabetes: () => textoDiabetes,
     textoLlegaAPablo: () => textoLlegaAPablo,
     textoNotificacion: () => textoNotificacion,
     textoOtrasAlergias: () => textoOtrasAlergias,
@@ -467,9 +475,9 @@ var Motor = (() => {
     const media = suma(valores) / valores.length;
     return valores.map((v) => media + Math.max(-max, v - media));
   }
-  function tipoDia(minutosCarga, tieneFuerza) {
+  function tipoDia(minutosCarga, tieneFuerza, dura = false) {
     if (minutosCarga >= 180) return { tipo: "carga_alta", rango: [6, 10] };
-    if (minutosCarga >= 60) return { tipo: "duro", rango: [5, 7] };
+    if (minutosCarga >= 60 || minutosCarga > 0 && dura) return { tipo: "duro", rango: [5, 7] };
     if (minutosCarga > 0) return { tipo: "suave", rango: [3, 5] };
     if (tieneFuerza) return { tipo: "fuerza", rango: [3, 5] };
     return { tipo: "descanso", rango: [3, 5] };
@@ -513,7 +521,8 @@ var Motor = (() => {
       const deCarga = hoy.filter((s) => ["intermitente", "resistencia"].includes(ACTIVIDADES[s.actividad].tipo));
       const minutosCarga = suma(deCarga.map((s) => s.minutos));
       const tieneFuerza = hoy.some((s) => ACTIVIDADES[s.actividad].tipo === "fuerza");
-      return { dia, kcalEntreno, minutosCarga, tieneFuerza, gasto: base + kcalEntreno * (1 - COMPENSACION_ENTRENO) };
+      const dura = deCarga.some((s) => s.dura === true);
+      return { dia, kcalEntreno, minutosCarga, tieneFuerza, dura, gasto: base + kcalEntreno * (1 - COMPENSACION_ENTRENO) };
     });
     const gastoMedio = suma(porDia.map((d) => d.gasto)) / 7;
     const grasaPct = p.grasa ?? grasaDeurenberg(imc_, p.edad, p.sexo);
@@ -591,11 +600,12 @@ var Motor = (() => {
       const kcal = kcalDias[i];
       const hidratoG = (kcal - 4 * protG - 9 * grasaG) / 4;
       if (hidratoG < 0) throw new Error(`${d.dia}: ${kcal} kcal no llegan ni para la prote\xEDna y la grasa m\xEDnimas.`);
-      if (d.minutosCarga >= 60 && hidratoG / p.peso < 3) {
+      const porDura = d.dura && d.minutosCarga > 0 && d.minutosCarga < 60;
+      if ((d.minutosCarga >= 60 || porDura) && hidratoG / p.peso < 3) {
         aviso("hidrato_bajo", `${d.dia}: ${redondear(hidratoG / p.peso, 1)} g/kg de hidrato con ${d.minutosCarga}' de entreno exigente: poco para rendir y recuperar (ACSM 2016).`);
       }
       if (grasaG * 9 / kcal < 0.2) aviso("grasa_baja", `${d.dia}: grasa por debajo del 20 % de las kcal (ACSM 2016).`);
-      const { tipo, rango } = tipoDia(d.minutosCarga, d.tieneFuerza);
+      const { tipo, rango } = tipoDia(d.minutosCarga, d.tieneFuerza, d.dura);
       return {
         dia: d.dia,
         tipo,
@@ -604,6 +614,7 @@ var Motor = (() => {
         kcal,
         minutosCarga: d.minutosCarga,
         tieneFuerza: d.tieneFuerza,
+        ...porDura ? { sesionDura: true } : {},
         kcalSinLimites: redondear(crudo[i]),
         ...limitadoPor[i] ? { limitadoPor: limitadoPor[i] } : {},
         proteinaG: redondear(protG),
@@ -1684,18 +1695,90 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
 
   // src/motor/derivacion.ts
   var MENSAJE_DERIVACION_SALUD = "Con lo que nos cuentas de tu salud, tu plan lo prepara Pablo contigo, en persona, para tener en cuenta todo lo tuyo.";
+  var normal = (s) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  var SE\u00D1AL_INTOLERANCIA = /intoleran|alergi|alergic|celiac|sin gluten|sin lactosa/;
+  function peculiaridadesRevision(r) {
+    const al = r.alergias ?? {};
+    const evitan = String(r.preferencias?.evitan ?? "");
+    const intolerancias = [];
+    if (al.lactosa) intolerancias.push("intolerancia a la lactosa");
+    if (al.celiaquia) intolerancias.push("celiaqu\xEDa");
+    if (SE\u00D1AL_INTOLERANCIA.test(normal(evitan))) intolerancias.push("una intolerancia");
+    return {
+      diabetes: (r.salud ?? []).some((t2) => /diabet/.test(normal(String(t2)))),
+      alergias: String(al.otros ?? "").split(/[,;]/).map((t2) => t2.trim()).filter(Boolean),
+      intolerancias
+    };
+  }
+  var unir = (xs) => xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")}${/^i/.test(xs[xs.length - 1]) ? " e " : " y "}${xs[xs.length - 1]}`;
+  function describirPeculiaridades(p) {
+    return unir([...p.diabetes ? ["diabetes"] : [], ...p.alergias.length ? [`alergia a ${unir(p.alergias)}`] : [], ...p.intolerancias]);
+  }
+  function mensajeRevision(p) {
+    const lo = describirPeculiaridades(p);
+    if (!lo) return void 0;
+    return `Como nos cuentas que tienes ${lo}, necesitamos hacerte un estudio un poco m\xE1s completo que al resto, para asegurarnos de que tu dieta se ajusta a tu situaci\xF3n. Pablo revisar\xE1 tu caso contigo antes de darte el plan: p\xEDdele cita o escr\xEDbele aqu\xED debajo.`;
+  }
+  function peculiaridadesNuevas(ahora, revisadas) {
+    const ya = new Set(revisadas.alergias.map((a2) => normal(a2).trim()));
+    return {
+      diabetes: ahora.diabetes && !revisadas.diabetes,
+      alergias: ahora.alergias.filter((a2) => !ya.has(normal(a2).trim())),
+      intolerancias: ahora.intolerancias.filter((i) => !revisadas.intolerancias.includes(i))
+    };
+  }
+  function peculiaridadesDePlan(plan) {
+    const rv = plan?.revision;
+    if (rv && typeof rv === "object" && Array.isArray(rv.alergias) && Array.isArray(rv.intolerancias)) {
+      return { diabetes: rv.diabetes === true, alergias: rv.alergias.map(String), intolerancias: rv.intolerancias.map(String) };
+    }
+    return { ...peculiaridadesRevision({ alergias: plan?.restricciones?.alergias, preferencias: { evitan: plan?.restricciones?.evitan } }), diabetes: false };
+  }
+  var MENSAJE_DIABETES_PLAN_PABLO = "Como tienes diabetes, tu plan lo prepara Pablo, y ahora mismo no tienes ninguno suyo en marcha. Escr\xEDbele aqu\xED debajo y te prepara el siguiente.";
+  var TIPOS_DIABETES = { "1": "tipo 1", "2": "tipo 2", embarazo: "del embarazo", otra: "otra", no_se: "no lo s\xE9" };
+  var MEDICACION_DIABETES = {
+    insulina: "insulina",
+    metformina: "metformina",
+    sulfonilurea: "gliclazida, glimepirida o repaglinida",
+    otra: "otra",
+    ninguna: "ninguna"
+  };
+  var BAJADAS_DIABETES = { si: "s\xED", no: "no", no_se: "no lo s\xE9" };
+  function diabetesValida(x) {
+    const o = x ?? {};
+    const out = { medicacion: [] };
+    if (typeof o.tipo === "string" && o.tipo in TIPOS_DIABETES) out.tipo = o.tipo;
+    if (Array.isArray(o.medicacion)) out.medicacion = [...new Set(o.medicacion.filter((m) => typeof m === "string" && m in MEDICACION_DIABETES))];
+    if (typeof o.bajadas === "string" && o.bajadas in BAJADAS_DIABETES) out.bajadas = o.bajadas;
+    const h = Number(o.hba1c);
+    if (o.hba1c !== void 0 && o.hba1c !== "" && Number.isFinite(h) && h >= 3 && h <= 20) out.hba1c = Math.round(h * 10) / 10;
+    return out;
+  }
+  function textoDiabetes(d) {
+    return [
+      d.tipo ? TIPOS_DIABETES[d.tipo] : "tipo sin contestar",
+      d.medicacion.length ? `medicaci\xF3n: ${d.medicacion.map((m) => MEDICACION_DIABETES[m]).join(", ")}` : "medicaci\xF3n sin contestar",
+      d.bajadas ? `bajadas de az\xFAcar: ${BAJADAS_DIABETES[d.bajadas]}` : "bajadas de az\xFAcar sin contestar",
+      d.hba1c !== void 0 ? `HbA1c ${String(d.hba1c).replace(".", ",")} %` : "HbA1c sin dato"
+    ].join(" \xB7 ");
+  }
   function alertaDerivacion(d, fechaISO) {
     if (d.motivo === "cribado") return void 0;
-    const declarado = d.salud.map((s) => String(s).trim()).filter(Boolean).join(", ").slice(0, 200);
-    const se\u00F1al = d.motivo === "salud" ? `Derivaci\xF3n por salud: declara \xAB${declarado}\xBB. Sin plan autom\xE1tico: el plan se prepara en consulta.` : `Derivaci\xF3n por edad: ${d.edad ?? "?"} a\xF1os (menor de 18). Sin plan autom\xE1tico: el plan se prepara en consulta.`;
+    const declarado = d.motivo === "alergia" ? describirPeculiaridades(d.revision ?? { diabetes: false, alergias: [], intolerancias: [] }).slice(0, 200) : d.salud.map((s) => String(s).trim()).filter(Boolean).join(", ").slice(0, 200);
+    const se\u00F1al = d.motivo === "salud" ? `Derivaci\xF3n por salud: declara \xAB${declarado}\xBB. Sin plan autom\xE1tico: el plan se prepara en consulta.` : d.motivo === "alergia" ? `Revisi\xF3n por alergia o intolerancia: declara \xAB${declarado}\xBB. Sin plan autom\xE1tico: revisa su caso y publica el plan desde aqu\xED.` : `Derivaci\xF3n por edad: ${d.edad ?? "?"} a\xF1os (menor de 18). Sin plan autom\xE1tico: el plan se prepara en consulta.`;
     return {
       fecha: fechaISO,
-      prioritaria: true,
+      prioritaria: d.motivo !== "alergia",
       derivacion: true,
-      disparadores: [{ pregunta: 0, etiqueta: d.motivo === "salud" ? "condicion_salud" : "menor", se\u00F1al }],
+      // #299: alergias e intolerancias, al centro sin correo
+      disparadores: [
+        { pregunta: 0, etiqueta: d.motivo === "salud" ? "condicion_salud" : d.motivo === "alergia" ? "alergia" : "menor", se\u00F1al },
+        // #299 parte 4: con diabetes marcada, sus respuestas (el aviso de salud ya es prioritario: llega también por correo).
+        ...d.motivo === "salud" && peculiaridadesRevision({ salud: d.salud }).diabetes ? [{ pregunta: 0, etiqueta: "diabetes", se\u00F1al: `Diabetes: ${textoDiabetes(diabetesValida(d.diabetes))}` }] : []
+      ],
       contexto: [],
       sinInterpretar: [],
-      firma: `D|${d.motivo}|${d.motivo === "salud" ? declarado.toLowerCase() : d.edad}`
+      firma: `D|${d.motivo}|${d.motivo === "edad" ? d.edad : declarado.toLowerCase()}`
     };
   }
   function recetasParaDerivado(catalogo, ap, consulta = "") {
@@ -1768,11 +1851,18 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const clave2 = MAPA_DEPORTES[normalizarTexto(s.deporte)];
     return clave2 ? { clave: clave2 } : { opciones: Object.keys(ACTIVIDADES) };
   }
-  function perfilDesdeCuestionario(r) {
-    if (declaraCondicion(r.salud)) {
-      return { estado: "derivar", motivo: "salud", mensaje: MENSAJE_DERIVACION_SALUD };
+  function perfilDesdeCuestionario(r, opciones = {}) {
+    const actuales = peculiaridadesRevision(r);
+    const rv = opciones.revisadoPorPablo;
+    const pendientes = rv ? peculiaridadesNuevas(actuales, rv === true ? actuales : rv) : actuales;
+    const revision = mensajeRevision(pendientes);
+    const diabetesRevisada = actuales.diabetes && !pendientes.diabetes;
+    if (declaraCondicion(diabetesRevisada ? (r.salud ?? []).filter((t2) => !peculiaridadesRevision({ salud: [t2] }).diabetes) : r.salud)) {
+      return { estado: "derivar", motivo: "salud", mensaje: revision ?? MENSAJE_DERIVACION_SALUD };
     }
     if (evaluarCribado(r.cribado).derivaPlan) return { estado: "derivar", motivo: "cribado", mensaje: MENSAJE_CRIBADO_PRIORITARIO };
+    if (revision) return { estado: "derivar", motivo: "alergia", mensaje: revision };
+    if (diabetesRevisada && !opciones.planPabloVigente) return { estado: "derivar", motivo: "salud", mensaje: MENSAJE_DIABETES_PLAN_PABLO };
     const vacio = (v) => v == null || typeof v === "number" && Number.isNaN(v);
     if (!esPositivo(r.peso)) return { estado: "incompleto", falta: "peso", mensaje: vacio(r.peso) ? "Falta el peso." : "El peso tiene que ser un n\xFAmero mayor que 0, en kilos." };
     if (!esPositivo(r.altura)) return { estado: "incompleto", falta: "altura", mensaje: vacio(r.altura) ? "Falta la talla." : "La altura tiene que ser un n\xFAmero mayor que 0, en cent\xEDmetros." };
@@ -1800,7 +1890,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
           mensaje: `"${s.deporte}" no est\xE1 en la lista de deportes. Elige uno de la lista.`
         };
       }
-      sesiones.push({ dia: s.dia, actividad: resuelto.clave, minutos: s.minutos });
+      sesiones.push({ dia: s.dia, actividad: resuelto.clave, minutos: s.minutos, ...s.dura === true ? { dura: true } : {} });
     }
     const perfil = {
       peso: r.peso,
@@ -1812,7 +1902,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       vida: vidaDesde(r.vida),
       sesiones
     };
-    return { estado: "ok", perfil };
+    return diabetesRevisada ? { estado: "ok", perfil, soloPlanPablo: true } : { estado: "ok", perfil };
   }
 
   // src/motor/cena-tras-entreno.ts
@@ -2925,12 +3015,12 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     ["legumbre", /\b(lentejas?|garbanzos?|alubias?|judias? (blancas?|rojas?|pintas?)|hummus|frijol(es)?)\b/],
     ["soja", /\b(tofu|tempeh|soja texturizada|edamame)\b/]
   ];
-  var normal = (t2) => t2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  var normal2 = (t2) => t2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   var cache = /* @__PURE__ */ new WeakMap();
   function gruposDePlato(p) {
     let g = cache.get(p);
     if (!g) {
-      const textos = [p.proteinaPrincipal ?? "", ...p.ingredientes.map((i) => i.nombre)].map(normal);
+      const textos = [p.proteinaPrincipal ?? "", ...p.ingredientes.map((i) => i.nombre)].map(normal2);
       g = new Set(GRUPOS.filter(([, re]) => textos.some((t2) => re.test(t2))).map(([x]) => x));
       cache.set(p, g);
     }
@@ -2958,7 +3048,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   function basesDePlato(p) {
     let b = cacheBases.get(p);
     if (!b) {
-      const textos = p.ingredientes.map((i) => normal(i.nombre));
+      const textos = p.ingredientes.map((i) => normal2(i.nombre));
       b = new Set(BASES.filter(([, re]) => textos.some((t2) => re.test(t2))).map(([x]) => x));
       if (gruposDePlato(p).has("legumbre")) b.add("legumbre");
       cacheBases.set(p, b);
@@ -6316,9 +6406,9 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
   function explicarTipoDia(dia, peso, comp) {
     const base = {
       carga_alta: `D\xEDa de carga alta: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), a partir de 180 min.`,
-      duro: `D\xEDa exigente: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), entre 60 y 179 min.`,
+      duro: dia.sesionDura ? `D\xEDa exigente: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), menos de 60 min, pero cuenta como d\xEDa de entreno normal porque marcaste que la sesi\xF3n es dura.` : `D\xEDa exigente: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), entre 60 y 179 min.`,
       // #286 (punto 21): se llamaba «día suave» y salía en días de series; el tipo cuenta los minutos, no la intensidad.
-      suave: `D\xEDa de entreno corto: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), menos de 60 min. Cuenta el tiempo, no la intensidad: unas series cortas tambi\xE9n entran aqu\xED.`,
+      suave: `D\xEDa de entreno corto: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), menos de 60 min. Si la sesi\xF3n es dura (series, cambios de ritmo, competici\xF3n o test), m\xE1rcalo en la sesi\xF3n y contar\xE1 como d\xEDa de entreno normal.`,
       fuerza: "D\xEDa de fuerza: solo hay fuerza, que no cuenta como carga; reparte igual que un d\xEDa de descanso, pero se etiqueta para que se vea que la sesi\xF3n est\xE1 registrada.",
       descanso: "D\xEDa de descanso: no hay entreno de carga ni de fuerza ese d\xEDa (caminar r\xE1pido o similar no cuenta como carga)."
     };
