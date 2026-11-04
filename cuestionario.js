@@ -2393,9 +2393,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         selTipoComp.value = c.tipo ?? 'otra';
         document.getElementById('cal-comp-geles').value = c.usaGeles ?? 'no_se';
         document.getElementById('cal-comp-intestino').value = c.problemasIntestinales ?? 'no_se';
+        document.getElementById('cal-comp-carga').value = c.toleraCarga ?? 'no_se'; // #301
         cajaPruebas.innerHTML = '';
         (c.pruebas?.length ? c.pruebas : [{ hora: c.hora ?? '' }]).forEach((p) => { anadirFilaPrueba(p); if (p.duracionMin) cajaPruebas.lastChild.querySelector('.p-dur').dataset.tocada = '1'; });
         actualizarTipoComp();
+        actualizarPreguntaCarga();
         document.getElementById('cal-comp-guardar').textContent = 'Guardar cambios';
         document.getElementById('cal-comp-cancelar').hidden = false;
         document.getElementById('cal-comp-nombre').focus();
@@ -2549,6 +2551,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     });
   }
   function reiniciarPruebas() { cajaPruebas.innerHTML = ''; anadirFilaPrueba(); }
+  // #301: si la competición pide días de carga (10 g/kg), se avisa y se pregunta si la persona se ve capaz de comer más pasta, arroz o pan.
+  function actualizarPreguntaCarga() {
+    const carga = Motor.cargaDeHidratos({ id: '', nombre: '', fecha: '2000-01-01', tipo: selTipoComp.value || 'otra', pruebas: recogerPruebas().filter((p) => p.duracionMin > 0) });
+    document.getElementById('cal-comp-carga-caja').hidden = !(carga && carga.gKg >= 10);
+  }
+  document.getElementById('cal-form-comp').addEventListener('input', actualizarPreguntaCarga);
+  document.getElementById('cal-form-comp').addEventListener('change', actualizarPreguntaCarga);
   function recogerPruebas() {
     const ini = document.getElementById('cal-comp-fecha').value;
     return [...cajaPruebas.querySelectorAll('.prueba-fila')].filter((f) => f.querySelector('.p-hora').value).map((f) => {
@@ -2576,6 +2585,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('cal-form-comp').reset();
     reiniciarPruebas();
     actualizarTipoComp();
+    actualizarPreguntaCarga();
     document.getElementById('cal-comp-guardar').textContent = 'Añadir competición';
     document.getElementById('cal-comp-cancelar').hidden = true;
     document.getElementById('cal-comp-error').hidden = true;
@@ -2615,6 +2625,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       tipo: selTipoComp.value,
       usaGeles: document.getElementById('cal-comp-geles').value,
       problemasIntestinales: document.getElementById('cal-comp-intestino').value,
+      toleraCarga: document.getElementById('cal-comp-carga').value,
       pruebas: recogerPruebas(),
     };
     const r = editandoCompId ? Motor.editarCompeticion(competiciones, editandoCompId, datos) : Motor.anadirCompeticion(competiciones, datos);
@@ -3891,7 +3902,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       if (!excepcionesHorario.has(d.dia)) horarioGeneralDelDia(d.dia).movidas.forEach((m) => avisosReparto.push(`${d.dia}: ${m.texto}`));
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()), ...((() => { if (f.franja !== 'desayuno' || compPorDia.get(d.dia)?.fase !== 'competicion') return {}; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)); return hf === undefined || salida === undefined || hf < salida ? { desayunoCarrera: 'estricto' } : {}; })()) /* #285 punto 11: el desayuno de la carrera, con la regla de Pablo */ });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...(compPorDia.get(d.dia)?.racionesCarga ? { racionesCarga: true } : {}) /* #301 */, ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()), ...((() => { if (f.franja !== 'desayuno' || compPorDia.get(d.dia)?.fase !== 'competicion') return {}; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)); return hf === undefined || salida === undefined || hf < salida ? { desayunoCarrera: 'estricto' } : {}; })()) /* #285 punto 11: el desayuno de la carrera, con la regla de Pablo */ });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,
@@ -3930,7 +3941,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       quitadasPablo = revP.quitadas;
     }
     // #259 (punto 27): al recalcular (por ejemplo, tras cambiar el peso), cada comida conserva su plato si sigue valiendo.
-    const previa = preferirUnaVez ?? asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta })); // #261 C: al aplicar o borrar los gustos, no se conservan los platos de ahora
+    const previa = (preferirUnaVez ?? asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta }))).map((p) => ({ ...p, receta: Motor.sinCarga(p.receta) })); /* #301 */ // #261 C: al aplicar o borrar los gustos, no se conservan los platos de ahora
     const gustos = Motor.gustosPorReceta(RECETAS_EJEMPLO, historialGustos, ATRIBUTOS_RECETAS); // #261 C: solo desempata; sin gustos, vacío
     const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias), ...(previa.length ? { preferir: previa } : {}), desayuno: prefDesayuno, ...(gustos.size ? { gustos } : {}) };
     const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador);
@@ -3984,6 +3995,16 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       } else avisoPabloHoy = '';
       if (caja) { caja.hidden = !avisoPabloHoy; caja.innerHTML = avisoPabloHoy; }
     }
+    // #301: en los días de carga, si la persona tolera más volumen, la pasta, el arroz y el pan crecen hasta la banda del +50 % para cubrir lo que falte.
+    const diasRacionesCarga = new Set();
+    {
+      const rc = Motor.aplicarRacionesCarga(cuadrado.asignaciones, slotsSemana, recetasCuadre, cuadrado.dias);
+      if (rc.diasCarga.length) {
+        rc.diasCarga.forEach((d) => diasRacionesCarga.add(d));
+        const avisosCarga = rc.dias.filter((x) => diasRacionesCarga.has(x.dia) && x.aviso).map((x) => x.aviso);
+        cuadrado = { ...cuadrado, asignaciones: rc.asignaciones, dias: rc.dias, avisos: cuadrado.avisos.filter((a) => !rc.diasCarga.some((d) => a.startsWith(`${d}: faltan`))).concat(avisosCarga) };
+      }
+    }
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     // #283: el día con una comida fuera apuntada (con kcal) dice en su cabecera lo que suma y cuánto se pasa, con las cifras de «Hoy».
     const kcalFueraHtml = (d) => {
@@ -3999,7 +4020,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     asignacionSemana.avisos.filter((a) => a.startsWith('Variedad de la semana') || a.startsWith('Desayuno:')).forEach((a) => avisosReparto.push(a)); // #265 E3: el desayuno elegido que no se ha podido servir
     // #259 (punto 27): al recalcular se dice qué ha cambiado (antes no salía nada y la compra tachada dejaba de servir sin saberlo).
     const NOMBRE_CAMBIO = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
-    const cambiadas = previa.length ? asignacionSemana.asignaciones.filter((a) => { const x = previa.find((y) => y.dia === a.dia && y.franja === a.franja); return !x || x.receta !== a.receta; }) : [];
+    const cambiadas = previa.length ? asignacionSemana.asignaciones.filter((a) => { const x = previa.find((y) => y.dia === a.dia && y.franja === a.franja); return !x || x.receta !== Motor.sinCarga(a.receta); }) : [];
     const firmaRespuestas = JSON.stringify(respuestas);
     const datosNuevos = Boolean(ultimaFirmaRespuestas) && ultimaFirmaRespuestas !== firmaRespuestas; // un repintado (abrir un horario…) no es un cambio
     if (datosNuevos || !ultimaFirmaRespuestas) avisoCambiosVigente = '';
@@ -4177,6 +4198,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           <div class="dia-macros">P ${d.proteinaG} g · G ${d.grasaG} g · H ${d.hidratoG} g</div>
           ${(() => { const cd = compPorDia.get(d.dia); if (!cd?.hidratoMinGKg || cd.fase === 'competicion') return ''; const n = Motor.notaHidratosCarga(d.hidratoG, Motor.hidratosServidosDia(cuadrado.asignaciones, recetasCuadre, d.dia)); return n ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(n)}</p>` : ''; })() /* #285 punto 11 */}
           ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
+          ${diasRacionesCarga.has(d.dia) ? `<p class="subt nota-carga" data-dia="${d.dia}">🍝 ${escaparHtml(Motor.TEXTO_RACIONES_CARGA)}</p>` : ''}
           ${reparto.tomaSugerida ? `<p class="subt toma-sugerida">Antes de entrenar a las ${escaparHtml(horaDecimalATexto(reparto.tomaSugerida.inicio))}: si te sienta bien, algo ligero 30-60 min antes, por ejemplo ${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)} (unas ${reparto.tomaSugerida.kcal} kcal). Es solo una sugerencia.</p>` : ''}
           ${badgesHtml}
           ${moverHtml}
