@@ -70,6 +70,7 @@ var Motor = (() => {
     MENSAJE_LLANO_AVISOS: () => MENSAJE_LLANO_AVISOS,
     MENSAJE_SUELO: () => MENSAJE_SUELO,
     MIN_DUELOS: () => MIN_DUELOS,
+    MIN_GRASA_PLATO_CARGA: () => MIN_GRASA_PLATO_CARGA,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
     NOTA_PAUTA: () => NOTA_PAUTA,
     NOTA_PAUTA_ORIENTATIVA: () => NOTA_PAUTA_ORIENTATIVA,
@@ -93,6 +94,7 @@ var Motor = (() => {
     SUFIJO_CARGA: () => SUFIJO_CARGA,
     TEXTOS_LOGROS: () => TEXTOS_LOGROS,
     TEXTO_ALERTA_PERSONA: () => TEXTO_ALERTA_PERSONA,
+    TEXTO_MENOS_GRASA_CARGA: () => TEXTO_MENOS_GRASA_CARGA,
     TEXTO_NIVEL: () => TEXTO_NIVEL,
     TEXTO_PLAN_PABLO: () => TEXTO_PLAN_PABLO,
     TEXTO_RACIONES_CARGA: () => TEXTO_RACIONES_CARGA,
@@ -3304,58 +3306,101 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   // src/motor/carga-raciones.ts
   var SUFIJO_CARGA = "~carga";
   var TEXTO_RACIONES_CARGA = "Hoy toca carga: las raciones de pasta, arroz o pan son m\xE1s grandes de lo normal, a prop\xF3sito.";
+  var TEXTO_MENOS_GRASA_CARGA = "Hoy toca carga: los platos llevan menos aceite de lo normal, para dejar sitio a los hidratos.";
+  var MIN_GRASA_PLATO_CARGA = 5;
   var ORDEN = ["comida", "cena", "desayuno", "merienda", "media_manana"];
   var sinCarga = (id) => {
     const i = id.lastIndexOf(SUFIJO_CARGA);
     return i >= 0 ? id.slice(0, i) : id;
   };
-  function recetaConCarga(r, k) {
+  function partesCarga(id) {
+    const i = id.lastIndexOf(SUFIJO_CARGA);
+    if (i < 0) return { base: id, k: 1, fa: 1 };
+    const m = id.slice(i + SUFIJO_CARGA.length).match(/^([\d.]+)(?:a([\d.]+))?$/);
+    return { base: id.slice(0, i), k: m ? Number(m[1]) : NaN, fa: m?.[2] ? Number(m[2]) : 1 };
+  }
+  var esGrasa = (nombre) => esPalanca(nombre) && rolIngrediente(nombre) === "grasa";
+  function grasaServida(asig, porId) {
+    return asig.reduce((t2, a2) => {
+      const r = recetaDeId(porId, a2.receta);
+      return t2 + (r && r.kcal > 0 ? r.grasa * (a2.kcalResultante / r.kcal) : 0);
+    }, 0);
+  }
+  function recetaConCarga(r, k, fa = 1) {
+    const menosGrasa = fa < 1 ? r.ingredientes.filter((i) => esGrasa(i.nombre)).reduce((t2, i) => t2 + i.gramos, 0) * (1 - fa) : 0;
     const base = r.ingredientes.filter((i) => esPalanca(i.nombre) && rolIngrediente(i.nombre) === "base");
     const gBase = base.reduce((s, i) => s + i.gramos, 0);
     const gCarga = base.filter((i) => esBaseDeCarga(i.nombre)).reduce((s, i) => s + i.gramos, 0);
     const extraHidrato = gBase > 0 ? r.hidrato * (gCarga / gBase) * (k - 1) : 0;
     return {
       ...r,
-      id: `${r.id}${SUFIJO_CARGA}${k}`,
+      id: `${r.id}${SUFIJO_CARGA}${k}${fa < 1 ? `a${fa}` : ""}`,
       hidrato: Math.round((r.hidrato + extraHidrato) * 10) / 10,
-      kcal: Math.round(r.kcal + 4 * extraHidrato),
-      ingredientes: r.ingredientes.map((i) => esBaseDeCarga(i.nombre) ? { ...i, gramos: Math.round(i.gramos * k * 10) / 10 } : i)
+      kcal: Math.round(r.kcal + 4 * extraHidrato - 9 * menosGrasa),
+      grasa: Math.round(Math.max(0, r.grasa - menosGrasa) * 10) / 10,
+      ingredientes: r.ingredientes.map((i) => esBaseDeCarga(i.nombre) ? { ...i, gramos: Math.round(i.gramos * k * 10) / 10 } : fa < 1 && esGrasa(i.nombre) ? { ...i, gramos: Math.round(i.gramos * fa * 10) / 10 } : i)
     };
   }
   function recetaDeIdConCarga(porId, id) {
-    const i = id.lastIndexOf(SUFIJO_CARGA);
-    if (i < 0) return void 0;
-    const k = Number(id.slice(i + SUFIJO_CARGA.length));
-    const r = recetaDeId(porId, id.slice(0, i));
-    return r && k > 0 ? recetaConCarga(r, k) : void 0;
+    if (!id.includes(SUFIJO_CARGA)) return void 0;
+    const { base, k, fa } = partesCarga(id);
+    const r = recetaDeId(porId, base);
+    return r && k > 0 && fa > 0 && fa <= 1 ? recetaConCarga(r, k, fa) : void 0;
   }
-  function aplicarRacionesCarga(asignaciones, slots, recetas, dias = []) {
+  function aplicarRacionesCarga(asignaciones, slots, recetas, dias = [], opciones = {}) {
     const porId = new Map(recetas.map((r) => [r.id, r]));
     const salida = asignaciones.map((a2) => ({ ...a2 }));
     const nuevas = [];
     const diasCarga = [];
+    const diasMenosGrasa = [];
     const diasSalida = dias.map((d) => ({ ...d }));
-    for (const dia of [...new Set(slots.filter((s) => s.racionesCarga).map((s) => s.dia))]) {
+    const grasaObj = opciones.grasaObjetivoG ?? {};
+    for (const dia of [...new Set(slots.filter((s) => s.racionesCarga || grasaObj[s.dia] !== void 0).map((s) => s.dia))]) {
       const delDia = slots.filter((s) => s.dia === dia);
       const objetivo = delDia.reduce((s, x) => s + x.kcalObjetivo, 0);
       const mias = salida.filter((a2) => a2.dia === dia).sort((a2, b) => ORDEN.indexOf(a2.franja) - ORDEN.indexOf(b.franja));
       let falta = objetivo - mias.reduce((s, a2) => s + a2.kcalResultante, 0);
+      const gObj = grasaObj[dia];
+      if (gObj !== void 0) {
+        let exceso = grasaServida(mias, porId) - gObj;
+        for (const a2 of mias) {
+          if (exceso <= 1) break;
+          const r = recetaDeId(porId, a2.receta);
+          if (!r || a2.receta.includes(SUFIJO_CARGA)) continue;
+          const grasas = gramosEscalados(r, a2.racionAjustada).filter((i) => esGrasa(i.nombre) && i.gramos > 0);
+          const gGrasa = grasas.reduce((t2, i) => t2 + i.gramos, 0);
+          if (gGrasa <= MIN_GRASA_PLATO_CARGA + 1) continue;
+          const faMin = Math.max(MIN_GRASA_PLATO_CARGA / gGrasa, ...grasas.map((i) => (racionRealistaMinima(i.nombre) ?? 0) / i.gramos));
+          const fa = Math.ceil(Math.max(faMin, 1 - exceso / gGrasa) * 100) / 100;
+          if (fa >= 1) continue;
+          const c2 = recetaConCarga(r, 1, fa);
+          const kcal = kcalConRacion(c2, a2.racionAjustada);
+          exceso -= (a2.kcalResultante - kcal) / 9;
+          falta += a2.kcalResultante - kcal;
+          a2.receta = c2.id;
+          a2.kcalResultante = kcal;
+          a2.menosGrasa = true;
+          nuevas.push(c2);
+          if (!diasMenosGrasa.includes(dia)) diasMenosGrasa.push(dia);
+        }
+      }
       for (const a2 of mias) {
         if (falta <= 20) break;
         const slot = delDia.find((s) => s.franja === a2.franja);
-        const r = recetaDeId(porId, a2.receta);
-        if (!slot?.racionesCarga || !r || a2.receta.includes(SUFIJO_CARGA)) continue;
+        const { base: idBase, k: k0, fa } = partesCarga(a2.receta);
+        const r = recetaDeId(porId, idBase);
+        if (!slot?.racionesCarga || !r || k0 !== 1) continue;
         const g = gramosEscalados(r, a2.racionAjustada);
         const carga = g.filter((i) => esBaseDeCarga(i.nombre) && i.gramos > 0);
         if (!carga.length) continue;
         let kMax = Math.min(...carga.map((i) => (racionCargaMaxima(i.nombre) ?? i.gramos) / i.gramos));
-        const kcal1 = kcalConRacion(recetaConCarga(r, 2), a2.racionAjustada) - a2.kcalResultante;
+        const kcal1 = kcalConRacion(recetaConCarga(r, 2, fa), a2.racionAjustada) - a2.kcalResultante;
         if (!(kcal1 > 0) || kMax <= 1.04) continue;
         let k = Math.min(kMax, 1 + falta / kcal1);
         k = Math.floor(k * 100) / 100;
         let elegida;
         for (; k > 1.04; k = Math.round((k - 0.05) * 100) / 100) {
-          const c2 = recetaConCarga(r, k);
+          const c2 = recetaConCarga(r, k, fa);
           if (!validarPlatoGenerado(a2.franja, gramosEscalados(c2, a2.racionAjustada), { cargaAlta: slot.cargaAlta, racionesCarga: true }).incumplimientos.length) {
             elegida = c2;
             break;
@@ -3371,14 +3416,14 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         if (!diasCarga.includes(dia)) diasCarga.push(dia);
       }
       const d = diasSalida.find((x) => x.dia === dia);
-      if (d && diasCarga.includes(dia)) {
+      if (d && (diasCarga.includes(dia) || diasMenosGrasa.includes(dia))) {
         d.servido = Math.round(objetivo - falta);
         d.cuadrado = Math.abs(falta) <= TOLERANCIA_DIA * objetivo;
         if (d.cuadrado) delete d.aviso;
         else d.aviso = `${dia}: faltan ${Math.round(falta)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.`;
       }
     }
-    return { asignaciones: salida, dias: diasSalida, recetas: nuevas, diasCarga };
+    return { asignaciones: salida, dias: diasSalida, recetas: nuevas, diasCarga, diasMenosGrasa };
   }
 
   // src/motor/desayuno-carrera.ts

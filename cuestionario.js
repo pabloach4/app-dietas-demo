@@ -3998,12 +3998,16 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     }
     // #301: en los días de carga, si la persona tolera más volumen, la pasta, el arroz y el pan crecen hasta la banda del +50 % para cubrir lo que falte.
     const diasRacionesCarga = new Set();
+    const diasMenosGrasa = new Set(); // #303 (Pablo, 04/11: «C, menos grasa»): los días de carga, menos aceite para que quepan más hidratos
     {
-      const rc = Motor.aplicarRacionesCarga(cuadrado.asignaciones, slotsSemana, recetasCuadre, cuadrado.dias);
-      if (rc.diasCarga.length) {
+      const grasaObjetivoG = Object.fromEntries(plan.dias.filter((d) => (compPorDia.get(d.dia)?.hidratoMinGKg ?? 0) >= 10 && compPorDia.get(d.dia)?.fase !== 'competicion').map((d) => [d.dia, d.grasaG]));
+      const rc = Motor.aplicarRacionesCarga(cuadrado.asignaciones, slotsSemana, recetasCuadre, cuadrado.dias, { grasaObjetivoG });
+      const tocados = [...new Set([...rc.diasCarga, ...rc.diasMenosGrasa])];
+      if (tocados.length) {
         rc.diasCarga.forEach((d) => diasRacionesCarga.add(d));
-        const avisosCarga = rc.dias.filter((x) => diasRacionesCarga.has(x.dia) && x.aviso).map((x) => x.aviso);
-        cuadrado = { ...cuadrado, asignaciones: rc.asignaciones, dias: rc.dias, avisos: cuadrado.avisos.filter((a) => !rc.diasCarga.some((d) => a.startsWith(`${d}: faltan`))).concat(avisosCarga) };
+        rc.diasMenosGrasa.forEach((d) => diasMenosGrasa.add(d));
+        const avisosCarga = rc.dias.filter((x) => tocados.includes(x.dia) && x.aviso).map((x) => x.aviso);
+        cuadrado = { ...cuadrado, asignaciones: rc.asignaciones, dias: rc.dias, avisos: cuadrado.avisos.filter((a) => !tocados.some((d) => a.startsWith(`${d}: faltan`))).concat(avisosCarga) };
       }
     }
     // #301 parte 2 (Pablo, 03/11: «ambas, isotonicos y más ingestas»): si el día de carga no llega a sus hidratos con los platos, bebida isotónica
@@ -4206,6 +4210,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           ${(() => { const cd = compPorDia.get(d.dia); if (!cd?.hidratoMinGKg || cd.fase === 'competicion') return ''; const ex = extrasCargaPorDia.get(d.dia); if (ex) return `<p class="subt extras-carga" data-dia="${d.dia}">🥤 ${escaparHtml(Motor.textoExtrasCarga(ex))}</p>${ex.aviso ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(ex.aviso)}</p>` : ''}` /* #301 parte 2 */; const n = Motor.notaHidratosCarga(d.hidratoG, Motor.hidratosServidosDia(cuadrado.asignaciones, recetasCuadre, d.dia)); return n ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(n)}</p>` : ''; })() /* #285 punto 11 */}
           ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
           ${diasRacionesCarga.has(d.dia) ? `<p class="subt nota-carga" data-dia="${d.dia}">🍝 ${escaparHtml(Motor.TEXTO_RACIONES_CARGA)}</p>` : ''}
+          ${diasMenosGrasa.has(d.dia) ? `<p class="subt nota-menos-grasa" data-dia="${d.dia}">🫒 ${escaparHtml(Motor.TEXTO_MENOS_GRASA_CARGA)}</p>` : ''}
           ${reparto.tomaSugerida ? `<p class="subt toma-sugerida">Antes de entrenar a las ${escaparHtml(horaDecimalATexto(reparto.tomaSugerida.inicio))}: si te sienta bien, algo ligero 30-60 min antes, por ejemplo ${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)} (unas ${reparto.tomaSugerida.kcal} kcal). Es solo una sugerencia.</p>` : ''}
           ${badgesHtml}
           ${moverHtml}
