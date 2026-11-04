@@ -69,6 +69,7 @@ Pasta fresca / ñoquis,,,300,
 "Cereal crudo (arroz, pasta seca, avena, quinoa, cuscús)",,,150,"En crudo, no cocido"
 Legumbre seca,,,125,
 Aceituna y encurtido,,,80,
+Bebida isotónica (ml),,500,500,"Añadida por Claude (#301, 04/11/2026): una botella normal por toma; ~6 g de hidratos por 100 ml (ACSM, Sawka et al. 2007, doi:10.1249/mss.0b013e31802ca597: bebidas con un 4-8 % de hidratos). Solo en los días de carga, entre horas"
 C. REGLAS DE PLATO Y ESTRUCTURA,,,,
 Peso total del plato,,700,900,"Suma de ingredientes sólidos. Captura el plato de 1,1 kg que no rompe ningún tope individual"
 Guarnición obligatoria,,,,Comida/Cena «desnuda» si suma <40 g de base de hidrato o verdura → bloquea. La fruta NO cuenta como guarnición. Motivo: saciedad y no dar sensación de castigo
@@ -4005,6 +4006,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         cuadrado = { ...cuadrado, asignaciones: rc.asignaciones, dias: rc.dias, avisos: cuadrado.avisos.filter((a) => !rc.diasCarga.some((d) => a.startsWith(`${d}: faltan`))).concat(avisosCarga) };
       }
     }
+    // #301 parte 2 (Pablo, 03/11: «ambas, isotonicos y más ingestas»): si el día de carga no llega a sus hidratos con los platos, bebida isotónica
+    // y una o dos tomas más con su ración normal; si aun así no llega, que lo hable con Pablo.
+    const extrasCargaPorDia = new Map(Motor.extrasCarga(
+      plan.dias.filter((d) => (compPorDia.get(d.dia)?.hidratoMinGKg ?? 0) >= 10 && compPorDia.get(d.dia)?.fase !== 'competicion').map((d) => ({ dia: d.dia, hidratoObjetivoG: d.hidratoG })),
+      cuadrado.asignaciones, recetasCuadre, cuadrado.dias, admitePostre,
+    ).map((e) => [e.dia, e]));
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     // #283: el día con una comida fuera apuntada (con kcal) dice en su cabecera lo que suma y cuánto se pasa, con las cifras de «Hoy».
     const kcalFueraHtml = (d) => {
@@ -4196,7 +4203,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             ${kcalFueraHtml(d.dia)}
           </div>
           <div class="dia-macros">P ${d.proteinaG} g · G ${d.grasaG} g · H ${d.hidratoG} g</div>
-          ${(() => { const cd = compPorDia.get(d.dia); if (!cd?.hidratoMinGKg || cd.fase === 'competicion') return ''; const n = Motor.notaHidratosCarga(d.hidratoG, Motor.hidratosServidosDia(cuadrado.asignaciones, recetasCuadre, d.dia)); return n ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(n)}</p>` : ''; })() /* #285 punto 11 */}
+          ${(() => { const cd = compPorDia.get(d.dia); if (!cd?.hidratoMinGKg || cd.fase === 'competicion') return ''; const ex = extrasCargaPorDia.get(d.dia); if (ex) return `<p class="subt extras-carga" data-dia="${d.dia}">🥤 ${escaparHtml(Motor.textoExtrasCarga(ex))}</p>${ex.aviso ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(ex.aviso)}</p>` : ''}` /* #301 parte 2 */; const n = Motor.notaHidratosCarga(d.hidratoG, Motor.hidratosServidosDia(cuadrado.asignaciones, recetasCuadre, d.dia)); return n ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(n)}</p>` : ''; })() /* #285 punto 11 */}
           ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
           ${diasRacionesCarga.has(d.dia) ? `<p class="subt nota-carga" data-dia="${d.dia}">🍝 ${escaparHtml(Motor.TEXTO_RACIONES_CARGA)}</p>` : ''}
           ${reparto.tomaSugerida ? `<p class="subt toma-sugerida">Antes de entrenar a las ${escaparHtml(horaDecimalATexto(reparto.tomaSugerida.inicio))}: si te sienta bien, algo ligero 30-60 min antes, por ejemplo ${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)} (unas ${reparto.tomaSugerida.kcal} kcal). Es solo una sugerencia.</p>` : ''}

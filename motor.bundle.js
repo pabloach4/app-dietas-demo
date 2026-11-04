@@ -50,6 +50,7 @@ var Motor = (() => {
     GLUTEN_CSV: () => GLUTEN_CSV,
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
     HORA_ENTRENO_NOCHE: () => HORA_ENTRENO_NOCHE,
+    ISOTONICA_G_HIDRATO_100ML: () => ISOTONICA_G_HIDRATO_100ML,
     LIMITES_INGREDIENTES_CSV: () => LIMITES_INGREDIENTES_CSV,
     LIMITE_AFINIDAD: () => LIMITE_AFINIDAD,
     LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
@@ -233,6 +234,7 @@ var Motor = (() => {
     explicarProteina: () => explicarProteina,
     explicarRacion: () => explicarRacion,
     explicarTipoDia: () => explicarTipoDia,
+    extrasCarga: () => extrasCarga,
     factorCocido: () => factorCocido,
     faltaVisibleCompeticion: () => faltaVisibleCompeticion,
     favoritasValidas: () => favoritasValidas,
@@ -269,6 +271,7 @@ var Motor = (() => {
     inicioDeLaSiguiente: () => inicioDeLaSiguiente,
     inicioPrimeraPruebaH: () => inicioPrimeraPruebaH,
     instantaneaLocal: () => instantaneaLocal,
+    isotonicaPorToma: () => isotonicaPorToma,
     itemDesdeGramos: () => itemDesdeGramos,
     kcalConRacion: () => kcalConRacion,
     leerEvitados: () => leerEvitados,
@@ -350,6 +353,7 @@ var Motor = (() => {
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
     textoCita: () => textoCita,
     textoDiabetes: () => textoDiabetes,
+    textoExtrasCarga: () => textoExtrasCarga,
     textoLlegaAPablo: () => textoLlegaAPablo,
     textoNotificacion: () => textoNotificacion,
     textoOtrasAlergias: () => textoOtrasAlergias,
@@ -9556,6 +9560,64 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
     if (codigo === "PGRST202" || codigo === "42883") return "sin_funcion";
     if (r.error) return "error";
     return r.data === "BORRADO" ? "total" : "error";
+  }
+
+  // src/motor/carga-extras.ts
+  var ISOTONICA_G_HIDRATO_100ML = 6;
+  var ISOTONICA_ML_POR_DEFECTO = 500;
+  var PARTE_HIDRATO_TOMA = 0.55;
+  var KCAL_TOMA = [120, 400];
+  var FRANJAS_TOMA = ["merienda", "media_manana"];
+  function isotonicaPorToma() {
+    const ml = racionRealistaMaxima("bebida isot\xF3nica") ?? ISOTONICA_ML_POR_DEFECTO;
+    const hidratoG = Math.round(ml * ISOTONICA_G_HIDRATO_100ML / 100);
+    return { ml, hidratoG, kcal: 4 * hidratoG };
+  }
+  function candidatasToma(recetas, admite) {
+    const salida = [];
+    for (const r of recetas) {
+      if (r.id.includes("+") || r.id.includes("~") || !(r.kcal >= KCAL_TOMA[0] && r.kcal <= KCAL_TOMA[1])) continue;
+      if (4 * r.hidrato / r.kcal < PARTE_HIDRATO_TOMA || !admite(r)) continue;
+      const franja = FRANJAS_TOMA.find((f2) => r.franjas.includes(f2));
+      if (!franja || validarPlatoGenerado(franja, r.ingredientes).incumplimientos.length) continue;
+      salida.push({ r, franja });
+    }
+    return salida.sort((a2, b) => b.r.hidrato - a2.r.hidrato || a2.r.id.localeCompare(b.r.id));
+  }
+  function textoExtrasCarga(e) {
+    const partes = [`bebida isot\xF3nica, ${e.isotonica.ml} ml (unos ${e.isotonica.hidratoG} g de hidratos; mira que la etiqueta diga unos ${ISOTONICA_G_HIDRATO_100ML} g por 100 ml)`];
+    for (const t2 of e.tomas) partes.push(`${t2.nombre} (unos ${Math.round(t2.hidratoG)} g de hidratos)`);
+    const una = e.tomas.length === 1 ? "una toma m\xE1s" : e.tomas.length === 2 ? "dos tomas m\xE1s" : "";
+    return `Hoy toca carga y con los platos no llegas a los hidratos: a\xF1ade ${una ? `${una} y ` : ""}${partes.length > 1 ? "esto" : "esta bebida"} entre horas: ${partes.join("; ")}.`;
+  }
+  function extrasCarga(diasCarga, asignaciones, recetas, dias = [], admite = () => true) {
+    const candidatas = candidatasToma(recetas, admite);
+    const iso = isotonicaPorToma();
+    const salida = [];
+    for (const { dia, hidratoObjetivoG } of diasCarga) {
+      const meta = hidratoObjetivoG * PARTE_MINIMA_HIDRATOS_CARGA;
+      const antes = hidratosServidosDia(asignaciones, recetas, dia);
+      if (!(hidratoObjetivoG > 0) || antes >= meta) continue;
+      const d = dias.find((x) => x.dia === dia);
+      const kcalLibres = d ? d.objetivo * (1 + TOLERANCIA_DIA) - d.servido : Infinity;
+      if (kcalLibres < iso.kcal) continue;
+      let hidrato = antes + iso.hidratoG;
+      let kcal = iso.kcal;
+      const usadas = new Set(asignaciones.filter((a2) => a2.dia === dia).flatMap((a2) => a2.receta.split("~")[0].split("+")));
+      const tomas = [];
+      for (const { r, franja } of candidatas) {
+        if (tomas.length >= 2 || hidrato >= meta) break;
+        if (usadas.has(r.id) || kcal + r.kcal > kcalLibres) continue;
+        tomas.push({ receta: r.id, nombre: r.nombre, franja, kcal: r.kcal, hidratoG: r.hidrato });
+        usadas.add(r.id);
+        hidrato += r.hidrato;
+        kcal += r.kcal;
+      }
+      const e = { dia, isotonica: iso, tomas, hidratoAntesG: antes, hidratoG: hidrato, objetivoG: hidratoObjetivoG, kcalExtra: kcal };
+      if (hidrato < meta) e.aviso = `Aun con la bebida isot\xF3nica y las tomas de m\xE1s, el d\xEDa lleva unos ${Math.round(hidrato / 10) * 10} g de hidratos de los ~${Math.round(hidratoObjetivoG)} g que pide la carga. H\xE1blalo con Pablo antes de la carrera.`;
+      salida.push(e);
+    }
+    return salida;
   }
 
   // src/motor/plan-pablo.ts
