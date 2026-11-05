@@ -3313,6 +3313,22 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const i = id.lastIndexOf(SUFIJO_CARGA);
     return i >= 0 ? id.slice(0, i) : id;
   };
+  var COMPOSICION_CARGA = {
+    "pasta": { kcal: 371, proteina: 13.04, grasa: 1.51, hidrato: 74.67 },
+    "pasta sin gluten": { kcal: 357, proteina: 7.46, grasa: 2.08, hidrato: 79.3 },
+    "arroz": { kcal: 365, proteina: 7.13, grasa: 0.66, hidrato: 79.95 },
+    "cuscus": { kcal: 376, proteina: 12.76, grasa: 0.64, hidrato: 77.43 },
+    "copos de avena": { kcal: 379, proteina: 13.15, grasa: 6.52, hidrato: 67.7 },
+    "copos de avena sin gluten": { kcal: 379, proteina: 13.15, grasa: 6.52, hidrato: 67.7 },
+    "avena": { kcal: 379, proteina: 13.15, grasa: 6.52, hidrato: 67.7 },
+    "pan blanco": { kcal: 266, proteina: 8.85, grasa: 3.33, hidrato: 49.42 },
+    "pan": { kcal: 266, proteina: 8.85, grasa: 3.33, hidrato: 49.42 },
+    "pan integral": { kcal: 252, proteina: 12.45, grasa: 3.5, hidrato: 42.71 },
+    "pan sin gluten": { kcal: 248, proteina: 4.31, grasa: 5.24, hidrato: 45.78 },
+    "tortilla de trigo": { kcal: 297, proteina: 8.01, grasa: 7.58, hidrato: 49.27 }
+  };
+  var normalizarNombre = (n) => n.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
+  var creceEnCarga = (nombre) => esBaseDeCarga(nombre) && normalizarNombre(nombre) in COMPOSICION_CARGA;
   function partesCarga(id) {
     const i = id.lastIndexOf(SUFIJO_CARGA);
     if (i < 0) return { base: id, k: 1, fa: 1 };
@@ -3328,17 +3344,26 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   }
   function recetaConCarga(r, k, fa = 1) {
     const menosGrasa = fa < 1 ? r.ingredientes.filter((i) => esGrasa(i.nombre)).reduce((t2, i) => t2 + i.gramos, 0) * (1 - fa) : 0;
-    const base = r.ingredientes.filter((i) => esPalanca(i.nombre) && rolIngrediente(i.nombre) === "base");
-    const gBase = base.reduce((s, i) => s + i.gramos, 0);
-    const gCarga = base.filter((i) => esBaseDeCarga(i.nombre)).reduce((s, i) => s + i.gramos, 0);
-    const extraHidrato = gBase > 0 ? r.hidrato * (gCarga / gBase) * (k - 1) : 0;
+    const mas = { kcal: 0, proteina: 0, grasa: 0, hidrato: 0 };
+    const gramosNuevos = (i) => Math.round(i.gramos * k * 10) / 10;
+    for (const i of r.ingredientes) {
+      const c2 = creceEnCarga(i.nombre) ? COMPOSICION_CARGA[normalizarNombre(i.nombre)] : void 0;
+      if (!c2) continue;
+      const g = gramosNuevos(i) - i.gramos;
+      mas.kcal += g * c2.kcal / 100;
+      mas.proteina += g * c2.proteina / 100;
+      mas.grasa += g * c2.grasa / 100;
+      mas.hidrato += g * c2.hidrato / 100;
+    }
+    const r12 = (x) => Math.round(x * 10) / 10;
     return {
       ...r,
       id: `${r.id}${SUFIJO_CARGA}${k}${fa < 1 ? `a${fa}` : ""}`,
-      hidrato: Math.round((r.hidrato + extraHidrato) * 10) / 10,
-      kcal: Math.round(r.kcal + 4 * extraHidrato - 9 * menosGrasa),
-      grasa: Math.round(Math.max(0, r.grasa - menosGrasa) * 10) / 10,
-      ingredientes: r.ingredientes.map((i) => esBaseDeCarga(i.nombre) ? { ...i, gramos: Math.round(i.gramos * k * 10) / 10 } : fa < 1 && esGrasa(i.nombre) ? { ...i, gramos: Math.round(i.gramos * fa * 10) / 10 } : i)
+      hidrato: r12(r.hidrato + mas.hidrato),
+      proteina: r12(r.proteina + mas.proteina),
+      kcal: Math.round(r.kcal + mas.kcal - 9 * menosGrasa),
+      grasa: r12(Math.max(0, r.grasa + mas.grasa - menosGrasa)),
+      ingredientes: r.ingredientes.map((i) => creceEnCarga(i.nombre) ? { ...i, gramos: gramosNuevos(i) } : fa < 1 && esGrasa(i.nombre) ? { ...i, gramos: Math.round(i.gramos * fa * 10) / 10 } : i)
     };
   }
   function recetaDeIdConCarga(porId, id) {
@@ -3391,7 +3416,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         const r = recetaDeId(porId, idBase);
         if (!slot?.racionesCarga || !r || k0 !== 1) continue;
         const g = gramosEscalados(r, a2.racionAjustada);
-        const carga = g.filter((i) => esBaseDeCarga(i.nombre) && i.gramos > 0);
+        const carga = g.filter((i) => creceEnCarga(i.nombre) && i.gramos > 0);
         if (!carga.length) continue;
         let kMax = Math.min(...carga.map((i) => (racionCargaMaxima(i.nombre) ?? i.gramos) / i.gramos));
         const kcal1 = kcalConRacion(recetaConCarga(r, 2, fa), a2.racionAjustada) - a2.kcalResultante;
