@@ -149,6 +149,7 @@ var Motor = (() => {
     avisosParaPersona: () => avisosParaPersona,
     avisosVolumen: () => avisosVolumen,
     bandaPesoServido: () => bandaPesoServido,
+    bebidaTotalL: () => bebidaTotalL,
     borrarCompeticion: () => borrarCompeticion,
     buscarAlternativas: () => buscarAlternativas,
     buscarRecetas: () => buscarRecetas,
@@ -196,6 +197,7 @@ var Motor = (() => {
     definirRolIngrediente: () => definirRolIngrediente,
     definirTablaLimites: () => definirTablaLimites,
     densidadKcalG: () => densidadKcalG,
+    deporteDeSesion: () => deporteDeSesion,
     deportePrincipal: () => deportePrincipal,
     desayunoCumple: () => desayunoCumple,
     descontarSobras: () => descontarSobras,
@@ -206,6 +208,7 @@ var Motor = (() => {
     diabetesValida: () => diabetesValida,
     diasConSuelo: () => diasConSuelo,
     duelosTerminados: () => duelosTerminados,
+    duranteEntreno: () => duranteEntreno,
     editarCompeticion: () => editarCompeticion,
     elaboracionEjemplo: () => elaboracionEjemplo,
     encimasDe: () => encimasDe,
@@ -274,6 +277,7 @@ var Motor = (() => {
     inicioDeLaSiguiente: () => inicioDeLaSiguiente,
     inicioPrimeraPruebaH: () => inicioPrimeraPruebaH,
     instantaneaLocal: () => instantaneaLocal,
+    intensidadDeSesion: () => intensidadDeSesion,
     isotonicaPorToma: () => isotonicaPorToma,
     itemDesdeGramos: () => itemDesdeGramos,
     kcalConRacion: () => kcalConRacion,
@@ -3374,14 +3378,14 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       mas.grasa += g * c2.grasa / 100;
       mas.hidrato += g * c2.hidrato / 100;
     }
-    const r12 = (x) => Math.round(x * 10) / 10;
+    const r13 = (x) => Math.round(x * 10) / 10;
     return {
       ...r,
       id: `${r.id}${SUFIJO_CARGA}${k}${fa < 1 ? `a${fa}` : ""}`,
-      hidrato: r12(r.hidrato + mas.hidrato),
-      proteina: r12(r.proteina + mas.proteina),
+      hidrato: r13(r.hidrato + mas.hidrato),
+      proteina: r13(r.proteina + mas.proteina),
       kcal: Math.round(r.kcal + mas.kcal - 9 * menosGrasa),
-      grasa: r12(Math.max(0, r.grasa + mas.grasa - menosGrasa)),
+      grasa: r13(Math.max(0, r.grasa + mas.grasa - menosGrasa)),
       ingredientes: r.ingredientes.map((i) => creceEnCarga(i.nombre) ? { ...i, gramos: gramosNuevos(i) } : fa < 1 && esGrasa(i.nombre) ? { ...i, gramos: Math.round(i.gramos * fa * 10) / 10 } : i)
     };
   }
@@ -4145,12 +4149,12 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const palancas = receta.ingredientes.filter((i) => esPalanca(i.nombre));
     const hay = (rol) => palancas.some((i) => rolIngrediente(i.nombre) === rol);
     const grasaPalanca = palancas.filter((i) => rolIngrediente(i.nombre) === "grasa").reduce((t2, i) => t2 + i.gramos, 0);
-    const r12 = (n) => Math.round(n * 10) / 10;
+    const r13 = (n) => Math.round(n * 10) / 10;
     if (factor === 1) return { proteina: receta.proteina, grasa: receta.grasa, hidrato: receta.hidrato };
     return {
-      proteina: r12(receta.proteina * (hay("proteina") ? factor : 1)),
-      grasa: r12(receta.grasa + grasaPalanca * (factor - 1)),
-      hidrato: r12(receta.hidrato * (hay("base") ? factor : 1))
+      proteina: r13(receta.proteina * (hay("proteina") ? factor : 1)),
+      grasa: r13(receta.grasa + grasaPalanca * (factor - 1)),
+      hidrato: r13(receta.hidrato * (hay("base") ? factor : 1))
     };
   }
 
@@ -7624,8 +7628,8 @@ r43,aceite de oliva,10`;
     const total = [redondear3(tasa[0] * horas), redondear3(tasa[1] * horas)];
     base.hidratoG = total;
     if (c2.usaGeles === "si") {
-      const medio = (tasa[0] + tasa[1]) / 2;
-      const cada = Math.max(10, Math.round(GRAMOS_GEL / medio * 60));
+      const medio2 = (tasa[0] + tasa[1]) / 2;
+      const cada = Math.max(10, Math.round(GRAMOS_GEL / medio2 * 60));
       const minutos = [];
       for (let m = 20; m < p.duracionMin - 10; m += cada) minutos.push(m);
       base.geles = { n: [redondear3(total[0] / GRAMOS_GEL), redondear3(total[1] / GRAMOS_GEL)], gramosPorGel: GRAMOS_GEL, minutos };
@@ -10284,5 +10288,135 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       firma: `S|${dias.map((d) => `${d.dia}${d.calculadas}`).join(",")}`
     };
   }
+
+  // src/motor/durante-entreno.ts
+  var DEPORTE_POR_ACTIVIDAD = [
+    [/^(bici|spinning)/, "ciclismo"],
+    [/^correr/, "running"],
+    [/^natacion/, "natacion"],
+    [/^(crossfit|hyrox|fuerza|calistenia|funcional|hiit|tonificacion)/, "gimnasio"],
+    [/^futbol/, "futbol"],
+    [/^padel$/, "padel"]
+  ];
+  var DEPORTE_POR_PRINCIPAL = {
+    ciclismo: "ciclismo",
+    running: "running",
+    natacion: "natacion",
+    crossfit: "gimnasio",
+    gimnasio: "gimnasio",
+    hyrox: "gimnasio",
+    futbol: "futbol",
+    padel: "padel"
+  };
+  function deporteDeSesion(actividad, deportePrincipal2) {
+    return DEPORTE_POR_ACTIVIDAD.find(([re]) => re.test(actividad))?.[1] ?? DEPORTE_POR_PRINCIPAL[deportePrincipal2 ?? ""] ?? "comun";
+  }
+  function intensidadDeSesion(s) {
+    if (s.dura) return "intensa";
+    if (/_intensa$/.test(s.actividad) || s.actividad === "correr_rapido") return "intensa";
+    if (/_(paseo|suave)$/.test(s.actividad) || ACTIVIDADES[s.actividad]?.tipo === "suave" || /^suave/i.test(s.nombre ?? "")) return "suave";
+    return "normal";
+  }
+  var r0 = (x) => Math.round(x);
+  var r12 = (x) => Math.round(x * 10) / 10;
+  var medio = (r) => r0((r[0] + r[1]) / 2);
+  var segunIntensidad = (r, i) => i === "suave" ? r[0] : i === "intensa" ? r[1] : medio(r);
+  function duranteEntreno(sesion, deportePrincipal2) {
+    const min = Math.max(0, sesion.minutos);
+    const deporte = deporteDeSesion(sesion.actividad, deportePrincipal2);
+    const intensidad = intensidadDeSesion(sesion);
+    const horas = min / 60;
+    const notas = [];
+    let ghHora;
+    let objetivo;
+    let opcional = false;
+    let solido = deporte !== "natacion" && deporte !== "gimnasio";
+    const comun = () => {
+      const t2 = tasaDuranteGH(min).tasa;
+      if (!t2) return;
+      if (min < 75) {
+        if (intensidad !== "intensa") return;
+        ghHora = t2;
+        objetivo = t2[1];
+        opcional = true;
+      } else if (min <= 150) {
+        ghHora = t2;
+        objetivo = segunIntensidad(t2, intensidad);
+      } else {
+        ghHora = t2;
+        objetivo = 60;
+        notas.push("Empieza en 60 g por hora y sube poco a poco de una salida a otra; 90 g solo con productos de glucosa y fructosa y si ya lo toleras.");
+      }
+    };
+    switch (deporte) {
+      case "running":
+        if (min >= 75 && min <= 150) {
+          ghHora = [30, 45];
+          objetivo = intensidad === "intensa" ? 45 : 30;
+          solido = false;
+          notas.push("Corriendo el est\xF3mago tolera peor: mejor gel, isot\xF3nico o gominolas que s\xF3lido.");
+        } else {
+          comun();
+          if (min > 150) notas.splice(0, notas.length, "De 60 a 90 g por hora solo si lo has entrenado; si no, qu\xE9date en 60.");
+        }
+        break;
+      case "natacion":
+        if (min >= 75) {
+          ghHora = [30, 60];
+          objetivo = segunIntensidad([30, 60], intensidad);
+          notas.push("Un bid\xF3n de isot\xF3nico en el borde, a sorbos cada 15-20 minutos. Nada s\xF3lido.");
+        } else if (min >= 45) notas.push("Agua en el borde: en la piscina tambi\xE9n se suda, aunque no se note.");
+        break;
+      case "gimnasio":
+        if (min >= 75) {
+          ghHora = [30, 30];
+          objetivo = 30;
+          opcional = true;
+          notas.push("Isot\xF3nico opcional, unos 30 g por hora. Nada de batidos durante.");
+        }
+        break;
+      case "futbol":
+        if (min >= 75) {
+          ghHora = [30, 60];
+          objetivo = segunIntensidad([30, 60], intensidad);
+          notas.push("Isot\xF3nico en las pausas o un gel en el descanso.");
+        }
+        break;
+      case "padel":
+        if (min >= 90) {
+          ghHora = [30, 60];
+          objetivo = segunIntensidad([30, 60], intensidad);
+          notas.push("Sorbos de isot\xF3nico en los cambios de lado; pl\xE1tano o d\xE1tiles entre partidos.");
+        } else if (min >= 45) notas.push("Agua; isot\xF3nico si hace mucho calor.");
+        break;
+      case "ciclismo":
+        comun();
+        if (ghHora) notas.unshift(intensidad === "intensa" ? "En lo intenso, mejor gel o bebida." : "En bici vale lo s\xF3lido: pl\xE1tano, barrita, d\xE1tiles o un bocadillo peque\xF1o.");
+        break;
+      default:
+        comun();
+    }
+    if (ghHora && !opcional) notas.push("Empieza a los 30-45 minutos y luego toma poco cada vez, cada 20-30 minutos.");
+    const bebe = min >= 45;
+    const bebidaLHora = bebe ? [0.4, 0.8] : void 0;
+    const bebidaObjetivoLHora = bebe ? sesion.actividad === "spinning" ? 0.8 : 0.6 : void 0;
+    if (sesion.actividad === "spinning" && bebe) notas.push("En rodillo se suda m\xE1s sin aire: bebe por lo alto.");
+    const sales = min > 120;
+    if (min < 45) notas.push("Sesi\xF3n corta: nada durante, agua si la necesitas.");
+    else if (!ghHora) notas.push("Con agua basta.");
+    const pauta = { deporte, intensidad, minutos: min, opcional, solido: ghHora ? solido : false, sales, nota: notas.join(" ") };
+    if (ghHora && objetivo !== void 0) {
+      pauta.ghHora = ghHora;
+      pauta.objetivoGHora = objetivo;
+      pauta.totalG = [r0(ghHora[0] * horas), r0(ghHora[1] * horas)];
+      pauta.objetivoTotalG = r0(objetivo * horas);
+    }
+    if (bebidaLHora) {
+      pauta.bebidaLHora = bebidaLHora;
+      pauta.bebidaObjetivoLHora = bebidaObjetivoLHora;
+    }
+    return pauta;
+  }
+  var bebidaTotalL = (p) => p.bebidaLHora ? [r12(p.bebidaLHora[0] * p.minutos / 60), r12(p.bebidaLHora[1] * p.minutos / 60)] : void 0;
   return __toCommonJS(motor_exports);
 })();
