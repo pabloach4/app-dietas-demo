@@ -980,19 +980,21 @@
   <div class="tarjeta">
     <h2 id="consentimiento-titulo">Antes de empezar: tus datos de salud</h2>
     <p class="resumen-consentimiento" id="consentimiento-resumen"><strong>En corto:</strong> te pido datos de salud (peso, entrenos, alergias…) solo para prepararte el plan. Se guardan en este navegador y no le llegan a nadie salvo que tú lo actives. Puedes retirar tu permiso cuando quieras. Abajo tienes el texto completo.</p>
+    <details class="plegable texto-legal" id="consentimiento-texto"><summary>Leer el texto completo</summary>
     <p>Para prepararte una alimentación a tu medida, necesito pedirte datos sobre tu salud: tu peso y altura, tu porcentaje de grasa si lo conoces, tu actividad y entrenamientos, tus alergias e intolerancias, si tienes molestias digestivas o intestinales y unas preguntas opcionales sobre tu energía y tu salud (cambios de peso, forma de comer, la regla, lesiones de hueso, cansancio y rendimiento). También usaré tu peso y estatura para comprobar que tu plan no te deja por debajo de un nivel seguro.</p>
     <p><strong>Para qué los uso:</strong> solo para calcular y ajustar tus menús, cantidades y lista de la compra, y para avisarte si algo pide hablar con un profesional. Si alguna de tus respuestas lo aconseja, me llega un aviso a mí para que hable contigo. No los uso para publicidad ni los vendo ni los cedo con fines comerciales.</p>
     <p><strong>Qué no hace esta app:</strong> no es un servicio médico, no diagnostica ni trata ninguna enfermedad y no sustituye el consejo de tu médico o dietista-nutricionista. Si indicas un problema de salud (molestias intestinales, diabetes, peso muy bajo...), una alergia o una intolerancia, la app no te dará una dieta clínica: te propondrá hablar conmigo, que soy quien lleva esos casos. Si tienes una enfermedad, estás embarazada, eres menor de 18 años o tomas medicación que afecte a tu alimentación, consulta primero con tu médico.</p>
     <p><strong>Tu consentimiento:</strong> los datos de salud están especialmente protegidos. Solo los trataré si me das tu consentimiento expreso (art. 9.2.a RGPD). Es voluntario: si no lo das, no puedo generarte un plan personalizado, pero no pasa nada más.</p>
     <p><strong>Tus derechos:</strong> puedes retirar el consentimiento cuando quieras (desde ajustes o escribiendo a nutriciondeportiva7777@gmail.com) y pedir que borre tus datos; también acceder, corregir, limitar su uso o llevártelos. Si crees que no los trato bien, puedes reclamar ante la AEPD (www.aepd.es).</p>
     <p><strong>Responsable:</strong> Pablo Aragón Chaves, técnico superior en nutrición deportiva y dietética. Contacto de privacidad: nutriciondeportiva7777@gmail.com. Más información en la política de privacidad.</p>
+    </details>
     <label class="check"><input type="checkbox" id="consentimiento-acepto"> Leo y acepto que Pablo Aragón Chaves trate mis datos de salud (peso, altura, % grasa, actividad, alergias e intolerancias, molestias digestivas y mis respuestas sobre energía, forma de comer, regla y lesiones) para generar mi plan de alimentación.</label>
     <button type="button" class="btn-principal" id="consentimiento-continuar" disabled style="margin-top:0.8rem">Continuar</button>
   </div>
 </section>
 <style>
   body.sin-consentimiento .ejemplos, body.sin-consentimiento #ejemplos-titulo, body.sin-consentimiento #progreso, body.sin-consentimiento #paso-nombre,
-  body.sin-consentimiento .env:not(#consentimiento), body.sin-consentimiento #barra-pasos, body.sin-consentimiento .subt, body.sin-consentimiento details.plegable { display: none !important; }
+  body.sin-consentimiento .env:not(#consentimiento), body.sin-consentimiento #barra-pasos, body.sin-consentimiento .subt, body.sin-consentimiento details.plegable:not(.texto-legal) { display: none !important; }
 
   /* #208 parte 4: selector fijo al desplazar (Semana, Compra y el buscador de Recetas) y «Deshacer» flotando por encima de la barra inferior. */
   .subvista, .dias-chips { position: sticky; top: 8px; z-index: 20; box-shadow: 0 6px 14px -10px rgba(16, 24, 40, .35); }
@@ -1661,12 +1663,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=3ac6535"></script>
-<script src="fuentes.js?v=3ac6535"></script>
-<script src="motor.bundle.js?v=3ac6535"></script>
-<script src="cuestionario.js?v=3ac6535"></script>
-<script src="nube.js?v=3ac6535"></script>
-<script src="pwa.js?v=3ac6535"></script>
+<script src="novedades.js?v=adf93ff"></script>
+<script src="fuentes.js?v=adf93ff"></script>
+<script src="motor.bundle.js?v=adf93ff"></script>
+<script src="cuestionario.js?v=adf93ff"></script>
+<script src="nube.js?v=adf93ff"></script>
+<script src="pwa.js?v=adf93ff"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

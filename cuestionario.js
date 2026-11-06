@@ -3601,6 +3601,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('dc-cuerpo').innerHTML = `
       <p>${actual ? `Ahora: <strong>${escaparHtml(actual.receta.nombre)}</strong>.` : `Ahora: sin receta de ejemplo${hueco ? ` (${escaparHtml(hueco.motivo)})` : ''}.`}</p>
       ${dia === LETRA_DIA_JS[new Date().getDay()] ? '<button type="button" class="btn-secundario" id="alt-fuera">He comido fuera</button> ' : ''}<button type="button" class="btn-secundario" id="alt-fuera-antes">Voy a comer fuera</button>
+      ${alternativas.length > 1 ? `<label class="alt-buscar">Buscar por ingrediente o plato <input type="search" id="alt-buscar" placeholder="Por ejemplo: pasta, pollo, garbanzos" autocomplete="off"></label><p class="una-linea" id="alt-buscar-nada" hidden></p>` : ''}
       ${alternativas.length ? `<ul class="alt-lista">${tarjetas}</ul>${alternativas.length > PRIMERAS_ALT ? `<button type="button" class="btn-texto" id="alt-ver-mas">Ver más (${alternativas.length - PRIMERAS_ALT})</button>` : ''}` : `<p class="error-inline">No hay ninguna receta de ejemplo compatible para esta comida${bloqueadasPorVariedad.length ? ' que respete el límite de variedad' : ''}. No se cambia nada ni se rebajan tus restricciones.</p>`}
       ${motivos}
       <details class="saber-mas"><summary>Saber más</summary><p>Cambia solo esta comida: no añade otra ni registra que la hayas tomado, y el resto de la semana y tus objetivos no se tocan. Las opciones <strong>no son equivalentes nutricionales</strong>: solo cumplen tus restricciones, el validador de platos, la variedad semanal en comidas y cenas (máx. 2 veces el mismo plato) y la franja. Las kcal y macros de las recetas de ejemplo son aproximados.</p></details>
@@ -3610,6 +3611,22 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('alt-cancelar').addEventListener('click', () => abrirDetalleComida(dia, franja));
     const verMasAlt = document.getElementById('alt-ver-mas');
     if (verMasAlt) verMasAlt.addEventListener('click', () => { document.querySelectorAll('[data-mas-alt]').forEach((li) => { li.hidden = false; }); verMasAlt.remove(); });
+    // #309: el buscador solo filtra las alternativas que ya podían salir en esta comida (franja, restricciones, variedad).
+    const buscador = document.getElementById('alt-buscar');
+    if (buscador) buscador.addEventListener('input', () => {
+      const q = buscador.value;
+      const { lista, sinResultados } = Motor.buscarAlternativas(alternativas, q);
+      const quedan = new Set(lista);
+      const filtrando = Boolean(q.trim()) && !sinResultados;
+      const verMas = document.getElementById('alt-ver-mas');
+      document.querySelectorAll('#dc-cuerpo .alt-card').forEach((li, i) => {
+        li.hidden = filtrando ? !quedan.has(alternativas[i]) : (Boolean(verMas) && li.hasAttribute('data-mas-alt'));
+      });
+      if (verMas) verMas.hidden = filtrando;
+      const nada = document.getElementById('alt-buscar-nada');
+      nada.hidden = !sinResultados;
+      nada.textContent = sinResultados ? `Ninguna receta para esta comida lleva «${q.trim()}». Te dejo la lista entera.` : '';
+    });
     const botonFuera = document.getElementById('alt-fuera');
     if (botonFuera) botonFuera.addEventListener('click', () => abrirComidaFuera(dia, franja));
     document.getElementById('alt-fuera-antes').addEventListener('click', () => abrirComidaFuera(dia, franja, true));

@@ -150,6 +150,7 @@ var Motor = (() => {
     avisosVolumen: () => avisosVolumen,
     bandaPesoServido: () => bandaPesoServido,
     borrarCompeticion: () => borrarCompeticion,
+    buscarAlternativas: () => buscarAlternativas,
     buscarRecetas: () => buscarRecetas,
     calcular: () => calcular,
     calcularNiveles: () => calcularNiveles,
@@ -1486,6 +1487,24 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       const palabras = [r.nombre, ...r.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
       return terminos.every((t2) => palabras.some((p) => p.startsWith(t2)));
     });
+  }
+  var SINONIMOS_BUSQUEDA = {
+    macarron: "pasta",
+    espagueti: "pasta",
+    spaghetti: "pasta",
+    fideo: "pasta",
+    tallarin: "pasta",
+    penne: "pasta",
+    fusilli: "pasta"
+  };
+  function buscarAlternativas(alternativas, consulta) {
+    const terminos = normalizarBusqueda(consulta);
+    if (!terminos.length) return { lista: alternativas, sinResultados: false };
+    const lista = alternativas.filter((a2) => {
+      const palabras = [a2.receta.nombre, ...a2.receta.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
+      return terminos.every((t2) => palabras.some((p) => p.startsWith(t2) || t2 in SINONIMOS_BUSQUEDA && p.startsWith(SINONIMOS_BUSQUEDA[t2])));
+    });
+    return lista.length ? { lista, sinResultados: false } : { lista: alternativas, sinResultados: true };
   }
   function filtrarCatalogo(recetas, f2) {
     let lista = buscarRecetas(recetas, f2.consulta ?? "");
