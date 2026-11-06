@@ -9851,13 +9851,12 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
 
   // src/motor/logros.ts
   var TEXTOS_LOGROS = {
-    nombre: { completo: "D\xEDa completo", proteina: "Prote\xEDna cumplida", sincera: "Sincera" },
+    nombre: { completo: "D\xEDa completo", proteina: "Prote\xEDna cumplida" },
     explica: {
-      completo: "Todas las comidas de hoy hechas o apuntadas (comer fuera tambi\xE9n cuenta).",
-      proteina: "Las comidas de hoy ya suman casi toda la prote\xEDna del plan.",
-      sincera: "Has apuntado una comida fuera con lo que comiste."
+      completo: "Has hecho o apuntado todas las comidas del d\xEDa, tambi\xE9n las que comiste fuera.",
+      proteina: "Las comidas de hoy ya suman casi toda la prote\xEDna del plan."
     },
-    aviso: { completo: "\xA1D\xEDa completo!", proteina: "\xA1Prote\xEDna cumplida!", sincera: "\xA1Gracias por apuntarlo!" },
+    aviso: { completo: "\xA1D\xEDa completo!", proteina: "\xA1Prote\xEDna cumplida!" },
     titulo: "Mis medallas",
     semanaRedonda: "Semana redonda",
     animo: "Cada semana cuenta. Las celebraciones tambi\xE9n son parte de la vida.",
@@ -9904,7 +9903,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     return m;
   }
   function medallasDia(plan, apuntado) {
-    const sin = { completo: false, proteina: false, sincera: false };
+    const sin = { completo: false, proteina: false };
     if (!plan || !apuntado) return sin;
     const franjas = plan.franjas.map((f2) => f2.franja);
     const hechaOFuera = (f2) => apuntado.hechas.has(f2) || apuntado.fuera.has(f2);
@@ -9915,8 +9914,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     }
     return {
       completo: franjas.length > 0 && franjas.every(hechaOFuera),
-      proteina: plan.proteinaObjetivo > 0 && prot >= UMBRALES_LOGROS.proteina * plan.proteinaObjetivo - 1e-9,
-      sincera: [...apuntado.fuera.values()].some((x) => x.texto.trim().length > 0)
+      proteina: plan.proteinaObjetivo > 0 && prot >= UMBRALES_LOGROS.proteina * plan.proteinaObjetivo - 1e-9
     };
   }
   var PREGUNTAS_FRENO_LOGROS = [2, 3, 4, 9];
@@ -9940,7 +9938,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       const p = plan[letraDe(iso)];
       const a2 = apuntado.get(iso);
       const m = medallasDia(p, a2);
-      if (m.completo || m.proteina || m.sincera) conMedalla++;
+      if (m.completo || m.proteina) conMedalla++;
       if (iso < dias[0] || !p) continue;
       const hecho = p.franjas.filter((f2) => a2 && (a2.hechas.has(f2.franja) || a2.fuera.has(f2.franja))).length;
       x += hecho;

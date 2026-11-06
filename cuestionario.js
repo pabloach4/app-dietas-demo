@@ -1325,11 +1325,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (medallasOcultas) return '';
     if (nuevas.length) avisoMedalla(Motor.TEXTOS_LOGROS.aviso[nuevas[0]]);
     const T = Motor.TEXTOS_LOGROS;
-    const fila = ['completo', 'proteina', 'sincera'].map((k) => `<div class="medalla${m[k] ? ' conseguida' : ''}" data-medalla="${k}" title="${escaparHtml(T.explica[k])}">${SVG_MEDALLA}<span>${escaparHtml(T.nombre[k])}</span><span class="sr-solo">${m[k] ? ': conseguida' : ': todavía no'}</span></div>`).join('');
+    const fila = ['completo', 'proteina'].map((k) => `<div class="medalla${m[k] ? ' conseguida' : ''}" data-medalla="${k}" title="${escaparHtml(T.explica[k])}">${SVG_MEDALLA}<span>${escaparHtml(T.nombre[k])}</span><span class="sr-solo">${m[k] ? ': conseguida' : ': todavía no'}</span></div>`).join('');
     // El domingo, el resumen de la semana también en Hoy.
     const domingo = new Date(`${iso}T12:00:00`).getDay() === 0;
     const r = domingo ? Motor.resumenSemana(plan, apuntado, Motor.lunesDe(iso), iso) : undefined;
-    return `<div class="hoy-medallas" role="group" aria-label="Medallas de hoy">${fila}</div><details class="saber-mas" id="hoy-medallas-info"><summary>¿Qué son estas medallas?</summary>${['completo', 'proteina', 'sincera'].map((k) => `<p class="hoy-nota"><strong>${escaparHtml(T.nombre[k])}:</strong> ${escaparHtml(T.explica[k])}</p>`).join('')}</details>${r ? `<p class="hoy-semana" id="hoy-semana">Esta semana: ${escaparHtml(r.texto)}. <strong>${escaparHtml(r.redonda ? T.semanaRedonda : T.animo)}</strong></p>` : ''}`;
+    return `<div class="hoy-medallas" role="group" aria-label="Medallas de hoy">${fila}</div><details class="saber-mas" id="hoy-medallas-info"><summary>¿Qué son estas medallas?</summary>${['completo', 'proteina'].map((k) => `<p class="hoy-nota"><strong>${escaparHtml(T.nombre[k])}:</strong> ${escaparHtml(T.explica[k])}</p>`).join('')}</details>${r ? `<p class="hoy-semana" id="hoy-semana">Esta semana: ${escaparHtml(r.texto)}. <strong>${escaparHtml(r.redonda ? T.semanaRedonda : T.animo)}</strong></p>` : ''}`;
   }
   function avisoMedalla(texto) {
     const a = document.getElementById('medallas-aviso');
