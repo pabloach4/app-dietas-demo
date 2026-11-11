@@ -720,7 +720,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
         ...(hambreCena ? { hambreCena } : {}), // #265 F
       });
-      reparto.franjas.forEach((f) => {
+      const repartoT = compPorDiaActual.get(d.dia)?.fase === 'competicion' ? reparto : conTomaDurante(d.dia, reparto, sesionesConActividad); // #313
+      repartoT.franjas.forEach((f) => {
         const rol = f.rol !== 'normal' ? ` (${nombreRol(f.rol)})` : '';
         lineas.push(`  · ${NOMBRE_FRANJA[f.franja] ?? f.franja}${rol}: P ${f.proteina} · G ${f.grasa} · H ${f.hidrato} g`);
       });
@@ -1197,6 +1198,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       return `<div class="hoy-bloque"><h3>Entreno de hoy</h3><div class="titulo">${escaparHtml(nombre)} · ${s.minutos}'${notaSesionHtml(s)}</div><div>${estado}</div></div>`;
     }).join('') : '<div class="hoy-bloque"><h3>Entreno de hoy</h3><div class="titulo">Sin entreno previsto hoy. Descansar también es parte del plan (y de los buenos).</div></div>';
 
+    // #313 parte 3b: la toma durante la sesión también se ve en «Hoy» (si sustituye la merienda, es lo que hay en su lugar).
+    const tomaHoyD = reparto.tomaDurante && reparto.tomaDurante.hidratoG > 0 ? reparto.tomaDurante : null;
+    const bloqueDurante = tomaHoyD ? `<div class="hoy-bloque hoy-durante"><h3>Durante la sesión</h3>
+      <div class="titulo">~${tomaHoyD.kcal} kcal · ${tomaHoyD.hidratoG} g de hidratos${tomaHoyD.sustituye ? `, en lugar de la ${(NOMBRE[tomaHoyD.sustituye] ?? tomaHoyD.sustituye).toLowerCase()}, que cae dentro del entreno` : ''}. Cuenta dentro de las kcal del día.</div>
+      ${tomaHoyD.pautas.map((pd) => Motor.textoDuranteEntreno(pd)).filter(Boolean).map((t) => `<p class="subt">🍌 ${escaparHtml(t)}</p>`).join('')}</div>` : '';
+    const kcalTomaHoy = tomaHoyD ? tomaHoyD.kcal : 0;
     // Las casillas son cifras del PLAN de hoy (lo que toca), nunca lo comido: la app no registra ingesta.
     const dHoy = hoyReal ? hoyReal.dia : planActual.dias.find((x) => x.dia === dia);
     const casilla = (n, l) => `<div class="casilla"><span class="n">${n}</span><span class="l">${l}</span></div>`;
@@ -1219,7 +1226,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const mas = (id, titulo, cuerpo) => (cuerpo ? `<details class="hoy-mas" data-mas="${id}"${abiertos.has(id) ? ' open' : ''}><summary>${titulo}</summary>${cuerpo}</details>` : '');
     const numeros = `${dHoy ? `<p class="hoy-tipo">Tipo de día: <span class="dia-tipo" data-tipo="${escaparHtml(dHoy.tipo)}">${escaparHtml(nombreTipoDia(dHoy, hayEntrenoEl(dHoy.dia)))}</span></p>
       <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
-      ${dHoy && fueraHoy.some((x) => x.kcal !== undefined) && cuadreHoy ? `<p class="hoy-nota" id="hoy-numeros-fuera">Con lo que has comido fuera, hoy suma ~${Math.round(cuadreHoy.servido / 10) * 10} kcal (el plan preveía ${dHoy.kcal}).</p>` : ''}
+      ${dHoy && fueraHoy.some((x) => x.kcal !== undefined) && cuadreHoy ? `<p class="hoy-nota" id="hoy-numeros-fuera">Con lo que has comido fuera, hoy suma ~${Math.round((cuadreHoy.servido + kcalTomaHoy) / 10) * 10} kcal (el plan preveía ${dHoy.kcal}).</p>` : ''}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`; // #258 (punto 13): las cifras de arriba son las del plan; esta línea, lo de hoy con lo comido fuera
     const avisoAlergiaHtml = avisosAlergiasHoy.length ? `<div class="hoy-bloque" id="aviso-alergia-hoy" role="status"><p style="margin:0">${avisosAlergiasHoy[0]}${avisosAlergiasHoy.length > 1 ? ` (y ${avisosAlergiasHoy.length - 1} más en los avisos del plan)` : ''}</p></div>` : '';
     const avisoPabloHtml = avisoPabloHoy ? `<div class="hoy-bloque" id="aviso-plan-pablo" role="status"><p style="margin:0">${avisoPabloHoy}</p></div>` : '';
@@ -1250,6 +1257,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       ${otraSemana ? '' : previaCompeticionHtml(dia, vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia))}
       ${acuseVolumen && acuseVolumen.fecha === iso ? `<p class="hoy-acuse" role="status">${escaparHtml(acuseVolumen.texto)}</p>` : ''}
       ${bloqueComida}
+      ${bloqueDurante}
       ${bloqueAyunas}
       ${avisoHorarioHtml}
       ${medallasHoyHtml(dia, iso)}
@@ -2984,6 +2992,18 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     return sesionesDelDia;
   }
 
+  // #313 parte 2: la toma durante las sesiones largas cuenta dentro del día; si la sesión pilla la media mañana o la merienda, la sustituye
+  // (se mira el horario antes de sacar las tomas de las sesiones). El resto de comidas baja sus hidratos; la competición no pasa por aquí.
+  function conTomaDurante(dia, reparto, sesionesConActividad) {
+    const ses = sesionesConActividad.filter((s) => s.dia === dia && s.minutos > 0 && s.actividad && Motor.ACTIVIDADES[s.actividad]).map((s) => ({
+      actividad: s.actividad, minutos: s.minutos, ...(s.dura ? { dura: true } : {}), ...(s.nota || s.deporte ? { nombre: s.nota || s.deporte } : {}),
+      ...(Number.isFinite(s.horaInicio) ? { horaInicio: s.horaInicio } : {}),
+    }));
+    if (!ses.length) return reparto;
+    const toma = Motor.tomaDuranteDia(ses, excepcionesHorario.get(dia) ?? franjasActuales ?? [], deporteElegido);
+    return { ...reparto, franjas: Motor.repartoConTomaDurante(reparto.franjas, toma), tomaDurante: toma };
+  }
+
   function resolverActividadUI(sesion) {
     // Mismo mapeo mínimo que perfil-cuestionario.ts, para poder filtrar sesiones de carga en el navegador.
     const MAPA = {
@@ -3908,7 +3928,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // completa de franjas (slotsSemana); el asignador de recetas necesita la semana entera (para
     // repartir variedad, #23), así que no se puede resolver receta por receta dentro del mismo bucle.
     const repartosPorDia = plan.dias.map((d) => {
-      const reparto = Motor.repartirComidas({
+      const repartoBase = Motor.repartirComidas({
         kcal: d.kcal, proteina: d.proteinaG, grasa: d.grasaG, hidrato: d.hidratoG,
         pesoRef: plan.proteina.pesoReferencia, peso: respuestas.peso, tipoDia: d.tipo,
         sesiones: franjaADia(d.dia, franjasDelDia(d.dia), sesionesConActividad),
@@ -3917,8 +3937,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
         ...(hambreCena ? { hambreCena } : {}), // #265 F
       });
+      const reparto = compPorDia.get(d.dia)?.fase === 'competicion' ? repartoBase : conTomaDurante(d.dia, repartoBase, sesionesConActividad); // #313 parte 2
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
-      if (!excepcionesHorario.has(d.dia)) horarioGeneralDelDia(d.dia).movidas.forEach((m) => avisosReparto.push(`${d.dia}: ${m.texto}`));
+      if (!excepcionesHorario.has(d.dia)) horarioGeneralDelDia(d.dia).movidas.filter((m) => m.franja !== reparto.tomaDurante?.sustituye).forEach((m) => avisosReparto.push(`${d.dia}: ${m.texto}`)); // #313: la sustituida no se mueve
       reparto.franjas.forEach((f) => {
         slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...(compPorDia.get(d.dia)?.racionesCarga ? { racionesCarga: true } : {}) /* #301 */, ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()), ...((() => { if (f.franja !== 'desayuno' || compPorDia.get(d.dia)?.fase !== 'competicion') return {}; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)); return hf === undefined || salida === undefined || hf < salida ? { desayunoCarrera: 'estricto' } : {}; })()) /* #285 punto 11: el desayuno de la carrera, con la regla de Pablo */ });
         filasCSV.push({
@@ -4117,7 +4138,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     }
 
     document.getElementById('r-dias').innerHTML = repartosPorDia.map(({ dia: d, reparto }) => {
-      const kcalFranjas = reparto.franjas.reduce((t, x) => t + x.kcalAprox, 0); // #153: la barra es el % de las kcal del día que lleva cada franja
+      const tomaD = reparto.tomaDurante && reparto.tomaDurante.hidratoG > 0 ? reparto.tomaDurante : null; // #313: la toma durante la sesión cuenta en el día
+      const kcalFranjas = reparto.franjas.reduce((t, x) => t + x.kcalAprox, 0) + (tomaD ? tomaD.kcal : 0); // #153: la barra es el % de las kcal del día que lleva cada franja
       const franjasHtml = reparto.franjas.map((f) => {
         const pct = kcalFranjas > 0 ? Math.round((f.kcalAprox / kcalFranjas) * 100) : 0;
         const asignada = recetaPorSlot.get(`${d.dia}|${f.franja}`);
@@ -4155,7 +4177,20 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             ${botonVerComida(d.dia, f.franja)}
           </div>
         `;
-      }).join('');
+      }).join('') + (tomaD ? (() => { // #313 parte 2: la toma durante la sesión, con sus kcal dentro del día (sustituye la media mañana o la merienda si la pilla)
+        const pct = kcalFranjas > 0 ? Math.round((tomaD.kcal / kcalFranjas) * 100) : 0;
+        const sust = tomaD.sustituye ? ` En lugar de la ${NOMBRE_FRANJA[tomaD.sustituye].toLowerCase()}, que cae dentro del entreno.` : '';
+        return `
+          <div class="franja-reparto-card destacada toma-durante" data-dia="${d.dia}">
+            <div class="franja-reparto-cabecera">
+              <div><div class="nombre">Durante la sesión</div><div class="rol">Hidratos mientras entrenas</div></div>
+              <div class="macros"><strong>~${tomaD.kcal}</strong> kcal<div class="franja-barra-pct">${pct} % del día</div></div>
+            </div>
+            <div class="franja-reparto-macros"><span><span class="chip chip-h" aria-hidden="true">H</span>${tomaD.hidratoG} g<span class="sr-solo"> de hidratos</span></span></div>
+            <div class="franja-barra" aria-hidden="true"><span style="width:${pct}%"></span></div>
+            <p class="subt">🚴 Cuenta dentro de las kcal del día: las demás comidas llevan menos hidratos.${sust} Qué tomar, junto a la sesión.</p>
+          </div>`;
+      })() : '');
       const sesionesDelDia = sesiones.map((s, i) => ({ ...s, i })).filter((s) => s.dia === d.dia);
       // #285 punto 11: el día de la prueba, la prueba va primero y las sesiones de siempre dicen que ese día no cuentan (su gasto lo sustituye la prueba).
       const pruebaHoy = compPorDia.get(d.dia)?.fase === 'competicion' ? compiteEseDia(d.dia).flatMap((c) => { const f = Motor.fechaDelDia(calInicio, d.dia); const ps = (c.pruebas ?? []).filter((p) => (p.fecha ?? c.fecha) === f); return ps.length ? ps.map((p) => `${c.nombre} · ${p.hora} · ${p.duracionMin}'`) : [c.nombre]; }) : [];
@@ -4171,6 +4206,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
                 </select>
               </label>
             </div>
+            ${(() => { // #313 parte 3: qué tomar durante la sesión (solo si lleva hidratos; el día de la prueba manda su propio combustible)
+              if (pruebaHoy.length || !Motor.ACTIVIDADES[s.actividad]) return '';
+              const u = ultimasSesiones[s.i] ?? {};
+              const t = Motor.textoDuranteEntreno(Motor.duranteEntreno({ actividad: s.actividad, minutos: s.minutos, ...(u.dura || s.dura ? { dura: true } : {}), ...(u.nota || u.deporte ? { nombre: u.nota || u.deporte } : {}) }, deporteElegido));
+              return t ? `<p class="subt durante-sesion" data-dia="${d.dia}">🍌 ${escaparHtml(t)}</p>` : '';
+            })()}
           `).join('')}
         </div>
       ` : '');
@@ -4336,7 +4377,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (calInicio && !Motor.diaDeLaFecha(calInicio, isoHoyReal) && compPorDia.get(diaHoyReal) && compPorDia.get(diaHoyReal).fase) {
       const dB = planBase.dias.find((x) => x.dia === diaHoyReal);
       if (dB) {
-        const repB = Motor.repartirComidas({
+        let repB = Motor.repartirComidas({
           kcal: dB.kcal, proteina: dB.proteinaG, grasa: dB.grasaG, hidrato: dB.hidratoG,
           pesoRef: planBase.proteina.pesoReferencia, peso: respuestas.peso, tipoDia: dB.tipo,
           sesiones: franjaADia(dB.dia, franjasDelDia(dB.dia), sesionesConActividad),
@@ -4344,6 +4385,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           franjas: franjasDelDia(dB.dia),
           ...(hambreCena ? { hambreCena } : {}), // #265 F
         });
+        repB = conTomaDurante(dB.dia, repB, sesionesConActividad); // #313 parte 2
         const slotsB = repB.franjas.map((f) => ({ dia: dB.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: dB.tipo === 'carga_alta' }));
         const asigB = Motor.asignarRecetas(slotsB, RECETAS_EJEMPLO, { alergiasPreferencias, preferir: asignacionSemana.asignaciones.filter((a) => a.dia === dB.dia) });
         const conRecB = Motor.combinarConRecetas(asigB.asignaciones, RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(asigB.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO)));
