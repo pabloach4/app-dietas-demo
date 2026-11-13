@@ -54,6 +54,7 @@ var Motor = (() => {
     LIMITES_INGREDIENTES_CSV: () => LIMITES_INGREDIENTES_CSV,
     LIMITE_AFINIDAD: () => LIMITE_AFINIDAD,
     LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
+    MARGEN_KCAL_CAMBIO: () => MARGEN_KCAL_CAMBIO,
     MAX_BAJADA_COMIDA: () => MAX_BAJADA_COMIDA,
     MAX_DUELOS: () => MAX_DUELOS,
     MAX_INSTANTANEA: () => MAX_INSTANTANEA,
@@ -105,6 +106,7 @@ var Motor = (() => {
     UMBRALES_FRENO: () => UMBRALES_FRENO,
     UMBRALES_LOGROS: () => UMBRALES_LOGROS,
     UMBRAL_FALTA_COMPETICION: () => UMBRAL_FALTA_COMPETICION,
+    UMBRAL_PROTEINA_DIA: () => UMBRAL_PROTEINA_DIA,
     VECES_HAMBRE_ALERTA: () => VECES_HAMBRE_ALERTA,
     VERSION_CONSENTIMIENTO_NUBE: () => VERSION_CONSENTIMIENTO_NUBE,
     VOCABULARIO_ATRIBUTOS: () => VOCABULARIO_ATRIBUTOS,
@@ -192,6 +194,7 @@ var Motor = (() => {
     csvPersonas: () => csvPersonas,
     cuadrarConComidaFuera: () => cuadrarConComidaFuera,
     cuadrarDias: () => cuadrarDias,
+    cuadrarProteina: () => cuadrarProteina,
     deducirDeportePrincipal: () => deducirDeportePrincipal,
     definirParametrosReparto: () => definirParametrosReparto,
     definirRolIngrediente: () => definirRolIngrediente,
@@ -9587,6 +9590,87 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
       ok: Math.abs(diferencia) <= Math.max(TOLERANCIA_RELATIVA * r.kcal, TOLERANCIA_ABSOLUTA_KCAL),
       metodo: conFibra ? "con_fibra" : "simple"
     };
+  }
+
+  // src/motor/cuadrar-proteina.ts
+  var UMBRAL_PROTEINA_DIA = 0.9;
+  var MARGEN_KCAL_CAMBIO = 0.1;
+  var proteinaDe = (porId, a2) => {
+    const r = recetaDeId(porId, a2.receta);
+    return r ? macrosConRacion(r, a2.racionAjustada).proteina : 0;
+  };
+  function cuadrarProteina(asignaciones, slots, recetas, opciones = {}) {
+    const porId = new Map(recetas.map((r) => [r.id, r]));
+    const salida = asignaciones.map((a2) => ({ ...a2 }));
+    const recetasNuevas = [];
+    const dias = [];
+    for (const dia of [...new Set(slots.map((s) => s.dia))]) {
+      const delDia = slots.filter((s2) => s2.dia === dia);
+      const objetivoG = opciones.proteinaDia?.[dia] ?? delDia.reduce((t2, s2) => t2 + (s2.proteinaObjetivoG ?? 0), 0);
+      const kcalObjetivoDia = delDia.reduce((t2, s2) => t2 + s2.kcalObjetivo, 0);
+      const mias = () => salida.filter((a2) => a2.dia === dia);
+      const servida = () => mias().reduce((t2, a2) => t2 + proteinaDe(porId, a2), 0);
+      const kcalDia = () => mias().reduce((t2, a2) => t2 + a2.kcalResultante, 0);
+      let cambios = 0;
+      const hidratoObjetivo = delDia.some((s2) => s2.cargaAlta) ? opciones.hidratoDia?.[dia] : void 0;
+      const hidratosCon = (lista, extra) => hidratosServidosDia(lista, extra ? recetas.concat(recetasNuevas, extra) : recetas.concat(recetasNuevas), dia);
+      if (objetivoG > 0 && servida() < UMBRAL_PROTEINA_DIA * objetivoG) {
+        const hueco = (a2) => (delDia.find((s2) => s2.franja === a2.franja)?.proteinaObjetivoG ?? 0) - proteinaDe(porId, a2);
+        const orden = mias().sort((a2, b) => hueco(b) - hueco(a2));
+        for (const a2 of orden) {
+          if (servida() >= UMBRAL_PROTEINA_DIA * objetivoG) break;
+          if (a2.fijada || a2.pedidoPorUsuario || opciones.noMover?.(dia, a2.franja)) continue;
+          const slot = delDia.find((s2) => s2.franja === a2.franja);
+          if (!slot) continue;
+          const clave2 = claveSlot(dia, a2.franja);
+          const { alternativas } = alternativasParaSlot(slot, recetas.concat(recetasNuevas), {
+            alergiasPreferencias: opciones.alergiasPreferencias,
+            actual: a2.receta,
+            usosSemana: usosVariedadSemana(salida, clave2),
+            maxRepeticionesSemana: opciones.maxRepeticionesSemana
+          });
+          const actualProt = proteinaDe(porId, a2);
+          const kcalSinEsta = kcalDia() - a2.kcalResultante;
+          const errorDiaAntes = Math.abs(kcalDia() - kcalObjetivoDia);
+          let mejor;
+          for (const alt2 of alternativas) {
+            if (Math.abs(alt2.kcalResultante - slot.kcalObjetivo) > MARGEN_KCAL_CAMBIO * slot.kcalObjetivo) continue;
+            if (alt2.protegidosSinEscalar.length && alt2.racionAjustada !== 1) continue;
+            const errorDia = Math.abs(kcalSinEsta + alt2.kcalResultante - kcalObjetivoDia);
+            if (errorDia > TOLERANCIA_DIA * kcalObjetivoDia && errorDia > errorDiaAntes) continue;
+            const prot = macrosConRacion(alt2.receta, alt2.racionAjustada).proteina;
+            if (!(prot > actualProt + 0.5 && (!mejor || prot > mejor.prot))) continue;
+            if (hidratoObjetivo) {
+              const antes = hidratosCon(salida);
+              const con = salida.map((x) => x === a2 ? { ...a2, receta: alt2.receta.id, racionAjustada: alt2.racionAjustada, kcalResultante: alt2.kcalResultante } : x);
+              const despues = hidratosCon(con, alt2.receta);
+              if (despues < PARTE_MINIMA_HIDRATOS_CARGA * hidratoObjetivo && despues < antes - 0.5) continue;
+            }
+            mejor = { alt: alt2, prot };
+          }
+          if (!mejor) continue;
+          const { alt } = mejor;
+          if (!porId.has(alt.receta.id)) {
+            porId.set(alt.receta.id, alt.receta);
+            recetasNuevas.push(alt.receta);
+          }
+          const i = salida.indexOf(a2);
+          const { ajusteDia: _fuera, ...resto } = a2;
+          salida[i] = {
+            ...resto,
+            receta: alt.receta.id,
+            racionAjustada: alt.racionAjustada,
+            kcalResultante: alt.kcalResultante,
+            ...alt.protegidosSinEscalar.length ? { protegidosSinEscalar: alt.protegidosSinEscalar } : { protegidosSinEscalar: void 0 }
+          };
+          if (!salida[i].protegidosSinEscalar) delete salida[i].protegidosSinEscalar;
+          cambios++;
+        }
+      }
+      const s = servida();
+      dias.push({ dia, servidaG: Math.round(s), objetivoG: Math.round(objetivoG), corta: objetivoG > 0 && s < UMBRAL_PROTEINA_DIA * objetivoG, cambios });
+    }
+    return { asignaciones: salida, dias, recetasNuevas };
   }
 
   // src/motor/nube-datos.ts

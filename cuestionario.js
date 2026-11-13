@@ -3990,6 +3990,18 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const recetasCuadre = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(aplicadas.resultado.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
     const enCompeticion = (dia) => Boolean(compPorDia.get(dia) && compPorDia.get(dia).fase === 'competicion');
     let cuadrado = Motor.cuadrarDias(aplicadas.resultado.asignaciones, slotsSemana, recetasCuadre, { noMover: enCompeticion, admite: admitePostre }); // #259.11: y si hace falta, postre
+    // #315: cierre de proteína del día: los días por debajo del 90 % cambian comidas por alternativas válidas con más proteína (sin inflar
+    // nada). No toca la competición, lo fijado (también el plan de Pablo), lo pedido ni lo cambiado a mano; en carga, no baja los hidratos.
+    const proteinaDia = Object.fromEntries(repartosPorDia.map((r) => [r.dia.dia, r.dia.proteinaG]));
+    const hidratoDia = Object.fromEntries(repartosPorDia.map((r) => [r.dia.dia, r.dia.hidratoG]));
+    const noMoverProteina = (dia, franja) => enCompeticion(dia) || Object.prototype.hasOwnProperty.call(sustituciones, `${dia}|${franja}`);
+    const cerrarProteina = (cuad, rc) => {
+      const cp = Motor.cuadrarProteina(cuad.asignaciones, slotsSemana, rc, { proteinaDia, hidratoDia, alergiasPreferencias, noMover: noMoverProteina });
+      rc.push(...cp.recetasNuevas);
+      const dias = cuad.dias.map((x) => ({ ...x, servido: Math.round(cp.asignaciones.filter((a) => a.dia === x.dia).reduce((t, a) => t + a.kcalResultante, 0)) }));
+      return { ...cuad, asignaciones: cp.asignaciones, dias, proteinaDias: cp.dias };
+    };
+    cuadrado = cerrarProteina(cuadrado, recetasCuadre);
     // «He comido fuera» (Pablo, 08/10): «igual que si come otra cosa en su casa y cambia, si sale fuera debería regularse también».
     // Hoy esa comida cuenta con las kcal apuntadas y una segunda pasada del mismo cuadre regula las comidas que van DESPUÉS de ella
     // (las anteriores ya han pasado y no se tocan), con los mismos topes de cantidades normales. Al día siguiente deja de aplicarse.
@@ -4084,7 +4096,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const evitar = [...new Set(asignacionSemana.asignaciones.flatMap((a) => { const r = Motor.recetaDeId(porId, a.receta); return r ? (r.platos ?? [r.id]) : [a.receta]; }))];
       const base = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { ...opcionesAsignador, preferir: undefined, fijadas: fijasPropias, evitar });
       const rc = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(base.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
-      return { ...base, asignaciones: Motor.cuadrarDias(base.asignaciones, slotsSemana, rc, { noMover: enCompeticion, admite: admitePostre }).asignaciones };
+      return { ...base, asignaciones: cerrarProteina(Motor.cuadrarDias(base.asignaciones, slotsSemana, rc, { noMover: enCompeticion, admite: admitePostre }), rc).asignaciones }; // #315: con su cierre de proteína
     };
     proxima.dieta = null; // el plan se ha recalculado: la dieta siguiente preparada antes ya no vale
     if (proxima.resultado) proxima.obsoleta = true; // #192: la lista ya preparada se rehace con las restricciones de ahora al pintar la compra
