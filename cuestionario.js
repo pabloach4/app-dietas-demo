@@ -4277,6 +4277,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             ${kcalFueraHtml(d.dia)}
           </div>
           <div class="dia-macros">P ${d.proteinaG} g · G ${d.grasaG} g · H ${d.hidratoG} g</div>
+          ${(() => { /* #315 parte 2: la proteína que sirve el plan ese día y, si queda por debajo del 90 %, un tentempié compatible del catálogo */
+            const pd = Motor.proteinaDelDia(cuadrado.asignaciones, recetasCuadre, d.dia, d.proteinaG);
+            if (!pd.objetivoG) return '';
+            const sug = enCompeticion(d.dia) ? null : Motor.sugerenciaProteinaDia(pd, recetasCuadre, alergiasPreferencias);
+            return `<p class="subt proteina-dia${pd.corta ? ' corta' : ''}" data-dia="${d.dia}">💪 ${escaparHtml(Motor.textoProteinaDia(pd))}</p>${sug ? `<p class="subt sugerencia-proteina" data-dia="${d.dia}">${escaparHtml(sug)}</p>` : ''}`;
+          })()}
           ${(() => { const cd = compPorDia.get(d.dia); if (!cd?.hidratoMinGKg || cd.fase === 'competicion') return ''; const ex = extrasCargaPorDia.get(d.dia); if (ex) return `<p class="subt extras-carga" data-dia="${d.dia}">🥤 ${escaparHtml(Motor.textoExtrasCarga(ex))}</p>${ex.aviso ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(ex.aviso)}</p>` : ''}` /* #301 parte 2 */; const n = Motor.notaHidratosCarga(d.hidratoG, Motor.hidratosServidosDia(cuadrado.asignaciones, recetasCuadre, d.dia)); return n ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(n)}</p>` : ''; })() /* #285 punto 11 */}
           ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
           ${diasRacionesCarga.has(d.dia) ? `<p class="subt nota-carga" data-dia="${d.dia}">🍝 ${escaparHtml(Motor.TEXTO_RACIONES_CARGA)}</p>` : ''}

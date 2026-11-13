@@ -333,6 +333,7 @@ var Motor = (() => {
     planPabloAplicable: () => planPabloAplicable,
     plegarLineaIcs: () => plegarLineaIcs,
     preferenciaDesayunoValida: () => preferenciaDesayunoValida,
+    proteinaDelDia: () => proteinaDelDia,
     puntuacionGusto: () => puntuacionGusto,
     racionCargaMaxima: () => racionCargaMaxima,
     racionEnPalabras: () => racionEnPalabras,
@@ -342,6 +343,7 @@ var Motor = (() => {
     rasgosDeReceta: () => rasgosDeReceta,
     recetaConCarga: () => recetaConCarga,
     recetaDeId: () => recetaDeId,
+    recetaSugeridaProteina: () => recetaSugeridaProteina,
     recetasCompuestas: () => recetasCompuestas,
     recetasParaDerivado: () => recetasParaDerivado,
     reorganizarDia: () => reorganizarDia,
@@ -362,6 +364,7 @@ var Motor = (() => {
     siguienteDuelo: () => siguienteDuelo,
     sinCarga: () => sinCarga,
     sinFilaDeGluten: () => sinFilaDeGluten,
+    sugerenciaProteinaDia: () => sugerenciaProteinaDia,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
     textoCita: () => textoCita,
     textoDiabetes: () => textoDiabetes,
@@ -370,6 +373,7 @@ var Motor = (() => {
     textoLlegaAPablo: () => textoLlegaAPablo,
     textoNotificacion: () => textoNotificacion,
     textoOtrasAlergias: () => textoOtrasAlergias,
+    textoProteinaDia: () => textoProteinaDia,
     tipoDeSesion: () => tipoDeSesion,
     tituloCentro: () => tituloCentro,
     tomaDuranteDia: () => tomaDuranteDia,
@@ -9671,6 +9675,40 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
       dias.push({ dia, servidaG: Math.round(s), objetivoG: Math.round(objetivoG), corta: objetivoG > 0 && s < UMBRAL_PROTEINA_DIA * objetivoG, cambios });
     }
     return { asignaciones: salida, dias, recetasNuevas };
+  }
+
+  // src/motor/sugerencia-proteina.ts
+  var KCAL_MAX_SUGERENCIA = 350;
+  var PROTEINA_MIN_SUGERENCIA = 8;
+  function proteinaDelDia(asignaciones, recetas, dia, objetivoG) {
+    const porId = new Map(recetas.map((r) => [r.id, r]));
+    const s = asignaciones.filter((a2) => a2.dia === dia).reduce((t2, a2) => {
+      const r = recetaDeId(porId, a2.receta);
+      return t2 + (r ? macrosConRacion(r, a2.racionAjustada).proteina : 0);
+    }, 0);
+    return { dia, servidaG: Math.round(s), objetivoG: Math.round(objetivoG), corta: objetivoG > 0 && s < UMBRAL_PROTEINA_DIA * objetivoG, cambios: 0 };
+  }
+  function textoProteinaDia(d) {
+    return `Prote\xEDna: ${Math.round(d.servidaG)} g de ${Math.round(d.objetivoG)} g`;
+  }
+  function recetaSugeridaProteina(faltaG, recetas, ap, evitar = []) {
+    const candidatas = recetas.filter((r) => (r.franjas.includes("media_manana") || r.franjas.includes("merienda")) && r.tipoPlato !== "compuesta" && !r.id.includes("~") && r.usoDia !== "carga" && r.kcal > 0 && r.kcal <= KCAL_MAX_SUGERENCIA && r.proteina >= PROTEINA_MIN_SUGERENCIA && !evitar.includes(r.id) && (!ap || evaluarCompatibilidad(r, ap).compatible));
+    if (!candidatas.length) return null;
+    const densidad = (r) => r.proteina / r.kcal;
+    const orden = (a2, b) => densidad(b) - densidad(a2) || b.proteina - a2.proteina || a2.id.localeCompare(b.id);
+    const cubren = candidatas.filter((r) => r.proteina >= faltaG / 2).sort(orden);
+    if (cubren.length) return cubren[0];
+    return [...candidatas].sort((a2, b) => b.proteina - a2.proteina || orden(a2, b))[0];
+  }
+  function sugerenciaProteinaDia(d, recetas, ap, evitar = []) {
+    if (!d.corta) return null;
+    const falta = Math.max(0, d.objetivoG - d.servidaG);
+    if (falta < 5) return null;
+    const faltaTexto = Math.max(5, Math.round(falta / 5) * 5);
+    const r = recetaSugeridaProteina(falta, recetas, ap, evitar);
+    if (!r) return `Hoy te faltan unos ${faltaTexto} g de prote\xEDna: si puedes, a\xF1ade un tentempi\xE9 con prote\xEDna.`;
+    const nombre = r.nombre.charAt(0).toLowerCase() + r.nombre.slice(1);
+    return `Hoy te faltan unos ${faltaTexto} g de prote\xEDna: a\xF1ade, por ejemplo, ${nombre} (${Math.round(r.proteina)} g de prote\xEDna, ${Math.round(r.kcal)} kcal).`;
   }
 
   // src/motor/nube-datos.ts
