@@ -2727,6 +2727,38 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
 
   let revisionPerfilPendiente = false;
 
+  // #326 parte 2: ritmo de subida al ganar músculo. Cada vez que la persona calcula su plan, su peso queda apuntado con la fecha (uno por
+  // día como mucho, el último; solo en este móvil). Con «ganar músculo», si los pesajes muestran más de un 0,5 % semanal 3 semanas
+  // seguidas, el superávit baja un paso (Motor.ritmoSubida); con menos de un 0,25 % 3 semanas seguidas, sube un paso, hasta el 15 %
+  // (Pablo, 14/11). Se guarda con su fecha: para volver a cambiarlo solo cuentan los pesajes desde ese día. El aviso a Pablo con la
+  // solución puesta va con #322.
+  const CLAVE_PESAJES = 'app-dietas-pesajes';
+  const CLAVE_SUPERAVIT = 'app-dietas-superavit';
+  const leerGuardado = (clave, defecto) => { try { const v = JSON.parse(localStorage.getItem(clave)); return v ?? defecto; } catch { return defecto; } };
+  function registrarPesaje(kg) {
+    if (!(Number(kg) > 0)) return;
+    const hoy = Motor.fechaLocalISO(new Date());
+    const lista = (Array.isArray(leerGuardado(CLAVE_PESAJES, [])) ? leerGuardado(CLAVE_PESAJES, []) : []).filter((p) => p && p.fecha !== hoy);
+    lista.push({ fecha: hoy, kg: Number(kg) });
+    lista.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+    try { localStorage.setItem(CLAVE_PESAJES, JSON.stringify(lista.slice(-120))); } catch { falloAlmacenamiento(); }
+  }
+  /** El superávit que toca con los pesajes (lo apunta en `perfil.superavit`); devuelve el aviso si hoy ha cambiado. */
+  function superavitConRitmo(perfil) {
+    if (perfil.objetivo !== 'ganar_musculo') return undefined;
+    const g = leerGuardado(CLAVE_SUPERAVIT, null);
+    const actual = g && Number.isFinite(g.pct) ? g.pct : (perfil.superavit ?? Motor.SUPERAVIT_POR_DEFECTO);
+    const pesajes = (Array.isArray(leerGuardado(CLAVE_PESAJES, [])) ? leerGuardado(CLAVE_PESAJES, []) : []).filter((p) => !(g && g.desde) || (p && p.fecha >= g.desde));
+    const r = Motor.ritmoSubida(pesajes, actual);
+    const cambia = r.bajar || r.subir;
+    if (cambia) {
+      try { localStorage.setItem(CLAVE_SUPERAVIT, JSON.stringify({ pct: r.superavitNuevo, desde: Motor.fechaLocalISO(new Date()) })); } catch { falloAlmacenamiento(); }
+    }
+    const pct = cambia ? r.superavitNuevo : actual;
+    if (pct !== (perfil.superavit ?? Motor.SUPERAVIT_POR_DEFECTO)) perfil.superavit = pct;
+    return cambia ? { codigo: r.subir ? 'ritmo_subida_bajo' : 'ritmo_subida_alto', texto: r.texto } : undefined;
+  }
+
   function guardarPerfilLocal() {
     try { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(leerFormularioComoEjemplo())); } catch { falloAlmacenamiento(); /* modo privado, etc.: no pasa nada */ }
   }
@@ -4702,7 +4734,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     avisoFrenoHoy = objetivoPorFreno ? `Pablo prefiere verlo contigo antes de un plan para perder grasa. Mientras tanto tienes un plan para ${objetivoPorFreno === 'mantener' ? 'mantener tu peso' : 'ganar músculo'}.` : '';
     objetivoPorFreno = '';
 
+    registrarPesaje(resultado.perfil.peso); // #326 parte 2
+    const avisoRitmo = superavitConRitmo(resultado.perfil);
     const plan = Motor.calcular(resultado.perfil); // si falla, lo enseña avisarErrorCalculo (#274)
+    if (avisoRitmo) plan.avisos.push(avisoRitmo);
     // #230: si el suelo de kcal (D11) cambió algún día, la persona lo ve sin desplegar nada y Pablo recibe una alerta (una por plan).
     diasSuelo = Motor.diasConSuelo(plan).map((d) => d.dia);
     const alertaSuelo = Motor.alertaSuelo(plan, new Date().toISOString());

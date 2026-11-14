@@ -79,6 +79,7 @@ var Motor = (() => {
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
     PARTE_MINIMA_HIDRATOS_CARGA: () => PARTE_MINIMA_HIDRATOS_CARGA,
+    PASO_SUPERAVIT: () => PASO_SUPERAVIT,
     PORCION_COMESTIBLE_CSV: () => PORCION_COMESTIBLE_CSV,
     PRECIOS_CSV: () => PRECIOS_CSV,
     PREGUNTAS_CRIBADO: () => PREGUNTAS_CRIBADO,
@@ -89,10 +90,16 @@ var Motor = (() => {
     RECETAS_EJEMPLO_CSV: () => RECETAS_EJEMPLO_CSV,
     RECETAS_EJEMPLO_INGREDIENTES_CSV: () => RECETAS_EJEMPLO_INGREDIENTES_CSV,
     RESPALDO_MS: () => RESPALDO_MS,
+    RITMO_SUBIDA_MAX_PCT: () => RITMO_SUBIDA_MAX_PCT,
+    RITMO_SUBIDA_MIN_PCT: () => RITMO_SUBIDA_MIN_PCT,
     SEMANAS_MAX: () => SEMANAS_MAX,
     SEMANAS_MIN: () => SEMANAS_MIN,
     SEMANAS_POR_DEFECTO: () => SEMANAS_POR_DEFECTO,
+    SEMANAS_SEGUIDAS: () => SEMANAS_SEGUIDAS,
     SUFIJO_CARGA: () => SUFIJO_CARGA,
+    SUPERAVIT_MAXIMO: () => SUPERAVIT_MAXIMO,
+    SUPERAVIT_MINIMO: () => SUPERAVIT_MINIMO,
+    SUPERAVIT_POR_DEFECTO: () => SUPERAVIT_POR_DEFECTO,
     TEXTOS_LOGROS: () => TEXTOS_LOGROS,
     TEXTO_ALERTA_PERSONA: () => TEXTO_ALERTA_PERSONA,
     TEXTO_MENOS_GRASA_CARGA: () => TEXTO_MENOS_GRASA_CARGA,
@@ -359,6 +366,7 @@ var Motor = (() => {
     resumenSemana: () => resumenSemana,
     revisarPlanPablo: () => revisarPlanPablo,
     revisarSiguienteGuardada: () => revisarSiguienteGuardada,
+    ritmoSubida: () => ritmoSubida,
     rolIngrediente: () => rolIngrediente,
     sacarTomasDeSesiones: () => sacarTomasDeSesiones,
     semanaDeLaDieta: () => semanaDeLaDieta,
@@ -547,14 +555,14 @@ var Motor = (() => {
     }
     if (!p.vida) aviso("vida_supuesta", "Sin actividad diaria: se supone sedentaria. Si trabaja de pie o camina mucho, gasta m\xE1s.");
     const base = rmr * PAL_VIDA[p.vida ?? "sedentaria"];
-    const porDia = DIAS.map((dia) => {
-      const hoy = sesiones.filter((s) => s.dia === dia);
+    const porDia = DIAS.map((dia2) => {
+      const hoy = sesiones.filter((s) => s.dia === dia2);
       const kcalEntreno = suma(hoy.map((s) => kcalSesionNeta(s.actividad, s.minutos, p.peso)));
       const deCarga = hoy.filter((s) => ["intermitente", "resistencia"].includes(ACTIVIDADES[s.actividad].tipo));
       const minutosCarga = suma(deCarga.map((s) => s.minutos));
       const tieneFuerza = hoy.some((s) => ACTIVIDADES[s.actividad].tipo === "fuerza");
       const dura = deCarga.some((s) => s.dura === true);
-      return { dia, kcalEntreno, minutosCarga, tieneFuerza, dura, gasto: base + kcalEntreno * (1 - COMPENSACION_ENTRENO) };
+      return { dia: dia2, kcalEntreno, minutosCarga, tieneFuerza, dura, gasto: base + kcalEntreno * (1 - COMPENSACION_ENTRENO) };
     });
     const gastoMedio = suma(porDia.map((d) => d.gasto)) / 7;
     const grasaPct = p.grasa ?? grasaDeurenberg(imc_, p.edad, p.sexo);
@@ -821,8 +829,8 @@ var Motor = (() => {
     };
   }
   function anadirAlerta(lista, nueva) {
-    const dia = nueva.fecha.slice(0, 10);
-    const resto = lista.filter((a2) => !(a2.firma === nueva.firma && a2.fecha.slice(0, 10) === dia));
+    const dia2 = nueva.fecha.slice(0, 10);
+    const resto = lista.filter((a2) => !(a2.firma === nueva.firma && a2.fecha.slice(0, 10) === dia2));
     return [nueva, ...resto].slice(0, 30);
   }
 
@@ -2811,15 +2819,15 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const diasTocados = /* @__PURE__ */ new Set([original.dia, diaDestino]);
     const diasAfectados = [];
     const diasPreservados = [];
-    const dias = DIAS.map((dia) => {
-      const consumido = semana.diasConsumidos.includes(dia);
-      const tocado = diasTocados.has(dia);
+    const dias = DIAS.map((dia2) => {
+      const consumido = semana.diasConsumidos.includes(dia2);
+      const tocado = diasTocados.has(dia2);
       if (!tocado || consumido) {
-        if (tocado && consumido) diasPreservados.push(dia);
-        return antes.dias.find((d) => d.dia === dia);
+        if (tocado && consumido) diasPreservados.push(dia2);
+        return antes.dias.find((d) => d.dia === dia2);
       }
-      diasAfectados.push(dia);
-      return despuesCrudo.dias.find((d) => d.dia === dia);
+      diasAfectados.push(dia2);
+      return despuesCrudo.dias.find((d) => d.dia === dia2);
     });
     const despues = {
       ...despuesCrudo,
@@ -3243,10 +3251,10 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const dias = [];
     const avisos = [];
     const diasPresentes = [...new Set(slots.map((s) => s.dia))];
-    for (const dia of diasPresentes) {
-      const delDia = slots.filter((s) => s.dia === dia);
+    for (const dia2 of diasPresentes) {
+      const delDia = slots.filter((s) => s.dia === dia2);
       const objetivo = delDia.reduce((s, x) => s + x.kcalObjetivo, 0);
-      const mias = salida.filter((a2) => a2.dia === dia);
+      const mias = salida.filter((a2) => a2.dia === dia2);
       const sumar = () => mias.reduce((s, a2) => s + a2.kcalResultante, 0);
       const antes = sumar();
       const margen = TOLERANCIA_DIA * objetivo;
@@ -3257,7 +3265,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         const candidatas = [...mias].sort((a2, b) => orden.indexOf(a2.franja) - orden.indexOf(b.franja));
         for (const a2 of candidatas) {
           if (Math.abs(resto) <= margen * 0.5) break;
-          if (opciones.noMover?.(dia, a2.franja)) continue;
+          if (opciones.noMover?.(dia2, a2.franja)) continue;
           const slot = delDia.find((s) => s.franja === a2.franja);
           const receta = recetaDeId(porId, a2.receta);
           if (!slot || !receta) continue;
@@ -3293,7 +3301,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
           const falta = objetivo - sumar();
           if (falta <= margen * 0.5) break;
           const a2 = mias.find((x) => x.franja === fr);
-          if (!a2 || opciones.noMover?.(dia, fr)) continue;
+          if (!a2 || opciones.noMover?.(dia2, fr)) continue;
           const base = recetaDeId(porId, a2.receta);
           const slot = delDia.find((x) => x.franja === fr);
           if (!base || !slot) continue;
@@ -3320,9 +3328,9 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       }
       const servido = sumar();
       const cuadrado = Math.abs(objetivo - servido) <= margen || objetivo === 0;
-      const aviso = cuadrado ? void 0 : objetivo > servido ? `${dia}: faltan ${Math.round(objetivo - servido)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.` : `${dia}: sobran ${Math.round(servido - objetivo)} kcal del d\xEDa con cantidades normales. Si quieres, cambia alg\xFAn plato por otro m\xE1s ligero.`;
+      const aviso = cuadrado ? void 0 : objetivo > servido ? `${dia2}: faltan ${Math.round(objetivo - servido)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.` : `${dia2}: sobran ${Math.round(servido - objetivo)} kcal del d\xEDa con cantidades normales. Si quieres, cambia alg\xFAn plato por otro m\xE1s ligero.`;
       if (aviso) avisos.push(aviso);
-      dias.push({ dia, objetivo: Math.round(objetivo), servidoAntes: Math.round(antes), servido: Math.round(servido), cuadrado, ...aviso ? { aviso } : {} });
+      dias.push({ dia: dia2, objetivo: Math.round(objetivo), servidoAntes: Math.round(antes), servido: Math.round(servido), cuadrado, ...aviso ? { aviso } : {} });
     }
     return { asignaciones: salida, dias, avisos };
   }
@@ -3336,7 +3344,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       if (!previas.some((a2) => a2.dia === diaHoy && a2.franja === f2)) entrada.push({ dia: diaHoy, franja: f2, receta: "", racionAjustada: 1, kcalResultante: kcal, soloFuera: true });
     }
     const segunda = cuadrarDias(entrada, slots, recetas, {
-      noMover: (dia, franja) => dia !== diaHoy || !!o.noMoverDia?.(dia) || fuera.has(franja) || !o.todoElDia && (horaDe(franja) ?? 24) <= primeraFuera
+      noMover: (dia2, franja) => dia2 !== diaHoy || !!o.noMoverDia?.(dia2) || fuera.has(franja) || !o.todoElDia && (horaDe(franja) ?? 24) <= primeraFuera
     });
     const asignaciones = segunda.asignaciones.filter((a2) => !a2.soloFuera).map((a2) => a2.dia === diaHoy && fuera.has(a2.franja) ? previas.find((b) => b.dia === a2.dia && b.franja === a2.franja) : a2);
     return { ...segunda, asignaciones };
@@ -3386,18 +3394,18 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   var UMBRAL_FALTA_COMPETICION = 0.08;
   var faltaVisibleCompeticion = (falta, kcalDia) => falta > UMBRAL_FALTA_COMPETICION * kcalDia;
   var PARTE_MINIMA_TOMA = 0.8;
-  function notaTomaCorta(kcalObjetivo, a2, dia) {
+  function notaTomaCorta(kcalObjetivo, a2, dia2) {
     if (a2.kcalResultante >= kcalObjetivo * PARTE_MINIMA_TOMA || (a2.ajusteDia?.kcal ?? 0) < 0) return void 0;
     const base = `Esta comida se queda en ~${Math.round(a2.kcalResultante)} kcal de las ~${Math.round(kcalObjetivo)} previstas: con cantidades normales no cabe m\xE1s.`;
-    if (!dia) return base;
-    return dia.cuadrado || dia.servido >= dia.objetivo ? `${base} Lo que falta va repartido en las otras comidas del d\xEDa.` : `${base} Aun reparti\xE9ndolo entre las otras comidas, al d\xEDa le faltan ~${Math.round(dia.objetivo - dia.servido)} kcal.`;
+    if (!dia2) return base;
+    return dia2.cuadrado || dia2.servido >= dia2.objetivo ? `${base} Lo que falta va repartido en las otras comidas del d\xEDa.` : `${base} Aun reparti\xE9ndolo entre las otras comidas, al d\xEDa le faltan ~${Math.round(dia2.objetivo - dia2.servido)} kcal.`;
   }
   var PARTE_MINIMA_HIDRATOS_CARGA = 0.9;
-  function hidratosServidosDia(asignaciones, recetas, dia) {
+  function hidratosServidosDia(asignaciones, recetas, dia2) {
     const porId = new Map(recetas.map((r) => [r.id, r]));
     let total = 0;
     for (const a2 of asignaciones) {
-      if (a2.dia !== dia) continue;
+      if (a2.dia !== dia2) continue;
       const r = recetaDeId(porId, a2.receta);
       if (r && r.kcal > 0) total += r.hidrato * (a2.kcalResultante / r.kcal);
     }
@@ -3485,12 +3493,12 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const diasMenosGrasa = [];
     const diasSalida = dias.map((d) => ({ ...d }));
     const grasaObj = opciones.grasaObjetivoG ?? {};
-    for (const dia of [...new Set(slots.filter((s) => s.racionesCarga || grasaObj[s.dia] !== void 0).map((s) => s.dia))]) {
-      const delDia = slots.filter((s) => s.dia === dia);
+    for (const dia2 of [...new Set(slots.filter((s) => s.racionesCarga || grasaObj[s.dia] !== void 0).map((s) => s.dia))]) {
+      const delDia = slots.filter((s) => s.dia === dia2);
       const objetivo = delDia.reduce((s, x) => s + x.kcalObjetivo, 0);
-      const mias = salida.filter((a2) => a2.dia === dia).sort((a2, b) => ORDEN.indexOf(a2.franja) - ORDEN.indexOf(b.franja));
+      const mias = salida.filter((a2) => a2.dia === dia2).sort((a2, b) => ORDEN.indexOf(a2.franja) - ORDEN.indexOf(b.franja));
       let falta = objetivo - mias.reduce((s, a2) => s + a2.kcalResultante, 0);
-      const gObj = grasaObj[dia];
+      const gObj = grasaObj[dia2];
       if (gObj !== void 0) {
         let exceso = grasaServida(mias, porId) - gObj;
         for (const a2 of mias) {
@@ -3511,7 +3519,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
           a2.kcalResultante = kcal;
           a2.menosGrasa = true;
           nuevas.push(c2);
-          if (!diasMenosGrasa.includes(dia)) diasMenosGrasa.push(dia);
+          if (!diasMenosGrasa.includes(dia2)) diasMenosGrasa.push(dia2);
         }
       }
       for (const a2 of mias) {
@@ -3543,14 +3551,14 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         a2.kcalResultante = kcal;
         a2.racionesCarga = true;
         nuevas.push(elegida);
-        if (!diasCarga.includes(dia)) diasCarga.push(dia);
+        if (!diasCarga.includes(dia2)) diasCarga.push(dia2);
       }
-      const d = diasSalida.find((x) => x.dia === dia);
-      if (d && (diasCarga.includes(dia) || diasMenosGrasa.includes(dia))) {
+      const d = diasSalida.find((x) => x.dia === dia2);
+      if (d && (diasCarga.includes(dia2) || diasMenosGrasa.includes(dia2))) {
         d.servido = Math.round(objetivo - falta);
         d.cuadrado = Math.abs(falta) <= TOLERANCIA_DIA * objetivo;
         if (d.cuadrado) delete d.aviso;
-        else d.aviso = `${dia}: faltan ${Math.round(falta)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.`;
+        else d.aviso = `${dia2}: faltan ${Math.round(falta)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.`;
       }
     }
     return { asignaciones: salida, dias: diasSalida, recetas: nuevas, diasCarga, diasMenosGrasa };
@@ -5462,10 +5470,10 @@ R484,crudo,bocadillo_tostada,frio,no
     const desdeLunes = (new Date(t2).getUTCDay() + 6) % 7;
     return deUTC(t2 - desdeLunes * MS_DIA);
   }
-  function fechaDelDia(inicio, dia) {
+  function fechaDelDia(inicio, dia2) {
     if (!esLunes(inicio)) throw new Error(`La fecha de inicio debe ser un lunes v\xE1lido (recibido: ${inicio})`);
-    const i = DIAS.indexOf(dia);
-    if (i < 0) throw new Error(`D\xEDa desconocido: ${dia}`);
+    const i = DIAS.indexOf(dia2);
+    if (i < 0) throw new Error(`D\xEDa desconocido: ${dia2}`);
     return deUTC(aUTC(inicio) + i * MS_DIA);
   }
   function diaDeLaFecha(inicio, fecha) {
@@ -5551,8 +5559,8 @@ R484,crudo,bocadillo_tostada,frio,no
   function ordenarCompeticiones(lista) {
     return [...lista].sort((a2, b) => a2.fecha.localeCompare(b.fecha) || (a2.hora ?? "").localeCompare(b.hora ?? "") || a2.nombre.localeCompare(b.nombre));
   }
-  function competicionesDelDia(lista, inicio, dia) {
-    const fecha = fechaDelDia(inicio, dia);
+  function competicionesDelDia(lista, inicio, dia2) {
+    const fecha = fechaDelDia(inicio, dia2);
     return ordenarCompeticiones(lista.filter((c2) => c2.fecha === fecha || c2.fechaFin !== void 0 && c2.fecha < fecha && fecha <= c2.fechaFin));
   }
   function competicionesDesdeJson(valor) {
@@ -6804,91 +6812,91 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
   };
   var conArticulo = (fase) => `${fase === "vispera" || fase === "descarga" ? "la" : "el"} ${FASE_DIA[fase]}`;
   var deLaCompeticion = (comp) => comp.competicion ? ` (${comp.competicion})` : "";
-  var minimoHidratoG = (comp, dia, peso) => {
-    const p = pesoDelDia(dia, peso);
+  var minimoHidratoG = (comp, dia2, peso) => {
+    const p = pesoDelDia(dia2, peso);
     return comp.hidratoMinGKg && p ? Math.ceil(comp.hidratoMinGKg * p) : void 0;
   };
-  function explicarKcalDiaCompeticion(plan, dia, comp) {
+  function explicarKcalDiaCompeticion(plan, dia2, comp) {
     const d = plan.detalle;
-    const nombre = NOMBRE_DIA_LARGO[dia.dia] ?? dia.dia;
+    const nombre = NOMBRE_DIA_LARGO[dia2.dia] ?? dia2.dia;
     const fase = `${conArticulo(comp.fase)}${deLaCompeticion(comp)}`;
     const g = comp.gastoPrueba;
-    const detalle = [g ? `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno + el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta la prueba (unos ${f(g.kcal)} kcal en ${f(g.minutos)} min) = ${f(dia.gasto)} kcal. La prueba sustituye al entreno de ese d\xEDa.` : dia.kcalEntreno > 0 ? `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno + el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta el entreno (${f(dia.kcalEntreno)} kcal) = ${f(dia.gasto)} kcal.` : `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno (no hay entreno ese d\xEDa) = ${f(dia.gasto)} kcal.`];
+    const detalle = [g ? `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno + el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta la prueba (unos ${f(g.kcal)} kcal en ${f(g.minutos)} min) = ${f(dia2.gasto)} kcal. La prueba sustituye al entreno de ese d\xEDa.` : dia2.kcalEntreno > 0 ? `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno + el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta el entreno (${f(dia2.kcalEntreno)} kcal) = ${f(dia2.gasto)} kcal.` : `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno (no hay entreno ese d\xEDa) = ${f(dia2.gasto)} kcal.`];
     let resumen;
     if (comp.hidratoSubido) {
       if (comp.kcalSinRecorte !== void 0) detalle.push(`Estos d\xEDas no hay recorte de kcal: partir\xEDas de lo que gastas, ${f(comp.kcalSinRecorte)} kcal.`);
-      detalle.push(`La prueba pide m\xE1s hidratos: suben a ${f(dia.hidratoG)} g. Con la misma prote\xEDna (${f(dia.proteinaG)} g) y la misma grasa (${f(dia.grasaG)} g), contando 4 kcal por gramo de hidrato y de prote\xEDna y 9 por gramo de grasa, salen ${f(dia.kcal)} kcal.`);
-      resumen = `Las ${f(dia.kcal)} kcal del ${nombre}: es ${fase}, ${comp.kcalSinRecorte !== void 0 ? "no hay recorte de kcal y " : ""}los hidratos suben a lo que pide la prueba (${f(dia.hidratoG)} g); por eso suben las kcal.`;
+      detalle.push(`La prueba pide m\xE1s hidratos: suben a ${f(dia2.hidratoG)} g. Con la misma prote\xEDna (${f(dia2.proteinaG)} g) y la misma grasa (${f(dia2.grasaG)} g), contando 4 kcal por gramo de hidrato y de prote\xEDna y 9 por gramo de grasa, salen ${f(dia2.kcal)} kcal.`);
+      resumen = `Las ${f(dia2.kcal)} kcal del ${nombre}: es ${fase}, ${comp.kcalSinRecorte !== void 0 ? "no hay recorte de kcal y " : ""}los hidratos suben a lo que pide la prueba (${f(dia2.hidratoG)} g); por eso suben las kcal.`;
     } else if (comp.kcalSinRecorte !== void 0) {
-      detalle.push(`Estos d\xEDas no hay recorte de kcal: comes lo que gastas, ${f(dia.kcal)} kcal.`);
-      resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son lo que gastas ese d\xEDa${g ? ", con la prueba incluida" : ""}: es ${fase} y no hay recorte de kcal.`;
+      detalle.push(`Estos d\xEDas no hay recorte de kcal: comes lo que gastas, ${f(dia2.kcal)} kcal.`);
+      resumen = `Las ${f(dia2.kcal)} kcal del ${nombre} son lo que gastas ese d\xEDa${g ? ", con la prueba incluida" : ""}: es ${fase} y no hay recorte de kcal.`;
     } else {
-      const extra = dia.kcal - comp.kcalAntes;
-      detalle.push(`Un ${nombre} normal te tocar\xEDan ${f(comp.kcalAntes)} kcal; ${Math.abs(extra) < 1 ? "la prueba gasta lo mismo que tu entreno" : `la prueba gasta ${extra > 0 ? "m\xE1s" : "menos"} que tu entreno habitual y se ${extra > 0 ? "suman" : "restan"} ${f(Math.abs(extra))} kcal`}: salen ${f(dia.kcal)} kcal.`);
-      resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son las de un d\xEDa normal ajustadas a lo que gasta la prueba (${fase}).`;
+      const extra = dia2.kcal - comp.kcalAntes;
+      detalle.push(`Un ${nombre} normal te tocar\xEDan ${f(comp.kcalAntes)} kcal; ${Math.abs(extra) < 1 ? "la prueba gasta lo mismo que tu entreno" : `la prueba gasta ${extra > 0 ? "m\xE1s" : "menos"} que tu entreno habitual y se ${extra > 0 ? "suman" : "restan"} ${f(Math.abs(extra))} kcal`}: salen ${f(dia2.kcal)} kcal.`);
+      resumen = `Las ${f(dia2.kcal)} kcal del ${nombre} son las de un d\xEDa normal ajustadas a lo que gasta la prueba (${fase}).`;
     }
     return { resumen, detalle };
   }
-  function explicarKcalDia(plan, dia, comp) {
-    if (comp?.fase && (comp.kcalDespues !== comp.kcalAntes || comp.gastoPrueba)) return explicarKcalDiaCompeticion(plan, dia, comp);
+  function explicarKcalDia(plan, dia2, comp) {
+    if (comp?.fase && (comp.kcalDespues !== comp.kcalAntes || comp.gastoPrueba)) return explicarKcalDiaCompeticion(plan, dia2, comp);
     const d = plan.detalle;
-    const ajusteDia = dia.kcalSinLimites - dia.gasto;
-    const nombre = NOMBRE_DIA_LARGO[dia.dia] ?? dia.dia;
+    const ajusteDia = dia2.kcalSinLimites - dia2.gasto;
+    const nombre = NOMBRE_DIA_LARGO[dia2.dia] ?? dia2.dia;
     const detalle = [
-      dia.kcalEntreno > 0 ? `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno + el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta el entreno (${f(dia.kcalEntreno)} kcal) = ${f(dia.gasto)} kcal.` : `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno (no hay entreno ese d\xEDa) = ${f(dia.gasto)} kcal.`,
-      Math.abs(ajusteDia) < 0.5 ? `Tu objetivo no a\xF1ade ni quita nada, as\xED que salen ${f(dia.kcalSinLimites)} kcal.` : `Con el ajuste de tu objetivo (${f(Math.abs(ajusteDia))} kcal ${ajusteDia < 0 ? "menos" : "m\xE1s"}) salen ${f(dia.kcalSinLimites)} kcal.`
+      dia2.kcalEntreno > 0 ? `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno + el ${f((1 - d.compensacionEntreno) * 100)} % de lo que gasta el entreno (${f(dia2.kcalEntreno)} kcal) = ${f(dia2.gasto)} kcal.` : `Gasto del ${nombre} = ${f(d.gastoBase)} kcal de un d\xEDa sin entreno (no hay entreno ese d\xEDa) = ${f(dia2.gasto)} kcal.`,
+      Math.abs(ajusteDia) < 0.5 ? `Tu objetivo no a\xF1ade ni quita nada, as\xED que salen ${f(dia2.kcalSinLimites)} kcal.` : `Con el ajuste de tu objetivo (${f(Math.abs(ajusteDia))} kcal ${ajusteDia < 0 ? "menos" : "m\xE1s"}) salen ${f(dia2.kcalSinLimites)} kcal.`
     ];
-    let resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son lo que gastas ese d\xEDa (${f(dia.gasto)}) m\xE1s el ajuste de tu objetivo.`;
-    if (dia.limitadoPor === "oscilacion") {
-      resumen = `Las ${f(dia.kcal)} kcal del ${nombre} salen del gasto del d\xEDa y del objetivo, acercadas a la media de la semana por el l\xEDmite de oscilaci\xF3n.`;
-      detalle.push(d.oscilacion.modo === "compresion" ? `Se aplic\xF3 el l\xEDmite de oscilaci\xF3n: las diferencias entre d\xEDas se comprimen para que no pasen de ${f(d.oscilacion.maxKcal ?? 0)} kcal. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)} kcal.` : `Ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media de la semana. El c\xE1lculo daba ${f(dia.kcalSinLimites)} y se prescriben ${f(dia.kcal)} kcal.`);
-    } else if (dia.limitadoPor === "suelo") {
-      resumen = `Las ${f(dia.kcal)} kcal del ${nombre} son el m\xEDnimo que pone la app: el c\xE1lculo daba menos.`;
-      detalle.push(`El c\xE1lculo daba ${f(dia.kcalSinLimites)} kcal, menos de lo prudente: se queda en ese m\xEDnimo (${f(dia.kcal)} kcal) y hay que revisarlo con Pablo antes de seguir.`);
+    let resumen = `Las ${f(dia2.kcal)} kcal del ${nombre} son lo que gastas ese d\xEDa (${f(dia2.gasto)}) m\xE1s el ajuste de tu objetivo.`;
+    if (dia2.limitadoPor === "oscilacion") {
+      resumen = `Las ${f(dia2.kcal)} kcal del ${nombre} salen del gasto del d\xEDa y del objetivo, acercadas a la media de la semana por el l\xEDmite de oscilaci\xF3n.`;
+      detalle.push(d.oscilacion.modo === "compresion" ? `Se aplic\xF3 el l\xEDmite de oscilaci\xF3n: las diferencias entre d\xEDas se comprimen para que no pasen de ${f(d.oscilacion.maxKcal ?? 0)} kcal. El c\xE1lculo daba ${f(dia2.kcalSinLimites)} y se prescriben ${f(dia2.kcal)} kcal.` : `Ning\xFAn d\xEDa se aleja m\xE1s de ${f(d.oscilacion.maxKcal ?? 0)} kcal de la media de la semana. El c\xE1lculo daba ${f(dia2.kcalSinLimites)} y se prescriben ${f(dia2.kcal)} kcal.`);
+    } else if (dia2.limitadoPor === "suelo") {
+      resumen = `Las ${f(dia2.kcal)} kcal del ${nombre} son el m\xEDnimo que pone la app: el c\xE1lculo daba menos.`;
+      detalle.push(`El c\xE1lculo daba ${f(dia2.kcalSinLimites)} kcal, menos de lo prudente: se queda en ese m\xEDnimo (${f(dia2.kcal)} kcal) y hay que revisarlo con Pablo antes de seguir.`);
     } else {
       detalle.push("Ning\xFAn l\xEDmite cambi\xF3 esta cifra (solo se redondea a decenas de kcal).");
     }
     return { resumen, detalle };
   }
-  function pesoDelDia(dia, peso) {
+  function pesoDelDia(dia2, peso) {
     if (peso && peso > 0) return peso;
-    return dia.hidratoGKg > 0 ? dia.hidratoG / dia.hidratoGKg : void 0;
+    return dia2.hidratoGKg > 0 ? dia2.hidratoG / dia2.hidratoGKg : void 0;
   }
-  function rangoHidratoG(dia, peso) {
-    const p = pesoDelDia(dia, peso);
-    return p ? dia.hidratoRecomendadoGKg.map((x) => Math.round(x * p / 5) * 5) : void 0;
+  function rangoHidratoG(dia2, peso) {
+    const p = pesoDelDia(dia2, peso);
+    return p ? dia2.hidratoRecomendadoGKg.map((x) => Math.round(x * p / 5) * 5) : void 0;
   }
-  function hidratoQueToca(dia, peso) {
-    const r = rangoHidratoG(dia, peso);
+  function hidratoQueToca(dia2, peso) {
+    const r = rangoHidratoG(dia2, peso);
     return r ? `entre ${f(r[0])} y ${f(r[1])} g de hidratos` : "lo que toca a este tipo de d\xEDa";
   }
-  function explicarTipoDia(dia, peso, comp) {
+  function explicarTipoDia(dia2, peso, comp) {
     const base = {
-      carga_alta: `D\xEDa de carga alta: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), a partir de 180 min.`,
-      duro: dia.sesionDura ? `D\xEDa exigente: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), menos de 60 min, pero cuenta como d\xEDa exigente porque marcaste que la sesi\xF3n es dura.` : `D\xEDa exigente: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), entre 60 y 179 min.`,
+      carga_alta: `D\xEDa de carga alta: hay ${dia2.minutosCarga} min de entreno de carga (intermitente o de resistencia), a partir de 180 min.`,
+      duro: dia2.sesionDura ? `D\xEDa exigente: hay ${dia2.minutosCarga} min de entreno de carga (intermitente o de resistencia), menos de 60 min, pero cuenta como d\xEDa exigente porque marcaste que la sesi\xF3n es dura.` : `D\xEDa exigente: hay ${dia2.minutosCarga} min de entreno de carga (intermitente o de resistencia), entre 60 y 179 min.`,
       // #286 (punto 21): se llamaba «día suave» y salía en días de series; el tipo cuenta los minutos, no la intensidad.
-      suave: `D\xEDa de entreno corto: hay ${dia.minutosCarga} min de entreno de carga (intermitente o de resistencia), menos de 60 min. Si la sesi\xF3n es dura (series, cambios de ritmo, competici\xF3n o test), m\xE1rcalo en la sesi\xF3n y contar\xE1 como d\xEDa de entreno normal.`,
+      suave: `D\xEDa de entreno corto: hay ${dia2.minutosCarga} min de entreno de carga (intermitente o de resistencia), menos de 60 min. Si la sesi\xF3n es dura (series, cambios de ritmo, competici\xF3n o test), m\xE1rcalo en la sesi\xF3n y contar\xE1 como d\xEDa de entreno normal.`,
       fuerza: "D\xEDa de fuerza: solo hay fuerza, que no cuenta como carga; reparte igual que un d\xEDa de descanso, pero se etiqueta para que se vea que la sesi\xF3n est\xE1 registrada.",
       descanso: "D\xEDa de descanso: no hay entreno de carga ni de fuerza ese d\xEDa (caminar r\xE1pido o similar no cuenta como carga)."
     };
     if (comp?.fase) {
-      const minimo = minimoHidratoG(comp, dia, peso);
+      const minimo = minimoHidratoG(comp, dia2, peso);
       const fase = FASE_DIA[comp.fase];
       const enEntreno = comp.fase === "descarga" || comp.fase === "previa" || comp.fase === "recuperacion";
       return {
-        resumen: `${fase[0].toUpperCase()}${fase.slice(1)}${deLaCompeticion(comp)}.${comp.gastoPrueba ? ` La prueba cuenta como ${f(dia.minutosCarga)} min de entreno de carga.` : ""}`,
+        resumen: `${fase[0].toUpperCase()}${fase.slice(1)}${deLaCompeticion(comp)}.${comp.gastoPrueba ? ` La prueba cuenta como ${f(dia2.minutosCarga)} min de entreno de carga.` : ""}`,
         detalle: [
-          ...enEntreno ? [`Por el entreno ser\xEDa ${(base[dia.tipo] ?? `D\xEDa ${dia.tipo}.`).replace(/^D/, "d")}`] : [],
-          minimo !== void 0 ? `Este d\xEDa mandan los hidratos que pide la prueba: para ti, al menos ${f(minimo)} g.` : `Los hidratos de este d\xEDa siguen al entreno${comp.gastoPrueba ? " (aqu\xED, la prueba)" : ""}: para ti, ${hidratoQueToca(dia, peso)}.`,
-          `Este d\xEDa el plan lleva ${f(dia.hidratoG)} g.`
+          ...enEntreno ? [`Por el entreno ser\xEDa ${(base[dia2.tipo] ?? `D\xEDa ${dia2.tipo}.`).replace(/^D/, "d")}`] : [],
+          minimo !== void 0 ? `Este d\xEDa mandan los hidratos que pide la prueba: para ti, al menos ${f(minimo)} g.` : `Los hidratos de este d\xEDa siguen al entreno${comp.gastoPrueba ? " (aqu\xED, la prueba)" : ""}: para ti, ${hidratoQueToca(dia2, peso)}.`,
+          `Este d\xEDa el plan lleva ${f(dia2.hidratoG)} g.`
         ]
       };
     }
     return {
-      resumen: base[dia.tipo] ?? `D\xEDa ${dia.tipo}.`,
+      resumen: base[dia2.tipo] ?? `D\xEDa ${dia2.tipo}.`,
       detalle: [
-        `El tipo de d\xEDa decide cu\xE1nto hidrato toca: para ti, ${hidratoQueToca(dia, peso)}.`,
-        `Este d\xEDa el plan lleva ${f(dia.hidratoG)} g.`
+        `El tipo de d\xEDa decide cu\xE1nto hidrato toca: para ti, ${hidratoQueToca(dia2, peso)}.`,
+        `Este d\xEDa el plan lleva ${f(dia2.hidratoG)} g.`
       ]
     };
   }
@@ -6911,11 +6919,11 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       ]
     };
   }
-  function explicarGrasa(plan, dia) {
+  function explicarGrasa(plan, dia2) {
     const g = plan.detalle.grasa;
     const kcalMediasBase = g.porKcalG * 9 / g.fraccion;
     return {
-      resumen: `La grasa es la misma todos los d\xEDas: ${f(dia.grasaG)} g, ${g.aplicado === "kcal" ? `el ${f(g.fraccion * 100)} % de las kcal medias` : "el m\xEDnimo por peso, porque el porcentaje daba menos"}.`,
+      resumen: `La grasa es la misma todos los d\xEDas: ${f(dia2.grasaG)} g, ${g.aplicado === "kcal" ? `el ${f(g.fraccion * 100)} % de las kcal medias` : "el m\xEDnimo por peso, porque el porcentaje daba menos"}.`,
       detalle: [
         `Por porcentaje: ${f(g.fraccion * 100)} % de las kcal medias del plan (${f(kcalMediasBase)} kcal) \xF7 9 kcal por gramo = ${f(g.porKcalG)} g (${f(g.fraccion * 100)} % si entrenas con regularidad, 30 % si no).`,
         `M\xEDnimo por peso: 0,5 g \xD7 peso de referencia = ${f(g.minimoG)} g.`,
@@ -6923,24 +6931,24 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       ]
     };
   }
-  function explicarHidrato(plan, dia, peso, comp) {
-    const minimo = comp ? minimoHidratoG(comp, dia, peso) : void 0;
+  function explicarHidrato(plan, dia2, peso, comp) {
+    const minimo = comp ? minimoHidratoG(comp, dia2, peso) : void 0;
     if (comp && minimo !== void 0) {
-      const lleva = Math.round(dia.hidratoG);
+      const lleva = Math.round(dia2.hidratoG);
       return {
-        resumen: `Este d\xEDa mandan los hidratos: la prueba pide al menos ${f(minimo)} g y el plan lleva ${f(dia.hidratoG)} g. La prote\xEDna (${f(dia.proteinaG)} g) y la grasa (${f(dia.grasaG)} g) son las de siempre, y las kcal del d\xEDa salen de sumar los tres.`,
+        resumen: `Este d\xEDa mandan los hidratos: la prueba pide al menos ${f(minimo)} g y el plan lleva ${f(dia2.hidratoG)} g. La prote\xEDna (${f(dia2.proteinaG)} g) y la grasa (${f(dia2.grasaG)} g) son las de siempre, y las kcal del d\xEDa salen de sumar los tres.`,
         detalle: [`Este d\xEDa queda ${lleva < minimo ? "por debajo de" : lleva > minimo ? "por encima de" : "justo en"} lo que pide la prueba.`]
       };
     }
-    const hayAviso = plan.avisos.some((x) => x.codigo === "hidrato_bajo" && x.texto.startsWith(dia.dia));
-    const [a2, b] = rangoHidratoG(dia, peso) ?? dia.hidratoRecomendadoGKg;
-    const valor = rangoHidratoG(dia, peso) ? Math.round(dia.hidratoG) : dia.hidratoGKg;
+    const hayAviso = plan.avisos.some((x) => x.codigo === "hidrato_bajo" && x.texto.startsWith(dia2.dia));
+    const [a2, b] = rangoHidratoG(dia2, peso) ?? dia2.hidratoRecomendadoGKg;
+    const valor = rangoHidratoG(dia2, peso) ? Math.round(dia2.hidratoG) : dia2.hidratoGKg;
     const posicion = valor < a2 ? "por debajo de" : valor > b ? "por encima de" : "dentro de";
-    const porFase = comp?.fase && posicion === "por encima de" ? `Por el entreno te tocar\xEDa ${hidratoQueToca(dia, peso)}; en ${conArticulo(comp.fase)} lleva m\xE1s porque ${comp.kcalSinRecorte !== void 0 ? "no hay recorte de kcal" : "la prueba gasta m\xE1s"} y esas kcal de m\xE1s van a hidratos.` : void 0;
+    const porFase = comp?.fase && posicion === "por encima de" ? `Por el entreno te tocar\xEDa ${hidratoQueToca(dia2, peso)}; en ${conArticulo(comp.fase)} lleva m\xE1s porque ${comp.kcalSinRecorte !== void 0 ? "no hay recorte de kcal" : "la prueba gasta m\xE1s"} y esas kcal de m\xE1s van a hidratos.` : void 0;
     return {
-      resumen: `El hidrato es lo que queda de las kcal del d\xEDa tras la prote\xEDna y la grasa: (${f(dia.kcal)} \u2212 4 \xD7 ${f(dia.proteinaG)} \u2212 9 \xD7 ${f(dia.grasaG)}) \xF7 4 = ${f(dia.hidratoG)} g.`,
+      resumen: `El hidrato es lo que queda de las kcal del d\xEDa tras la prote\xEDna y la grasa: (${f(dia2.kcal)} \u2212 4 \xD7 ${f(dia2.proteinaG)} \u2212 9 \xD7 ${f(dia2.grasaG)}) \xF7 4 = ${f(dia2.hidratoG)} g.`,
       detalle: [
-        porFase ?? `Para un d\xEDa as\xED te toca ${hidratoQueToca(dia, peso)}: este d\xEDa queda ${posicion} lo que toca.`,
+        porFase ?? `Para un d\xEDa as\xED te toca ${hidratoQueToca(dia2, peso)}: este d\xEDa queda ${posicion} lo que toca.`,
         ...hayAviso ? ["Hay un aviso de hidrato bajo para este d\xEDa (ver Avisos): el plan no afirma que cumpla el rango."] : []
       ]
     };
@@ -7047,7 +7055,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
 
   // src/motor/sustitucion-receta.ts
   var ROTULO_CAMBIO = { primero: "primero", segundo: "segundo", postre: "postre" };
-  var claveSlot = (dia, franja) => `${dia}|${franja}`;
+  var claveSlot = (dia2, franja) => `${dia2}|${franja}`;
   function usosVariedadSemana(asignaciones, excluirClave) {
     const usos = {};
     for (const a2 of asignaciones) {
@@ -7653,8 +7661,8 @@ r43,aceite de oliva,10`;
       const diaSemana = NOMBRE_DIA_SEMANA[new Date(aUTC3(c2.fecha)).getUTCDay()];
       avisos.push(faltan === 0 ? `Compites hoy: ${c2.nombre}.` : `Compites el ${diaSemana}: faltan ${faltan} ${faltan === 1 ? "d\xEDa" : "d\xEDas"} (${c2.nombre}).`);
     }
-    const pesoCerca = competiciones.some((c2) => c2.tipo === "categoria_peso" && DIAS.some((dia) => {
-      const f2 = fechaDelDia(inicio, dia);
+    const pesoCerca = competiciones.some((c2) => c2.tipo === "categoria_peso" && DIAS.some((dia2) => {
+      const f2 = fechaDelDia(inicio, dia2);
       return f2 >= c2.fecha && f2 <= (c2.fechaFin ?? c2.fecha);
     }));
     if (pesoCerca) avisos.push(MENSAJE_CATEGORIA_PESO);
@@ -9683,22 +9691,22 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
     const salida = asignaciones.map((a2) => ({ ...a2 }));
     const recetasNuevas = [];
     const dias = [];
-    for (const dia of [...new Set(slots.map((s) => s.dia))]) {
-      const delDia = slots.filter((s2) => s2.dia === dia);
-      const objetivoG = opciones.proteinaDia?.[dia] ?? delDia.reduce((t2, s2) => t2 + (s2.proteinaObjetivoG ?? 0), 0);
+    for (const dia2 of [...new Set(slots.map((s) => s.dia))]) {
+      const delDia = slots.filter((s2) => s2.dia === dia2);
+      const objetivoG = opciones.proteinaDia?.[dia2] ?? delDia.reduce((t2, s2) => t2 + (s2.proteinaObjetivoG ?? 0), 0);
       const kcalObjetivoDia = delDia.reduce((t2, s2) => t2 + s2.kcalObjetivo, 0);
-      const mias = () => salida.filter((a2) => a2.dia === dia);
+      const mias = () => salida.filter((a2) => a2.dia === dia2);
       const servida = () => mias().reduce((t2, a2) => t2 + proteinaDe(porId, a2), 0);
       const kcalDia = () => mias().reduce((t2, a2) => t2 + a2.kcalResultante, 0);
       let cambios = 0;
-      const hidratoObjetivo = delDia.some((s2) => s2.cargaAlta) ? opciones.hidratoDia?.[dia] : void 0;
-      const hidratosCon = (lista, extra) => hidratosServidosDia(lista, extra ? recetas.concat(recetasNuevas, extra) : recetas.concat(recetasNuevas), dia);
-      const protegida = (a2) => Boolean(a2.fijada || a2.pedidoPorUsuario || opciones.noMover?.(dia, a2.franja));
+      const hidratoObjetivo = delDia.some((s2) => s2.cargaAlta) ? opciones.hidratoDia?.[dia2] : void 0;
+      const hidratosCon = (lista, extra) => hidratosServidosDia(lista, extra ? recetas.concat(recetasNuevas, extra) : recetas.concat(recetasNuevas), dia2);
+      const protegida = (a2) => Boolean(a2.fijada || a2.pedidoPorUsuario || opciones.noMover?.(dia2, a2.franja));
       const subir = (a2, minimoG = 0) => {
         if (protegida(a2)) return false;
         const slot = delDia.find((s2) => s2.franja === a2.franja);
         if (!slot) return false;
-        const clave2 = claveSlot(dia, a2.franja);
+        const clave2 = claveSlot(dia2, a2.franja);
         const { alternativas } = alternativasParaSlot(slot, recetas.concat(recetasNuevas), {
           alergiasPreferencias: opciones.alergiasPreferencias,
           actual: a2.receta,
@@ -9768,7 +9776,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
         }
       }
       const s = servida();
-      dias.push({ dia, servidaG: Math.round(s), objetivoG: Math.round(objetivoG), corta: objetivoG > 0 && s < UMBRAL_PROTEINA_DIA * objetivoG, cambios });
+      dias.push({ dia: dia2, servidaG: Math.round(s), objetivoG: Math.round(objetivoG), corta: objetivoG > 0 && s < UMBRAL_PROTEINA_DIA * objetivoG, cambios });
     }
     return { asignaciones: salida, dias, recetasNuevas };
   }
@@ -9776,13 +9784,13 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
   // src/motor/sugerencia-proteina.ts
   var KCAL_MAX_SUGERENCIA = 350;
   var PROTEINA_MIN_SUGERENCIA = 8;
-  function proteinaDelDia(asignaciones, recetas, dia, objetivoG) {
+  function proteinaDelDia(asignaciones, recetas, dia2, objetivoG) {
     const porId = new Map(recetas.map((r) => [r.id, r]));
-    const s = asignaciones.filter((a2) => a2.dia === dia).reduce((t2, a2) => {
+    const s = asignaciones.filter((a2) => a2.dia === dia2).reduce((t2, a2) => {
       const r = recetaDeId(porId, a2.receta);
       return t2 + (r ? macrosConRacion(r, a2.racionAjustada).proteina : 0);
     }, 0);
-    return { dia, servidaG: Math.round(s), objetivoG: Math.round(objetivoG), corta: objetivoG > 0 && s < UMBRAL_PROTEINA_DIA * objetivoG, cambios: 0 };
+    return { dia: dia2, servidaG: Math.round(s), objetivoG: Math.round(objetivoG), corta: objetivoG > 0 && s < UMBRAL_PROTEINA_DIA * objetivoG, cambios: 0 };
   }
   function textoProteinaDia(d) {
     return `Prote\xEDna: ${Math.round(d.servidaG)} g de ${Math.round(d.objetivoG)} g`;
@@ -9909,16 +9917,16 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
     const candidatas = candidatasToma(recetas, admite);
     const iso = isotonicaPorToma();
     const salida = [];
-    for (const { dia, hidratoObjetivoG } of diasCarga) {
+    for (const { dia: dia2, hidratoObjetivoG } of diasCarga) {
       const meta = hidratoObjetivoG * PARTE_MINIMA_HIDRATOS_CARGA;
-      const antes = hidratosServidosDia(asignaciones, recetas, dia);
+      const antes = hidratosServidosDia(asignaciones, recetas, dia2);
       if (!(hidratoObjetivoG > 0) || antes >= meta) continue;
-      const d = dias.find((x) => x.dia === dia);
+      const d = dias.find((x) => x.dia === dia2);
       const kcalLibres = d ? d.objetivo * (1 + TOLERANCIA_DIA) - d.servido : Infinity;
       if (kcalLibres < iso.kcal) continue;
       let hidrato = antes + iso.hidratoG;
       let kcal = iso.kcal;
-      const usadas = new Set(asignaciones.filter((a2) => a2.dia === dia).flatMap((a2) => a2.receta.split("~")[0].split("+")));
+      const usadas = new Set(asignaciones.filter((a2) => a2.dia === dia2).flatMap((a2) => a2.receta.split("~")[0].split("+")));
       const tomas = [];
       for (const { r, franja } of candidatas) {
         if (tomas.length >= 2 || hidrato >= meta) break;
@@ -9928,7 +9936,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
         hidrato += r.hidrato;
         kcal += r.kcal;
       }
-      const e = { dia, isotonica: iso, tomas, hidratoAntesG: antes, hidratoG: hidrato, objetivoG: hidratoObjetivoG, kcalExtra: kcal };
+      const e = { dia: dia2, isotonica: iso, tomas, hidratoAntesG: antes, hidratoG: hidrato, objetivoG: hidratoObjetivoG, kcalExtra: kcal };
       if (hidrato < meta) e.aviso = `Aun con la bebida isot\xF3nica y las tomas de m\xE1s, el d\xEDa lleva unos ${Math.round(hidrato / 10) * 10} g de hidratos de los ~${Math.round(hidratoObjetivoG)} g que pide la carga. H\xE1blalo con Pablo antes de la carrera.`;
       salida.push(e);
     }
@@ -10061,6 +10069,10 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     ritmo_alto: "\u26A1 El ritmo de p\xE9rdida de peso pedido es alto para hacerlo sin que te lo revisen.",
     deficit_alto: "\u26A0\uFE0F Con lo que entrenas, este recorte de calor\xEDas es grande: se puede perder m\xFAsculo, no solo grasa.",
     superavit_alto: "\u{1F354} El extra de calor\xEDas para ganar m\xFAsculo es alto: se gana sobre todo grasa. Conviene bajarlo.",
+    ritmo_subida_alto: "\u2696\uFE0F Seg\xFAn tus pesajes, llevas 3 semanas subiendo m\xE1s de un 0,5 % de tu peso por semana: a ese ritmo se gana sobre todo grasa. Hemos bajado un poco el extra de calor\xEDas.",
+    // #326 parte 2
+    ritmo_subida_bajo: "\u2696\uFE0F Seg\xFAn tus pesajes, llevas 3 semanas subiendo menos de un 0,25 % de tu peso por semana: as\xED cuesta ganar m\xFAsculo. Hemos subido un poco el extra de calor\xEDas.",
+    // #326 parte 2 (Pablo, 14/11)
     hidrato_bajo: "\u{1F50B} Poco hidrato de carbono para lo que entrenas alg\xFAn d\xEDa: puede costar rendir y recuperarte.",
     grasa_baja: "\u{1F9C8} La grasa de alg\xFAn d\xEDa se queda corta.",
     disponibilidad_baja: "\u{1F6A8} Muy pocas calor\xEDas libres para lo que gastas entrenando: esto hay que hablarlo con Pablo antes de seguir.",
@@ -10100,7 +10112,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   var lunesDe = (iso) => isoMasDias(iso, -(((/* @__PURE__ */ new Date(`${iso}T12:00:00Z`)).getUTCDay() + 6) % 7));
   function apuntadoPorDia(hechas, fuera) {
     const m = /* @__PURE__ */ new Map();
-    const dia = (iso) => {
+    const dia2 = (iso) => {
       let d = m.get(iso);
       if (!d) {
         d = { hechas: /* @__PURE__ */ new Set(), fuera: /* @__PURE__ */ new Map() };
@@ -10112,11 +10124,11 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (hechas && typeof hechas === "object") {
       const h = hechas;
       if (esIso(h.fecha) && Array.isArray(h.franjas)) {
-        for (const f2 of h.franjas) if (typeof f2 === "string") dia(h.fecha).hechas.add(f2);
+        for (const f2 of h.franjas) if (typeof f2 === "string") dia2(h.fecha).hechas.add(f2);
       }
       if (h.dias && typeof h.dias === "object") {
         for (const [iso, l] of Object.entries(h.dias)) if (esIso(iso) && Array.isArray(l)) {
-          for (const f2 of l) if (typeof f2 === "string") dia(iso).hechas.add(f2);
+          for (const f2 of l) if (typeof f2 === "string") dia2(iso).hechas.add(f2);
         }
       }
     }
@@ -10124,7 +10136,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       if (!c2 || typeof c2 !== "object") continue;
       const x = c2;
       if (!esIso(x.fecha) || typeof x.franja !== "string") continue;
-      dia(x.fecha).fuera.set(x.franja, { texto: typeof x.texto === "string" ? x.texto : "", ...typeof x.proteina === "number" && Number.isFinite(x.proteina) && x.proteina >= 0 ? { proteina: x.proteina } : {} });
+      dia2(x.fecha).fuera.set(x.franja, { texto: typeof x.texto === "string" ? x.texto : "", ...typeof x.proteina === "number" && Number.isFinite(x.proteina) && x.proteina >= 0 ? { proteina: x.proteina } : {} });
     }
     return m;
   }
@@ -10696,6 +10708,44 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (p.bebidaLHora) partes.push(`Bebe ${rango(p.bebidaLHora, "L")} por hora${litros ? ` (${rango(litros, "L")} en total)` : ""}, seg\xFAn el calor y lo que sudes; con sales si pasa de 2 h o si hace calor.`);
     if (p.nota) partes.push(p.nota);
     return partes.join(" ");
+  }
+
+  // src/motor/ritmo-subida.ts
+  var RITMO_SUBIDA_MAX_PCT = 0.5;
+  var SEMANAS_SEGUIDAS = 3;
+  var PASO_SUPERAVIT = 2.5;
+  var SUPERAVIT_MINIMO = 2.5;
+  var RITMO_SUBIDA_MIN_PCT = 0.25;
+  var SUPERAVIT_MAXIMO = 15;
+  var dia = (iso) => Math.floor(Date.parse(`${iso}T12:00:00Z`) / 864e5);
+  function ritmoSubida(pesajes, superavitPct) {
+    const validos = pesajes.filter((p) => p && Number.isFinite(p.kg) && p.kg > 0 && /^\d{4}-\d{2}-\d{2}$/.test(p.fecha) && Number.isFinite(dia(p.fecha)));
+    const nada = { semanas: [], bajar: false, subir: false, superavitNuevo: superavitPct };
+    if (!validos.length) return nada;
+    const ultimo = Math.max(...validos.map((p) => dia(p.fecha)));
+    const medias = [];
+    for (let k = 0; k <= SEMANAS_SEGUIDAS; k++) {
+      const enSemana = validos.filter((p) => {
+        const d = ultimo - dia(p.fecha);
+        return d >= 7 * k && d < 7 * (k + 1);
+      });
+      if (!enSemana.length) return nada;
+      medias.unshift(enSemana.reduce((t2, p) => t2 + p.kg, 0) / enSemana.length);
+    }
+    const semanas = medias.slice(1).map((m, i) => Math.round((m - medias[i]) / medias[i] * 1e3) / 10);
+    const bajar = semanas.every((r) => r > RITMO_SUBIDA_MAX_PCT) && superavitPct - PASO_SUPERAVIT >= SUPERAVIT_MINIMO - 1e-9;
+    const subir = semanas.every((r) => r < RITMO_SUBIDA_MIN_PCT) && superavitPct + PASO_SUPERAVIT <= SUPERAVIT_MAXIMO + 1e-9;
+    if (!bajar && !subir) return { semanas, bajar: false, subir: false, superavitNuevo: superavitPct };
+    const superavitNuevo = Math.round((superavitPct + (subir ? PASO_SUPERAVIT : -PASO_SUPERAVIT)) * 10) / 10;
+    const f2 = (x) => String(x).replace(".", ",");
+    const lista = semanas.map((r) => `${f2(r)} %`).join(", ");
+    return {
+      semanas,
+      bajar,
+      subir,
+      superavitNuevo,
+      texto: bajar ? `Subes m\xE1s de un ${f2(RITMO_SUBIDA_MAX_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista}): a ese ritmo se gana sobre todo grasa. El extra de calor\xEDas baja del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.` : `Subes menos de un ${f2(RITMO_SUBIDA_MIN_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista}): as\xED cuesta ganar m\xFAsculo. El extra de calor\xEDas sube del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.`
+    };
   }
   return __toCommonJS(motor_exports);
 })();
