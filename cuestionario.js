@@ -30,6 +30,16 @@ borde_primera_hora,toma_pre_min_antes,,30,minutos antes de la sesion
 borde_primera_hora,toma_pre_max_antes,,60,minutos antes de la sesion
 borde_primera_hora,hidrato_rapido_g_kg_min,,0.5,se descuenta del reparto del dia
 borde_primera_hora,hidrato_rapido_g_kg_max,,1.0,
+ventana_comida,desde,desayuno,6.5,#318 (Pablo 13/11): horas normales de cada comida en semanas sin competicion
+ventana_comida,hasta,desayuno,10.5,
+ventana_comida,desde,media_manana,10.0,
+ventana_comida,hasta,media_manana,12.5,
+ventana_comida,desde,comida,13.0,
+ventana_comida,hasta,comida,15.5,
+ventana_comida,desde,merienda,16.5,
+ventana_comida,hasta,merienda,19.5,
+ventana_comida,desde,cena,20.0,
+ventana_comida,hasta,cena,22.5,
 `;
   Motor.definirParametrosReparto(Motor.parsearParametrosCSV(PARAMETROS_REPARTO_CSV));
 
@@ -301,6 +311,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const wa = e.target.closest && e.target.closest('button.hp-whatsapp');
     if (wa) { const nota = wa.parentElement.querySelector('.hp-wa-nota'); if (nota) nota.hidden = false; }
   });
+  const abrirCorreo = (url) => { if (typeof window.__abrirCorreo === 'function') window.__abrirCorreo(url); else location.href = url; };
   document.addEventListener('submit', (e) => {
     const f = e.target.closest && e.target.closest('.hp-cita');
     if (!f) return;
@@ -318,7 +329,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       document.querySelector('#nube-subir')?.click(); // la sube ya, por el mismo camino que las demás (web/nube.js)
       estado = `Petición enviada. ${PLAZO_PABLO} para cerrar la cita.`;
     } else {
-      location.href = Motor.correoCita(peticion);
+      abrirCorreo(Motor.correoCita(peticion)); // en las pruebas de navegador se cambia por window.__abrirCorreo (un mailto: allí recarga o corta la página)
       estado = `Se ha abierto tu correo con la petición: envíalo y ${PLAZO_PABLO} para cerrar la cita.`;
     }
     try { localStorage.setItem(CLAVE_CITA, JSON.stringify({ fecha: ahora, via })); } catch { falloAlmacenamiento(); }
@@ -2817,7 +2828,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   function horarioGeneralDelDia(dia) {
     const delPlan = semanaActual ? semanaActual.perfil.sesiones ?? [] : [];
     const sesiones = sesionesTodasDelDia(dia, ultimasSesiones.map((s, i) => ({ ...s, dia: delPlan[i] ? delPlan[i].dia : s.dia })));
-    return Motor.sacarTomasDeSesiones(franjasActuales ?? [], sesiones);
+    // #318: en los días sin competición, cada comida se queda en su hora normal (ventanas de PARAMETROS_REPARTO_CSV)
+    return Motor.sacarTomasDeSesiones(franjasActuales ?? [], sesiones, { competicion: Boolean(competicionDelDia(dia)) });
   }
   function franjasDelDia(dia) { return excepcionesHorario.get(dia) ?? horarioGeneralDelDia(dia).franjas; }
   let diasAbiertos = new Set(); // qué tarjetas de día quedan desplegadas al volver a pintar
@@ -2999,9 +3011,17 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       actividad: s.actividad, minutos: s.minutos, ...(s.dura ? { dura: true } : {}), ...(s.nota || s.deporte ? { nombre: s.nota || s.deporte } : {}),
       ...(Number.isFinite(s.horaInicio) ? { horaInicio: s.horaInicio } : {}),
     }));
-    if (!ses.length) return reparto;
+    if (!ses.length) return sinQuitadas(dia, reparto);
     const toma = Motor.tomaDuranteDia(ses, excepcionesHorario.get(dia) ?? franjasActuales ?? [], deporteElegido);
-    return { ...reparto, franjas: Motor.repartoConTomaDurante(reparto.franjas, toma), tomaDurante: toma };
+    return sinQuitadas(dia, { ...reparto, franjas: Motor.repartoConTomaDurante(reparto.franjas, toma), tomaDurante: toma });
+  }
+  // #318 (c): un tentempié que cae en un entreno y no cabe a una hora normal ni antes ni después se quita y lo suyo pasa a la principal
+  // más cercana. Si la toma durante la sesión ya lo sustituye (#313), manda esa. Lo fijado a mano para un día no pasa por aquí.
+  function sinQuitadas(dia, reparto) {
+    if (excepcionesHorario.has(dia)) return reparto;
+    const q = horarioGeneralDelDia(dia).quitadas.filter((x) => x.franja !== reparto.tomaDurante?.sustituye && reparto.franjas.some((f) => f.franja === x.franja));
+    if (!q.length) return reparto;
+    return { ...reparto, franjas: Motor.repartoSinQuitadas(reparto.franjas, q), avisos: reparto.avisos.concat(q.map((x) => x.texto)) };
   }
 
   function resolverActividadUI(sesion) {

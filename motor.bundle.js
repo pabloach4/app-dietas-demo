@@ -108,6 +108,7 @@ var Motor = (() => {
     UMBRAL_FALTA_COMPETICION: () => UMBRAL_FALTA_COMPETICION,
     UMBRAL_PROTEINA_DIA: () => UMBRAL_PROTEINA_DIA,
     VECES_HAMBRE_ALERTA: () => VECES_HAMBRE_ALERTA,
+    VENTANAS_COMIDA_DEFECTO: () => VENTANAS_COMIDA_DEFECTO,
     VERSION_CONSENTIMIENTO_NUBE: () => VERSION_CONSENTIMIENTO_NUBE,
     VOCABULARIO_ATRIBUTOS: () => VOCABULARIO_ATRIBUTOS,
     ZONAS_ICS: () => ZONAS_ICS,
@@ -349,6 +350,7 @@ var Motor = (() => {
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
     repartoConTomaDurante: () => repartoConTomaDurante,
+    repartoSinQuitadas: () => repartoSinQuitadas,
     restriccionesComoApp: () => restriccionesComoApp,
     resultadoBorradoNube: () => resultadoBorradoNube,
     resumenCincoSemanas: () => resumenCincoSemanas,
@@ -1975,6 +1977,13 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
   }
   var NOMBRE_FRANJA = { desayuno: "El desayuno", media_manana: "La media ma\xF1ana", comida: "La comida", merienda: "La merienda", cena: "La cena" };
+  var VENTANAS_COMIDA_DEFECTO = {
+    desayuno: [6.5, 10.5],
+    media_manana: [10, 12.5],
+    comida: [13, 15.5],
+    merienda: [16.5, 19.5],
+    cena: [20, 22.5]
+  };
   function parsearParametrosCSV(texto) {
     const lineas = texto.split(/\r?\n/).filter((l) => l.trim() !== "");
     const p = {
@@ -1983,7 +1992,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       ventana: { PRE_desde_h_antes: 4, PRE_hasta_h_antes: 1.5, POST_hasta_h_despues: 2, ligera_desde_h_antes: 1.5, ligera_hasta_h_antes: 0.5 },
       tope: { proteina_secundaria_g: 25, grasa_pre_carga_g: 15 },
       proteinaPrincipal: { g_kg_min: 0.25, g_kg_max: 0.4 },
-      bordePrimeraHora: { sesion_antes_de_h: 9, toma_pre_min_antes: 30, toma_pre_max_antes: 60, hidrato_rapido_g_kg_min: 0.5, hidrato_rapido_g_kg_max: 1 }
+      bordePrimeraHora: { sesion_antes_de_h: 9, toma_pre_min_antes: 30, toma_pre_max_antes: 60, hidrato_rapido_g_kg_min: 0.5, hidrato_rapido_g_kg_max: 1 },
+      ventanaComida: Object.fromEntries(Object.entries(VENTANAS_COMIDA_DEFECTO).map(([f2, v]) => [f2, [...v]]))
     };
     for (const linea of lineas.slice(1)) {
       const [grupo, clave2, franja, valorRaw] = linea.split(",");
@@ -1995,6 +2005,10 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       else if (grupo === "tope") p.tope[clave2] = valor;
       else if (grupo === "proteina_principal") p.proteinaPrincipal[clave2] = valor;
       else if (grupo === "borde_primera_hora") p.bordePrimeraHora[clave2] = valor;
+      else if (grupo === "ventana_comida" && (clave2 === "desde" || clave2 === "hasta")) {
+        const v = p.ventanaComida[franja] ??= [0, 24];
+        v[clave2 === "desde" ? 0 : 1] = valor;
+      }
     }
     return p;
   }
@@ -2274,25 +2288,72 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       return `${lista.charAt(0).toUpperCase()}${lista.slice(1)}: ${k}`;
     });
   }
-  function sacarTomasDeSesiones(franjas, sesiones) {
+  var HUECO_MIN_H = 1.5;
+  function sacarTomasDeSesiones(franjas, sesiones, opciones = {}) {
     const movidas = [];
+    const quitadas = [];
     const horas = /* @__PURE__ */ new Map();
+    const ventanas = opciones.competicion ? {} : opciones.ventanas ?? parametrosInyectados?.ventanaComida ?? VENTANAS_COMIDA_DEFECTO;
     const conHora = franjas.filter((f2) => typeof f2.hora === "number").sort((a2, b) => a2.hora - b.hora);
+    const dentro = (h) => sesiones.find((x) => h >= x.inicio && h < x.fin);
     conHora.forEach((f2, i) => {
       const anterior = i > 0 ? horas.get(conHora[i - 1]) : -Infinity;
-      const s = sesiones.find((x) => f2.hora >= x.inicio && f2.hora < x.fin);
+      const s = dentro(f2.hora);
       if (!s) {
         horas.set(f2, f2.hora);
         return;
       }
-      let a2 = s.fin;
-      for (let otra = sesiones.find((x) => a2 >= x.inicio && a2 < x.fin); otra; otra = sesiones.find((x) => a2 >= x.inicio && a2 < x.fin)) a2 = otra.fin;
+      let fin = s.fin;
+      for (let otra = dentro(fin); otra; otra = dentro(fin)) fin = otra.fin;
+      let inicio = s.inicio;
+      for (let otra = sesiones.find((x) => x.inicio < inicio && x.fin >= inicio); otra; otra = sesiones.find((x) => x.inicio < inicio && x.fin >= inicio)) inicio = otra.inicio;
       const siguiente = conHora[i + 1]?.hora;
-      if (siguiente !== void 0 && a2 >= siguiente && s.inicio - 0.5 > anterior) a2 = s.inicio - 0.5;
-      horas.set(f2, a2);
-      movidas.push({ franja: f2.franja, de: f2.hora, a: a2, inicio: s.inicio, fin: s.fin, texto: `${NOMBRE_FRANJA[f2.franja] ?? f2.franja} pasa a las ${hhmm(a2)}: a las ${hhmm(f2.hora)} est\xE1s entrenando (de ${hhmm(s.inicio)} a ${hhmm(s.fin)}).` });
+      const mover = (a2) => {
+        horas.set(f2, a2);
+        movidas.push({ franja: f2.franja, de: f2.hora, a: a2, inicio: s.inicio, fin: s.fin, texto: `${NOMBRE_FRANJA[f2.franja] ?? f2.franja} pasa a las ${hhmm(a2)}: a las ${hhmm(f2.hora)} est\xE1s entrenando (de ${hhmm(s.inicio)} a ${hhmm(s.fin)}).` });
+      };
+      const v = ventanas[f2.franja];
+      if (!v) {
+        let a2 = fin;
+        if (siguiente !== void 0 && a2 >= siguiente && s.inicio - 0.5 > anterior) a2 = s.inicio - 0.5;
+        mover(a2);
+        return;
+      }
+      const enVentana = (h) => h >= v[0] - 1e-9 && h <= v[1] + 1e-9;
+      if (enVentana(fin) && (siguiente === void 0 || siguiente - fin >= HUECO_MIN_H)) {
+        mover(fin);
+        return;
+      }
+      const antes = inicio - 0.5;
+      if (enVentana(antes) && antes - anterior >= HUECO_MIN_H && !dentro(antes)) {
+        mover(antes);
+        return;
+      }
+      horas.set(f2, f2.hora);
+      if (PRINCIPALES.includes(f2.franja)) return;
+      const principales = conHora.filter((x) => PRINCIPALES.includes(x.franja));
+      if (!principales.length) return;
+      const hacia = principales.reduce((m, x) => Math.abs(x.hora - f2.hora) < Math.abs(m.hora - f2.hora) ? x : m);
+      quitadas.push({
+        franja: f2.franja,
+        hora: f2.hora,
+        haciaFranja: hacia.franja,
+        inicio: s.inicio,
+        fin: s.fin,
+        texto: `${NOMBRE_FRANJA[f2.franja] ?? f2.franja} de las ${hhmm(f2.hora)} cae en el entreno (de ${hhmm(s.inicio)} a ${hhmm(s.fin)}) y no cabe ni antes ni despu\xE9s a una hora normal: lo que llevaba pasa a ${(NOMBRE_FRANJA[hacia.franja] ?? hacia.franja).toLowerCase()}.`
+      });
     });
-    return { franjas: movidas.length ? franjas.map((f2) => horas.has(f2) ? { ...f2, hora: horas.get(f2) } : f2) : franjas, movidas };
+    return { franjas: movidas.length ? franjas.map((f2) => horas.has(f2) ? { ...f2, hora: horas.get(f2) } : f2) : franjas, movidas, quitadas };
+  }
+  function repartoSinQuitadas(franjas, quitadas) {
+    let salida = franjas;
+    for (const q of quitadas) {
+      const de = salida.find((f2) => f2.franja === q.franja);
+      const a2 = salida.find((f2) => f2.franja === q.haciaFranja);
+      if (!de || !a2 || de === a2) continue;
+      salida = salida.filter((f2) => f2 !== de).map((f2) => f2 === a2 ? { ...f2, kcalAprox: f2.kcalAprox + de.kcalAprox, proteina: f2.proteina + de.proteina, grasa: f2.grasa + de.grasa, hidrato: f2.hidrato + de.hidrato } : f2);
+    }
+    return salida;
   }
   function choquesHorario(franjas, sesiones, nombre = (f2) => f2) {
     const hh = (h) => `${String(Math.floor(h + 1e-9) % 24).padStart(2, "0")}:${String(Math.round(h % 1 * 60) % 60).padStart(2, "0")}`;
