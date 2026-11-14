@@ -350,6 +350,7 @@ var Motor = (() => {
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
     repartoConTomaDurante: () => repartoConTomaDurante,
+    repartoProteinaGimnasio: () => repartoProteinaGimnasio,
     repartoSinQuitadas: () => repartoSinQuitadas,
     restriccionesComoApp: () => restriccionesComoApp,
     resultadoBorradoNube: () => resultadoBorradoNube,
@@ -9669,6 +9670,10 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
   // src/motor/cuadrar-proteina.ts
   var UMBRAL_PROTEINA_DIA = 0.9;
   var MARGEN_KCAL_CAMBIO = 0.1;
+  var PRINCIPALES2 = ["desayuno", "comida", "cena"];
+  function repartoProteinaGimnasio(pesoKg) {
+    return { principalG: Math.round(0.4 * pesoKg), tomaG: Math.round(Math.min(0.25 * pesoKg, 20)), tomas: 4 };
+  }
   var proteinaDe = (porId, a2) => {
     const r = recetaDeId(porId, a2.receta);
     return r ? macrosConRacion(r, a2.racionAjustada).proteina : 0;
@@ -9688,57 +9693,78 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
       let cambios = 0;
       const hidratoObjetivo = delDia.some((s2) => s2.cargaAlta) ? opciones.hidratoDia?.[dia] : void 0;
       const hidratosCon = (lista, extra) => hidratosServidosDia(lista, extra ? recetas.concat(recetasNuevas, extra) : recetas.concat(recetasNuevas), dia);
+      const protegida = (a2) => Boolean(a2.fijada || a2.pedidoPorUsuario || opciones.noMover?.(dia, a2.franja));
+      const subir = (a2, minimoG = 0) => {
+        if (protegida(a2)) return false;
+        const slot = delDia.find((s2) => s2.franja === a2.franja);
+        if (!slot) return false;
+        const clave2 = claveSlot(dia, a2.franja);
+        const { alternativas } = alternativasParaSlot(slot, recetas.concat(recetasNuevas), {
+          alergiasPreferencias: opciones.alergiasPreferencias,
+          actual: a2.receta,
+          usosSemana: usosVariedadSemana(salida, clave2),
+          maxRepeticionesSemana: opciones.maxRepeticionesSemana
+        });
+        const actualProt = proteinaDe(porId, a2);
+        const kcalSinEsta = kcalDia() - a2.kcalResultante;
+        const errorDiaAntes = Math.abs(kcalDia() - kcalObjetivoDia);
+        let mejor;
+        for (const alt2 of alternativas) {
+          if (Math.abs(alt2.kcalResultante - slot.kcalObjetivo) > MARGEN_KCAL_CAMBIO * slot.kcalObjetivo) continue;
+          if (alt2.protegidosSinEscalar.length && alt2.racionAjustada !== 1) continue;
+          const errorDia = Math.abs(kcalSinEsta + alt2.kcalResultante - kcalObjetivoDia);
+          if (errorDia > TOLERANCIA_DIA * kcalObjetivoDia && errorDia > errorDiaAntes) continue;
+          const prot = macrosConRacion(alt2.receta, alt2.racionAjustada).proteina;
+          if (prot < minimoG) continue;
+          if (!(prot > actualProt + 0.5)) continue;
+          if (mejor && (minimoG > 0 ? Math.abs(alt2.kcalResultante - slot.kcalObjetivo) >= Math.abs(mejor.alt.kcalResultante - slot.kcalObjetivo) : prot <= mejor.prot)) continue;
+          if (hidratoObjetivo) {
+            const antes = hidratosCon(salida);
+            const con = salida.map((x) => x === a2 ? { ...a2, receta: alt2.receta.id, racionAjustada: alt2.racionAjustada, kcalResultante: alt2.kcalResultante } : x);
+            const despues = hidratosCon(con, alt2.receta);
+            if (despues < PARTE_MINIMA_HIDRATOS_CARGA * hidratoObjetivo && despues < antes - 0.5) continue;
+          }
+          mejor = { alt: alt2, prot };
+        }
+        if (!mejor) return false;
+        const { alt } = mejor;
+        if (!porId.has(alt.receta.id)) {
+          porId.set(alt.receta.id, alt.receta);
+          recetasNuevas.push(alt.receta);
+        }
+        const i = salida.indexOf(a2);
+        const { ajusteDia: _fuera, ...resto } = a2;
+        salida[i] = {
+          ...resto,
+          receta: alt.receta.id,
+          racionAjustada: alt.racionAjustada,
+          kcalResultante: alt.kcalResultante,
+          ...alt.protegidosSinEscalar.length ? { protegidosSinEscalar: alt.protegidosSinEscalar } : { protegidosSinEscalar: void 0 }
+        };
+        if (!salida[i].protegidosSinEscalar) delete salida[i].protegidosSinEscalar;
+        cambios++;
+        return true;
+      };
+      const rep = opciones.repartoProteina;
+      if (rep) {
+        for (const a2 of mias().filter((x) => PRINCIPALES2.includes(x.franja) && proteinaDe(porId, x) < rep.principalG - 0.5)) subir(a2, rep.principalG);
+        if (mias().length >= rep.tomas) {
+          const cuentan = () => mias().filter((x) => proteinaDe(porId, x) >= rep.tomaG - 0.5).length;
+          const probadas = /* @__PURE__ */ new Set();
+          while (cuentan() < rep.tomas) {
+            const candidata = mias().filter((x) => !probadas.has(x) && !protegida(x) && proteinaDe(porId, x) < rep.tomaG - 0.5).sort((x, y) => proteinaDe(porId, y) - proteinaDe(porId, x))[0];
+            if (!candidata) break;
+            probadas.add(candidata);
+            subir(candidata, rep.tomaG);
+          }
+        }
+      }
       if (objetivoG > 0 && servida() < UMBRAL_PROTEINA_DIA * objetivoG) {
         const hueco = (a2) => (delDia.find((s2) => s2.franja === a2.franja)?.proteinaObjetivoG ?? 0) - proteinaDe(porId, a2);
         const orden = mias().sort((a2, b) => hueco(b) - hueco(a2));
         for (const a2 of orden) {
           if (servida() >= UMBRAL_PROTEINA_DIA * objetivoG) break;
-          if (a2.fijada || a2.pedidoPorUsuario || opciones.noMover?.(dia, a2.franja)) continue;
-          const slot = delDia.find((s2) => s2.franja === a2.franja);
-          if (!slot) continue;
-          const clave2 = claveSlot(dia, a2.franja);
-          const { alternativas } = alternativasParaSlot(slot, recetas.concat(recetasNuevas), {
-            alergiasPreferencias: opciones.alergiasPreferencias,
-            actual: a2.receta,
-            usosSemana: usosVariedadSemana(salida, clave2),
-            maxRepeticionesSemana: opciones.maxRepeticionesSemana
-          });
-          const actualProt = proteinaDe(porId, a2);
-          const kcalSinEsta = kcalDia() - a2.kcalResultante;
-          const errorDiaAntes = Math.abs(kcalDia() - kcalObjetivoDia);
-          let mejor;
-          for (const alt2 of alternativas) {
-            if (Math.abs(alt2.kcalResultante - slot.kcalObjetivo) > MARGEN_KCAL_CAMBIO * slot.kcalObjetivo) continue;
-            if (alt2.protegidosSinEscalar.length && alt2.racionAjustada !== 1) continue;
-            const errorDia = Math.abs(kcalSinEsta + alt2.kcalResultante - kcalObjetivoDia);
-            if (errorDia > TOLERANCIA_DIA * kcalObjetivoDia && errorDia > errorDiaAntes) continue;
-            const prot = macrosConRacion(alt2.receta, alt2.racionAjustada).proteina;
-            if (!(prot > actualProt + 0.5 && (!mejor || prot > mejor.prot))) continue;
-            if (hidratoObjetivo) {
-              const antes = hidratosCon(salida);
-              const con = salida.map((x) => x === a2 ? { ...a2, receta: alt2.receta.id, racionAjustada: alt2.racionAjustada, kcalResultante: alt2.kcalResultante } : x);
-              const despues = hidratosCon(con, alt2.receta);
-              if (despues < PARTE_MINIMA_HIDRATOS_CARGA * hidratoObjetivo && despues < antes - 0.5) continue;
-            }
-            mejor = { alt: alt2, prot };
-          }
-          if (!mejor) continue;
-          const { alt } = mejor;
-          if (!porId.has(alt.receta.id)) {
-            porId.set(alt.receta.id, alt.receta);
-            recetasNuevas.push(alt.receta);
-          }
-          const i = salida.indexOf(a2);
-          const { ajusteDia: _fuera, ...resto } = a2;
-          salida[i] = {
-            ...resto,
-            receta: alt.receta.id,
-            racionAjustada: alt.racionAjustada,
-            kcalResultante: alt.kcalResultante,
-            ...alt.protegidosSinEscalar.length ? { protegidosSinEscalar: alt.protegidosSinEscalar } : { protegidosSinEscalar: void 0 }
-          };
-          if (!salida[i].protegidosSinEscalar) delete salida[i].protegidosSinEscalar;
-          cambios++;
+          subir(a2);
         }
       }
       const s = servida();
