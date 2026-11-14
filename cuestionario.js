@@ -128,6 +128,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   const CASILLAS_ALERGIA = [['al-pescado', 'pescado'], ['al-crustaceos', 'crustáceos'], ['al-moluscos', 'moluscos'], ['al-huevo', 'huevo'], ['al-frutos-cascara', 'frutos de cáscara'], ['al-cacahuete', 'cacahuete'], ['al-soja', 'soja'], ['al-sesamo', 'sésamo']];
   // #257 (punto 8): al marcar «¿Conoces tu % graso?» aparecen el campo y el método (solo se abrían al cargar un perfil o un ejemplo).
   document.getElementById('grasa-conocida').addEventListener('change', (e) => { document.getElementById('grasa-detalle').hidden = !e.target.checked; });
+  // #326 parte 3: la casilla de la creatina no sale a menores de 18 (y si la edad baja, se desmarca).
+  function verCampoCreatina() {
+    const edad = num('edad');
+    const menor = Number.isFinite(edad) && edad < Motor.EDAD_MINIMA_CREATINA;
+    document.getElementById('campo-creatina').hidden = menor;
+    if (menor) document.getElementById('toma-creatina').checked = false;
+  }
+  document.getElementById('edad').addEventListener('input', verCampoCreatina);
   // #260 (punto 30): el papel de una comida en palabras («antes de entrenar», no «PRE»).
   const nombreRol = (rol) => ({ PRE: 'antes de entrenar', POST: 'después de entrenar', toma_ligera: 'toma ligera' }[rol] ?? String(rol).replace(/_/g, ' ').toLowerCase());
   // #256 (punto 1): las frases amables de los avisos viven en el motor (Motor.avisosParaPersona); el texto técnico es para Pablo.
@@ -659,6 +667,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('objetivo').value = ej.objetivo;
     document.getElementById('vida-trabajo').value = ej.vidaTrabajo ?? 'sentado';
     document.getElementById('vida-pasos').value = ej.vidaPasos ?? '';
+    document.getElementById('toma-creatina').checked = !!ej.creatina; // #326 parte 3
+    verCampoCreatina();
     document.querySelectorAll('.salud').forEach((c) => { c.checked = false; });
     document.getElementById('salud-otra').value = '';
     limpiarCribado(); // #195: el cribado no se guarda con el perfil ni viaja entre ejemplos
@@ -2717,6 +2727,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       objetivo: document.getElementById('objetivo').value,
       vidaTrabajo: document.getElementById('vida-trabajo').value,
       vidaPasos: document.getElementById('vida-pasos').value || undefined,
+      ...(document.getElementById('toma-creatina').checked ? { creatina: true } : {}), // #326 parte 3
       deportePrincipal: deporteElegido,
       sesiones: leerSesiones().map(({ dia, deporte, minutos, horaInicio, actividad, nota, dura }) => ({ dia, deporte, minutos, horaInicio, actividad, nota, ...(dura ? { dura } : {}) })),
       franjas: Object.fromEntries(Array.from(franjasDiv.children).map((fila) => [
@@ -4187,6 +4198,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       }
       cajaComp.innerHTML = partes.join('');
     }
+    // #326 parte 3: pauta de creatina si la persona la ha marcado (y es mayor de edad). Con una competición anotada, el sello antidopaje.
+    {
+      const caja = document.getElementById('r-creatina');
+      const frases = Motor.pautaCreatina({ toma: document.getElementById('toma-creatina').checked, edad: respuestas.edad, compite: competiciones.length > 0 });
+      caja.hidden = !frases;
+      caja.innerHTML = frases ? `<p style="margin:0.4rem 0">💊 ${frases.map(escaparHtml).join(' ')}</p>` : '';
+    }
     // Issue #117: qué ha pasado con cada alimento de «sí o sí»: entra en la semana (se marca en la comida) o se explica por qué no.
     {
       const pedidos = asignacionBase.imprescindibles ?? [];
@@ -4487,6 +4505,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       // #207: lo que Pablo necesita para editar con seguridad (NO las respuestas del cribado: esas viajan como alertas).
       restricciones: { alergias: respuestas.alergias, evitan: respuestas.preferencias.evitan, gustan: respuestas.preferencias.gustan, listaNegra: [...listaNegra] },
       revision: Motor.peculiaridadesRevision(respuestas), // #299.5: lo que Pablo verá; si publica sobre este plan, eso queda revisado
+      ...(Motor.pautaCreatina({ toma: document.getElementById('toma-creatina').checked, edad: respuestas.edad }) ? { creatina: true } : {}), // #326 parte 3: Pablo lo ve en el centro
     } }));
 
     // Issue #21: mensaje en español llano primero, el código técnico se queda visible pero en pequeño.

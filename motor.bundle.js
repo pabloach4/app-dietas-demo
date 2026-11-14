@@ -38,6 +38,7 @@ var Motor = (() => {
     DIAS_AVISO_FIN: () => DIAS_AVISO_FIN,
     DIAS_CITA: () => DIAS_CITA,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
+    EDAD_MINIMA_CREATINA: () => EDAD_MINIMA_CREATINA,
     EJEMPLO_DESAYUNO_CARRERA: () => EJEMPLO_DESAYUNO_CARRERA,
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
     ENCIMAS_PAN: () => ENCIMAS_PAN,
@@ -331,6 +332,7 @@ var Motor = (() => {
     parsearRecetas: () => parsearRecetas,
     parsearTablaLimites: () => parsearTablaLimites,
     pasoDosPasos: () => pasoDosPasos,
+    pautaCreatina: () => pautaCreatina,
     peculiaridadesDePlan: () => peculiaridadesDePlan,
     peculiaridadesNuevas: () => peculiaridadesNuevas,
     peculiaridadesRevision: () => peculiaridadesRevision,
@@ -10746,6 +10748,18 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       superavitNuevo,
       texto: bajar ? `Subes m\xE1s de un ${f2(RITMO_SUBIDA_MAX_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista}): a ese ritmo se gana sobre todo grasa. El extra de calor\xEDas baja del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.` : `Subes menos de un ${f2(RITMO_SUBIDA_MIN_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista}): as\xED cuesta ganar m\xFAsculo. El extra de calor\xEDas sube del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.`
     };
+  }
+
+  // src/motor/creatina.ts
+  var EDAD_MINIMA_CREATINA = 18;
+  function pautaCreatina({ toma, edad, compite }) {
+    if (!toma || !Number.isFinite(edad) || edad < EDAD_MINIMA_CREATINA) return null;
+    const frases = [
+      "Creatina: monohidrato, de 3 a 5 g al d\xEDa, todos los d\xEDas (tambi\xE9n los de descanso), con cualquier comida.",
+      "No hace falta fase de carga: as\xED se llenan las reservas en 3-4 semanas."
+    ];
+    if (compite) frases.push("Como compites, elige una con sello antidopaje (por ejemplo, Informed Sport).");
+    return frases;
   }
   return __toCommonJS(motor_exports);
 })();
