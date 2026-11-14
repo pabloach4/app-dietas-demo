@@ -1982,6 +1982,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   // src/motor/reparto-comidas.ts
   var PRINCIPALES = ["desayuno", "comida", "cena"];
   var SECUNDARIAS = ["media_manana", "merienda"];
+  var FUERZA_MIN_H = 0.75;
   var TOMA_AYUNAS = { ejemplo: "un pl\xE1tano", gramos: 118, kcal: Math.round(89 * 118 / 100), fuente: "USDA FoodData Central, FDC 173944 (Bananas, raw): 89 kcal/100 g; 1 mediano = 118 g" };
   function hhmm(h) {
     const total = (Math.round(h * 60) % 1440 + 1440) % 1440;
@@ -1999,7 +2000,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const lineas = texto.split(/\r?\n/).filter((l) => l.trim() !== "");
     const p = {
       pesoBase: {},
-      factor: { PRE: 1.6, POST: 1.4, toma_ligera_PRE: 1.5, PRE_POST_combinado: 2.2 },
+      factor: { PRE: 1.6, POST: 1.4, toma_ligera_PRE: 1.5, PRE_POST_combinado: 2.2, PRE_fuerza: 1.2, POST_fuerza: 1.2 },
+      // #319 p1: fuerza, suaves
       ventana: { PRE_desde_h_antes: 4, PRE_hasta_h_antes: 1.5, POST_hasta_h_despues: 2, ligera_desde_h_antes: 1.5, ligera_hasta_h_antes: 0.5 },
       tope: { proteina_secundaria_g: 25, grasa_pre_carga_g: 15 },
       proteinaPrincipal: { g_kg_min: 0.25, g_kg_max: 0.4 },
@@ -2133,6 +2135,26 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       const { rol, factor } = rolYFactor(marcas, p.factor);
       rolYFactorPorFranja.set(f2.franja, desayunoForzadoPost && f2.franja === "desayuno" ? { rol: "POST", factor: p.factor.POST } : { rol, factor });
     }
+    const sesionesFuerza = (e.sesionesFuerza ?? []).filter((s) => s.fin - s.inicio >= FUERZA_MIN_H - 1e-9);
+    const rolesFuerza = calcularRoles(e.franjas, sesionesFuerza, p.ventana);
+    const deFuerza = /* @__PURE__ */ new Set();
+    for (const f2 of e.franjas) {
+      if (rolYFactorPorFranja.get(f2.franja).rol !== "normal") continue;
+      const m = rolesFuerza.get(f2.franja);
+      const r = m.has("PRE") && m.has("POST") ? { rol: "PRE_POST_combinado", factor: redondear(p.factor.PRE_fuerza * p.factor.POST_fuerza, 2) } : m.has("PRE") ? { rol: "PRE", factor: p.factor.PRE_fuerza } : m.has("POST") ? { rol: "POST", factor: p.factor.POST_fuerza } : m.has("toma_ligera_PRE") ? { rol: "toma_ligera_PRE", factor: p.factor.PRE_fuerza } : null;
+      if (r) {
+        rolYFactorPorFranja.set(f2.franja, r);
+        deFuerza.add(f2.franja);
+      }
+    }
+    const proteinaPorPrincipal = new Map(principales.map((f2) => [f2, pPrincipal]));
+    const principalesFuerza = principales.filter((f2) => rolesFuerza.get(f2).size > 0);
+    const objetivoFuerza = principalesFuerza.find((f2) => rolesFuerza.get(f2).has("POST")) ?? principalesFuerza.find((f2) => rolesFuerza.get(f2).has("PRE"));
+    if (objetivoFuerza && principales.length > 1 && pPrincipal < pPrincipalCap) {
+      const otras = principales.length - 1;
+      const sube = Math.min(pPrincipalCap - pPrincipal, Math.max(0, (pPrincipal - pPrincipalMinAviso) * otras));
+      if (sube > 0) principales.forEach((f2) => proteinaPorPrincipal.set(f2, f2 === objetivoFuerza ? pPrincipal + sube : pPrincipal - sube / otras));
+    }
     const pesoBase = (f2) => p.pesoBase[f2] ?? 0;
     const sumaPesoContextual = franjas.reduce((s, f2) => s + pesoBase(f2) * rolYFactorPorFranja.get(f2).factor, 0);
     const sumaPesoBase = franjas.reduce((s, f2) => s + pesoBase(f2), 0);
@@ -2163,7 +2185,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     }
     const salida = franjas.map((f2) => {
       const { rol, factor } = rolYFactorPorFranja.get(f2);
-      const proteina = PRINCIPALES.includes(f2) ? pPrincipal : pSecundaria;
+      const proteina = PRINCIPALES.includes(f2) ? proteinaPorPrincipal.get(f2) : pSecundaria;
       const hidrato = sumaPesoContextual > 0 ? redondear(e.hidrato * pesoBase(f2) * factor / sumaPesoContextual) : 0;
       const grasa = redondear(grasaPorFranja.get(f2), 1);
       return {
@@ -2181,7 +2203,9 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
           proteinaTipo: PRINCIPALES.includes(f2) ? "principal" : "secundaria",
           proteinaTopeSecundaria: topeSecundariaAplicado,
           grasaTopeAplicado: grasaTopada.has(f2),
-          grasaExcesoRecibido: redondear(grasaRecibida.get(f2) ?? 0, 1)
+          grasaExcesoRecibido: redondear(grasaRecibida.get(f2) ?? 0, 1),
+          ...deFuerza.has(f2) ? { fuerza: true } : {},
+          ...f2 === objetivoFuerza && proteinaPorPrincipal.get(f2) > pPrincipal ? { proteinaFuerza: true } : {}
         }
       };
     });
@@ -6961,6 +6985,12 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     toma_ligera_PRE: "Toma ligera antes del entreno: una media ma\xF1ana o merienda entre 0,5 y 1,5 h antes, con m\xE1s hidrato (\xD71,5).",
     PRE_POST_combinado: "PRE y POST a la vez: la misma comida cae antes de un entreno y despu\xE9s de otro, y lleva \xD72,2."
   };
+  var TEXTO_ROL_FUERZA = {
+    PRE: "PRE: la comida principal de 1,5 a 4 h antes de tu sesi\xF3n de fuerza, con un poco m\xE1s de hidrato (\xD71,2) para rendir.",
+    POST: "POST: la siguiente comida principal despu\xE9s de tu sesi\xF3n de fuerza, con un poco m\xE1s de hidrato (\xD71,2).",
+    toma_ligera_PRE: "Toma antes de la fuerza: una media ma\xF1ana o merienda de 0,5 a 1,5 h antes, con algo de hidrato (\xD71,2).",
+    PRE_POST_combinado: "PRE y POST a la vez: la misma comida cae antes de una sesi\xF3n de fuerza y despu\xE9s de otra (\xD71,4)."
+  };
   function explicarComida(franja, contexto) {
     const d = franja.detalle;
     const esPrincipal = d.proteinaTipo === "principal";
@@ -6968,9 +6998,10 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const lineas = [
       esPrincipal ? `Prote\xEDna (${f(franja.proteina)} g): las comidas principales (desayuno, comida y cena) se reparten la del d\xEDa (${f(contexto.proteinaDia)} g). Como referencia orientativa, hasta unos ${f(Math.round(0.4 * contexto.pesoRef / 5) * 5)} g por comida principal; no es un m\xE1ximo absoluto.` : `Prote\xEDna (${f(franja.proteina)} g): media ma\xF1ana y merienda se reparten lo que sobra tras las principales, con un tope de 25 g cada una.`,
       ...d.proteinaTopeSecundaria ? [esPrincipal ? `Las tomas secundarias (media ma\xF1ana y merienda) llegaron a su tope de 25 g y el sobrante volvi\xF3 a las comidas principales: por eso ${franja.proteina > 0.4 * contexto.pesoRef ? `esta principal pasa de los ${f(0.4 * contexto.pesoRef, 1)} g de referencia` : "esta principal lleva m\xE1s que sin ese tope"}.` : "Esta toma secundaria lleg\xF3 al tope de 25 g y el exceso se movi\xF3 a las comidas principales."] : [],
+      ...d.proteinaFuerza ? [`Prote\xEDna: es la comida de despu\xE9s de tu sesi\xF3n de fuerza (o la de antes, si no hay despu\xE9s), as\xED que lleva ${f(franja.proteina)} g, unos 0,4 g por kilo; las dem\xE1s principales llevan un poco menos y el total del d\xEDa no cambia.`] : [],
       // #260 (punto 30): en palabras («su parte del hidrato del día»), sin «peso de la franja × factor».
       `Hidrato (${f(franja.hidrato)} g): de los ${f(contexto.hidratoDia)} g del d\xEDa, a esta comida le toca su parte${d.factor !== 1 ? `, con un extra (\xD7${f(d.factor, 1)}) por el entreno` : ""}: ${f(franja.hidrato)} g.`,
-      franja.rol !== "normal" ? TEXTO_ROL[franja.rol] : sinCarga2 ? `Sin extra de hidrato: ${contexto.tipoDia === "fuerza" ? "la fuerza sola no cuenta como entreno de carga" : "es un d\xEDa de descanso"}, as\xED que ninguna comida lleva un extra por el entreno.` : "Sin extra de hidrato: esta comida no cae justo antes ni justo despu\xE9s de un entreno de carga.",
+      franja.rol !== "normal" ? d.fuerza ? TEXTO_ROL_FUERZA[franja.rol] : TEXTO_ROL[franja.rol] : sinCarga2 ? `Sin extra de hidrato: ${contexto.tipoDia === "fuerza" ? "la fuerza sola no cuenta como entreno de carga" : "es un d\xEDa de descanso"}, as\xED que ninguna comida lleva un extra por el entreno.` : "Sin extra de hidrato: esta comida no cae justo antes ni justo despu\xE9s de un entreno de carga.",
       `Grasa (${f(franja.grasa, 1)} g): la parte de la grasa del d\xEDa que le toca a esta comida.`,
       ...d.grasaTopeAplicado ? ["La grasa se limit\xF3 a 15 g porque es una toma de menos de 2 h antes de un entreno de carga (comodidad digestiva); el exceso pas\xF3 a otras comidas."] : [],
       ...d.grasaExcesoRecibido > 0 ? [`Recibe ${f(d.grasaExcesoRecibido, 1)} g de grasa que otra toma no pudo llevar por el tope pre-entreno.`] : [],

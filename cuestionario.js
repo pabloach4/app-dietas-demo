@@ -737,6 +737,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         pesoRef: plan.proteina.pesoReferencia, peso: respuestasActuales.peso, tipoDia: d.tipo,
         sesiones: franjaADia(d.dia, franjasDelDia(d.dia), sesionesConActividad),
         sesionesTodas: sesionesTodasDelDia(d.dia, sesionesConActividad),
+        sesionesFuerza: sesionesFuerzaDelDia(d.dia, sesionesConActividad), // #319 parte 1
         franjas: franjasDelDia(d.dia),
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
         ...(hambreCena ? { hambreCena } : {}), // #265 F
@@ -3024,6 +3025,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     });
   }
 
+  // #319 parte 1: las sesiones de fuerza con hora del día (el motor solo da PRE y POST a las de 45 min o más).
+  function sesionesFuerzaDelDia(dia, sesiones) {
+    return sesiones.filter((s) => s.dia === dia && s.horaInicio !== undefined && Motor.ACTIVIDADES[s.actividad]?.tipo === 'fuerza')
+      .map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }));
+  }
   // Issue #59: todas las sesiones con hora del día (también fuerza) para avisar de comidas que caen dentro.
   function sesionesTodasDelDia(dia, sesiones) {
     return sesiones.filter((s) => s.dia === dia && s.horaInicio !== undefined).map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }));
@@ -3996,6 +4002,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         pesoRef: plan.proteina.pesoReferencia, peso: respuestas.peso, tipoDia: d.tipo,
         sesiones: franjaADia(d.dia, franjasDelDia(d.dia), sesionesConActividad),
         sesionesTodas: sesionesTodasDelDia(d.dia, sesionesConActividad),
+        sesionesFuerza: sesionesFuerzaDelDia(d.dia, sesionesConActividad), // #319 parte 1
         franjas: franjasDelDia(d.dia),
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
         ...(hambreCena ? { hambreCena } : {}), // #265 F
@@ -4474,6 +4481,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           pesoRef: planBase.proteina.pesoReferencia, peso: respuestas.peso, tipoDia: dB.tipo,
           sesiones: franjaADia(dB.dia, franjasDelDia(dB.dia), sesionesConActividad),
           sesionesTodas: sesionesTodasDelDia(dB.dia, sesionesConActividad),
+          sesionesFuerza: sesionesFuerzaDelDia(dB.dia, sesionesConActividad), // #319 parte 1
           franjas: franjasDelDia(dB.dia),
           ...(hambreCena ? { hambreCena } : {}), // #265 F
         });
