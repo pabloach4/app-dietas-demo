@@ -2289,6 +2289,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     });
   }
   var HUECO_MIN_H = 1.5;
+  var MARGEN_TRAS_ENTRENO_H = 1;
   function sacarTomasDeSesiones(franjas, sesiones, opciones = {}) {
     const movidas = [];
     const quitadas = [];
@@ -2320,7 +2321,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         return;
       }
       const enVentana = (h) => h >= v[0] - 1e-9 && h <= v[1] + 1e-9;
-      if (enVentana(fin) && (siguiente === void 0 || siguiente - fin >= HUECO_MIN_H)) {
+      if (enVentana(fin) && fin - anterior >= HUECO_MIN_H && (siguiente === void 0 || siguiente - fin >= HUECO_MIN_H)) {
         mover(fin);
         return;
       }
@@ -2329,8 +2330,16 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         mover(antes);
         return;
       }
+      if (PRINCIPALES.includes(f2.franja)) {
+        const sigFuera = conHora.slice(i + 1).find((x) => !(x.hora >= inicio && x.hora < fin))?.hora;
+        if (fin >= v[0] && fin <= v[1] + MARGEN_TRAS_ENTRENO_H + 1e-9 && fin - anterior >= HUECO_MIN_H && (sigFuera === void 0 || sigFuera - fin >= HUECO_MIN_H)) {
+          mover(fin);
+          return;
+        }
+        horas.set(f2, f2.hora);
+        return;
+      }
       horas.set(f2, f2.hora);
-      if (PRINCIPALES.includes(f2.franja)) return;
       const principales = conHora.filter((x) => PRINCIPALES.includes(x.franja));
       if (!principales.length) return;
       const hacia = principales.reduce((m, x) => Math.abs(x.hora - f2.hora) < Math.abs(m.hora - f2.hora) ? x : m);
