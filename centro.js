@@ -34,6 +34,9 @@
   const marcadas = new Set();
   // #215: buscador y filtro de Personas, plan elegido en el historial de cada ficha y si existe la tabla de fichas (docs/supabase/004-fichas.sql).
   let busqueda = ''; let filtroPersonas = 'todas'; const planVisto = {}; let fichasOk = true;
+  // #322 parte 4: los ajustes de los avisos con solución (docs/supabase/011-ajustes.sql), las reglas «Arreglarlo siempre así» del
+  // nutricionista y el aviso que se está cambiando. Sin 011 pegado (ajustesOk falso), el centro enseña la solución sin botones.
+  let ajustesOk = false; let reglasAuto = {}; let cambiando = null;
 
   function cargarLibreria() {
     if (window.supabase && window.supabase.createClient) return Promise.resolve(); // (la prueba de navegador pone uno simulado)
@@ -148,7 +151,15 @@
       sb.from('registro_comidas').select('usuario, fecha, franja, estado, kcal, texto, creado').eq('estado', 'fuera'),
     ]);
     fichasOk = !f.error;
-    datos = { perfiles: p.data, respuestas: r.data, alertas: a.data, gestion: g.data, planes: pl.data, fichas: (!f.error && f.data) || [], registro: (!rc.error && rc.data) || [] };
+    // Solo se piden si hay algún aviso con solución; si 011 aún no está pegado, la tabla da error y el centro sigue sin botones.
+    const tieneSolucion = (a.data || []).some((x) => x.datos && x.datos.solucion);
+    const [aj, rg] = tieneSolucion ? await Promise.all([
+      sb.from('ajustes').select('id, usuario, tipo, datos, estado, origen, alerta_id, creado, actualizado').order('creado', { ascending: false }).limit(1000),
+      sb.rpc('reglas_auto'),
+    ]) : [{ data: [], error: { message: 'sin avisos con solución' } }, { data: {} }];
+    ajustesOk = !aj.error;
+    reglasAuto = (!rg.error && rg.data && typeof rg.data === 'object') ? rg.data : {};
+    datos = { perfiles: p.data, respuestas: r.data, alertas: a.data, gestion: g.data, planes: pl.data, fichas: (!f.error && f.data) || [], registro: (!rc.error && rc.data) || [], ajustes: (!aj.error && aj.data) || [] };
   }
 
   const contactoDe = (u) => (datos.perfiles.find((p) => p.usuario === u) || {}).contacto || 'sin contacto';
@@ -164,12 +175,89 @@
         <span>${a.prioritaria ? (clase === 'cita' ? '<span class="chip rojo">CONTESTAR · pide cita</span> ' : '<span class="chip rojo">REVISIÓN PRIORITARIA · valoración sanitaria</span> ') : ''}<span class="chip cc-tipo">${esc(Motor.TIPOS_ALERTA[clase])}</span> <span class="chip">${esc(ESTADOS[g.estado] || 'Nueva')}</span></span></div>
       <p class="subt"><a href="mailto:${esc(contactoDe(a.usuario))}">${esc(contactoDe(a.usuario))}</a> · <a href="#" class="cc-ver" data-u="${esc(a.usuario)}">ver ficha</a></p>
       <ul class="cc-motivos">${senales}</ul>
+      ${htmlSolucion(a)}
       ${d.perdidaKg !== undefined ? `<p class="subt">Pérdida declarada: ${esc(d.perdidaKg)} kg en 3 meses.</p>` : ''}
       ${(d.contexto || []).length ? `<p class="subt">Contexto: ${d.contexto.map((c) => `pregunta ${esc(c.pregunta)}: ${esc(c.etiqueta)}`).join('; ')}.</p>` : ''}
       <div class="fila" style="margin-top:0.5rem"><select class="cc-estado" data-id="${a.id}">${Object.entries(ESTADOS).map(([k, v]) => `<option value="${k}"${k === g.estado ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
       <textarea class="cc-nota" data-id="${a.id}" placeholder="Nota privada (la persona no la ve)" style="margin-top:0.5rem">${esc(g.nota || '')}</textarea>
       <div class="fila" style="margin-top:0.5rem"><button class="cc-guardar" data-id="${a.id}">Guardar</button><span class="subt cc-ok" data-id="${a.id}"></span></div>
     </div>`;
+  }
+
+  // #322 parte 4: qué ha pasado, qué ha hecho la app y qué propone; «Vale», «Cambiar», «Deshacer» y «Arreglarlo siempre así».
+  function htmlSolucion(a) {
+    const v = Motor.vistaSolucion(a, datos.ajustes || []);
+    if (!v) return '';
+    const s = v.solucion;
+    const tipoTxt = Motor.TIPOS_SOLUCIONABLES[s.tipo] || s.tipo;
+    const enc = reglasAuto[s.tipo] === true;
+    let editor = '';
+    if (cambiando === a.id && v.accion) {
+      const c = Motor.camposEditables(v.accion);
+      editor = `<div class="fila cc-sol-editor" style="gap:0.4rem;flex-wrap:wrap;margin-top:0.4rem">
+        ${c.kcal !== null ? `<label style="flex:0 0 auto">kcal <input type="number" class="cc-sol-kcal" data-id="${a.id}" value="${esc(c.kcal)}" min="10" step="10" style="width:6rem"></label>` : ''}
+        ${c.franja !== null ? `<select class="cc-sol-franja" data-id="${a.id}" aria-label="Comida" style="flex:0 0 auto">${Motor.FRANJAS_EDITABLES.map((x) => `<option value="${x}"${x === c.franja ? ' selected' : ''}>${esc(Motor.NOMBRE_FRANJA_CENTRO[x])}</option>`).join('')}</select>` : ''}
+        <button class="cc-sol-guardar" data-id="${a.id}" style="flex:0 0 auto">Guardar y aplicar</button><button class="sec cc-sol-cancelar" style="flex:0 0 auto">Cancelar</button></div>`;
+    }
+    const b = ajustesOk ? v.botones : { vale: false, cambiar: false, deshacer: false };
+    return `<div class="cc-solucion" data-id="${a.id}" data-modo="${v.modo}" style="border-left:3px solid var(--acento, #2a7);padding-left:0.6rem;margin:0.5rem 0">
+      <p class="subt"><span class="chip cc-sol-modo">${esc(Motor.TEXTO_MODO[v.modo])}</span></p>
+      <p><strong>Qué ha pasado:</strong> ${esc(s.paso)}</p>
+      ${s.hecho ? `<p><strong>Qué ha hecho la app:</strong> ${esc(s.hecho)}</p>` : ''}
+      ${s.propuesta ? `<p><strong>${v.modo === 'propuesta' ? 'Propone' : 'Propuesta'}:</strong> ${esc(s.propuesta)}${v.accion ? ` <span class="subt">(${esc(Motor.textoAccion(v.accion))})</span>` : ''}</p>` : ''}
+      <div class="fila" style="gap:0.4rem;flex-wrap:wrap">
+        ${b.vale ? `<button class="cc-sol-vale" data-id="${a.id}" style="flex:0 0 auto">Vale</button>` : ''}
+        ${b.cambiar && cambiando !== a.id ? `<button class="sec cc-sol-cambiar" data-id="${a.id}" style="flex:0 0 auto">Cambiar</button>` : ''}
+        ${b.deshacer ? `<button class="sec cc-sol-deshacer" data-id="${a.id}" style="flex:0 0 auto">Deshacer</button>` : ''}
+      </div>${editor}
+      ${ajustesOk ? `<label class="cc-sol-regla-l" style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem"><input type="checkbox" class="cc-sol-regla" data-tipo="${esc(s.tipo)}"${enc ? ' checked' : ''}> Arreglarlo siempre así (${esc(tipoTxt)})</label>`
+        : '<p class="subt">Para aplicar desde aquí, falta pegar en Supabase docs/supabase/011-ajustes.sql.</p>'}
+      <span class="subt cc-sol-ok" data-id="${a.id}" aria-live="polite"></span>
+    </div>`;
+  }
+
+  async function escribirAjuste(e) {
+    if (!e) return { error: { message: 'el cambio no es válido (fuera de las cantidades normales)' } };
+    const COLS = 'id, usuario, tipo, datos, estado, origen, alerta_id, creado, actualizado';
+    if (e.op === 'insert') return sb.from('ajustes').insert(e.fila).select(COLS);
+    return sb.from('ajustes').update(e.cambios).eq('id', e.id).select(COLS);
+  }
+
+  function activarSoluciones() {
+    const alertaDe = (id) => datos.alertas.find((x) => x.id === Number(id));
+    const decirSol = (id, txt) => { const o = cuerpo.querySelector(`.cc-sol-ok[data-id="${id}"]`); if (o) o.textContent = txt; };
+    const guardar = async (id, e, hecho) => {
+      const r = await escribirAjuste(e);
+      if (r.error) { decirSol(id, `No se ha guardado (${r.error.message}).`); return; }
+      const filas = Array.isArray(r.data) ? r.data : [];
+      for (const fila of filas) { const i = datos.ajustes.findIndex((x) => x.id === fila.id); if (i >= 0) datos.ajustes[i] = fila; else datos.ajustes.unshift(fila); }
+      cambiando = null; pintar(); decirSol(id, hecho);
+    };
+    cuerpo.querySelectorAll('.cc-sol-vale').forEach((b) => b.addEventListener('click', () => {
+      const a = alertaDe(b.dataset.id); const v = a && Motor.vistaSolucion(a, datos.ajustes);
+      if (v) guardar(a.id, Motor.escrituraVale(a, v), 'Aplicado: la persona lo verá en su plan.');
+    }));
+    cuerpo.querySelectorAll('.cc-sol-deshacer').forEach((b) => b.addEventListener('click', () => {
+      const a = alertaDe(b.dataset.id); const v = a && Motor.vistaSolucion(a, datos.ajustes);
+      if (v) guardar(a.id, Motor.escrituraDeshacer(v, a), 'Deshecho: su plan vuelve a como estaba.');
+    }));
+    cuerpo.querySelectorAll('.cc-sol-cambiar').forEach((b) => b.addEventListener('click', () => { cambiando = Number(b.dataset.id); pintar(); }));
+    cuerpo.querySelectorAll('.cc-sol-cancelar').forEach((b) => b.addEventListener('click', () => { cambiando = null; pintar(); }));
+    cuerpo.querySelectorAll('.cc-sol-guardar').forEach((b) => b.addEventListener('click', () => {
+      const a = alertaDe(b.dataset.id); const v = a && Motor.vistaSolucion(a, datos.ajustes);
+      if (!v) return;
+      const k = cuerpo.querySelector(`.cc-sol-kcal[data-id="${a.id}"]`); const fr = cuerpo.querySelector(`.cc-sol-franja[data-id="${a.id}"]`);
+      const nueva = Motor.accionCambiada(v.accion, { kcal: k ? k.value : null, franja: fr ? fr.value : null });
+      if (!nueva) { decirSol(a.id, 'Ese cambio se sale de las cantidades normales: no se guarda.'); return; }
+      guardar(a.id, Motor.escrituraVale(a, v, nueva), 'Cambiado y aplicado.');
+    }));
+    cuerpo.querySelectorAll('.cc-sol-regla').forEach((c) => c.addEventListener('change', async () => {
+      const tipo = c.dataset.tipo; const si = c.checked;
+      const r = await sb.rpc('poner_regla_auto', { tipo_aviso: tipo, encendida: si });
+      if (r.error) { c.checked = !si; const id = c.closest('.cc-solucion')?.dataset.id; if (id) decirSol(id, `No se ha cambiado (${r.error.message}).`); return; }
+      reglasAuto = (r.data && typeof r.data === 'object') ? r.data : { ...reglasAuto, [tipo]: si };
+      pintar();
+    }));
   }
 
   function pintarAlertas() {
@@ -473,6 +561,7 @@
     const volver = document.getElementById('cc-volver');
     if (volver) volver.addEventListener('click', () => { personaAbierta = null; pintar(); });
     activarVer(cuerpo);
+    activarSoluciones();
     activarPersonas();
     if (!personaAbierta && vista === 'alertas') activarAlertas();
     const imprimir = document.getElementById('cc-imprimir');
