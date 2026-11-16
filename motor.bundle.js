@@ -60,6 +60,7 @@ var Motor = (() => {
     LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
     MARGEN_KCAL_CAMBIO: () => MARGEN_KCAL_CAMBIO,
     MAX_BAJADA_COMIDA: () => MAX_BAJADA_COMIDA,
+    MAX_COMIDAS_FUERA_SEMANA: () => MAX_COMIDAS_FUERA_SEMANA,
     MAX_DUELOS: () => MAX_DUELOS,
     MAX_INSTANTANEA: () => MAX_INSTANTANEA,
     MAX_KG_PERDIDOS_CREIBLE: () => MAX_KG_PERDIDOS_CREIBLE,
@@ -84,6 +85,7 @@ var Motor = (() => {
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
     PARTE_MINIMA_HIDRATOS_CARGA: () => PARTE_MINIMA_HIDRATOS_CARGA,
+    PASO_KCAL: () => PASO_KCAL,
     PASO_SUPERAVIT: () => PASO_SUPERAVIT,
     PORCION_COMESTIBLE_CSV: () => PORCION_COMESTIBLE_CSV,
     PRECIOS_CSV: () => PRECIOS_CSV,
@@ -114,6 +116,7 @@ var Motor = (() => {
     TIPOS_ALERTA: () => TIPOS_ALERTA,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TIPOS_OPOSICION: () => TIPOS_OPOSICION,
+    TIPOS_SOLUCIONABLES: () => TIPOS_SOLUCIONABLES,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
     TOMA_AYUNAS: () => TOMA_AYUNAS,
     UMBRALES_FRENO: () => UMBRALES_FRENO,
@@ -302,6 +305,7 @@ var Motor = (() => {
     isotonicaPorToma: () => isotonicaPorToma,
     itemDesdeGramos: () => itemDesdeGramos,
     kcalConRacion: () => kcalConRacion,
+    kcalDeAjustes: () => kcalDeAjustes,
     leerEvitados: () => leerEvitados,
     limiteFibraG: () => limiteFibraG,
     limitesIngredientesDesdeCsv: () => limitesIngredientesDesdeCsv,
@@ -316,6 +320,7 @@ var Motor = (() => {
     lunesDelInicio: () => lunesDelInicio,
     macrosConRacion: () => macrosConRacion,
     marcarYaEnCasa: () => marcarYaEnCasa,
+    margenHastaMantenimiento: () => margenHastaMantenimiento,
     medallasDia: () => medallasDia,
     medallasNuevas: () => medallasNuevas,
     medidaCasera: () => medidaCasera,
@@ -387,6 +392,9 @@ var Motor = (() => {
     siguienteDuelo: () => siguienteDuelo,
     sinCarga: () => sinCarga,
     sinFilaDeGluten: () => sinFilaDeGluten,
+    solucionComidasFuera: () => solucionComidasFuera,
+    solucionHambre: () => solucionHambre,
+    solucionProteina: () => solucionProteina,
     sugerenciaProteinaDia: () => sugerenciaProteinaDia,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
     textoCita: () => textoCita,
@@ -842,9 +850,9 @@ var Motor = (() => {
       firma
     };
   }
-  function anadirAlerta(lista, nueva) {
+  function anadirAlerta(lista2, nueva) {
     const dia2 = nueva.fecha.slice(0, 10);
-    const resto = lista.filter((a2) => !(a2.firma === nueva.firma && a2.fecha.slice(0, 10) === dia2));
+    const resto = lista2.filter((a2) => !(a2.firma === nueva.firma && a2.fecha.slice(0, 10) === dia2));
     return [nueva, ...resto].slice(0, 30);
   }
 
@@ -1405,8 +1413,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   function buscarIngrediente(ingredientes, palabras) {
     for (const ing of ingredientes) {
       const n = raizAlimento(ing.nombre);
-      const lista = esAlternativaVegetal(ing.nombre) ? palabras.filter((p) => !LACTEOS.includes(p)) : palabras;
-      if (lista.some((p) => contienePalabras(n, raizAlimento(p)))) return ing.nombre;
+      const lista2 = esAlternativaVegetal(ing.nombre) ? palabras.filter((p) => !LACTEOS.includes(p)) : palabras;
+      if (lista2.some((p) => contienePalabras(n, raizAlimento(p)))) return ing.nombre;
     }
     return void 0;
   }
@@ -1540,20 +1548,20 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   function buscarAlternativas(alternativas, consulta) {
     const terminos = normalizarBusqueda(consulta);
     if (!terminos.length) return { lista: alternativas, sinResultados: false };
-    const lista = alternativas.filter((a2) => {
+    const lista2 = alternativas.filter((a2) => {
       const palabras = [a2.receta.nombre, ...a2.receta.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
       return terminos.every((t2) => palabras.some((p) => p.startsWith(t2) || t2 in SINONIMOS_BUSQUEDA && p.startsWith(SINONIMOS_BUSQUEDA[t2])));
     });
-    return lista.length ? { lista, sinResultados: false } : { lista: alternativas, sinResultados: true };
+    return lista2.length ? { lista: lista2, sinResultados: false } : { lista: alternativas, sinResultados: true };
   }
   function filtrarCatalogo(recetas, f2) {
-    let lista = buscarRecetas(recetas, f2.consulta ?? "");
-    if (f2.franja) lista = lista.filter((r) => r.franjas.includes(f2.franja));
+    let lista2 = buscarRecetas(recetas, f2.consulta ?? "");
+    if (f2.franja) lista2 = lista2.filter((r) => r.franjas.includes(f2.franja));
     if (f2.soloFavoritas) {
       const fav = new Set(f2.favoritas ?? []);
-      lista = lista.filter((r) => fav.has(r.id));
+      lista2 = lista2.filter((r) => fav.has(r.id));
     }
-    return lista;
+    return lista2;
   }
   function favoritasValidas(valor, recetas) {
     if (!Array.isArray(valor)) return [];
@@ -2310,7 +2318,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {}, ...cenaTrasEntreno ? { cenaTrasEntreno } : {}, ...tomaSugerida ? { tomaSugerida } : {} };
   }
   function agruparAvisosPorDia(avisos) {
-    const NOMBRE2 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
+    const NOMBRE3 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
     const grupos = /* @__PURE__ */ new Map();
     const sueltos = [];
     const orden = [];
@@ -2330,9 +2338,9 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     return orden.map((k) => {
       if (k.startsWith("\0")) return sueltos[Number(k.slice(1))];
       const dias = grupos.get(k);
-      const n = dias.map((d) => NOMBRE2[d]);
-      const lista = n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
-      return `${lista.charAt(0).toUpperCase()}${lista.slice(1)}: ${k}`;
+      const n = dias.map((d) => NOMBRE3[d]);
+      const lista2 = n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
+      return `${lista2.charAt(0).toUpperCase()}${lista2.slice(1)}: ${k}`;
     });
   }
   var HUECO_MIN_H = 1.5;
@@ -2932,16 +2940,16 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const ingredientesPorReceta = /* @__PURE__ */ new Map();
     for (const cols of lineasDatos(csvIngredientes)) {
       const [recetaId, ingrediente, gramosRaw] = cols;
-      const lista2 = ingredientesPorReceta.get(recetaId) ?? [];
-      lista2.push({ nombre: ingrediente, gramos: Number(gramosRaw) });
-      ingredientesPorReceta.set(recetaId, lista2);
+      const lista3 = ingredientesPorReceta.get(recetaId) ?? [];
+      lista3.push({ nombre: ingrediente, gramos: Number(gramosRaw) });
+      ingredientesPorReceta.set(recetaId, lista3);
       const iRol = colIng("rol");
       if (iRol >= 0 && cols[iRol]) definirRolIngrediente(ingrediente, cols[iRol].trim());
     }
     const cab = parseCsvLine2(csvRecetas.split(/\r?\n/).find((l) => l.trim() !== "") ?? "");
     const col = (n) => cab.indexOf(n);
     const dato = (cols, n) => col(n) >= 0 ? (cols[col(n)] ?? "").trim() : "";
-    const lista = (t2) => t2.split(";").map((x) => x.trim()).filter(Boolean);
+    const lista2 = (t2) => t2.split(";").map((x) => x.trim()).filter(Boolean);
     return lineasDatos(csvRecetas).map((cols) => {
       const [id, nombre, franjasRaw, kcal, proteina, grasa, hidrato, notas] = cols;
       const tipoCol = dato(cols, "tipoPlato");
@@ -2961,11 +2969,11 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         .../fibraAlta/.test(notas ?? "") ? { fibraAlta: true } : {},
         ...["primero", "segundo", "postre"].includes(tipo) ? { tipoPlato: tipo } : {},
         ...uso === "carga" ? { usoDia: "carga" } : {},
-        ...col("alergenos") >= 0 ? { alergenos: lista(dato(cols, "alergenos")) } : {},
+        ...col("alergenos") >= 0 ? { alergenos: lista2(dato(cols, "alergenos")) } : {},
         ...col("apto_vegano") >= 0 ? { aptitudes: apt } : {},
         ...dato(cols, "bajo_fibra") ? { bajoFibra: dato(cols, "bajo_fibra") === "si" } : {},
         ...dato(cols, "proteina_principal") ? { proteinaPrincipal: dato(cols, "proteina_principal") } : {},
-        ...dato(cols, "base_hidrato") ? { baseHidrato: lista(dato(cols, "base_hidrato")) } : {},
+        ...dato(cols, "base_hidrato") ? { baseHidrato: lista2(dato(cols, "base_hidrato")) } : {},
         ...dato(cols, "preparacion") ? { preparacion: dato(cols, "preparacion") } : {},
         ...dato(cols, "fibra_g") ? { fibraG: Number(dato(cols, "fibra_g")) } : {},
         ingredientes: ingredientesPorReceta.get(id) ?? []
@@ -4019,8 +4027,8 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         return n;
       };
       const semanaVaria = (r) => !variedadCC || violacionesE2(r) === 0;
-      const intentarBase = (lista, filtrar) => {
-        const candidatas = filtrar ? lista.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista;
+      const intentarBase = (lista2, filtrar) => {
+        const candidatas = filtrar ? lista2.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista2;
         if (!candidatas.length) {
           return { motivo: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y ninguna receta del cat\xE1logo lo cumple` : slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
         }
@@ -4055,13 +4063,13 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         return { elegido: mejor };
       };
       const intentar = (listaTodas, filtrar) => {
-        const lista = listaTodas.filter((r) => delDia(r) && variado(r) && semanaVaria(r) && desayunoVale(r));
-        if (!lista.length) return { motivo: "todas las opciones repiten el plato o la prote\xEDna de la otra comida del d\xEDa" };
+        const lista2 = listaTodas.filter((r) => delDia(r) && variado(r) && semanaVaria(r) && desayunoVale(r));
+        if (!lista2.length) return { motivo: "todas las opciones repiten el plato o la prote\xEDna de la otra comida del d\xEDa" };
         if (evitarIds.size) {
-          const nuevas = intentarBase(lista.filter((r) => !idsDe(r).some((id) => evitarIds.has(id))), filtrar);
+          const nuevas = intentarBase(lista2.filter((r) => !idsDe(r).some((id) => evitarIds.has(id))), filtrar);
           if (nuevas.elegido && alcanza(nuevas.elegido)) return nuevas;
         }
-        return intentarBase(lista, filtrar);
+        return intentarBase(lista2, filtrar);
       };
       const alcanza = (e) => !!e && e.desviacion <= slot.kcalObjetivo * 0.1;
       const faltaProteina = (r, factor) => slot.proteinaObjetivoG === void 0 ? 0 : Math.max(0, slot.proteinaObjetivoG - proteinaServida(r, factor));
@@ -4454,8 +4462,8 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       comprar: redondearCompra(ingrediente, Math.round(gramosTotales * 100) / 100)
     })).sort((a2, b) => a2.seccion.localeCompare(b.seccion) || a2.ingrediente.localeCompare(b.ingrediente));
   }
-  function marcarYaEnCasa(lista, marcados) {
-    return lista.map((item) => ({ ...item, yaEnCasa: marcados.has(item.ingrediente) }));
+  function marcarYaEnCasa(lista2, marcados) {
+    return lista2.map((item) => ({ ...item, yaEnCasa: marcados.has(item.ingrediente) }));
   }
   var NOMBRE_DIA = {
     L: "lunes",
@@ -4525,10 +4533,10 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     }
     return lineas.join("\n");
   }
-  function evaluarMarcas(lista, marcas) {
+  function evaluarMarcas(lista2, marcas) {
     const cubiertos = /* @__PURE__ */ new Set();
     const aRevisar = [];
-    for (const item of lista) {
+    for (const item of lista2) {
       if (!(item.ingrediente in marcas)) continue;
       const marcado = marcas[item.ingrediente];
       if (marcado === null || Math.abs(marcado - item.gramosTotales) < 0.05) cubiertos.add(item.ingrediente);
@@ -4540,12 +4548,12 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const marcas = {};
     const manuales = [];
     if (!valor || typeof valor !== "object") return { marcas, manuales };
-    const { marcados, manuales: lista } = valor;
+    const { marcados, manuales: lista2 } = valor;
     for (const m of Array.isArray(marcados) ? marcados : []) {
       if (typeof m === "string") marcas[m] = null;
       else if (Array.isArray(m) && typeof m[0] === "string") marcas[m[0]] = typeof m[1] === "number" && Number.isFinite(m[1]) ? m[1] : null;
     }
-    for (const a2 of Array.isArray(lista) ? lista : []) {
+    for (const a2 of Array.isArray(lista2) ? lista2 : []) {
       if (!a2 || typeof a2 !== "object") continue;
       const { id, nombre, cantidad, unidad, yaEnCasa } = a2;
       if (typeof id !== "string" || typeof nombre !== "string") continue;
@@ -4698,12 +4706,12 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
   function redondear2(n) {
     return Math.round(n * 100) / 100;
   }
-  function estimarCoste(lista, precios, fracciones = FRACCIONES2) {
+  function estimarCoste(lista2, precios, fracciones = FRACCIONES2) {
     const porNombre = new Map(precios.map((p) => [normalizar6(p.ingrediente), p]));
     let total = 0;
     const porSeccion = {};
     const sinPrecio = [];
-    for (const item of lista) {
+    for (const item of lista2) {
       const precio = porNombre.get(clavePrecio(item.ingrediente));
       if (!precio) {
         sinPrecio.push(item.ingrediente);
@@ -5600,30 +5608,30 @@ R484,crudo,bocadillo_tostada,frio,no
     if (hora && !esHoraValida(hora)) return { ok: false, error: "La hora debe tener el formato HH:MM (o d\xE9jala vac\xEDa)." };
     return { ok: true, datos: { nombre, ...comunes, ...hora ? { hora } : {} } };
   }
-  function siguienteId(lista) {
-    const max = lista.reduce((m, c2) => Math.max(m, Number(c2.id.replace(/^c/, "")) || 0), 0);
+  function siguienteId(lista2) {
+    const max = lista2.reduce((m, c2) => Math.max(m, Number(c2.id.replace(/^c/, "")) || 0), 0);
     return `c${max + 1}`;
   }
-  function anadirCompeticion(lista, datos) {
+  function anadirCompeticion(lista2, datos) {
     const v = validarCompeticion(datos);
     if (!v.ok) return v;
-    return { ok: true, lista: ordenarCompeticiones([...lista, { id: siguienteId(lista), ...v.datos }]) };
+    return { ok: true, lista: ordenarCompeticiones([...lista2, { id: siguienteId(lista2), ...v.datos }]) };
   }
-  function editarCompeticion(lista, id, datos) {
-    if (!lista.some((c2) => c2.id === id)) return { ok: false, error: "Esa competici\xF3n ya no existe." };
+  function editarCompeticion(lista2, id, datos) {
+    if (!lista2.some((c2) => c2.id === id)) return { ok: false, error: "Esa competici\xF3n ya no existe." };
     const v = validarCompeticion(datos);
     if (!v.ok) return v;
-    return { ok: true, lista: ordenarCompeticiones(lista.map((c2) => c2.id === id ? { id, ...v.datos } : c2)) };
+    return { ok: true, lista: ordenarCompeticiones(lista2.map((c2) => c2.id === id ? { id, ...v.datos } : c2)) };
   }
-  function borrarCompeticion(lista, id) {
-    return lista.filter((c2) => c2.id !== id);
+  function borrarCompeticion(lista2, id) {
+    return lista2.filter((c2) => c2.id !== id);
   }
-  function ordenarCompeticiones(lista) {
-    return [...lista].sort((a2, b) => a2.fecha.localeCompare(b.fecha) || (a2.hora ?? "").localeCompare(b.hora ?? "") || a2.nombre.localeCompare(b.nombre));
+  function ordenarCompeticiones(lista2) {
+    return [...lista2].sort((a2, b) => a2.fecha.localeCompare(b.fecha) || (a2.hora ?? "").localeCompare(b.hora ?? "") || a2.nombre.localeCompare(b.nombre));
   }
-  function competicionesDelDia(lista, inicio, dia2) {
+  function competicionesDelDia(lista2, inicio, dia2) {
     const fecha = fechaDelDia(inicio, dia2);
-    return ordenarCompeticiones(lista.filter((c2) => c2.fecha === fecha || c2.fechaFin !== void 0 && c2.fecha < fecha && fecha <= c2.fechaFin));
+    return ordenarCompeticiones(lista2.filter((c2) => c2.fecha === fecha || c2.fechaFin !== void 0 && c2.fecha < fecha && fecha <= c2.fechaFin));
   }
   function competicionesDesdeJson(valor) {
     if (!Array.isArray(valor)) return [];
@@ -6544,12 +6552,12 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     }
     return Array.from(m, ([ingrediente, gramos]) => ({ ingrediente, gramos: Math.round(gramos * 100) / 100 }));
   }
-  function descontarSobras(lista, sobras) {
+  function descontarSobras(lista2, sobras) {
     const por = new Map(normalizarSobras(sobras).map((s) => [s.ingrediente, s.gramos]));
-    const nombres = new Set(lista.map((i) => i.ingrediente));
+    const nombres = new Set(lista2.map((i) => i.ingrediente));
     const cubiertos = [];
     const resultado = [];
-    for (const item of lista) {
+    for (const item of lista2) {
       const tengo = por.get(item.ingrediente);
       if (!tengo) {
         resultado.push(item);
@@ -8046,15 +8054,15 @@ r43,aceite de oliva,10`;
   function alertaHambre(valoraciones, hoy, fechaISO, existentes = []) {
     const lunes = lunesDeLaSemana(hoy);
     const firma = `H|${lunes}`;
-    const lista = hambresDeLaSemana(valoraciones, hoy);
-    if (lista.length < VECES_HAMBRE_ALERTA || existentes.some((a2) => a2.firma === firma)) return void 0;
-    const cuales = lista.map((v) => `${NOMBRE_FRANJA2[v.franja] ?? v.franja} del ${v.fecha.slice(8, 10)}/${v.fecha.slice(5, 7)}`).join(", ");
+    const lista2 = hambresDeLaSemana(valoraciones, hoy);
+    if (lista2.length < VECES_HAMBRE_ALERTA || existentes.some((a2) => a2.firma === firma)) return void 0;
+    const cuales = lista2.map((v) => `${NOMBRE_FRANJA2[v.franja] ?? v.franja} del ${v.fecha.slice(8, 10)}/${v.fecha.slice(5, 7)}`).join(", ");
     return {
       fecha: fechaISO,
       prioritaria: false,
       tipo: "hambre",
       hambre: true,
-      disparadores: [{ pregunta: 0, etiqueta: "hambre", se\u00F1al: `\xABMe he quedado con hambre\xBB ${lista.length} veces esta semana (desde el lunes ${lunes.slice(8, 10)}/${lunes.slice(5, 7)}): ${cuales}. La app sube el volumen de esas comidas, no las calor\xEDas.` }],
+      disparadores: [{ pregunta: 0, etiqueta: "hambre", se\u00F1al: `\xABMe he quedado con hambre\xBB ${lista2.length} veces esta semana (desde el lunes ${lunes.slice(8, 10)}/${lunes.slice(5, 7)}): ${cuales}. La app sube el volumen de esas comidas, no las calor\xEDas.` }],
       contexto: [],
       sinInterpretar: [],
       firma
@@ -9836,7 +9844,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
       const kcalDia = () => mias().reduce((t2, a2) => t2 + a2.kcalResultante, 0);
       let cambios = 0;
       const hidratoObjetivo = delDia.some((s2) => s2.cargaAlta) ? opciones.hidratoDia?.[dia2] : void 0;
-      const hidratosCon = (lista, extra) => hidratosServidosDia(lista, extra ? recetas.concat(recetasNuevas, extra) : recetas.concat(recetasNuevas), dia2);
+      const hidratosCon = (lista2, extra) => hidratosServidosDia(lista2, extra ? recetas.concat(recetasNuevas, extra) : recetas.concat(recetasNuevas), dia2);
       const protegida = (a2) => Boolean(a2.fijada || a2.pedidoPorUsuario || opciones.noMover?.(dia2, a2.franja));
       const subir = (a2, minimoG = 0) => {
         if (protegida(a2)) return false;
@@ -9949,6 +9957,111 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
     if (!r) return `Hoy te faltan unos ${faltaTexto} g de prote\xEDna: si puedes, a\xF1ade un tentempi\xE9 con prote\xEDna.`;
     const nombre = r.nombre.charAt(0).toLowerCase() + r.nombre.slice(1);
     return `Hoy te faltan unos ${faltaTexto} g de prote\xEDna: a\xF1ade, por ejemplo, ${nombre} (${Math.round(r.proteina)} g de prote\xEDna, ${Math.round(r.kcal)} kcal).`;
+  }
+
+  // src/motor/solucion-avisos.ts
+  var TIPOS_SOLUCIONABLES = { hambre: "Hambre repetida", proteina: "Prote\xEDna corta", comidas_fuera: "Muchas comidas fuera" };
+  var PASO_KCAL = 100;
+  var PASO_MINIMO_KCAL = 50;
+  var MAX_COMIDAS_FUERA_SEMANA = 3;
+  var NIVEL_VOLUMEN_MAX = 2;
+  var NOMBRE2 = { desayuno: "el desayuno", media_manana: "la media ma\xF1ana", comida: "la comida", merienda: "la merienda", cena: "la cena" };
+  var ORDEN_FRANJA = ["desayuno", "media_manana", "comida", "merienda", "cena"];
+  var NOMBRE_DIA2 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
+  var lista = (xs) => xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`;
+  var redondear10 = (n) => Math.floor(n / 10) * 10;
+  function kcalDeAjustes(aplicados) {
+    return aplicados.reduce((t2, a2) => t2 + (a2.tipo === "kcal_franja" || a2.tipo === "deficit" ? a2.kcal : a2.tipo === "tentempie" ? Math.round(a2.kcal * a2.dias.length / 7) : 0), 0);
+  }
+  function margenHastaMantenimiento(ajusteKcal, aplicados = []) {
+    return Math.max(0, -ajusteKcal - kcalDeAjustes(aplicados));
+  }
+  function solucionHambre(e) {
+    if (!e.hambres.length) return null;
+    const aplicados = e.aplicados ?? [];
+    const cuenta = /* @__PURE__ */ new Map();
+    for (const h of e.hambres) cuenta.set(h.franja, (cuenta.get(h.franja) ?? 0) + 1);
+    const franjas = ORDEN_FRANJA.filter((f2) => cuenta.has(f2));
+    const principal = [...franjas].sort((a2, b) => cuenta.get(b) - cuenta.get(a2) || ORDEN_FRANJA.indexOf(a2) - ORDEN_FRANJA.indexOf(b))[0];
+    const paso = `Se ha quedado con hambre ${e.hambres.length} ${e.hambres.length === 1 ? "vez" : "veces"} esta semana (${lista(franjas.map((f2) => `${NOMBRE2[f2]}${cuenta.get(f2) > 1 ? ` \xD7${cuenta.get(f2)}` : ""}`))}).`;
+    const grupos = [...new Set(franjas.map(grupoDeFranja))];
+    const subidos = grupos.filter((g) => !e.manual?.[g] && e.niveles[g] > 0);
+    const aMano = grupos.filter((g) => e.manual?.[g]);
+    const enTope = subidos.filter((g) => e.niveles[g] >= NIVEL_VOLUMEN_MAX);
+    const hecho = subidos.length ? `Le he puesto m\xE1s volumen en ${lista(franjas.filter((f2) => subidos.includes(grupoDeFranja(f2))).map((f2) => NOMBRE2[f2]))}, con las mismas kcal${enTope.length ? " (ya es lo m\xE1ximo con sus kcal)" : ""}.` : aMano.length ? "No he cambiado el volumen: lo tiene puesto a mano en Perfil." : "No he podido darle m\xE1s volumen con sus kcal.";
+    const margen = margenHastaMantenimiento(e.ajusteKcal, aplicados);
+    const gPrincipal = grupoDeFranja(principal);
+    if (e.manual?.[gPrincipal] && e.niveles[gPrincipal] < NIVEL_VOLUMEN_MAX) {
+      return { tipo: "hambre", paso, hecho, propuesta: `Propongo un paso m\xE1s de volumen en ${NOMBRE2[principal]}, con las mismas kcal.`, accion: { tipo: "volumen", franja: principal, nivel: 1 }, kcalExtra: 0, auto: true };
+    }
+    const yaEnFranja = aplicados.some((a2) => a2.tipo === "kcal_franja" && a2.franja === principal);
+    if (!yaEnFranja) {
+      const kcal = margen >= PASO_KCAL ? PASO_KCAL : margen >= PASO_MINIMO_KCAL ? redondear10(margen) : PASO_KCAL;
+      const pasa = kcal > margen;
+      return {
+        tipo: "hambre",
+        paso,
+        hecho,
+        propuesta: `Si sigue la semana que viene, propongo +${kcal} kcal al d\xEDa en ${NOMBRE2[principal]}, con prote\xEDna y fibra.${pasa ? " Come ya a mantenimiento: esto le pondr\xEDa por encima, as\xED que solo se hace si t\xFA lo apruebas." : ""}`,
+        accion: { tipo: "kcal_franja", franja: principal, kcal },
+        kcalExtra: kcal,
+        auto: !pasa
+      };
+    }
+    if (margen >= PASO_MINIMO_KCAL) {
+      const kcal = Math.min(PASO_KCAL, redondear10(margen));
+      return {
+        tipo: "hambre",
+        paso,
+        hecho: `${hecho} Ya lleva +kcal en ${NOMBRE2[principal]}.`,
+        propuesta: `Propongo bajar el d\xE9ficit ${kcal} kcal al d\xEDa${kcal >= margen ? " (con eso queda en mantenimiento)" : ""}.`,
+        accion: { tipo: "deficit", kcal },
+        kcalExtra: kcal,
+        auto: true
+      };
+    }
+    return { tipo: "hambre", paso, hecho: `${hecho} Ya lleva +kcal en ${NOMBRE2[principal]} y come a mantenimiento.`, propuesta: "No subo m\xE1s sin ti: si sigue, conviene hablarlo con la persona.", accion: null, kcalExtra: 0, auto: false };
+  }
+  function solucionProteina(e) {
+    const cortos = e.dias.filter((d) => d.corta);
+    if (!cortos.length) return null;
+    const media = (k) => Math.round(cortos.reduce((t2, d) => t2 + d[k], 0) / cortos.length);
+    const paso = `La prote\xEDna se ha quedado corta ${cortos.length} ${cortos.length === 1 ? "d\xEDa" : "d\xEDas"} (${lista(cortos.map((d) => NOMBRE_DIA2[d.dia]))}): unos ${media("servidaG")} g de ${media("objetivoG")} g.`;
+    const cambios = e.dias.reduce((t2, d) => t2 + (d.cambios || 0), 0);
+    const hecho = cambios ? `He cambiado ${cambios} ${cambios === 1 ? "plato" : "platos"} por otros con m\xE1s prote\xEDna, con las mismas kcal y cantidades normales.` : "No he encontrado platos con m\xE1s prote\xEDna que encajen con sus kcal y cantidades normales.";
+    const r = e.receta;
+    if (!r) return { tipo: "proteina", paso, hecho, propuesta: "No hay un tentempi\xE9 con prote\xEDna compatible con lo que come: conviene revisarlo con la persona.", accion: null, kcalExtra: 0, auto: false };
+    const franja = r.franjas.includes("merienda") ? "merienda" : "media_manana";
+    const dias = cortos.map((d) => d.dia);
+    const kcal = Math.round(r.kcal);
+    const accion = { tipo: "tentempie", receta: r.id, franja, dias, kcal, proteinaG: Math.round(r.proteina) };
+    const kcalExtra = kcalDeAjustes([accion]);
+    const pasa = kcalExtra > margenHastaMantenimiento(e.ajusteKcal, e.aplicados ?? []);
+    const nombre = r.nombre.charAt(0).toLowerCase() + r.nombre.slice(1);
+    return {
+      tipo: "proteina",
+      paso,
+      hecho,
+      propuesta: `Propongo a\xF1adir ${nombre} (${Math.round(r.proteina)} g de prote\xEDna, ${kcal} kcal) en ${NOMBRE2[franja]} ${dias.length === 7 ? "todos los d\xEDas" : `del ${lista(dias.map((d) => NOMBRE_DIA2[d]))}`}.${pasa ? " Le pondr\xEDa por encima de mantenimiento: solo si t\xFA lo apruebas." : ""}`,
+      accion,
+      kcalExtra,
+      auto: !pasa
+    };
+  }
+  function solucionComidasFuera(fuera) {
+    if (fuera.length <= MAX_COMIDAS_FUERA_SEMANA) return null;
+    const orden = [...fuera].sort((a2, b) => Object.keys(NOMBRE_DIA2).indexOf(a2.dia) - Object.keys(NOMBRE_DIA2).indexOf(b.dia) || ORDEN_FRANJA.indexOf(a2.franja) - ORDEN_FRANJA.indexOf(b.franja));
+    const dias = [...new Set(orden.map((c2) => c2.dia))];
+    const texto = orden.map((c2) => `${NOMBRE2[c2.franja].replace(/^(el|la) /, "")} del ${NOMBRE_DIA2[c2.dia]}`);
+    return {
+      tipo: "comidas_fuera",
+      paso: `Ha comido fuera ${fuera.length} veces esta semana (${lista(texto)}).`,
+      hecho: `Cada vez he cuadrado el resto de ese d\xEDa con lo que comi\xF3 fuera (${dias.length} ${dias.length === 1 ? "d\xEDa" : "d\xEDas"}).`,
+      propuesta: "Propongo dejar esas comidas fuera fijas en su plan, para que el resto de esos d\xEDas ya venga cuadrado sin que tenga que apuntarlas.",
+      accion: { tipo: "plan_fuera", comidas: orden.map((c2) => ({ dia: c2.dia, franja: c2.franja, kcal: Math.round(c2.kcal) })) },
+      kcalExtra: 0,
+      auto: true
+    };
   }
 
   // src/motor/nube-datos.ts
@@ -10345,9 +10458,9 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   function textoNotificacion(a2, contacto) {
     return { titulo: `Nueva alerta${a2.prioritaria ? " \xB7 prioritaria" : ""}`, cuerpo: contacto && contacto.trim() ? contacto.trim() : "Persona sin correo guardado" };
   }
-  function mezclarAlerta(lista, nueva) {
-    if (lista.some((a2) => a2.id === nueva.id)) return { lista, esNueva: false };
-    return { lista: [nueva, ...lista].sort((a2, b) => String(b.creada ?? "").localeCompare(String(a2.creada ?? ""))), esNueva: true };
+  function mezclarAlerta(lista2, nueva) {
+    if (lista2.some((a2) => a2.id === nueva.id)) return { lista: lista2, esNueva: false };
+    return { lista: [nueva, ...lista2].sort((a2, b) => String(b.creada ?? "").localeCompare(String(a2.creada ?? ""))), esNueva: true };
   }
   function alertasNuevas(conocidas, recibidas) {
     const ya = new Set(conocidas.map((a2) => a2.id));
@@ -10376,8 +10489,8 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   }
   function motivosAlerta(a2) {
     const disp = datosDe(a2).disparadores;
-    const lista = Array.isArray(disp) ? disp : [];
-    const m = lista.map((x) => {
+    const lista2 = Array.isArray(disp) ? disp : [];
+    const m = lista2.map((x) => {
       const se\u00F1al = typeof x.se\u00F1al === "string" && x.se\u00F1al.trim() ? x.se\u00F1al.trim() : x.etiqueta || "Sin detalle";
       return typeof x.pregunta === "number" && x.pregunta > 0 ? `${se\u00F1al} (pregunta ${x.pregunta}: ${x.etiqueta ?? ""})` : se\u00F1al;
     });
@@ -10632,10 +10745,13 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     const p = pruebas[i];
     const diasHasta = p.fecha ? Math.round((utc(p.fecha) - utc(hoy)) / MS_DIA4) : void 0;
     const base = { siguiente: p.clase, ...diasHasta !== void 0 ? { diasHasta } : {} };
-    if (diasHasta === 0) return { fase: p.clase === "fisicas" ? "dia_fisicas" : "dia_examen", ...base, sinRecorte: p.clase === "fisicas" };
+    const fis = pruebas.find((x) => x.clase === "fisicas" && x.fecha);
+    const diasFisicas = fis ? Math.round((utc(fis.fecha) - utc(hoy)) / MS_DIA4) : void 0;
+    const sinRecorte = diasFisicas !== void 0 && diasFisicas >= 0 && diasFisicas <= DIAS_SIN_RECORTE_FISICAS;
+    if (diasHasta === 0) return { fase: p.clase === "fisicas" ? "dia_fisicas" : "dia_examen", ...base, sinRecorte };
     if (p.clase === "fisicas" && diasHasta !== void 0 && diasHasta <= DIAS_SIN_RECORTE_FISICAS) return { fase: "final_fisicas", ...base, sinRecorte: true };
-    if (p.clase === "escrito" && (i > 0 || op.tipo === "escrito")) return { fase: "estudio", ...base, sinRecorte: false };
-    return { fase: "preparacion", ...base, sinRecorte: false };
+    if (p.clase === "escrito" && (i > 0 || op.tipo === "escrito")) return { fase: "estudio", ...base, sinRecorte };
+    return { fase: "preparacion", ...base, sinRecorte };
   }
   function objetivoSegunFase(objetivo, estado) {
     if (estado.sinRecorte && (objetivo === "perder_grasa" || objetivo === "recomposicion")) return { objetivo: "mantener", cambiado: true };
@@ -10667,6 +10783,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
         frases.push("Tus pruebas ya han pasado. Cuando tengas fechas nuevas, ap\xFAntalas.");
         break;
     }
+    if (estado.sinRecorte && fase !== "final_fisicas" && fase !== "dia_fisicas") frases.push("Son las 3 \xFAltimas semanas antes de las f\xEDsicas: no se recortan kcal, para que llegues fuerte.");
     if (objetivoCambiado) frases.push("Por eso estos d\xEDas el plan es para mantener tu peso; perder grasa se retoma despu\xE9s de las pruebas.");
     return frases;
   }
@@ -10982,13 +11099,13 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (!bajar && !subir) return { semanas, bajar: false, subir: false, superavitNuevo: superavitPct };
     const superavitNuevo = Math.round((superavitPct + (subir ? PASO_SUPERAVIT : -PASO_SUPERAVIT)) * 10) / 10;
     const f2 = (x) => String(x).replace(".", ",");
-    const lista = semanas.map((r) => `${f2(r)} %`).join(", ");
+    const lista2 = semanas.map((r) => `${f2(r)} %`).join(", ");
     return {
       semanas,
       bajar,
       subir,
       superavitNuevo,
-      texto: bajar ? `Subes m\xE1s de un ${f2(RITMO_SUBIDA_MAX_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista}): a ese ritmo se gana sobre todo grasa. El extra de calor\xEDas baja del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.` : `Subes menos de un ${f2(RITMO_SUBIDA_MIN_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista}): as\xED cuesta ganar m\xFAsculo. El extra de calor\xEDas sube del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.`
+      texto: bajar ? `Subes m\xE1s de un ${f2(RITMO_SUBIDA_MAX_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista2}): a ese ritmo se gana sobre todo grasa. El extra de calor\xEDas baja del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.` : `Subes menos de un ${f2(RITMO_SUBIDA_MIN_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista2}): as\xED cuesta ganar m\xFAsculo. El extra de calor\xEDas sube del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.`
     };
   }
 
