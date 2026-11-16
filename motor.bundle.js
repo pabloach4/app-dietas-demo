@@ -7722,6 +7722,9 @@ r43,aceite de oliva,10`;
     const m = (Math.round(min) % 1440 + 1440) % 1440;
     return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
   };
+  var ARRANQUE_G_KG = [0.3, 0.5];
+  var ARRANQUE_MIN_ANTES = 20;
+  var ARRANQUE_DURACION_MIN = [45, 150];
   var GRAMOS_GEL = 25;
   var redondear3 = (x) => Math.round(x);
   var redondear1 = (x) => Math.round(x * 10) / 10;
@@ -7799,6 +7802,21 @@ r43,aceite de oliva,10`;
         hidratoG: [redondear3(peso * 1), redondear3(peso * 4)]
       });
     }
+    let arranque;
+    const primera = pruebas[0];
+    if (primera.duracionMin >= ARRANQUE_DURACION_MIN[0] && primera.duracionMin <= ARRANQUE_DURACION_MIN[1]) {
+      const g = [redondear3(peso * ARRANQUE_G_KG[0]), redondear3(peso * ARRANQUE_G_KG[1])];
+      const que = c2.usaGeles === "no" ? "300-500 ml de isot\xF3nico o un pl\xE1tano" : "un gel de 25-30 g o 300-500 ml de isot\xF3nico";
+      linea.push({
+        minuto: salida - ARRANQUE_MIN_ANTES,
+        tipo: "arranque",
+        titulo: "Toma de arranque (15-30 min antes de salir)",
+        detalle: `Hidratos r\xE1pidos: ${que}, solo si lo has probado en entrenos. Cuenta dentro del total del d\xEDa.`,
+        hidratoG: g
+      });
+      const medio2 = redondear3((g[0] + g[1]) / 2);
+      arranque = { hidratoG: medio2, kcal: 4 * medio2 };
+    }
     const combustible = pruebas.map((p, i) => combustibleDe(c2, i + 1, p, peso, !!opciones.calor));
     pruebas.forEach((p, i) => {
       const f2 = combustible[i];
@@ -7827,7 +7845,7 @@ r43,aceite de oliva,10`;
       detalle: (opciones.compiteAlDiaSiguiente ? "Compites ma\xF1ana: hidratos en las 4 primeras horas (1,0\u20131,2 g/kg cada hora, repartidos en comidas y tomas) y la primera comida principal como recuperaci\xF3n." : "La primera comida principal es la de recuperaci\xF3n: con hidratos y prote\xEDna de verdad (cantidades a la derecha).") + " Bebe con la comida y despu\xE9s. Si te pesas antes y despu\xE9s de la prueba, abajo te decimos cu\xE1nto l\xEDquido (poco a poco y con sodio); sin pesaje no se da cifra."
     });
     linea.sort((a2, b) => a2.minuto - b.minuto);
-    return { fecha, nombre: c2.nombre, pruebas, linea, combustible, avisos, nota: NOTA_PAUTA };
+    return { fecha, nombre: c2.nombre, pruebas, linea, combustible, avisos, nota: NOTA_PAUTA, ...arranque ? { arranque } : {} };
   }
   var FRACCION_LIGERA_MADRUGADA = 0.3;
   function reorganizarDia(habitual, salida, fin) {
