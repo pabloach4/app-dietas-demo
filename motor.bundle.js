@@ -33,10 +33,12 @@ var Motor = (() => {
     CONSEJOS_DERIVADO: () => CONSEJOS_DERIVADO,
     CONSERVACION_CSV: () => CONSERVACION_CSV,
     CORREO_PABLO: () => CORREO_PABLO,
+    CUERPOS_OPOSICION: () => CUERPOS_OPOSICION,
     DEPORTES_PRINCIPALES: () => DEPORTES_PRINCIPALES,
     DIAS: () => DIAS,
     DIAS_AVISO_FIN: () => DIAS_AVISO_FIN,
     DIAS_CITA: () => DIAS_CITA,
+    DIAS_SIN_RECORTE_FISICAS: () => DIAS_SIN_RECORTE_FISICAS,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
     EDAD_MINIMA_CAFEINA: () => EDAD_MINIMA_CAFEINA,
     EDAD_MINIMA_CREATINA: () => EDAD_MINIMA_CREATINA,
@@ -75,6 +77,7 @@ var Motor = (() => {
     MIN_DUELOS: () => MIN_DUELOS,
     MIN_GRASA_PLATO_CARGA: () => MIN_GRASA_PLATO_CARGA,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
+    NOMBRE_TIPO_OPOSICION: () => NOMBRE_TIPO_OPOSICION,
     NOTA_PAUTA: () => NOTA_PAUTA,
     NOTA_PAUTA_ORIENTATIVA: () => NOTA_PAUTA_ORIENTATIVA,
     OPCIONES_GELES: () => OPCIONES_GELES,
@@ -110,6 +113,7 @@ var Motor = (() => {
     TEXTO_RACIONES_CARGA: () => TEXTO_RACIONES_CARGA,
     TIPOS_ALERTA: () => TIPOS_ALERTA,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
+    TIPOS_OPOSICION: () => TIPOS_OPOSICION,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
     TOMA_AYUNAS: () => TOMA_AYUNAS,
     UMBRALES_FRENO: () => UMBRALES_FRENO,
@@ -257,6 +261,7 @@ var Motor = (() => {
     extrasCarga: () => extrasCarga,
     factorCocido: () => factorCocido,
     faltaVisibleCompeticion: () => faltaVisibleCompeticion,
+    faseOposicion: () => faseOposicion,
     favoritasValidas: () => favoritasValidas,
     fechaDelDia: () => fechaDelDia,
     fechaLocalISO: () => fechaLocalISO,
@@ -329,6 +334,8 @@ var Motor = (() => {
     notaHidratosCarga: () => notaHidratosCarga,
     notaTomaCorta: () => notaTomaCorta,
     nubeOfrecida: () => nubeOfrecida,
+    objetivoSegunFase: () => objetivoSegunFase,
+    oposicionDesdeJson: () => oposicionDesdeJson,
     ordenarCompeticiones: () => ordenarCompeticiones,
     parsearParametrosCSV: () => parsearParametrosCSV,
     parsearPrecios: () => parsearPrecios,
@@ -386,6 +393,7 @@ var Motor = (() => {
     textoDiabetes: () => textoDiabetes,
     textoDuranteEntreno: () => textoDuranteEntreno,
     textoExtrasCarga: () => textoExtrasCarga,
+    textoFaseOposicion: () => textoFaseOposicion,
     textoLlegaAPablo: () => textoLlegaAPablo,
     textoNotificacion: () => textoNotificacion,
     textoOtrasAlergias: () => textoOtrasAlergias,
@@ -398,6 +406,7 @@ var Motor = (() => {
     validarCasilla: () => validarCasilla,
     validarCompeticion: () => validarCompeticion,
     validarHorarioDia: () => validarHorarioDia,
+    validarOposicion: () => validarOposicion,
     validarPeticionSiOSi: () => validarPeticionSiOSi,
     validarPlato: () => validarPlato,
     validarPlatoGenerado: () => validarPlatoGenerado,
@@ -10518,6 +10527,9 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     { id: "natacion", nombre: "Nataci\xF3n", tipos: [t("Suave", "natacion_suave"), t("Entreno", "natacion"), t("Fuerza", "fuerza")] },
     { id: "futbol", nombre: "F\xFAtbol", tipos: [t("Entreno", "futbol"), t("Partido", "futbol_partido"), t("Fuerza", "fuerza")] },
     { id: "padel", nombre: "P\xE1del", tipos: [t("Partido", "padel"), t("Fuerza", "fuerza")] },
+    // #331 (Pablo, 16/11): un opositor no tiene un deporte fijo; combina las sesiones que quiera y la app se amolda («habrá algunos que
+    // entrenen haciendo CrossFit y otros que solo vayan al gimnasio y hagan series»). La app no da planes de entreno.
+    { id: "opositor", nombre: "Opositor", tipos: [t("Fuerza / series de gimnasio", "fuerza"), t("CrossFit (WOD)", "crossfit"), t("Carrera: series", "correr_rapido"), t("Carrera: rodaje", "correr"), t("Nataci\xF3n", "natacion"), t("Ensayo de las pruebas f\xEDsicas", "crossfit")] },
     { id: "otro", nombre: "Otro", tipos: [] },
     { id: "ninguno", nombre: "Ninguno en concreto", tipos: [] }
   ];
@@ -10552,6 +10564,111 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       max = n;
     }
     return mejor;
+  }
+
+  // src/motor/oposicion.ts
+  var TIPOS_OPOSICION = ["escrito", "fisicas", "ambas"];
+  var NOMBRE_TIPO_OPOSICION = {
+    escrito: "Solo examen escrito",
+    fisicas: "Solo pruebas f\xEDsicas",
+    ambas: "Examen escrito y pruebas f\xEDsicas"
+  };
+  var CUERPOS_OPOSICION = [
+    { id: "policia_nacional", nombre: "Polic\xEDa Nacional" },
+    { id: "guardia_civil", nombre: "Guardia Civil" },
+    { id: "policia_local", nombre: "Polic\xEDa Local" },
+    { id: "policia_autonomica", nombre: "Polic\xEDa auton\xF3mica (Mossos, Ertzaintza, Polic\xEDa Foral\u2026)" },
+    { id: "bomberos", nombre: "Bomberos" },
+    { id: "fuerzas_armadas", nombre: "Fuerzas Armadas" },
+    { id: "otro", nombre: "Otro" }
+  ];
+  function validarOposicion(d) {
+    const tipo = (d.tipo ?? "").trim();
+    if (!TIPOS_OPOSICION.includes(tipo)) return { ok: false, error: "Elige qu\xE9 pruebas tiene tu oposici\xF3n: solo el escrito, solo las f\xEDsicas o las dos." };
+    const conFisicas = tipo !== "escrito";
+    const conEscrito = tipo !== "fisicas";
+    const fechaFisicas = conFisicas ? (d.fechaFisicas ?? "").trim() : "";
+    const fechaEscrito = conEscrito ? (d.fechaEscrito ?? "").trim() : "";
+    if (fechaFisicas && !esFechaValida(fechaFisicas)) return { ok: false, error: "La fecha de las pruebas f\xEDsicas no es v\xE1lida." };
+    if (fechaEscrito && !esFechaValida(fechaEscrito)) return { ok: false, error: "La fecha del examen escrito no es v\xE1lida." };
+    let orden;
+    if (tipo === "ambas") {
+      const o = (d.orden ?? "").trim();
+      if (o !== "fisicas_antes" && o !== "fisicas_despues") return { ok: false, error: "Elige si las pruebas f\xEDsicas van antes o despu\xE9s del examen escrito." };
+      orden = o;
+      if (fechaFisicas && fechaEscrito) {
+        if (orden === "fisicas_antes" && fechaFisicas > fechaEscrito) return { ok: false, error: "Has dicho que las f\xEDsicas van antes del escrito, pero su fecha es posterior. Revisa las fechas o el orden." };
+        if (orden === "fisicas_despues" && fechaFisicas < fechaEscrito) return { ok: false, error: "Has dicho que las f\xEDsicas van despu\xE9s del escrito, pero su fecha es anterior. Revisa las fechas o el orden." };
+      }
+    }
+    const cuerpo = (d.cuerpo ?? "").trim();
+    if (cuerpo && !CUERPOS_OPOSICION.some((c2) => c2.id === cuerpo)) return { ok: false, error: "Elige tu cuerpo de la lista (o \xABOtro\xBB)." };
+    return {
+      ok: true,
+      oposicion: { tipo, ...orden ? { orden } : {}, ...fechaFisicas ? { fechaFisicas } : {}, ...fechaEscrito ? { fechaEscrito } : {}, ...cuerpo ? { cuerpo } : {} }
+    };
+  }
+  function oposicionDesdeJson(valor) {
+    if (!valor || typeof valor !== "object") return void 0;
+    const x = valor;
+    const texto = (v) => typeof v === "string" ? v : void 0;
+    const r = validarOposicion({ tipo: texto(x.tipo), orden: texto(x.orden), fechaFisicas: texto(x.fechaFisicas), fechaEscrito: texto(x.fechaEscrito), cuerpo: texto(x.cuerpo) });
+    return r.ok ? r.oposicion : void 0;
+  }
+  var DIAS_SIN_RECORTE_FISICAS = 21;
+  var MS_DIA4 = 864e5;
+  var utc = (f2) => Date.UTC(Number(f2.slice(0, 4)), Number(f2.slice(5, 7)) - 1, Number(f2.slice(8, 10)));
+  function pruebasEnOrden(op) {
+    const f2 = { clase: "fisicas", fecha: op.fechaFisicas };
+    const e = { clase: "escrito", fecha: op.fechaEscrito };
+    if (op.tipo === "fisicas") return [f2];
+    if (op.tipo === "escrito") return [e];
+    return op.orden === "fisicas_despues" ? [e, f2] : [f2, e];
+  }
+  function faseOposicion(op, hoy) {
+    const pruebas = pruebasEnOrden(op);
+    const i = pruebas.findIndex((p2) => !p2.fecha || p2.fecha >= hoy);
+    if (i < 0) return { fase: "terminada", sinRecorte: false };
+    const p = pruebas[i];
+    const diasHasta = p.fecha ? Math.round((utc(p.fecha) - utc(hoy)) / MS_DIA4) : void 0;
+    const base = { siguiente: p.clase, ...diasHasta !== void 0 ? { diasHasta } : {} };
+    if (diasHasta === 0) return { fase: p.clase === "fisicas" ? "dia_fisicas" : "dia_examen", ...base, sinRecorte: p.clase === "fisicas" };
+    if (p.clase === "fisicas" && diasHasta !== void 0 && diasHasta <= DIAS_SIN_RECORTE_FISICAS) return { fase: "final_fisicas", ...base, sinRecorte: true };
+    if (p.clase === "escrito" && (i > 0 || op.tipo === "escrito")) return { fase: "estudio", ...base, sinRecorte: false };
+    return { fase: "preparacion", ...base, sinRecorte: false };
+  }
+  function objetivoSegunFase(objetivo, estado) {
+    if (estado.sinRecorte && (objetivo === "perder_grasa" || objetivo === "recomposicion")) return { objetivo: "mantener", cambiado: true };
+    return { objetivo, cambiado: false };
+  }
+  var NOMBRE_PRUEBA = { fisicas: "las pruebas f\xEDsicas", escrito: "el examen escrito" };
+  function textoFaseOposicion(estado, objetivoCambiado = false) {
+    const frases = [];
+    const { fase, siguiente, diasHasta } = estado;
+    if (siguiente && diasHasta !== void 0 && diasHasta > 0) frases.push(`${diasHasta === 1 ? "Falta 1 d\xEDa" : `Faltan ${diasHasta} d\xEDas`} para ${NOMBRE_PRUEBA[siguiente]}.`);
+    else if (siguiente && diasHasta === void 0) frases.push(`Cuando sepas la fecha de ${NOMBRE_PRUEBA[siguiente]}, ap\xFAntala y ver\xE1s la cuenta atr\xE1s.`);
+    switch (fase) {
+      case "preparacion":
+        frases.push("Est\xE1s en la fase de preparaci\xF3n.");
+        break;
+      case "final_fisicas":
+        frases.push("Son las 3 \xFAltimas semanas antes de las f\xEDsicas: no se recortan kcal, para que llegues fuerte.");
+        break;
+      case "dia_fisicas":
+        frases.push("Hoy son las pruebas f\xEDsicas. \xA1Mucha suerte!");
+        break;
+      case "dia_examen":
+        frases.push("Hoy es el examen escrito. \xA1Mucha suerte!");
+        break;
+      case "estudio":
+        frases.push("Modo estudio. Si entrenas menos, ap\xFAntalo en tus sesiones y las kcal bajan solas.");
+        break;
+      case "terminada":
+        frases.push("Tus pruebas ya han pasado. Cuando tengas fechas nuevas, ap\xFAntalas.");
+        break;
+    }
+    if (objetivoCambiado) frases.push("Por eso estos d\xEDas el plan es para mantener tu peso; perder grasa se retoma despu\xE9s de las pruebas.");
+    return frases;
   }
 
   // src/motor/dos-pasos.ts

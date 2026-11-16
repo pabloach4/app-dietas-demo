@@ -1152,6 +1152,15 @@
         <h2>Sesiones de la semana</h2>
         <p class="dp-pregunta"><strong>¿Cuál es tu deporte principal?</strong></p>
         <div id="deporte-principal" class="dp-botones" role="group" aria-label="Deporte principal"></div>
+        <!-- #331 parte 1: perfil «Opositor». Qué pruebas tiene, en qué orden si tiene las dos, sus fechas y su cuerpo. La app sigue sola la fase. -->
+        <div id="oposicion" class="oposicion" hidden style="margin:0.6rem 0 0.8rem">
+          <div class="campo"><label for="op-tipo">¿Qué pruebas tiene tu oposición?</label><select id="op-tipo"></select></div>
+          <div class="campo" id="campo-op-orden" hidden><label for="op-orden">¿Las físicas van antes o después del escrito?</label><select id="op-orden"><option value="">Elige</option><option value="fisicas_antes">Las físicas, antes del escrito</option><option value="fisicas_despues">Las físicas, después del escrito</option></select></div>
+          <div class="campo" id="campo-op-fisicas" hidden><label for="op-fecha-fisicas">Fecha de las pruebas físicas</label><input id="op-fecha-fisicas" type="date"></div>
+          <div class="campo" id="campo-op-escrito" hidden><label for="op-fecha-escrito">Fecha del examen escrito</label><input id="op-fecha-escrito" type="date"></div>
+          <div class="campo"><label for="op-cuerpo">Cuerpo</label><select id="op-cuerpo"></select></div>
+          <small class="ayuda">Si aún no sabes una fecha, déjala en blanco. La app no da planes de entreno: apunta abajo las sesiones que hagas, combinadas como quieras, y se amolda a ellas.</small>
+        </div>
         <div id="sesiones"></div>
         <button type="button" id="add-sesion">+ Añadir sesión</button>
       </div>
@@ -1344,6 +1353,7 @@
       <div id="r-fija" style="margin-bottom:0.6rem"></div>
       <div id="r-competicion" class="subt" style="font-size:0.9rem" aria-live="polite"></div>
       <div id="r-creatina" class="subt" style="font-size:0.9rem" hidden></div>
+      <div id="r-oposicion" class="subt" style="font-size:0.9rem" hidden></div>
       <div id="r-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
       <div class="dias-grid" id="r-dias"></div>
     </div>
@@ -1670,12 +1680,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=2761e35"></script>
-<script src="fuentes.js?v=2761e35"></script>
-<script src="motor.bundle.js?v=2761e35"></script>
-<script src="cuestionario.js?v=2761e35"></script>
-<script src="nube.js?v=2761e35"></script>
-<script src="pwa.js?v=2761e35"></script>
+<script src="novedades.js?v=7c52893"></script>
+<script src="fuentes.js?v=7c52893"></script>
+<script src="motor.bundle.js?v=7c52893"></script>
+<script src="cuestionario.js?v=7c52893"></script>
+<script src="nube.js?v=7c52893"></script>
+<script src="pwa.js?v=7c52893"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

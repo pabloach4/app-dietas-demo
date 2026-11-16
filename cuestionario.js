@@ -464,6 +464,39 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   function marcarDeporte() {
     botonesDeporte.querySelectorAll('.dp-btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.deporte === deporteElegido)));
     document.getElementById('add-sesion').hidden = tiposDelDeporte().length > 0;
+    verOposicion();
+  }
+  // #331 parte 1: perfil «Opositor» (solo con ese deporte principal). Las fechas pueden faltar todavía; sin ellas no hay cuenta atrás.
+  document.getElementById('op-tipo').innerHTML = '<option value="">Elige</option>' + Motor.TIPOS_OPOSICION.map((t) => `<option value="${t}">${escaparHtml(Motor.NOMBRE_TIPO_OPOSICION[t])}</option>`).join('');
+  document.getElementById('op-cuerpo').innerHTML = '<option value="">Elige</option>' + Motor.CUERPOS_OPOSICION.map((c) => `<option value="${c.id}">${escaparHtml(c.nombre)}</option>`).join('');
+  function verOposicion() {
+    document.getElementById('oposicion').hidden = deporteElegido !== 'opositor';
+    const tipo = document.getElementById('op-tipo').value;
+    document.getElementById('campo-op-orden').hidden = tipo !== 'ambas';
+    document.getElementById('campo-op-fisicas').hidden = !tipo || tipo === 'escrito';
+    document.getElementById('campo-op-escrito').hidden = !tipo || tipo === 'fisicas';
+  }
+  document.getElementById('op-tipo').addEventListener('change', verOposicion);
+  const leerOposicion = () => ({
+    tipo: document.getElementById('op-tipo').value, orden: document.getElementById('op-orden').value,
+    fechaFisicas: document.getElementById('op-fecha-fisicas').value, fechaEscrito: document.getElementById('op-fecha-escrito').value,
+    cuerpo: document.getElementById('op-cuerpo').value,
+  });
+  function rellenarOposicion(op) {
+    const o = op && typeof op === 'object' ? op : {};
+    const poner = (id, v, validos) => { document.getElementById(id).value = typeof v === 'string' && (!validos || validos.includes(v)) ? v : ''; };
+    poner('op-tipo', o.tipo, Motor.TIPOS_OPOSICION);
+    poner('op-orden', o.orden, ['fisicas_antes', 'fisicas_despues']);
+    poner('op-fecha-fisicas', o.fechaFisicas);
+    poner('op-fecha-escrito', o.fechaEscrito);
+    poner('op-cuerpo', o.cuerpo, Motor.CUERPOS_OPOSICION.map((c) => c.id));
+    verOposicion();
+  }
+  /** La fase de oposición de hoy, o null si no es opositor o lo que ha puesto no vale. */
+  function estadoOposicionHoy() {
+    if (deporteElegido !== 'opositor') return null;
+    const v = Motor.validarOposicion(leerOposicion());
+    return v.ok ? Motor.faseOposicion(v.oposicion, Motor.fechaLocalISO(new Date())) : null;
   }
   function pintarSesiones(sesiones) {
     sesionesDiv.innerHTML = '';
@@ -695,6 +728,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // #220: el deporte principal guardado, o deducido de las sesiones si el perfil o el ejemplo es de antes.
     deporteElegido = Motor.deportePrincipal(ej.deportePrincipal) ? ej.deportePrincipal
       : Motor.deducirDeportePrincipal((ej.sesiones ?? []).map((s) => s.actividad || resolverActividadUI(s)));
+    rellenarOposicion(ej.oposicion); // #331 parte 1
     marcarDeporte();
     pintarSesiones(ej.sesiones ?? []);
     // Horas de las comidas: las del ejemplo/guardado si las da, si no las de por defecto (bloque 7).
@@ -2771,6 +2805,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       vidaPasos: document.getElementById('vida-pasos').value || undefined,
       ...(document.getElementById('toma-creatina').checked ? { creatina: true } : {}), // #326 parte 3
       deportePrincipal: deporteElegido,
+      ...(deporteElegido === 'opositor' ? { oposicion: leerOposicion() } : {}), // #331 parte 1
       sesiones: leerSesiones().map(({ dia, deporte, minutos, horaInicio, actividad, nota, dura }) => ({ dia, deporte, minutos, horaInicio, actividad, nota, ...(dura ? { dura } : {}) })),
       franjas: Object.fromEntries(Array.from(franjasDiv.children).map((fila) => [
         fila.dataset.franja, { activa: fila.querySelector('.f-activa').checked, hora: fila.querySelector('.f-hora').value },
@@ -4266,6 +4301,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       caja.hidden = !frases;
       caja.innerHTML = frases ? `<p style="margin:0.4rem 0">💊 ${frases.map(escaparHtml).join(' ')}</p>` : '';
     }
+    // #331 parte 1: cuenta atrás y fase de la oposición.
+    {
+      const caja = document.getElementById('r-oposicion');
+      const op = estadoOposicionHoy();
+      const frases = op ? Motor.textoFaseOposicion(op, op.sinRecorte && ['perder grasa', 'recomposición'].includes(document.getElementById('objetivo').value)) : null;
+      caja.hidden = !frases;
+      caja.innerHTML = frases ? `<p style="margin:0.4rem 0">📚 ${frases.map(escaparHtml).join(' ')}</p>` : '';
+    }
     // Issue #117: qué ha pasado con cada alimento de «sí o sí»: entra en la semana (se marca en la comida) o se explica por qué no.
     {
       const pedidos = asignacionBase.imprescindibles ?? [];
@@ -4771,6 +4814,16 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       return;
     }
     ocultarPantallas();
+    if (deporteElegido === 'opositor') { // #331 parte 1: lo de la oposición tiene que cuadrar antes de calcular
+      const v = Motor.validarOposicion(leerOposicion());
+      if (!v.ok) {
+        const e = document.getElementById('incompleto');
+        e.hidden = false; e.textContent = v.error;
+        avisarIncompleto(); mostrarPaso(3);
+        document.getElementById('op-tipo').focus();
+        return;
+      }
+    }
     const respuestas = construirRespuestas();
     leerPlanPablo();
     const resultado = Motor.perfilDesdeCuestionario(respuestas, opcionesRevision()); // #299: lo que Pablo revisó al publicar su plan ya no frena
@@ -4829,6 +4882,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     avisoFrenoHoy = objetivoPorFreno ? `Pablo prefiere verlo contigo antes de un plan para perder grasa. Mientras tanto tienes un plan para ${objetivoPorFreno === 'mantener' ? 'mantener tu peso' : 'ganar músculo'}.` : '';
     objetivoPorFreno = '';
 
+    // #331 parte 1: las 3 últimas semanas antes de las físicas y el propio día, sin recorte de kcal (para llegar fuerte).
+    { const op = estadoOposicionHoy(); if (op) resultado.perfil.objetivo = Motor.objetivoSegunFase(resultado.perfil.objetivo ?? 'perder_grasa', op).objetivo; }
     registrarPesaje(resultado.perfil.peso); // #326 parte 2
     const avisoRitmo = superavitConRitmo(resultado.perfil);
     const plan = Motor.calcular(resultado.perfil); // si falla, lo enseña avisarErrorCalculo (#274)
