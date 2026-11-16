@@ -3218,6 +3218,21 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     }
     return b;
   }
+  var HIDRATO_FACIL = [/\barroz\b/, /\bpasta\b/, /\bespaguetis?\b/, /\bmacarrones\b/, /\bfideos?\b/, /\bpatatas?\b/, /\bpan\b/];
+  var NO_FACIL = /integral|centeno|espelta|semillas|cereales/;
+  function hidratoFacilDePlato(p) {
+    return p.ingredientes.some((i) => {
+      const t2 = normal2(i.nombre);
+      return !NO_FACIL.test(t2) && HIDRATO_FACIL.some((re) => re.test(t2));
+    });
+  }
+  function tieneHidratoFacil(r, porId) {
+    if (!r.platos || !porId) return hidratoFacilDePlato(r);
+    return r.platos.some((id) => {
+      const p = porId.get(id);
+      return !!p && p.tipoPlato !== "postre" && hidratoFacilDePlato(p);
+    });
+  }
   function basesDe(r, porId) {
     if (!r.platos || !porId) return basesDePlato(r);
     const b = /* @__PURE__ */ new Set();
@@ -3653,6 +3668,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   var MAX_LEGUMBRE_VEGETARIANO = 7;
   var PESO_VIOLACION_E2 = 300;
   var PESO_GUSTO = 40;
+  var PESO_HIDRATO_FACIL = 30;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
@@ -4020,7 +4036,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
             continue;
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
-          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) - PESO_GUSTO / 4 * gusto(r);
+          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) - PESO_GUSTO / 4 * gusto(r);
           if (!mejor || clave2(desviacion, dist, falta) < clave2(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
@@ -7469,6 +7485,8 @@ r43,aceite de oliva,10`;
   };
   var AVISO_DESCARGA = "Si bajas el entreno esta semana, actualiza tus sesiones y el plan se ajusta.";
   var UMBRAL_CARGA_COMPLETA_MIN = 150;
+  var PROTEINA_VISPERA_G_KG = 1.6;
+  var GRASA_VISPERA_G_KG = 0.5;
   var KCAL_POR_G_HIDRATO = 4;
   var MS_DIA3 = 864e5;
   var PRIORIDAD = { descarga: 0, previa: 1, recuperacion: 2, carga: 3, vispera: 4, competicion: 5 };
@@ -7634,17 +7652,31 @@ r43,aceite de oliva,10`;
         kcalSinRecorte = Math.round(gastoDia);
         motivos.push(`sin recorte de kcal estos d\xEDas: comes lo que gastas (${Math.round(gastoDia)} kcal)`);
       }
-      const base4 = 4 * d.proteinaG + 9 * d.grasaG;
+      let proteinaDia = d.proteinaG;
+      let grasaDia = d.grasaG;
+      let visperaMacros = false;
+      if (fase === "vispera" && minGKg > 0) {
+        const pr = base.proteina.pesoReferencia;
+        const p2 = Math.min(d.proteinaG, redondear(PROTEINA_VISPERA_G_KG * pr));
+        const g2 = Math.min(d.grasaG, redondear(GRASA_VISPERA_G_KG * pr));
+        if (p2 < d.proteinaG || g2 < d.grasaG) {
+          proteinaDia = p2;
+          grasaDia = g2;
+          visperaMacros = true;
+          motivos.push(`v\xEDspera: grasa (${g2} g) y prote\xEDna (${p2} g) m\xE1s bajas para que quepan los hidratos sin subir las kcal`);
+        }
+      }
+      const base4 = 4 * proteinaDia + 9 * grasaDia;
       let hidrato = d.hidratoG;
       if (Math.abs(kcal - d.kcal) < 1) kcal = d.kcal;
-      if (kcal !== d.kcal) hidrato = (kcal - base4) / KCAL_POR_G_HIDRATO;
+      if (kcal !== d.kcal || visperaMacros) hidrato = (kcal - base4) / KCAL_POR_G_HIDRATO;
       if (minGKg > 0) {
         const minimo = Math.ceil(minGKg * perfil.peso);
         if (hidrato < minimo) {
           kcal = base4 + KCAL_POR_G_HIDRATO * minimo;
           hidrato = minimo;
           hidratoSubido = true;
-          motivos.push(`hidratos subidos a lo que pide la prueba (${minimo} g): las kcal suben lo mismo; prote\xEDna y grasa no cambian`);
+          motivos.push(`hidratos subidos a lo que pide la prueba (${minimo} g): las kcal suben lo mismo${visperaMacros ? "" : "; prote\xEDna y grasa no cambian"}`);
         } else {
           motivos.push(`hidratos ya por encima de lo que pide la prueba (${Math.ceil(minGKg * perfil.peso)} g)`);
         }
@@ -7659,12 +7691,13 @@ r43,aceite de oliva,10`;
       if (fase === "recuperacion") motivos.push("d\xEDa de recuperaci\xF3n; despu\xE9s vuelve el plan normal");
       const kcalFinal = Math.round(kcal);
       const hidratoFinal = kcalFinal === d.kcal && hidrato === d.hidratoG ? d.hidratoG : redondear(hidrato);
-      const cambia = kcalFinal !== d.kcal || hidratoFinal !== d.hidratoG || gastoPrueba !== void 0;
+      const cambia = kcalFinal !== d.kcal || hidratoFinal !== d.hidratoG || gastoPrueba !== void 0 || visperaMacros;
       nuevosDias.push(cambia ? {
         ...d,
         fase,
         kcal: kcalFinal,
         hidratoG: hidratoFinal,
+        ...visperaMacros ? { proteinaG: proteinaDia, grasaG: grasaDia } : {},
         hidratoGKg: redondear(hidrato / perfil.peso, 1),
         ...gastoPrueba ? { tipo: tipoDia2, gasto: Math.round(gastoDia), kcalEntreno: Math.round(kcalEntrenoDia), minutosCarga: minutosCargaDia, hidratoRecomendadoGKg: rangoDia } : {},
         ...mlg ? { disponibilidad: redondear((kcalFinal - kcalEntrenoDia) / mlg, 1), ...mlgEstimada ? { disponibilidadEstimada: true } : {} } : {}
@@ -7680,6 +7713,7 @@ r43,aceite de oliva,10`;
         ...kcalSinRecorte !== void 0 && kcalFinal !== d.kcal ? { kcalSinRecorte } : {},
         ...hidratoSubido ? { hidratoSubido } : {},
         ...racionesCarga ? { racionesCarga } : {},
+        ...visperaMacros ? { visperaMacros } : {},
         kcalAntes: d.kcal,
         kcalDespues: kcalFinal,
         hidratoAntes: d.hidratoG,
