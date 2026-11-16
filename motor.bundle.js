@@ -38,6 +38,7 @@ var Motor = (() => {
     DIAS_AVISO_FIN: () => DIAS_AVISO_FIN,
     DIAS_CITA: () => DIAS_CITA,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
+    EDAD_MINIMA_CAFEINA: () => EDAD_MINIMA_CAFEINA,
     EDAD_MINIMA_CREATINA: () => EDAD_MINIMA_CREATINA,
     EJEMPLO_DESAYUNO_CARRERA: () => EJEMPLO_DESAYUNO_CARRERA,
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
@@ -5547,6 +5548,9 @@ R484,crudo,bocadillo_tostada,frio,no
     if (!OPCIONES_GELES.includes(toleraCarga)) return { ok: false, error: "Indica si te ves capaz de comer m\xE1s pasta, arroz o pan los d\xEDas de carga: s\xED, no o no lo s\xE9." };
     const calor = (datos.calor ?? "").trim();
     if (calor && calor !== "si" && calor !== "no") return { ok: false, error: "Indica si hace calor: s\xED o no." };
+    const cafeina = (datos.cafeina ?? "").trim() === "si";
+    const cafes = cafeina && datos.cafes !== void 0 ? Number(datos.cafes) : 0;
+    if (!Number.isInteger(cafes) || cafes < 0 || cafes > 5) return { ok: false, error: "Indica cu\xE1ntos caf\xE9s tomas ese d\xEDa antes de salir: de 0 a 5." };
     let fechaFin = (datos.fechaFin ?? "").trim();
     const t0 = aUTC(datos.fecha);
     if (fechaFin) {
@@ -5556,7 +5560,7 @@ R484,crudo,bocadillo_tostada,frio,no
       if ((t1 - t0) / MS_DIA >= MAX_DIAS_COMPETICION) return { ok: false, error: `Una competici\xF3n no puede durar m\xE1s de ${MAX_DIAS_COMPETICION} d\xEDas.` };
       if (t1 === t0) fechaFin = "";
     }
-    const comunes = { fecha: datos.fecha, tipo, usaGeles, problemasIntestinales, ...toleraCarga !== "no_se" ? { toleraCarga } : {}, ...calor ? { calor } : {}, ...fechaFin ? { fechaFin } : {} };
+    const comunes = { fecha: datos.fecha, tipo, usaGeles, problemasIntestinales, ...toleraCarga !== "no_se" ? { toleraCarga } : {}, ...calor ? { calor } : {}, ...cafeina ? { cafeina: "si", ...cafes ? { cafes } : {} } : {}, ...fechaFin ? { fechaFin } : {} };
     const pruebasEntrada = datos.pruebas ?? [];
     if (pruebasEntrada.length) {
       const tFin = fechaFin ? aUTC(fechaFin) : t0;
@@ -5616,7 +5620,7 @@ R484,crudo,bocadillo_tostada,frio,no
     const resultado = [];
     for (const x of valor) {
       if (!x || typeof x !== "object") continue;
-      const { id, nombre, fecha, hora, fechaFin, tipo, pruebas, usaGeles, problemasIntestinales, toleraCarga, calor } = x;
+      const { id, nombre, fecha, hora, fechaFin, tipo, pruebas, usaGeles, problemasIntestinales, toleraCarga, calor, cafeina, cafes } = x;
       if (typeof id !== "string" || typeof nombre !== "string" || typeof fecha !== "string") continue;
       const texto = (v2) => typeof v2 === "string" ? v2 : void 0;
       const v = validarCompeticion({
@@ -5629,6 +5633,8 @@ R484,crudo,bocadillo_tostada,frio,no
         problemasIntestinales: texto(problemasIntestinales),
         toleraCarga: texto(toleraCarga),
         calor: texto(calor),
+        cafeina: texto(cafeina),
+        cafes: typeof cafes === "number" ? cafes : void 0,
         pruebas: Array.isArray(pruebas) ? pruebas.filter((p) => !!p && typeof p === "object").map((p) => ({
           hora: texto(p.hora) ?? "",
           duracionMin: Number(p.duracionMin),
@@ -7763,6 +7769,12 @@ r43,aceite de oliva,10`;
     const m = (Math.round(min) % 1440 + 1440) % 1440;
     return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
   };
+  var CAFEINA_MG_KG = 3;
+  var CAFEINA_MAX_TOMA_MG = 200;
+  var CAFEINA_MAX_DIA_MG = 400;
+  var MG_POR_CAFE = 80;
+  var CAFEINA_MIN_ANTES = 50;
+  var EDAD_MINIMA_CAFEINA = 18;
   var ARRANQUE_G_KG = [0.3, 0.5];
   var ARRANQUE_MIN_ANTES = 20;
   var ARRANQUE_DURACION_MIN = [45, 150];
@@ -7860,6 +7872,21 @@ r43,aceite de oliva,10`;
       const medio2 = redondear3((g[0] + g[1]) / 2);
       arranque = { hidratoG: medio2, kcal: 4 * medio2 };
     }
+    let cafeina;
+    if (c2.cafeina === "si" && opciones.edad !== void 0 && opciones.edad >= EDAD_MINIMA_CAFEINA) {
+      const cafesMg = (c2.cafes ?? 0) * MG_POR_CAFE;
+      const mg = Math.min(Math.round(peso * CAFEINA_MG_KG / 5) * 5, CAFEINA_MAX_TOMA_MG, CAFEINA_MAX_DIA_MG - cafesMg);
+      const cafes = c2.cafes ? ` Contando tus ${c2.cafes === 1 ? "el caf\xE9" : `${c2.cafes} caf\xE9s`} de ese d\xEDa (unos ${cafesMg} mg), no pases de ${CAFEINA_MAX_DIA_MG} mg en el d\xEDa.` : ` No pases de ${CAFEINA_MAX_DIA_MG} mg en el d\xEDa contando el caf\xE9.`;
+      if (mg > 0) {
+        linea.push({
+          minuto: salida - CAFEINA_MIN_ANTES,
+          tipo: "cafeina",
+          titulo: "Cafe\xEDna (45-60 min antes de salir)",
+          detalle: `${mg} mg de cafe\xEDna (3 mg/kg, como mucho ${CAFEINA_MAX_TOMA_MG} mg), solo si la has probado en entrenos.${cafes} Si tienes problemas de coraz\xF3n o de tensi\xF3n, cons\xFAltalo antes.`
+        });
+        cafeina = { mg, cafesMg };
+      } else avisos.push(`Con tus caf\xE9s de ese d\xEDa ya llegas a los ${CAFEINA_MAX_DIA_MG} mg de cafe\xEDna: no tomes m\xE1s antes de salir.`);
+    }
     const combustible = pruebas.map((p, i) => combustibleDe(c2, i + 1, p, peso, opciones.calor ?? haceCalor(c2)));
     pruebas.forEach((p, i) => {
       const f2 = combustible[i];
@@ -7888,7 +7915,7 @@ r43,aceite de oliva,10`;
       detalle: (opciones.compiteAlDiaSiguiente ? "Compites ma\xF1ana: hidratos en las 4 primeras horas (1,0\u20131,2 g/kg cada hora, repartidos en comidas y tomas) y la primera comida principal como recuperaci\xF3n." : "La primera comida principal es la de recuperaci\xF3n: con hidratos y prote\xEDna de verdad (cantidades a la derecha).") + " Bebe con la comida y despu\xE9s. Si te pesas antes y despu\xE9s de la prueba, abajo te decimos cu\xE1nto l\xEDquido (poco a poco y con sodio); sin pesaje no se da cifra."
     });
     linea.sort((a2, b) => a2.minuto - b.minuto);
-    return { fecha, nombre: c2.nombre, pruebas, linea, combustible, avisos, nota: NOTA_PAUTA, ...arranque ? { arranque } : {} };
+    return { fecha, nombre: c2.nombre, pruebas, linea, combustible, avisos, nota: NOTA_PAUTA, ...arranque ? { arranque } : {}, ...cafeina ? { cafeina } : {} };
   }
   var FRACCION_LIGERA_MADRUGADA = 0.3;
   function reorganizarDia(habitual, salida, fin) {

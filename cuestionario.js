@@ -2161,7 +2161,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const manana = `${f.getUTCFullYear()}-${String(f.getUTCMonth() + 1).padStart(2, '0')}-${String(f.getUTCDate()).padStart(2, '0')}`;
     for (const c of competiciones) {
       const compiteAlDiaSiguiente = competiciones.some((o) => o !== c && (o.fecha === manana || (o.pruebas ?? []).some((p) => p.fecha === manana)));
-      const p = Motor.planDiaCompeticion(c, fecha, respuestasActuales.peso, { compiteAlDiaSiguiente });
+      const p = Motor.planDiaCompeticion(c, fecha, respuestasActuales.peso, { compiteAlDiaSiguiente, edad: respuestasActuales.edad });
       if (p) return { c, p, fecha };
     }
     return null;
@@ -2276,7 +2276,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       if (!x) continue;
       x.p.linea.filter((e) => e.minuto >= 0).forEach((e, i) => extras.push({
         uid: `competicion-${x.c.id}-${x.fecha}-${i + 1}`, fecha: x.fecha, hora: Motor.aHoraTexto(e.minuto),
-        titulo: `Competición: ${e.tipo === 'durante' ? 'prueba' : e.tipo === 'previa' || e.tipo === 'ligera' ? 'toma previa' : e.tipo === 'arranque' ? 'toma de arranque' : e.tipo === 'entre' ? 'toma entre pruebas' : 'recuperación'}`,
+        titulo: `Competición: ${e.tipo === 'durante' ? 'prueba' : e.tipo === 'previa' || e.tipo === 'ligera' ? 'toma previa' : e.tipo === 'arranque' ? 'toma de arranque' : e.tipo === 'cafeina' ? 'cafeína' : e.tipo === 'entre' ? 'toma entre pruebas' : 'recuperación'}`,
         detalle: `${e.titulo}. ${e.detalle}`,
       }));
     }
@@ -2428,6 +2428,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         const calor = document.getElementById('cal-comp-calor'); // #321 p3
         calor.checked = Motor.haceCalor(c);
         if (c.calor) calor.dataset.tocada = '1'; else delete calor.dataset.tocada;
+        document.getElementById('cal-comp-cafeina').checked = c.cafeina === 'si'; // #321 p4
+        document.getElementById('cal-comp-cafes').value = String(c.cafes ?? 0);
         cajaPruebas.innerHTML = '';
         (c.pruebas?.length ? c.pruebas : [{ hora: c.hora ?? '' }]).forEach((p) => { anadirFilaPrueba(p); if (p.duracionMin) cajaPruebas.lastChild.querySelector('.p-dur').dataset.tocada = '1'; });
         actualizarTipoComp();
@@ -2609,7 +2611,17 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // #321 p3: «hace calor» sale marcado en Hyrox (suele ser en un pabellón caluroso) mientras la persona no lo toque.
     const calor = document.getElementById('cal-comp-calor');
     if (!calor.dataset.tocada) calor.checked = Motor.haceCalor({ tipo: selTipoComp.value });
+    actualizarCafeina();
   }
+  // #321 p4: la cafeína la activa la persona; a menores no se les ofrece (el motor tampoco la da).
+  function actualizarCafeina() {
+    const menor = Number.isFinite(respuestasActuales?.edad) && respuestasActuales.edad < Motor.EDAD_MINIMA_CAFEINA;
+    const caf = document.getElementById('cal-comp-cafeina');
+    if (menor) caf.checked = false;
+    document.getElementById('cal-comp-cafeina-caja').hidden = menor;
+    document.getElementById('cal-comp-cafes-caja').hidden = !caf.checked;
+  }
+  document.getElementById('cal-comp-cafeina').addEventListener('change', actualizarCafeina);
   document.getElementById('cal-comp-calor').addEventListener('change', (ev) => { ev.target.dataset.tocada = '1'; });
   selTipoComp.addEventListener('change', actualizarTipoComp);
   cajaPruebas.addEventListener('input', (ev) => { if (ev.target.classList.contains('p-dur')) ev.target.dataset.tocada = '1'; });
@@ -2666,6 +2678,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       problemasIntestinales: document.getElementById('cal-comp-intestino').value,
       toleraCarga: document.getElementById('cal-comp-carga').value,
       calor: document.getElementById('cal-comp-calor').checked ? 'si' : 'no',
+      ...(document.getElementById('cal-comp-cafeina').checked ? { cafeina: 'si', cafes: Number(document.getElementById('cal-comp-cafes').value) } : {}),
       pruebas: recogerPruebas(),
     };
     const r = editandoCompId ? Motor.editarCompeticion(competiciones, editandoCompId, datos) : Motor.anadirCompeticion(competiciones, datos);
@@ -4548,6 +4561,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       restricciones: { alergias: respuestas.alergias, evitan: respuestas.preferencias.evitan, gustan: respuestas.preferencias.gustan, listaNegra: [...listaNegra] },
       revision: Motor.peculiaridadesRevision(respuestas), // #299.5: lo que Pablo verá; si publica sobre este plan, eso queda revisado
       ...(Motor.pautaCreatina({ toma: document.getElementById('toma-creatina').checked, edad: respuestas.edad }) ? { creatina: true } : {}), // #326 parte 3: Pablo lo ve en el centro
+      ...(respuestas.edad >= Motor.EDAD_MINIMA_CAFEINA && competiciones.some((c) => c.cafeina === 'si') ? { cafeinaCompeticion: true } : {}), // #321 parte 4: Pablo lo ve en el centro
     } }));
 
     // Issue #21: mensaje en español llano primero, el código técnico se queda visible pero en pequeño.
