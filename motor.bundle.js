@@ -271,6 +271,7 @@ var Motor = (() => {
     firmaPlan: () => firmaPlan,
     formatearListaPendiente: () => formatearListaPendiente,
     fraccionesDesdeCsv: () => fraccionesDesdeCsv,
+    franjaComidaLibre: () => franjaComidaLibre,
     frenoBajoPeso: () => frenoBajoPeso,
     frenoLogros: () => frenoLogros,
     gastoDePrueba: () => gastoDePrueba,
@@ -7918,6 +7919,11 @@ r43,aceite de oliva,10`;
     return { fecha, nombre: c2.nombre, pruebas, linea, combustible, avisos, nota: NOTA_PAUTA, ...arranque ? { arranque } : {}, ...cafeina ? { cafeina } : {} };
   }
   var FRACCION_LIGERA_MADRUGADA = 0.3;
+  function franjaComidaLibre(r, fin, principales) {
+    const antes = new Set(r.tomas.filter((t2) => t2.minuto < fin).map((t2) => t2.franja));
+    const tras = r.tomas.filter((t2) => t2.minuto >= fin && t2.rol !== "opcional" && !antes.has(t2.franja)).sort((a2, b) => a2.minuto - b.minuto);
+    return tras.find((t2) => principales.includes(t2.franja))?.franja;
+  }
   function reorganizarDia(habitual, salida, fin) {
     const orden = [...habitual].sort((a2, b) => a2.minuto - b.minuto);
     const salidas = [];
