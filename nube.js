@@ -180,19 +180,32 @@
   // #322 parte 2: los ajustes de esta persona (los que ha puesto Pablo, los que ha aplicado la app sola y las propuestas) y las reglas
   // «Arreglarlo siempre así» de su nutricionista (docs/supabase/011-ajustes.sql). Se guardan en este navegador para que la app los
   // aplique al montar el plan (parte 3). Mientras 011 no esté pegado en el panel, la consulta falla y no se hace nada.
-  // Apagado hasta que Pablo pegue 011 en el panel: sin la tabla, Supabase contesta 404 y el navegador lo apunta como error en la
-  // consola (no se puede callar con try/catch). Se enciende en la parte 3 de #322, junto con la nota de qué pegar.
-  const AJUSTES_EN_NUBE = false;
+  // Encendido en la parte 3 de #322 (la app ya los aplica). Mientras Pablo no pegue 011 en el panel, Supabase contesta 404 y el
+  // navegador lo apunta en la consola, pero la app sigue igual (nota para Pablo en el issue #322).
+  const AJUSTES_EN_NUBE = true;
   async function traerAjustes() {
     if (!sb || !AJUSTES_EN_NUBE) return;
     try {
       const { data } = await sb.auth.getSession();
       if (!data || !data.session) return;
+      await subirAjustesPropuestos(data.session.user.id);
       const r = await sb.from('ajustes').select('id, tipo, datos, estado, origen, creado, actualizado').order('creado', { ascending: true }).limit(200);
       if (r.error || !Array.isArray(r.data)) return;
       const reglas = await sb.rpc('reglas_auto');
       guardarAjustes({ ajustes: r.data.filter((a) => a && a.estado !== 'deshecho'), reglas: reglas && !reglas.error && reglas.data && typeof reglas.data === 'object' ? reglas.data : {} });
     } catch { /* sin red, sin 011 pegado o cliente distinto: la app sigue como estaba */ }
+  }
+  // #322 parte 3: las propuestas de la app (y las que aplicó sola con «Arreglarlo siempre así») que cuestionario.js deja en
+  // 'app-dietas-ajustes-por-subir'. Si la tabla aún no existe (011 sin pegar), se quedan en la cola; si el servidor las rechaza
+  // (p. ej., la regla ya no está encendida), se quitan para no reintentar siempre.
+  async function subirAjustesPropuestos(uid) {
+    const cola = leerJSON('app-dietas-ajustes-por-subir');
+    if (!Array.isArray(cola) || !cola.length) return;
+    const filas = cola.filter((a) => a && typeof a.tipo === 'string' && a.datos && ['aplicado', 'propuesto'].includes(a.estado) && ['auto', 'app'].includes(a.origen))
+      .map((a) => ({ usuario: uid, tipo: a.tipo, datos: a.datos, estado: a.estado, origen: a.origen }));
+    const r = filas.length ? await sb.from('ajustes').insert(filas) : { error: null };
+    if (r.error && (r.error.code === 'PGRST205' || r.error.code === '42P01')) return;
+    try { localStorage.removeItem('app-dietas-ajustes-por-subir'); } catch { /* sin almacenamiento */ }
   }
   function guardarAjustes(nuevo) {
     const texto = JSON.stringify(nuevo);

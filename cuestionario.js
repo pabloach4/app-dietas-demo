@@ -1085,6 +1085,32 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // #299.5: lo que Pablo revisó al publicar (lo nuevo vuelve a revisión) y si su plan vale hoy (con diabetes, solo vale ese).
   const opcionesRevision = () => ({ revisadoPorPablo: planPablo ? Motor.peculiaridadesDePlan(planPablo.plan) : undefined, planPabloVigente: Boolean(planPabloVigente()) });
   let avisoPabloHoy = ''; // «Revisado por Pablo…» y lo que se quitó, para Hoy y Semana
+  // #322 parte 3: los ajustes de la nube (los trae web/nube.js a 'app-dietas-ajustes'): los «aplicado» cambian el plan al montarlo, y las
+  // reglas «Arreglarlo siempre así» deciden si una propuesta nueva de la app se aplica sola. La persona ve una línea normal en Hoy.
+  const CLAVE_AJUSTES = 'app-dietas-ajustes';
+  const CLAVE_AJUSTES_SUBIR = 'app-dietas-ajustes-por-subir';
+  let ajustesNube = { ajustes: [], reglas: {} };
+  let efectoAj = Motor.efectoAjustes([]);
+  function leerAjustesNube() {
+    try { ajustesNube = Motor.leerAjustesGuardados(JSON.parse(localStorage.getItem(CLAVE_AJUSTES) || 'null')); } catch { ajustesNube = Motor.leerAjustesGuardados(null); }
+    efectoAj = Motor.efectoAjustes(ajustesNube.ajustes);
+  }
+  leerAjustesNube();
+  // Una propuesta nueva (p. ej., al saltar el aviso de hambre): se apunta para que nube.js la suba; si se aplica sola, cuenta ya aquí.
+  function proponerAjuste(sol, alertaFirma) {
+    const d = Motor.decidirAjuste(sol, ajustesNube.reglas);
+    if (!d) return null;
+    try {
+      const previa = JSON.parse(localStorage.getItem(CLAVE_AJUSTES_SUBIR) || '[]');
+      const cola = Array.isArray(previa) ? previa : [];
+      cola.push({ ...d, alertaFirma: alertaFirma || null });
+      localStorage.setItem(CLAVE_AJUSTES_SUBIR, JSON.stringify(cola.slice(-20)));
+      if (d.estado === 'aplicado') { ajustesNube.ajustes.push({ tipo: d.tipo, datos: d.datos, estado: 'aplicado', origen: 'auto', local: true }); localStorage.setItem(CLAVE_AJUSTES, JSON.stringify(ajustesNube)); efectoAj = Motor.efectoAjustes(ajustesNube.ajustes); }
+    } catch { /* sin almacenamiento: no se propone nada */ }
+    window.dispatchEvent(new CustomEvent('app-dietas:ajuste-propuesto'));
+    return d;
+  }
+  window.addEventListener('app-dietas:ajustes', () => { leerAjustesNube(); if (semanaActual && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); });
   window.addEventListener('app-dietas:plan-pablo', () => { leerPlanPablo(); if (semanaActual && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales); });
 
   // Al llegar la fecha, la siguiente pasa a ser la dieta actual (mismo inicio y semanas, una sola fecha) y se olvida al acabar.
@@ -1285,7 +1311,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       ${dHoy && fueraHoy.some((x) => x.kcal !== undefined) && cuadreHoy ? `<p class="hoy-nota" id="hoy-numeros-fuera">Con lo que has comido fuera, hoy suma ~${Math.round((cuadreHoy.servido + kcalTomaHoy) / 10) * 10} kcal (el plan preveía ${dHoy.kcal}).</p>` : ''}
       <p class="hoy-nota">${escaparHtml(nota)}</p>`; // #258 (punto 13): las cifras de arriba son las del plan; esta línea, lo de hoy con lo comido fuera
     const avisoAlergiaHtml = avisosAlergiasHoy.length ? `<div class="hoy-bloque" id="aviso-alergia-hoy" role="status"><p style="margin:0">${avisosAlergiasHoy[0]}${avisosAlergiasHoy.length > 1 ? ` (y ${avisosAlergiasHoy.length - 1} más en los avisos del plan)` : ''}</p></div>` : '';
-    const avisoPabloHtml = avisoPabloHoy ? `<div class="hoy-bloque" id="aviso-plan-pablo" role="status"><p style="margin:0">${avisoPabloHoy}</p></div>` : '';
+    const avisoPabloHtml = (avisoPabloHoy ? `<div class="hoy-bloque" id="aviso-plan-pablo" role="status"><p style="margin:0">${avisoPabloHoy}</p></div>` : '')
+      + (Motor.hayEfecto(efectoAj) ? `<div class="hoy-bloque" id="aviso-ajustes" role="status">${Motor.lineasAjustesPersona(efectoAj).map((l) => `<p style="margin:0">${escaparHtml(l)}</p>`).join('')}</div>` : ''); // #322 p3: nunca «alerta»
     const avisoCribadoHtml = (avisoCribadoHoy ? `<div class="hoy-bloque" id="aviso-cribado" role="status"><p style="margin:0">${escaparHtml(avisoCribadoHoy)}</p></div>` : '')
       + (avisoFrenoHoy ? `<div class="hoy-bloque" id="aviso-freno" role="status"><p style="margin:0">${escaparHtml(avisoFrenoHoy)}</p></div>` : '')
       + (esCeliaco() ? `<div class="hoy-bloque" id="aviso-celiaquia" role="status"><p style="margin:0">${escaparHtml(Motor.MENSAJE_CELIAQUIA_HOY)}</p></div>` : '')
@@ -1628,7 +1655,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (g && g.manual && typeof g.manual === 'object') for (const k of ['desayuno', 'principal', 'pequena']) if (Number.isInteger(g.manual[k]) && Math.abs(g.manual[k]) <= 2) nivelManual[k] = g.manual[k];
   } catch { /* sin almacenamiento o dato corrupto: sin valoraciones */ }
   function guardarVolumen() { try { localStorage.setItem(CLAVE_VOLUMEN, JSON.stringify({ valoraciones, manual: nivelManual })); } catch { falloAlmacenamiento(); } }
-  const nivelesVolumen = () => Motor.calcularNiveles(valoraciones, nivelManual);
+  const nivelesVolumen = () => Motor.nivelesConAjustes(Motor.calcularNiveles(valoraciones, nivelManual), efectoAj); // #322 p3
   const NOMBRE_GRUPO_VOL = { desayuno: 'Desayuno', principal: 'Comida y cena', pequena: 'Media mañana y merienda' };
   // #285 punto 6: peso servido (g) de la próxima vez que toca esta comida en el plan vigente; undefined sin plan.
   function pesoProximaComida(franja) {
@@ -1740,7 +1767,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (!yaIgual) valoraciones.push({ fecha: iso, franja: b.dataset.franja, valor: b.dataset.valor });
     // #265 G (punto 35): acuse visible y, a la 3.ª «hambre» de la semana (lunes a domingo), alerta para Pablo no prioritaria.
     const alerta = !yaIgual && b.dataset.valor === 'hambre' ? Motor.alertaHambre(valoraciones, iso, ahora.toISOString(), leerAlertas()) : undefined;
-    if (alerta) { guardarAlertas(Motor.anadirAlerta(leerAlertas(), alerta)); pintarAlertas(); }
+    if (alerta) {
+      // #322 parte 3: el aviso lleva su solución (qué ha pasado, qué ha hecho la app, qué propone) y la propuesta se sube como ajuste;
+      // con «Arreglarlo siempre así» encendido y si cabe en el déficit, se aplica sola y a Pablo le llega como nota ya hecha.
+      const sol = Motor.solucionHambre({ hambres: Motor.hambresDeLaSemana(valoraciones, iso), niveles: Motor.calcularNiveles(valoraciones, nivelManual), manual: Object.fromEntries(Object.keys(nivelManual).map((k) => [k, true])), ajusteKcal: planActual && planActual.detalle && planActual.detalle.ajuste ? planActual.detalle.ajuste.kcal : 0 /* sin plan, 0: nada cabe solo */, aplicados: efectoAj.acciones });
+      const dec = proponerAjuste(sol, alerta.firma);
+      if (sol) alerta.solucion = { paso: sol.paso, hecho: sol.hecho, propuesta: sol.propuesta, accion: sol.accion, auto: sol.auto, aplicada: dec ? dec.origen === 'auto' : false };
+      guardarAlertas(Motor.anadirAlerta(leerAlertas(), alerta)); pintarAlertas();
+    }
     const pesoAntes = pesoProximaComida(b.dataset.franja);
     porValorar = null;
     cambioVolumen(() => { // el acuse se escribe con el plan ya rehecho: dice lo que de verdad cambia (#285 punto 6)
@@ -4057,6 +4091,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     compPorDiaActual = compPorDia;
     respuestasActuales = respuestas;
     franjasActuales = franjasBloque7;
+    if (Motor.hayEfecto(efectoAj)) { // #322 parte 3: los ajustes aplicados (planBase queda sin ellos para no acumularlos al repintar)
+      plan = { ...plan, planBase, dias: plan.dias.map((d) => {
+        const x = Motor.extraDelDia(d.dia, franjasDelDia(d.dia).map((f) => f.franja), efectoAj);
+        const dd = Motor.diaConDeficit(d, efectoAj);
+        return { ...dd, kcal: dd.kcal + x.kcal, proteinaG: dd.proteinaG + x.proteina, hidratoG: dd.hidratoG + x.hidrato, extraAjustes: x };
+      }) };
+      planActual = plan; // franjasDelDia necesita franjasActuales, por eso va aquí
+    }
 
     document.getElementById('r-basal').textContent = plan.basal.kcal; // #260.30: sin el nombre de la fórmula («ten_haaf»)
     document.getElementById('r-kcalmedia').textContent = plan.kcalMedia;
@@ -4087,7 +4129,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // repartir variedad, #23), así que no se puede resolver receta por receta dentro del mismo bucle.
     const repartosPorDia = plan.dias.map((d) => {
       const repartoBase = Motor.repartirComidas({
-        kcal: d.kcal, proteina: d.proteinaG, grasa: d.grasaG, hidrato: d.hidratoG,
+        kcal: d.kcal - (d.extraAjustes ? d.extraAjustes.kcal : 0), proteina: d.proteinaG - (d.extraAjustes ? d.extraAjustes.proteina : 0), grasa: d.grasaG, hidrato: d.hidratoG - (d.extraAjustes ? d.extraAjustes.hidrato : 0), // #322 p3: lo de más va a su comida
         pesoRef: plan.proteina.pesoReferencia, peso: respuestas.peso, tipoDia: d.tipo,
         sesiones: franjaADia(d.dia, franjasDelDia(d.dia), sesionesConActividad),
         sesionesTodas: sesionesTodasDelDia(d.dia, sesionesConActividad),
@@ -4097,6 +4139,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         ...(hambreCena ? { hambreCena } : {}), // #265 F
       });
       const reparto = compPorDia.get(d.dia)?.fase === 'competicion' ? conArranque(d.dia, repartoBase, respuestas.peso) : conTomaDurante(d.dia, repartoBase, sesionesConActividad); // #313 parte 2; #321 p1
+      if (d.extraAjustes && d.extraAjustes.kcal) reparto.franjas = Motor.franjasConAjustes(d.dia, reparto.franjas, efectoAj); // #322 p3
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       if (!excepcionesHorario.has(d.dia)) horarioGeneralDelDia(d.dia).movidas.filter((m) => m.franja !== reparto.tomaDurante?.sustituye).forEach((m) => avisosReparto.push(`${d.dia}: ${m.texto}`)); // #313: la sustituida no se mueve
       reparto.franjas.forEach((f) => {
@@ -4174,6 +4217,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     for (const d of [...new Set(slotsSemana.map((s) => s.dia))]) {
       const isoD = fechaProximaDe(d);
       const fueraD = new Map(comidasFuera.filter((x) => x.fecha === isoD && x.kcal !== undefined && slotsSemana.some((s) => s.dia === d && s.franja === x.franja)).map((x) => [x.franja, x.kcal]));
+      for (const [franja, kcal] of Motor.fueraFijaDelDia(d, efectoAj)) if (!fueraD.has(franja) && !comidasFuera.some((x) => x.fecha === isoD && x.franja === franja) && slotsSemana.some((s) => s.dia === d && s.franja === franja)) fueraD.set(franja, kcal); // #322 p3
       if (!fueraD.size) continue; // #173: la segunda pasada vive ahora en el motor, con tests
       const horaDe = (franja) => { const h = franjasDelDia(d).find((x) => x.franja === franja); return h && h.hora !== undefined ? h.hora : undefined; };
       cuadrado = Motor.cuadrarConComidaFuera(cuadrado, slotsSemana, recetasCuadre, { diaHoy: d, fuera: fueraD, horaDe, noMoverDia: enCompeticion, todoElDia: isoD !== hoyIso });
