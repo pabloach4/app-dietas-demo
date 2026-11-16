@@ -278,6 +278,7 @@ var Motor = (() => {
     glutenDesdeCsv: () => glutenDesdeCsv,
     grupoDeFranja: () => grupoDeFranja,
     gustosPorReceta: () => gustosPorReceta,
+    haceCalor: () => haceCalor,
     hambreCenaValida: () => hambreCenaValida,
     hambresDeLaSemana: () => hambresDeLaSemana,
     hidratosServidosDia: () => hidratosServidosDia,
@@ -5481,6 +5482,9 @@ R484,crudo,bocadillo_tostada,frio,no
   };
   var MENSAJE_CATEGORIA_PESO = "En deportes con categor\xEDa de peso la app no calcula nada: el peso de competici\xF3n se lleva directamente con Pablo.";
   var OPCIONES_GELES = ["si", "no", "no_se"];
+  function haceCalor(c2) {
+    return c2.calor ? c2.calor === "si" : c2.tipo === "hyrox";
+  }
   var RE_FECHA = /^(\d{4})-(\d{2})-(\d{2})$/;
   var RE_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
   var MS_DIA = 864e5;
@@ -5541,6 +5545,8 @@ R484,crudo,bocadillo_tostada,frio,no
     if (!OPCIONES_GELES.includes(usaGeles)) return { ok: false, error: "Indica si tomas geles: s\xED, no o no lo s\xE9." };
     const toleraCarga = (datos.toleraCarga ?? "").trim() || "no_se";
     if (!OPCIONES_GELES.includes(toleraCarga)) return { ok: false, error: "Indica si te ves capaz de comer m\xE1s pasta, arroz o pan los d\xEDas de carga: s\xED, no o no lo s\xE9." };
+    const calor = (datos.calor ?? "").trim();
+    if (calor && calor !== "si" && calor !== "no") return { ok: false, error: "Indica si hace calor: s\xED o no." };
     let fechaFin = (datos.fechaFin ?? "").trim();
     const t0 = aUTC(datos.fecha);
     if (fechaFin) {
@@ -5550,7 +5556,7 @@ R484,crudo,bocadillo_tostada,frio,no
       if ((t1 - t0) / MS_DIA >= MAX_DIAS_COMPETICION) return { ok: false, error: `Una competici\xF3n no puede durar m\xE1s de ${MAX_DIAS_COMPETICION} d\xEDas.` };
       if (t1 === t0) fechaFin = "";
     }
-    const comunes = { fecha: datos.fecha, tipo, usaGeles, problemasIntestinales, ...toleraCarga !== "no_se" ? { toleraCarga } : {}, ...fechaFin ? { fechaFin } : {} };
+    const comunes = { fecha: datos.fecha, tipo, usaGeles, problemasIntestinales, ...toleraCarga !== "no_se" ? { toleraCarga } : {}, ...calor ? { calor } : {}, ...fechaFin ? { fechaFin } : {} };
     const pruebasEntrada = datos.pruebas ?? [];
     if (pruebasEntrada.length) {
       const tFin = fechaFin ? aUTC(fechaFin) : t0;
@@ -5610,7 +5616,7 @@ R484,crudo,bocadillo_tostada,frio,no
     const resultado = [];
     for (const x of valor) {
       if (!x || typeof x !== "object") continue;
-      const { id, nombre, fecha, hora, fechaFin, tipo, pruebas, usaGeles, problemasIntestinales, toleraCarga } = x;
+      const { id, nombre, fecha, hora, fechaFin, tipo, pruebas, usaGeles, problemasIntestinales, toleraCarga, calor } = x;
       if (typeof id !== "string" || typeof nombre !== "string" || typeof fecha !== "string") continue;
       const texto = (v2) => typeof v2 === "string" ? v2 : void 0;
       const v = validarCompeticion({
@@ -5622,6 +5628,7 @@ R484,crudo,bocadillo_tostada,frio,no
         usaGeles: texto(usaGeles),
         problemasIntestinales: texto(problemasIntestinales),
         toleraCarga: texto(toleraCarga),
+        calor: texto(calor),
         pruebas: Array.isArray(pruebas) ? pruebas.filter((p) => !!p && typeof p === "object").map((p) => ({
           hora: texto(p.hora) ?? "",
           duracionMin: Number(p.duracionMin),
@@ -7760,6 +7767,7 @@ r43,aceite de oliva,10`;
   var ARRANQUE_MIN_ANTES = 20;
   var ARRANQUE_DURACION_MIN = [45, 150];
   var GRAMOS_GEL = 25;
+  var BEBIDA_HYROX = "a sorbos cada 10-15 min, sin beber de m\xE1s; bebida con sales si sudas mucho o hace calor";
   var redondear3 = (x) => Math.round(x);
   var redondear1 = (x) => Math.round(x * 10) / 10;
   var esTriatlon = (c2) => !!c2.tipo && c2.tipo.startsWith("triatlon");
@@ -7782,6 +7790,7 @@ r43,aceite de oliva,10`;
       obligatorio,
       aguaL,
       sodio,
+      ...c2.tipo === "hyrox" ? { bebida: BEBIDA_HYROX } : {},
       ...nota ? { nota } : {}
     };
     if (!tasa) return { ...base, nota: "menos de 45 min: no hace falta tomar nada durante la prueba; agua si la necesitas" };
@@ -7851,10 +7860,10 @@ r43,aceite de oliva,10`;
       const medio2 = redondear3((g[0] + g[1]) / 2);
       arranque = { hidratoG: medio2, kcal: 4 * medio2 };
     }
-    const combustible = pruebas.map((p, i) => combustibleDe(c2, i + 1, p, peso, !!opciones.calor));
+    const combustible = pruebas.map((p, i) => combustibleDe(c2, i + 1, p, peso, opciones.calor ?? haceCalor(c2)));
     pruebas.forEach((p, i) => {
       const f2 = combustible[i];
-      const detalleDurante = f2.hidratoG[1] > 0 ? `${f2.hidratoG[0]}\u2013${f2.hidratoG[1]} g de hidratos en total (${f2.hidratoGHora[0]}\u2013${f2.hidratoGHora[1]} g/h)${f2.nota ? ` \xB7 ${f2.nota}` : ""}. Agua: ${f2.aguaL[0]}\u2013${f2.aguaL[1]} L, sin beber de m\xE1s${f2.sodio ? "; con sodio" : ""}.` : `${f2.nota ?? "Nada obligatorio"}.`;
+      const detalleDurante = f2.hidratoG[1] > 0 ? `${f2.hidratoG[0]}\u2013${f2.hidratoG[1]} g de hidratos en total (${f2.hidratoGHora[0]}\u2013${f2.hidratoGHora[1]} g/h)${f2.nota ? ` \xB7 ${f2.nota}` : ""}. Agua: ${f2.aguaL[0]}\u2013${f2.aguaL[1]} L, ${f2.bebida ?? `sin beber de m\xE1s${f2.sodio ? "; con sodio" : ""}`}.` : `${f2.nota ?? "Nada obligatorio"}.`;
       linea.push({ minuto: p.inicio, tipo: "durante", titulo: pruebas.length > 1 ? `Prueba ${i + 1} (${p.duracionMin} min)` : `Prueba (${p.duracionMin} min)`, detalle: detalleDurante, ...f2.hidratoG[1] > 0 ? { hidratoG: f2.hidratoG } : {} });
       const sig = pruebas[i + 1];
       if (!sig) return;

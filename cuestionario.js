@@ -2206,7 +2206,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       if (!c.hidratoG[1]) return `<li>Prueba ${c.prueba} (${c.duracionMin} min): ${escaparHtml(c.nota ?? 'nada obligatorio')}.</li>`;
       const gel = c.geles ? ` · ${c.geles.n[0]}–${c.geles.n[1]} geles de ${c.geles.gramosPorGel} g (por ejemplo, a los minutos ${c.geles.minutos.join(', ')})` : '';
       const alt = c.alternativas ? `<br><span style="color:var(--gris)">Alternativas: ${c.alternativas.map(escaparHtml).join('; ')}.</span>` : '';
-      return `<li>Prueba ${c.prueba} (${c.duracionMin} min): <strong>${c.hidratoG[0]}–${c.hidratoG[1]} g</strong> de hidratos (${c.hidratoGHora[0]}–${c.hidratoGHora[1]} g/h)${c.obligatorio ? '' : ' · opcional'}${gel}${alt}<br><span style="color:var(--gris)">Agua: ${c.aguaL[0]}–${c.aguaL[1]} L, sin beber de más${c.sodio ? '; bebida con sodio' : ''}${c.nota ? ` · ${escaparHtml(c.nota)}` : ''}.</span></li>`;
+      return `<li>Prueba ${c.prueba} (${c.duracionMin} min): <strong>${c.hidratoG[0]}–${c.hidratoG[1]} g</strong> de hidratos (${c.hidratoGHora[0]}–${c.hidratoGHora[1]} g/h)${c.obligatorio ? '' : ' · opcional'}${gel}${alt}<br><span style="color:var(--gris)">Agua: ${c.aguaL[0]}–${c.aguaL[1]} L, ${c.bebida ? escaparHtml(c.bebida) : `sin beber de más${c.sodio ? '; bebida con sodio' : ''}`}${c.nota ? ` · ${escaparHtml(c.nota)}` : ''}.</span></li>`;
     }).join('');
   }
   // Días previos a una competición (Pablo, 08/10): que el paciente vea en «Hoy» que esos días ya se está preparando la prueba
@@ -2425,6 +2425,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         document.getElementById('cal-comp-geles').value = c.usaGeles ?? 'no_se';
         document.getElementById('cal-comp-intestino').value = c.problemasIntestinales ?? 'no_se';
         document.getElementById('cal-comp-carga').value = c.toleraCarga ?? 'no_se'; // #301
+        const calor = document.getElementById('cal-comp-calor'); // #321 p3
+        calor.checked = Motor.haceCalor(c);
+        if (c.calor) calor.dataset.tocada = '1'; else delete calor.dataset.tocada;
         cajaPruebas.innerHTML = '';
         (c.pruebas?.length ? c.pruebas : [{ hora: c.hora ?? '' }]).forEach((p) => { anadirFilaPrueba(p); if (p.duracionMin) cajaPruebas.lastChild.querySelector('.p-dur').dataset.tocada = '1'; });
         actualizarTipoComp();
@@ -2603,7 +2606,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     aviso.hidden = !peso;
     // La duración propuesta solo se cambia en las pruebas que la persona aún no ha tocado.
     cajaPruebas.querySelectorAll('.p-dur').forEach((i) => { if (!i.dataset.tocada) i.value = Motor.DURACION_PROPUESTA_MIN[selTipoComp.value]; });
+    // #321 p3: «hace calor» sale marcado en Hyrox (suele ser en un pabellón caluroso) mientras la persona no lo toque.
+    const calor = document.getElementById('cal-comp-calor');
+    if (!calor.dataset.tocada) calor.checked = Motor.haceCalor({ tipo: selTipoComp.value });
   }
+  document.getElementById('cal-comp-calor').addEventListener('change', (ev) => { ev.target.dataset.tocada = '1'; });
   selTipoComp.addEventListener('change', actualizarTipoComp);
   cajaPruebas.addEventListener('input', (ev) => { if (ev.target.classList.contains('p-dur')) ev.target.dataset.tocada = '1'; });
   document.getElementById('cal-comp-add-prueba').addEventListener('click', () => anadirFilaPrueba());
@@ -2614,6 +2621,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   function salirDeEdicionCompeticion() {
     editandoCompId = null;
     document.getElementById('cal-form-comp').reset();
+    delete document.getElementById('cal-comp-calor').dataset.tocada;
     reiniciarPruebas();
     actualizarTipoComp();
     actualizarPreguntaCarga();
@@ -2657,6 +2665,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       usaGeles: document.getElementById('cal-comp-geles').value,
       problemasIntestinales: document.getElementById('cal-comp-intestino').value,
       toleraCarga: document.getElementById('cal-comp-carga').value,
+      calor: document.getElementById('cal-comp-calor').checked ? 'si' : 'no',
       pruebas: recogerPruebas(),
     };
     const r = editandoCompId ? Motor.editarCompeticion(competiciones, editandoCompId, datos) : Motor.anadirCompeticion(competiciones, datos);
