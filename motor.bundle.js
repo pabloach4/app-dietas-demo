@@ -9971,8 +9971,12 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
   var lista = (xs) => xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`;
   var redondear10 = (n) => Math.floor(n / 10) * 10;
   function kcalDeAjustes(aplicados) {
-    return aplicados.reduce((t2, a2) => t2 + (a2.tipo === "kcal_franja" || a2.tipo === "deficit" ? a2.kcal : a2.tipo === "tentempie" ? Math.round(a2.kcal * a2.dias.length / 7) : 0), 0);
+    const diario = aplicados.reduce((t2, a2) => t2 + (a2.tipo === "kcal_franja" || a2.tipo === "deficit" ? a2.kcal : 0), 0);
+    const porDia = /* @__PURE__ */ new Map();
+    for (const a2 of aplicados) if (a2.tipo === "tentempie") for (const d of new Set(a2.dias)) porDia.set(d, (porDia.get(d) ?? 0) + a2.kcal);
+    return diario + Math.max(0, ...porDia.values());
   }
+  var frasePasa = (ajusteKcal, queHace) => ajusteKcal > 0 ? ` Ya no est\xE1 en d\xE9ficit: ${queHace} le subir\xEDa m\xE1s, as\xED que solo se hace si t\xFA lo apruebas.` : ` Come ya a mantenimiento: ${queHace} le pondr\xEDa por encima, as\xED que solo se hace si t\xFA lo apruebas.`;
   function margenHastaMantenimiento(ajusteKcal, aplicados = []) {
     return Math.max(0, -ajusteKcal - kcalDeAjustes(aplicados));
   }
@@ -10002,7 +10006,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
         tipo: "hambre",
         paso,
         hecho,
-        propuesta: `Si sigue la semana que viene, propongo +${kcal} kcal al d\xEDa en ${NOMBRE2[principal]}, con prote\xEDna y fibra.${pasa ? " Come ya a mantenimiento: esto le pondr\xEDa por encima, as\xED que solo se hace si t\xFA lo apruebas." : ""}`,
+        propuesta: `Si sigue la semana que viene, propongo +${kcal} kcal al d\xEDa en ${NOMBRE2[principal]}, con prote\xEDna y fibra.${pasa ? frasePasa(e.ajusteKcal, "esto") : ""}`,
         accion: { tipo: "kcal_franja", franja: principal, kcal },
         kcalExtra: kcal,
         auto: !pasa
@@ -10020,7 +10024,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
         auto: true
       };
     }
-    return { tipo: "hambre", paso, hecho: `${hecho} Ya lleva +kcal en ${NOMBRE2[principal]} y come a mantenimiento.`, propuesta: "No subo m\xE1s sin ti: si sigue, conviene hablarlo con la persona.", accion: null, kcalExtra: 0, auto: false };
+    return { tipo: "hambre", paso, hecho: `${hecho} Ya lleva +kcal en ${NOMBRE2[principal]} y ${e.ajusteKcal > 0 ? "ya no est\xE1 en d\xE9ficit: come por encima de mantenimiento" : "come a mantenimiento"}.`, propuesta: "No subo m\xE1s sin ti: si sigue, conviene hablarlo con la persona.", accion: null, kcalExtra: 0, auto: false };
   }
   function solucionProteina(e) {
     const cortos = e.dias.filter((d) => d.corta);
@@ -10035,14 +10039,14 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
     const dias = cortos.map((d) => d.dia);
     const kcal = Math.round(r.kcal);
     const accion = { tipo: "tentempie", receta: r.id, franja, dias, kcal, proteinaG: Math.round(r.proteina) };
-    const kcalExtra = kcalDeAjustes([accion]);
+    const kcalExtra = kcal;
     const pasa = kcalExtra > margenHastaMantenimiento(e.ajusteKcal, e.aplicados ?? []);
     const nombre = r.nombre.charAt(0).toLowerCase() + r.nombre.slice(1);
     return {
       tipo: "proteina",
       paso,
       hecho,
-      propuesta: `Propongo a\xF1adir ${nombre} (${Math.round(r.proteina)} g de prote\xEDna, ${kcal} kcal) en ${NOMBRE2[franja]} ${dias.length === 7 ? "todos los d\xEDas" : `del ${lista(dias.map((d) => NOMBRE_DIA2[d]))}`}.${pasa ? " Le pondr\xEDa por encima de mantenimiento: solo si t\xFA lo apruebas." : ""}`,
+      propuesta: `Propongo a\xF1adir ${nombre} (${Math.round(r.proteina)} g de prote\xEDna, ${kcal} kcal) en ${NOMBRE2[franja]} ${dias.length === 7 ? "todos los d\xEDas" : `del ${lista(dias.map((d) => NOMBRE_DIA2[d]))}`}.${pasa ? e.ajusteKcal > 0 ? " Ya no est\xE1 en d\xE9ficit: esos d\xEDas le subir\xEDa m\xE1s, as\xED que solo se hace si t\xFA lo apruebas." : " Esos d\xEDas le pondr\xEDa por encima de mantenimiento, as\xED que solo se hace si t\xFA lo apruebas." : ""}`,
       accion,
       kcalExtra,
       auto: !pasa

@@ -177,7 +177,30 @@
     try { localStorage.setItem('app-dietas-plan-pablo', JSON.stringify({ creado: nuevo.creado, inicio: nuevo.inicio, semanas: nuevo.semanas, plan: nuevo.plan })); } catch { return; }
     window.dispatchEvent(new CustomEvent('app-dietas:plan-pablo'));
   }
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') traerPlanDePablo(); });
+  // #322 parte 2: los ajustes de esta persona (los que ha puesto Pablo, los que ha aplicado la app sola y las propuestas) y las reglas
+  // «Arreglarlo siempre así» de su nutricionista (docs/supabase/011-ajustes.sql). Se guardan en este navegador para que la app los
+  // aplique al montar el plan (parte 3). Mientras 011 no esté pegado en el panel, la consulta falla y no se hace nada.
+  // Apagado hasta que Pablo pegue 011 en el panel: sin la tabla, Supabase contesta 404 y el navegador lo apunta como error en la
+  // consola (no se puede callar con try/catch). Se enciende en la parte 3 de #322, junto con la nota de qué pegar.
+  const AJUSTES_EN_NUBE = false;
+  async function traerAjustes() {
+    if (!sb || !AJUSTES_EN_NUBE) return;
+    try {
+      const { data } = await sb.auth.getSession();
+      if (!data || !data.session) return;
+      const r = await sb.from('ajustes').select('id, tipo, datos, estado, origen, creado, actualizado').order('creado', { ascending: true }).limit(200);
+      if (r.error || !Array.isArray(r.data)) return;
+      const reglas = await sb.rpc('reglas_auto');
+      guardarAjustes({ ajustes: r.data.filter((a) => a && a.estado !== 'deshecho'), reglas: reglas && !reglas.error && reglas.data && typeof reglas.data === 'object' ? reglas.data : {} });
+    } catch { /* sin red, sin 011 pegado o cliente distinto: la app sigue como estaba */ }
+  }
+  function guardarAjustes(nuevo) {
+    const texto = JSON.stringify(nuevo);
+    if (texto === localStorage.getItem('app-dietas-ajustes')) return;
+    try { localStorage.setItem('app-dietas-ajustes', texto); } catch { return; }
+    window.dispatchEvent(new CustomEvent('app-dietas:ajustes'));
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { traerPlanDePablo(); traerAjustes(); } });
 
   // --- #211: ventana obligatoria con el correo de la persona al terminar el cuestionario (y en la pantalla de freno) ---
   // cuestionario.js solo dispara 'app-dietas:fin-cuestionario' y espera a detail.continuar(). Aquí se decide si hace falta la ventana
@@ -287,7 +310,8 @@
     const { data } = await sb.auth.getSession();
     pintar(data && data.session);
     traerPlanDePablo();
-    sb.auth.onAuthStateChange((evento, sesion) => { if (evento === 'SIGNED_IN') { pintar(sesion); subirEnUnRato(); traerPlanDePablo(); } });
+    traerAjustes();
+    sb.auth.onAuthStateChange((evento, sesion) => { if (evento === 'SIGNED_IN') { pintar(sesion); subirEnUnRato(); traerPlanDePablo(); traerAjustes(); } });
     if (data && data.session) subirEnUnRato();
   }).catch((e) => { resolverListo(); cuerpo.innerHTML = `<p class="subt">La nube no está disponible ahora (${esc(e.message)}). La app funciona igual.</p>`; });
 })();
