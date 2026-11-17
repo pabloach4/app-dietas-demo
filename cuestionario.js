@@ -205,6 +205,28 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       e.hidden = !diasSuelo.length;
     }
   }
+  // #315 parte 5 (Pablo, 13/11): por debajo de 1.400 kcal con 5 comidas, se sugiere (sin obligar) quitar un tentempié. El botón lo
+  // quita del horario (la casilla del paso 4 también, para que se guarde así) y rehace el plan; las demás horas no cambian (#318).
+  function pintarSugerenciaComidas() {
+    const caja = document.getElementById('sugerir-comidas');
+    if (!caja) return;
+    const s = planActual && franjasActuales ? Motor.sugerenciaMenosComidas(planActual.dias, franjasActuales) : null;
+    caja.hidden = !s;
+    if (!s) return;
+    document.getElementById('sugerir-comidas-texto').textContent = s.texto;
+    const b = document.getElementById('sugerir-comidas-btn');
+    b.textContent = s.boton;
+    b.dataset.quitar = s.quitar;
+  }
+  document.getElementById('sugerir-comidas-btn')?.addEventListener('click', (ev) => {
+    const quitar = ev.currentTarget.dataset.quitar;
+    if (!quitar || !semanaActual || !planActual || !franjasActuales) return;
+    const fila = [...franjasDiv.children].find((f) => f.dataset.franja === quitar);
+    const casilla = fila && fila.querySelector('.f-activa');
+    if (casilla && casilla.checked) casilla.checked = false;
+    guardarPerfilLocal();
+    mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales.filter((f) => f.franja !== quitar));
+  });
   (function construirCribado() {
     const cont = document.getElementById('cribado-preguntas');
     cont.innerHTML = Motor.PREGUNTAS_CRIBADO.map((p) => `
@@ -4205,6 +4227,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       }) };
       planActual = plan; // franjasDelDia necesita franjasActuales, por eso va aquí
     }
+    pintarSugerenciaComidas(); // #315 parte 5
 
     document.getElementById('r-basal').textContent = plan.basal.kcal; // #260.30: sin el nombre de la fórmula («ten_haaf»)
     document.getElementById('r-kcalmedia').textContent = plan.kcalMedia;

@@ -56,6 +56,7 @@ var Motor = (() => {
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
     HORA_ENTRENO_NOCHE: () => HORA_ENTRENO_NOCHE,
     ISOTONICA_G_HIDRATO_100ML: () => ISOTONICA_G_HIDRATO_100ML,
+    KCAL_DIA_CINCO_COMIDAS: () => KCAL_DIA_CINCO_COMIDAS,
     LIMITES_INGREDIENTES_CSV: () => LIMITES_INGREDIENTES_CSV,
     LIMITE_AFINIDAD: () => LIMITE_AFINIDAD,
     LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
@@ -432,8 +433,10 @@ var Motor = (() => {
     solucionGusto: () => solucionGusto,
     solucionHambre: () => solucionHambre,
     solucionProteina: () => solucionProteina,
+    sugerenciaMenosComidas: () => sugerenciaMenosComidas,
     sugerenciaProteinaDia: () => sugerenciaProteinaDia,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
+    tentempieAQuitar: () => tentempieAQuitar,
     textoAccion: () => textoAccion,
     textoCita: () => textoCita,
     textoDiabetes: () => textoDiabetes,
@@ -2407,7 +2410,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {}, ...cenaTrasEntreno ? { cenaTrasEntreno } : {}, ...tomaSugerida ? { tomaSugerida } : {} };
   }
   function agruparAvisosPorDia(avisos) {
-    const NOMBRE3 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
+    const NOMBRE4 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
     const grupos = /* @__PURE__ */ new Map();
     const sueltos = [];
     const orden = [];
@@ -2427,7 +2430,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     return orden.map((k) => {
       if (k.startsWith("\0")) return sueltos[Number(k.slice(1))];
       const dias = grupos.get(k);
-      const n = dias.map((d) => NOMBRE3[d]);
+      const n = dias.map((d) => NOMBRE4[d]);
       const lista5 = n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
       return `${lista5.charAt(0).toUpperCase()}${lista5.slice(1)}: ${k}`;
     });
@@ -11986,6 +11989,30 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     const ref = { catalogo: new Map(usda.map((r) => [r.nombre.trim(), r.fdc_id.trim()])), racion: (a2) => racionEnTabla(tabla2, a2) };
     const macros = new Map(usda.map((r) => [r.nombre.trim(), { proteina: Number(r.proteina_100g) || 0, grasa: Number(r.grasa_100g) || 0, hidrato: Number(r.hidrato_100g) || 0 }]));
     return { filas: cargarCompensaciones(csv, ref), grupos, racionMax: (a2) => racionEnTabla(tabla2, a2)?.maxG, macros100: (a2) => macros.get(a2), kcal100: (a2) => kcal.has(a2) && kcal.get(a2) > 0 ? kcal.get(a2) : void 0, excepcionesCsv: COMPENSACIONES_EXCEPCIONES_CSV };
+  }
+
+  // src/motor/menos-comidas.ts
+  var KCAL_DIA_CINCO_COMIDAS = 1400;
+  var NOMBRE3 = { media_manana: "la media ma\xF1ana", merienda: "la merienda" };
+  function tentempieAQuitar(franjas) {
+    const h = (f2) => franjas.find((x) => x.franja === f2)?.hora;
+    const [de, co, ce] = [h("desayuno"), h("comida"), h("cena")];
+    if (de === void 0 || co === void 0 || ce === void 0) return "media_manana";
+    return ce - co < co - de ? "merienda" : "media_manana";
+  }
+  function sugerenciaMenosComidas(dias, franjas) {
+    const tiene = (f2) => franjas.some((x) => x.franja === f2);
+    if (!["desayuno", "media_manana", "comida", "merienda", "cena"].every(tiene)) return null;
+    const bajos = dias.filter((d) => d.kcal < KCAL_DIA_CINCO_COMIDAS).map((d) => d.dia);
+    if (!bajos.length) return null;
+    const quitar = tentempieAQuitar(franjas);
+    const cuando = bajos.length === dias.length ? "Tus d\xEDas tienen" : `Algunos d\xEDas (${bajos.join(", ")}) tienen`;
+    return {
+      quitar,
+      dias: bajos,
+      texto: `${cuando} menos de 1.400 kcal y, repartidas en 5 comidas, los tentempi\xE9s quedan muy peque\xF1os. Si te viene bien, puedes hacer 4 comidas: sin ${NOMBRE3[quitar]}, lo suyo pasa al resto y las dem\xE1s horas no cambian.`,
+      boton: `Quitar ${NOMBRE3[quitar]}`
+    };
   }
   return __toCommonJS(motor_exports);
 })();
