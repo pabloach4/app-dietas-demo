@@ -4103,19 +4103,8 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       const prefDesayuno = slot.franja === "desayuno" && !sinPreferenciaDesayuno.has(claveSlotSiOSi(slot)) && opciones.desayuno?.modo !== "variado" ? opciones.desayuno : void 0;
       const desayunoVale = (r) => desayunoCumple(r, prefDesayuno);
       const agotadas = new Set([...grupo ? vecesPorGrupo.get(grupo) ?? [] : []].filter(([, n]) => n >= MAX_VECES_GRUPO).map(([id]) => id));
-      const mismoDia = /* @__PURE__ */ new Set();
-      if (grupo === "tentempie") {
-        for (const a2 of asignaciones) if (a2.dia === slot.dia && GRUPO_VARIEDAD[a2.franja] === "tentempie") mismoDia.add(a2.receta);
-        for (const f2 of ["media_manana", "merienda"]) {
-          const k = `${slot.dia}|${f2}`;
-          const r = f2 !== slot.franja ? (fijadasPorSlot.get(k) ?? reservas.get(k))?.receta : void 0;
-          if (r) mismoDia.add(r.id);
-        }
-      }
-      const sinMismoDia = mismoDia.size ? /* @__PURE__ */ new Set([...agotadas, ...mismoDia]) : agotadas;
       const ultimo = grupo ? ultimoPorGrupo.get(grupo) : void 0;
-      const pasesVariedad = prefDesayuno?.modo === "mismo" ? [void 0] : prefDesayuno?.modo === "pan" && usadosGrupo?.size ? [usadosGrupo, ...ultimo ? [/* @__PURE__ */ new Set([ultimo])] : [], void 0] : mismoDia.size ? [sinMismoDia, ...agotadas.size ? [mismoDia, agotadas] : [], void 0] : agotadas.size ? [agotadas, void 0] : [void 0];
-      const conHolgura = new Set(agotadas.size || mismoDia.size ? [sinMismoDia, mismoDia, agotadas].filter((x) => x.size) : []);
+      const pasesVariedad = prefDesayuno?.modo === "mismo" ? [void 0] : prefDesayuno?.modo === "pan" && usadosGrupo?.size ? [usadosGrupo, ...ultimo ? [/* @__PURE__ */ new Set([ultimo])] : [], void 0] : agotadas.size ? [agotadas, void 0] : [void 0];
       let excluir;
       const variado = (r) => !excluir || !idsDe(r).some((id) => excluir.has(id));
       const delDia = (r) => !distintaDelDia || !chocaConElDia(r, otraDelDia, catalogoPorId);
@@ -4230,7 +4219,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
             break;
           }
         }
-        if (!pase || alcanza(res.elegido) || conHolgura.has(pase) && res.elegido && res.elegido.desviacion <= HOLGURA_VARIEDAD_KCAL) break;
+        if (!pase || alcanza(res.elegido) || pase === agotadas && res.elegido && res.elegido.desviacion <= HOLGURA_VARIEDAD_KCAL) break;
       }
       if (!res.elegido && prefDesayuno) {
         const nombre = prefDesayuno.modo === "mismo" ? catalogoPorId.get(prefDesayuno.receta)?.nombre : void 0;
@@ -4288,7 +4277,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         ...fijada ? { fijada: true } : {}
       });
       if (slot.bandaPeso && (elegido.dist ?? 0) > 0) avisos.push(`${slot.dia} ${slot.franja}: con comida normal no se puede ajustar m\xE1s el volumen (queda a ${elegido.dist} g de la banda de peso servido): si quieres, reparte esta comida en una toma m\xE1s.`);
-      if (elegido.desviacion > Math.max(slot.kcalObjetivo * 0.1, conHolgura.has(excluir) ? HOLGURA_VARIEDAD_KCAL : 0)) {
+      if (elegido.desviacion > Math.max(slot.kcalObjetivo * 0.1, excluir === agotadas && agotadas.size ? HOLGURA_VARIEDAD_KCAL : 0)) {
         avisos.push(
           `${slot.dia} ${slot.franja}: "${elegido.receta.nombre}" se queda a ${elegido.desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun ajustando la raci\xF3n todo lo que permiten los topes del m\xE9todo: no cabe en una raci\xF3n normal y no se infla nada. Reparte lo que falta entre las otras comidas del d\xEDa, cierra con un postre (fruta o yogur) o cambia el plato.`
         );
@@ -9969,12 +9958,8 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
         const kcalSinEsta = kcalDia() - a2.kcalResultante;
         const errorDiaAntes = Math.abs(kcalDia() - kcalObjetivoDia);
         let mejor;
-        const grupo = GRUPO_VARIEDAD[a2.franja];
-        const otrosGrupo = grupo === "tentempie" ? salida.filter((x) => x !== a2 && GRUPO_VARIEDAD[x.franja] === grupo) : [];
-        const repiteTentempie = (id) => otrosGrupo.some((x) => x.dia === dia2 && x.receta === id) || otrosGrupo.filter((x) => x.receta === id).length >= MAX_VECES_GRUPO;
         for (const alt2 of alternativas) {
           if (Math.abs(alt2.kcalResultante - slot.kcalObjetivo) > MARGEN_KCAL_CAMBIO * slot.kcalObjetivo) continue;
-          if (otrosGrupo.length && repiteTentempie(alt2.receta.id)) continue;
           if (alt2.protegidosSinEscalar.length && alt2.racionAjustada !== 1) continue;
           const errorDia = Math.abs(kcalSinEsta + alt2.kcalResultante - kcalObjetivoDia);
           if (errorDia > TOLERANCIA_DIA * kcalObjetivoDia && errorDia > errorDiaAntes) continue;
