@@ -11341,8 +11341,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   var PARTIDO = { vispera_g_kg: 6 };
   var KCAL_G_HIDRATO = 4;
   function esPartido(s) {
-    if (s.actividad === "futbol_partido") return true;
-    return s.actividad === "padel" && /torneo/i.test(`${s.nota ?? ""} ${s.deporte ?? ""}`);
+    return s.actividad === "futbol_partido";
   }
   function aplicarVisperasPartido(plan, peso, diasPartido, saltar = /* @__PURE__ */ new Set()) {
     const partidos = new Set(diasPartido);
@@ -11394,7 +11393,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     { id: "gimnasio", nombre: "Gimnasio / fuerza", tipos: [t("Fuerza", "fuerza"), t("Fuerza intensa", "fuerza_intensa"), t("M\xE1quinas", "fuerza_suave"), t("Cardio", "eliptica")] },
     { id: "natacion", nombre: "Nataci\xF3n", tipos: [t("Suave", "natacion_suave"), t("Entreno", "natacion"), t("Fuerza", "fuerza")] },
     { id: "futbol", nombre: "F\xFAtbol", tipos: [t("Entreno", "futbol"), t("Partido", "futbol_partido"), t("Fuerza", "fuerza")] },
-    { id: "padel", nombre: "P\xE1del", tipos: [t("Partido", "padel"), t("Torneo", "padel"), t("Fuerza", "fuerza")] },
+    { id: "padel", nombre: "P\xE1del", tipos: [t("Partido", "padel"), t("Fuerza", "fuerza")] },
     // #331 (Pablo, 16/11): un opositor no tiene un deporte fijo; combina las sesiones que quiera y la app se amolda («habrá algunos que
     // entrenen haciendo CrossFit y otros que solo vayan al gimnasio y hagan series»). La app no da planes de entreno.
     { id: "opositor", nombre: "Opositor", tipos: [t("Fuerza / series de gimnasio", "fuerza"), t("CrossFit (WOD)", "crossfit"), t("Carrera: series", "correr_rapido"), t("Carrera: rodaje", "correr"), t("Nataci\xF3n", "natacion"), t("Ensayo de las pruebas f\xEDsicas", "crossfit")] },
