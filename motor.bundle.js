@@ -88,6 +88,7 @@ var Motor = (() => {
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
     PARTE_MINIMA_HIDRATOS_CARGA: () => PARTE_MINIMA_HIDRATOS_CARGA,
+    PARTIDO: () => PARTIDO,
     PASO_KCAL: () => PASO_KCAL,
     PASO_SUPERAVIT: () => PASO_SUPERAVIT,
     PORCION_COMESTIBLE_CSV: () => PORCION_COMESTIBLE_CSV,
@@ -172,6 +173,7 @@ var Motor = (() => {
     aplicarCompeticion: () => aplicarCompeticion,
     aplicarRacionesCarga: () => aplicarRacionesCarga,
     aplicarSustituciones: () => aplicarSustituciones,
+    aplicarVisperasPartido: () => aplicarVisperasPartido,
     aptitudCeliaca: () => aptitudCeliaca,
     apuntadoPorDia: () => apuntadoPorDia,
     asignarConCompensaciones: () => asignarConCompensaciones,
@@ -263,6 +265,7 @@ var Motor = (() => {
     esFranjaConLimiteVariedad: () => esFranjaConLimiteVariedad,
     esIngredienteProtegido: () => esIngredienteProtegido,
     esLunes: () => esLunes,
+    esPartido: () => esPartido,
     esPlanPabloNuevo: () => esPlanPabloNuevo,
     escaparTextoIcs: () => escaparTextoIcs,
     escrituraDeshacer: () => escrituraDeshacer,
@@ -2266,9 +2269,17 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     for (const f2 of franjas) grasaPorFranja.set(f2, sumaPesoBase > 0 ? e.grasa * pesoBase(f2) / sumaPesoBase : 0);
     const grasaTopada = /* @__PURE__ */ new Set();
     const grasaRecibida = /* @__PURE__ */ new Map();
+    const partidos = e.tipoDia === "descanso" ? [] : e.partidos ?? [];
+    const partidoPre = new Set(principales.filter((f2) => {
+      const hora3 = e.franjas.find((x) => x.franja === f2).hora;
+      return partidos.some((s) => {
+        const a2 = s.inicio - hora3;
+        return a2 >= p.ventana.PRE_hasta_h_antes - 1e-9 && a2 <= p.ventana.PRE_desde_h_antes + 1e-9;
+      });
+    }));
     for (const f2 of franjas) {
       const hora3 = e.franjas.find((x) => x.franja === f2).hora;
-      const enVentanaPreCarga = sesionesCarga.some((s) => {
+      const enVentanaPreCarga = partidoPre.has(f2) || sesionesCarga.some((s) => {
         const a2 = s.inicio - hora3;
         return a2 > 0 && a2 <= 2;
       });
@@ -2286,6 +2297,11 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
           });
         }
       }
+    }
+    for (const f2 of partidoPre) {
+      const hora3 = e.franjas.find((x) => x.franja === f2).hora;
+      const s = partidos.find((x) => x.inicio - hora3 >= p.ventana.PRE_hasta_h_antes - 1e-9 && x.inicio - hora3 <= p.ventana.PRE_desde_h_antes + 1e-9);
+      avisos.push(`Antes del partido de las ${hhmm(s.inicio)}: ${NOMBRE_FRANJA[f2]?.toLowerCase() ?? f2} (${hhmm(hora3)}) con hidrato f\xE1cil (pasta, arroz, patata o pan blanco), poca grasa y poca fibra, para jugar sin pesadez.`);
     }
     const salida = franjas.map((f2) => {
       const { rol, factor } = rolYFactorPorFranja.get(f2);
@@ -2309,7 +2325,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
           grasaTopeAplicado: grasaTopada.has(f2),
           grasaExcesoRecibido: redondear(grasaRecibida.get(f2) ?? 0, 1),
           ...deFuerza.has(f2) ? { fuerza: true } : {},
-          ...f2 === objetivoFuerza && proteinaPorPrincipal.get(f2) > pPrincipal ? { proteinaFuerza: true } : {}
+          ...f2 === objetivoFuerza && proteinaPorPrincipal.get(f2) > pPrincipal ? { proteinaFuerza: true } : {},
+          ...partidoPre.has(f2) ? { partidoPre: true } : {}
         }
       };
     });
@@ -2432,9 +2449,10 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         const siguiente = [...orden.slice(i + 1), ...manana].find((x) => x.inicio >= s.fin - 1e-9);
         const hueco = siguiente ? siguiente.inicio - s.fin : Infinity;
         const larga = s.fin - s.inicio >= R.larga_h - 1e-9 && manana.length > 0;
-        if (!(hueco < R.hueco_h || larga)) continue;
+        const partido = partidos.some((x) => Math.abs(x.inicio - s.inicio) < 1e-9 && Math.abs(x.fin - s.fin) < 1e-9);
+        if (!(hueco < R.hueco_h || larga || partido)) continue;
         if (hueco < R.sin_pausa_h) continue;
-        const porque = hueco < R.hueco_h ? `la siguiente sesi\xF3n est\xE1 a menos de ${R.hueco_h} h` : `ma\xF1ana vuelves a entrenar despu\xE9s de una sesi\xF3n de ${R.larga_h} h o m\xE1s`;
+        const porque = hueco < R.hueco_h ? `la siguiente sesi\xF3n est\xE1 a menos de ${R.hueco_h} h` : larga ? `ma\xF1ana vuelves a entrenar despu\xE9s de una sesi\xF3n de ${R.larga_h} h o m\xE1s` : "despu\xE9s del partido hay que recargar";
         const mismoDia = !!siguiente && siguiente.inicio < 24;
         const post = hueco < R.toma_rapida_hueco_h ? void 0 : principales.filter((f2) => !usadas.has(f2) && horaDe(f2) >= s.fin && (!mismoDia || horaDe(f2) < siguiente.inicio) && !(f2 === "desayuno" && horaDe(f2) - s.fin > p.ventana.POST_hasta_h_despues)).sort((a2, b) => horaDe(a2) - horaDe(b))[0];
         if (post) {
@@ -11319,6 +11337,52 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     return "\uFEFF" + [cab.join(";"), ...lineas].join("\r\n") + "\r\n";
   }
 
+  // src/motor/partido.ts
+  var PARTIDO = { vispera_g_kg: 6 };
+  var KCAL_G_HIDRATO = 4;
+  function esPartido(s) {
+    if (s.actividad === "futbol_partido") return true;
+    return s.actividad === "padel" && /torneo/i.test(`${s.nota ?? ""} ${s.deporte ?? ""}`);
+  }
+  function aplicarVisperasPartido(plan, peso, diasPartido, saltar = /* @__PURE__ */ new Set()) {
+    const partidos = new Set(diasPartido);
+    const visperas = [];
+    if (!partidos.size) return { plan, visperas };
+    const pr = plan.proteina.pesoReferencia;
+    const minimo = Math.ceil(PARTIDO.vispera_g_kg * peso);
+    const dias = plan.dias.map((d) => {
+      const manana = DIAS[(DIAS.indexOf(d.dia) + 1) % DIAS.length];
+      if (!partidos.has(manana) || saltar.has(d.dia) || saltar.has(manana) || d.hidratoG >= minimo) return d;
+      let proteinaG = d.proteinaG;
+      let grasaG = d.grasaG;
+      const p2 = Math.min(d.proteinaG, redondear(PROTEINA_VISPERA_G_KG * pr));
+      const g2 = Math.min(d.grasaG, redondear(GRASA_VISPERA_G_KG * pr));
+      const visperaMacros = p2 < d.proteinaG || g2 < d.grasaG;
+      if (visperaMacros) {
+        proteinaG = p2;
+        grasaG = g2;
+      }
+      const base = 4 * proteinaG + 9 * grasaG;
+      let hidrato = (d.kcal - base) / KCAL_G_HIDRATO;
+      let kcal = d.kcal;
+      let hidratoSubido = false;
+      if (hidrato < minimo) {
+        hidrato = minimo;
+        kcal = Math.round(base + KCAL_G_HIDRATO * minimo);
+        hidratoSubido = true;
+      }
+      hidrato = redondear(hidrato);
+      const partes = [`V\xEDspera del partido: unos ${Math.round(hidrato)} g de hidratos (${PARTIDO.vispera_g_kg} g por kilo) para llegar con las reservas llenas, y la cena con poca fibra (sin legumbre, integrales ni verdura cruda).`];
+      if (visperaMacros) partes.push(`Para que quepan, la grasa (${grasaG} g) y la prote\xEDna (${proteinaG} g) bajan un poco.`);
+      partes.push(hidratoSubido ? `Las kcal suben a ${kcal} (de ${d.kcal}).` : "Las kcal del d\xEDa no cambian.");
+      visperas.push({ dia: d.dia, hidratoAntes: d.hidratoG, hidratoDespues: hidrato, kcalAntes: d.kcal, kcalDespues: kcal, visperaMacros, hidratoSubido, texto: partes.join(" ") });
+      return { ...d, kcal, proteinaG, grasaG, hidratoG: hidrato, hidratoGKg: redondear(hidrato / peso, 1) };
+    });
+    if (!visperas.length) return { plan, visperas };
+    const kcalMedia = redondear(dias.reduce((s, x) => s + x.kcal, 0) / dias.length);
+    return { plan: { ...plan, dias, kcalMedia }, visperas };
+  }
+
   // src/motor/deporte-principal.ts
   var t = (nombre, actividad) => ({ nombre, actividad });
   var DEPORTES_PRINCIPALES = [
@@ -11330,7 +11394,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     { id: "gimnasio", nombre: "Gimnasio / fuerza", tipos: [t("Fuerza", "fuerza"), t("Fuerza intensa", "fuerza_intensa"), t("M\xE1quinas", "fuerza_suave"), t("Cardio", "eliptica")] },
     { id: "natacion", nombre: "Nataci\xF3n", tipos: [t("Suave", "natacion_suave"), t("Entreno", "natacion"), t("Fuerza", "fuerza")] },
     { id: "futbol", nombre: "F\xFAtbol", tipos: [t("Entreno", "futbol"), t("Partido", "futbol_partido"), t("Fuerza", "fuerza")] },
-    { id: "padel", nombre: "P\xE1del", tipos: [t("Partido", "padel"), t("Fuerza", "fuerza")] },
+    { id: "padel", nombre: "P\xE1del", tipos: [t("Partido", "padel"), t("Torneo", "padel"), t("Fuerza", "fuerza")] },
     // #331 (Pablo, 16/11): un opositor no tiene un deporte fijo; combina las sesiones que quiera y la app se amolda («habrá algunos que
     // entrenen haciendo CrossFit y otros que solo vayan al gimnasio y hagan series»). La app no da planes de entreno.
     { id: "opositor", nombre: "Opositor", tipos: [t("Fuerza / series de gimnasio", "fuerza"), t("CrossFit (WOD)", "crossfit"), t("Carrera: series", "correr_rapido"), t("Carrera: rodaje", "correr"), t("Nataci\xF3n", "natacion"), t("Ensayo de las pruebas f\xEDsicas", "crossfit")] },
