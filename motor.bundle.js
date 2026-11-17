@@ -2098,7 +2098,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       factor: { PRE: 1.6, POST: 1.4, toma_ligera_PRE: 1.5, PRE_POST_combinado: 2.2, PRE_fuerza: 1.2, POST_fuerza: 1.2 },
       // #319 p1: fuerza, suaves
       ventana: { PRE_desde_h_antes: 4, PRE_hasta_h_antes: 1.5, POST_hasta_h_despues: 2, ligera_desde_h_antes: 1.5, ligera_hasta_h_antes: 0.5 },
-      tope: { proteina_secundaria_g: 25, grasa_pre_carga_g: 15 },
+      tope: { proteina_secundaria_g: 10, grasa_pre_carga_g: 15 },
       proteinaPrincipal: { g_kg_min: 0.25, g_kg_max: 0.4 },
       bordePrimeraHora: { sesion_antes_de_h: 9, toma_pre_min_antes: 30, toma_pre_max_antes: 60, hidrato_rapido_g_kg_min: 0.5, hidrato_rapido_g_kg_max: 1 },
       ventanaComida: Object.fromEntries(Object.entries(VENTANAS_COMIDA_DEFECTO).map(([f2, v]) => [f2, [...v]]))
@@ -2200,6 +2200,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     let pPrincipal = 0;
     let pSecundaria = 0;
     let topeSecundariaAplicado = false;
+    let excesoProteinaSecundarias = 0;
     if (secundarias.length > 0) {
       pPrincipal = principales.length ? Math.min(e.proteina / principales.length, pPrincipalCap) : 0;
       const restante = e.proteina - pPrincipal * principales.length;
@@ -2207,6 +2208,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       if (pSecundaria > p.tope.proteina_secundaria_g) {
         const exceso = (pSecundaria - p.tope.proteina_secundaria_g) * secundarias.length;
         topeSecundariaAplicado = true;
+        excesoProteinaSecundarias = exceso;
         pSecundaria = p.tope.proteina_secundaria_g;
         if (principales.length) pPrincipal += exceso / principales.length;
       }
@@ -2304,6 +2306,18 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         }
       };
     });
+    if (excesoProteinaSecundarias > 0) {
+      const ps = salida.filter((s) => PRINCIPALES.includes(s.franja));
+      const ss = salida.filter((s) => !PRINCIPALES.includes(s.franja));
+      let dado = 0;
+      for (const s of ps) {
+        const q = Math.min(excesoProteinaSecundarias / ps.length, s.hidrato);
+        s.hidrato = redondear(s.hidrato - q);
+        dado += q;
+      }
+      for (const s of ss) s.hidrato = redondear(s.hidrato + dado / ss.length);
+      for (const s of salida) s.kcalAprox = redondear(4 * s.proteina + 4 * s.hidrato + 9 * s.grasa);
+    }
     let tomaLigera;
     if (primeraHora && e.tomaLigera && salida.length) {
       const peso = e.peso ?? e.pesoRef;
@@ -4089,8 +4103,19 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       const prefDesayuno = slot.franja === "desayuno" && !sinPreferenciaDesayuno.has(claveSlotSiOSi(slot)) && opciones.desayuno?.modo !== "variado" ? opciones.desayuno : void 0;
       const desayunoVale = (r) => desayunoCumple(r, prefDesayuno);
       const agotadas = new Set([...grupo ? vecesPorGrupo.get(grupo) ?? [] : []].filter(([, n]) => n >= MAX_VECES_GRUPO).map(([id]) => id));
+      const mismoDia = /* @__PURE__ */ new Set();
+      if (grupo === "tentempie") {
+        for (const a2 of asignaciones) if (a2.dia === slot.dia && GRUPO_VARIEDAD[a2.franja] === "tentempie") mismoDia.add(a2.receta);
+        for (const f2 of ["media_manana", "merienda"]) {
+          const k = `${slot.dia}|${f2}`;
+          const r = f2 !== slot.franja ? (fijadasPorSlot.get(k) ?? reservas.get(k))?.receta : void 0;
+          if (r) mismoDia.add(r.id);
+        }
+      }
+      const sinMismoDia = mismoDia.size ? /* @__PURE__ */ new Set([...agotadas, ...mismoDia]) : agotadas;
       const ultimo = grupo ? ultimoPorGrupo.get(grupo) : void 0;
-      const pasesVariedad = prefDesayuno?.modo === "mismo" ? [void 0] : prefDesayuno?.modo === "pan" && usadosGrupo?.size ? [usadosGrupo, ...ultimo ? [/* @__PURE__ */ new Set([ultimo])] : [], void 0] : agotadas.size ? [agotadas, void 0] : [void 0];
+      const pasesVariedad = prefDesayuno?.modo === "mismo" ? [void 0] : prefDesayuno?.modo === "pan" && usadosGrupo?.size ? [usadosGrupo, ...ultimo ? [/* @__PURE__ */ new Set([ultimo])] : [], void 0] : mismoDia.size ? [sinMismoDia, ...agotadas.size ? [mismoDia, agotadas] : [], void 0] : agotadas.size ? [agotadas, void 0] : [void 0];
+      const conHolgura = new Set(agotadas.size || mismoDia.size ? [sinMismoDia, mismoDia, agotadas].filter((x) => x.size) : []);
       let excluir;
       const variado = (r) => !excluir || !idsDe(r).some((id) => excluir.has(id));
       const delDia = (r) => !distintaDelDia || !chocaConElDia(r, otraDelDia, catalogoPorId);
@@ -4205,7 +4230,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
             break;
           }
         }
-        if (!pase || alcanza(res.elegido) || pase === agotadas && res.elegido && res.elegido.desviacion <= HOLGURA_VARIEDAD_KCAL) break;
+        if (!pase || alcanza(res.elegido) || conHolgura.has(pase) && res.elegido && res.elegido.desviacion <= HOLGURA_VARIEDAD_KCAL) break;
       }
       if (!res.elegido && prefDesayuno) {
         const nombre = prefDesayuno.modo === "mismo" ? catalogoPorId.get(prefDesayuno.receta)?.nombre : void 0;
@@ -4263,7 +4288,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         ...fijada ? { fijada: true } : {}
       });
       if (slot.bandaPeso && (elegido.dist ?? 0) > 0) avisos.push(`${slot.dia} ${slot.franja}: con comida normal no se puede ajustar m\xE1s el volumen (queda a ${elegido.dist} g de la banda de peso servido): si quieres, reparte esta comida en una toma m\xE1s.`);
-      if (elegido.desviacion > Math.max(slot.kcalObjetivo * 0.1, excluir === agotadas && agotadas.size ? HOLGURA_VARIEDAD_KCAL : 0)) {
+      if (elegido.desviacion > Math.max(slot.kcalObjetivo * 0.1, conHolgura.has(excluir) ? HOLGURA_VARIEDAD_KCAL : 0)) {
         avisos.push(
           `${slot.dia} ${slot.franja}: "${elegido.receta.nombre}" se queda a ${elegido.desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun ajustando la raci\xF3n todo lo que permiten los topes del m\xE9todo: no cabe en una raci\xF3n normal y no se infla nada. Reparte lo que falta entre las otras comidas del d\xEDa, cierra con un postre (fruta o yogur) o cambia el plato.`
         );
@@ -7126,8 +7151,8 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const esPrincipal = d.proteinaTipo === "principal";
     const sinCarga2 = franja.rol === "normal" && (contexto.tipoDia === "descanso" || contexto.tipoDia === "fuerza");
     const lineas = [
-      esPrincipal ? `Prote\xEDna (${f(franja.proteina)} g): las comidas principales (desayuno, comida y cena) se reparten la del d\xEDa (${f(contexto.proteinaDia)} g). Como referencia orientativa, hasta unos ${f(Math.round(0.4 * contexto.pesoRef / 5) * 5)} g por comida principal; no es un m\xE1ximo absoluto.` : `Prote\xEDna (${f(franja.proteina)} g): media ma\xF1ana y merienda se reparten lo que sobra tras las principales, con un tope de 25 g cada una.`,
-      ...d.proteinaTopeSecundaria ? [esPrincipal ? `Las tomas secundarias (media ma\xF1ana y merienda) llegaron a su tope de 25 g y el sobrante volvi\xF3 a las comidas principales: por eso ${franja.proteina > 0.4 * contexto.pesoRef ? `esta principal pasa de los ${f(0.4 * contexto.pesoRef, 1)} g de referencia` : "esta principal lleva m\xE1s que sin ese tope"}.` : "Esta toma secundaria lleg\xF3 al tope de 25 g y el exceso se movi\xF3 a las comidas principales."] : [],
+      esPrincipal ? `Prote\xEDna (${f(franja.proteina)} g): las comidas principales (desayuno, comida y cena) se reparten la del d\xEDa (${f(contexto.proteinaDia)} g). Como referencia orientativa, hasta unos ${f(Math.round(0.4 * contexto.pesoRef / 5) * 5)} g por comida principal; no es un m\xE1ximo absoluto.` : `Prote\xEDna (${f(franja.proteina)} g): media ma\xF1ana y merienda llevan unos 10 g cada una (menos, si tras las principales no queda tanto), lo normal en un tentempi\xE9.`,
+      ...d.proteinaTopeSecundaria ? [esPrincipal ? `Media ma\xF1ana y merienda llevan unos 10 g cada una y el resto de la prote\xEDna del d\xEDa va a las comidas principales: por eso ${franja.proteina > 0.4 * contexto.pesoRef ? `esta principal pasa de los ${f(0.4 * contexto.pesoRef, 1)} g de referencia` : "esta principal lleva m\xE1s que sin ese tope"}.` : "El resto de la prote\xEDna del d\xEDa va a las comidas principales; a cambio, esta toma lleva algo m\xE1s de hidrato (fruta, pan) y conserva sus kcal."] : [],
       ...d.proteinaFuerza ? [`Prote\xEDna: es la comida de despu\xE9s de tu sesi\xF3n de fuerza (o la de antes, si no hay despu\xE9s), as\xED que lleva ${f(franja.proteina)} g, unos 0,4 g por kilo; las dem\xE1s principales llevan un poco menos y el total del d\xEDa no cambia.`] : [],
       // #260 (punto 30): en palabras («su parte del hidrato del día»), sin «peso de la franja × factor».
       `Hidrato (${f(franja.hidrato)} g): de los ${f(contexto.hidratoDia)} g del d\xEDa, a esta comida le toca su parte${d.factor !== 1 ? `, con un extra (\xD7${f(d.factor, 1)}) por el entreno` : ""}: ${f(franja.hidrato)} g.`,
@@ -9944,8 +9969,12 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
         const kcalSinEsta = kcalDia() - a2.kcalResultante;
         const errorDiaAntes = Math.abs(kcalDia() - kcalObjetivoDia);
         let mejor;
+        const grupo = GRUPO_VARIEDAD[a2.franja];
+        const otrosGrupo = grupo === "tentempie" ? salida.filter((x) => x !== a2 && GRUPO_VARIEDAD[x.franja] === grupo) : [];
+        const repiteTentempie = (id) => otrosGrupo.some((x) => x.dia === dia2 && x.receta === id) || otrosGrupo.filter((x) => x.receta === id).length >= MAX_VECES_GRUPO;
         for (const alt2 of alternativas) {
           if (Math.abs(alt2.kcalResultante - slot.kcalObjetivo) > MARGEN_KCAL_CAMBIO * slot.kcalObjetivo) continue;
+          if (otrosGrupo.length && repiteTentempie(alt2.receta.id)) continue;
           if (alt2.protegidosSinEscalar.length && alt2.racionAjustada !== 1) continue;
           const errorDia = Math.abs(kcalSinEsta + alt2.kcalResultante - kcalObjetivoDia);
           if (errorDia > TOLERANCIA_DIA * kcalObjetivoDia && errorDia > errorDiaAntes) continue;

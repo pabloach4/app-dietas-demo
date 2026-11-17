@@ -21,7 +21,7 @@ ventana_horas,PRE_hasta_h_antes,,1.5,
 ventana_horas,POST_hasta_h_despues,,2.0,YA NO SE USA (#64: la siguiente principal es POST sin limite)
 ventana_horas,ligera_desde_h_antes,,1.5,
 ventana_horas,ligera_hasta_h_antes,,0.5,
-tope,proteina_secundaria_g,,25,el exceso vuelve a las principales a partes iguales
+tope,proteina_secundaria_g,,10,#315 p4 (Pablo 13/11): unos 10 g por tentempie; el exceso va a las principales a partes iguales
 tope,grasa_pre_carga_g,,15,toma que cae menos de 2 h antes de sesion de carga
 proteina_principal,g_kg_min,,0.25,sobre pesoRef (peso de referencia del motor)
 proteina_principal,g_kg_max,,0.4,sobre pesoRef; se puede pasar si no cabe (sin techo real)
