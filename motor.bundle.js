@@ -11728,15 +11728,20 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     const suma2 = (xs, k) => xs.reduce((t2, f2) => t2 + f2[k], 0);
     const p0 = suma2(quedan, "proteina");
     const g0 = suma2(quedan, "grasa");
-    const h0 = suma2(quedan, "hidrato");
     const pObj = suma2(franjas, "proteina");
     const gObj = suma2(franjas, "grasa");
-    const hObj = Math.max(0, suma2(franjas, "hidrato") - toma.hidratoG);
-    const esc = (x, de, a2) => de > 0 ? x * a2 / de : a2 / quedan.length;
+    const fija = (f2) => !!f2.detalle?.recuperacionRapida;
+    const libres = quedan.filter((f2) => !fija(f2));
+    const hFijo = suma2(quedan.filter(fija), "hidrato");
+    const protegida = libres.length > 0 && suma2(libres, "hidrato") >= toma.hidratoG;
+    const h0 = protegida ? suma2(libres, "hidrato") : suma2(quedan, "hidrato");
+    const hObj = Math.max(0, suma2(franjas, "hidrato") - toma.hidratoG - (protegida ? hFijo : 0));
+    const nH = protegida ? libres.length : quedan.length;
+    const esc = (x, de, a2, n = quedan.length) => de > 0 ? x * a2 / de : a2 / n;
     return quedan.map((f2) => {
       const proteina = Math.round(esc(f2.proteina, p0, pObj));
       const grasa = Math.round(esc(f2.grasa, g0, gObj));
-      const hidrato = Math.max(0, Math.round(esc(f2.hidrato, h0, hObj)));
+      const hidrato = protegida && fija(f2) ? f2.hidrato : Math.max(0, Math.round(esc(f2.hidrato, h0, hObj, nH)));
       const kcalAprox = Math.max(0, Math.round(f2.kcalAprox + 4 * (proteina - f2.proteina) + 4 * (hidrato - f2.hidrato) + 9 * (grasa - f2.grasa)));
       return { ...f2, proteina, grasa, hidrato, kcalAprox };
     });

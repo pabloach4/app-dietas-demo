@@ -1342,7 +1342,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const bloqueDurante = tomaHoyD ? `<div class="hoy-bloque hoy-durante"><h3>Durante la sesión</h3>
       <div class="titulo">~${tomaHoyD.kcal} kcal · ${tomaHoyD.hidratoG} g de hidratos${tomaHoyD.sustituye ? `, en lugar de la ${(NOMBRE[tomaHoyD.sustituye] ?? tomaHoyD.sustituye).toLowerCase()}, que cae dentro del entreno` : ''}. Cuenta dentro de las kcal del día.</div>
       ${tomaHoyD.pautas.map((pd) => Motor.textoDuranteEntreno(pd)).filter(Boolean).map((t) => `<p class="subt">🍌 ${escaparHtml(t)}</p>`).join('')}</div>` : '';
-    const kcalTomaHoy = tomaHoyD ? tomaHoyD.kcal : 0;
+    // #319 parte 2, retoque: la toma rápida entre sesiones seguidas también se ve en «Hoy», con su hora y su texto.
+    const tomasRHoy = (reparto.recuperacionRapida || []).filter((x) => x.toma);
+    const bloqueRapida = tomasRHoy.map((x) => `<div class="hoy-bloque hoy-rapida"><h3>Toma rápida · ${escaparHtml(horaDecimalATexto(x.fin))}</h3>
+      <div class="titulo">~${Math.round(x.kcal)} kcal · ${Math.round(x.hidrato)} g de hidratos. Cuenta dentro de las kcal del día.</div>
+      <p class="subt">⚡ ${escaparHtml(x.texto)}</p></div>`).join('');
+    const kcalTomaHoy = (tomaHoyD ? tomaHoyD.kcal : 0) + tomasRHoy.reduce((t, x) => t + x.kcal, 0);
     // Las casillas son cifras del PLAN de hoy (lo que toca), nunca lo comido: la app no registra ingesta.
     const dHoy = hoyReal ? hoyReal.dia : planActual.dias.find((x) => x.dia === dia);
     const casilla = (n, l) => `<div class="casilla"><span class="n">${n}</span><span class="l">${l}</span></div>`;
@@ -1398,6 +1403,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       ${acuseVolumen && acuseVolumen.fecha === iso ? `<p class="hoy-acuse" role="status">${escaparHtml(acuseVolumen.texto)}</p>` : ''}
       ${bloqueComida}
       ${bloqueDurante}
+      ${bloqueRapida}
       ${bloqueAyunas}
       ${avisoHorarioHtml}
       ${medallasHoyHtml(dia, iso)}
