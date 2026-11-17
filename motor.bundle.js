@@ -137,6 +137,8 @@ var Motor = (() => {
     aHoraTexto: () => aHoraTexto,
     aMinutos: () => aMinutos2,
     accionCambiada: () => accionCambiada,
+    accionGustoCambiada: () => accionGustoCambiada,
+    accionQuitarGrupoValida: () => accionQuitarGrupoValida,
     accionReintentoNube: () => accionReintentoNube,
     accionValida: () => accionValida,
     actividadesDesconocidas: () => actividadesDesconocidas,
@@ -152,7 +154,9 @@ var Motor = (() => {
     alertaCita: () => alertaCita,
     alertaDerivacion: () => alertaDerivacion,
     alertaFreno: () => alertaFreno,
+    alertaGusto: () => alertaGusto,
     alertaHambre: () => alertaHambre,
+    alertaNotaGusto: () => alertaNotaGusto,
     alertaParaPablo: () => alertaParaPablo,
     alertaSuelo: () => alertaSuelo,
     alertasNuevas: () => alertasNuevas,
@@ -167,6 +171,7 @@ var Motor = (() => {
     aplicarSustituciones: () => aplicarSustituciones,
     aptitudCeliaca: () => aptitudCeliaca,
     apuntadoPorDia: () => apuntadoPorDia,
+    asignarConCompensaciones: () => asignarConCompensaciones,
     asignarRecetas: () => asignarRecetas,
     atributosDesdeCsv: () => atributosDesdeCsv,
     avisoClasificacionSesion: () => avisoClasificacionSesion,
@@ -196,6 +201,7 @@ var Motor = (() => {
     combinarConRecetas: () => combinarConRecetas,
     comerFueraDesdeCsv: () => comerFueraDesdeCsv,
     comidasFueraPersona: () => comidasFueraPersona,
+    compensacionesDeLaApp: () => compensacionesDeLaApp,
     competicionesDelDia: () => competicionesDelDia,
     competicionesDesdeJson: () => competicionesDesdeJson,
     componerComida: () => componerComida,
@@ -278,6 +284,7 @@ var Motor = (() => {
     explicarTipoDia: () => explicarTipoDia,
     extraDelDia: () => extraDelDia,
     extrasCarga: () => extrasCarga,
+    extrasDe: () => extrasDe,
     factorCocido: () => factorCocido,
     faltaVisibleCompeticion: () => faltaVisibleCompeticion,
     faseOposicion: () => faseOposicion,
@@ -286,6 +293,7 @@ var Motor = (() => {
     fechaLocalISO: () => fechaLocalISO,
     filaAlerta: () => filaAlerta,
     filaPlanPablo: () => filaPlanPablo,
+    filasCompensacionCentro: () => filasCompensacionCentro,
     filtrarAlertas: () => filtrarAlertas,
     filtrarCatalogo: () => filtrarCatalogo,
     filtrarPersonas: () => filtrarPersonas,
@@ -305,6 +313,10 @@ var Motor = (() => {
     generarListaCompra: () => generarListaCompra,
     glutenDesdeCsv: () => glutenDesdeCsv,
     grupoDeFranja: () => grupoDeFranja,
+    gruposDeAlergia: () => gruposDeAlergia,
+    gruposNuevos: () => gruposNuevos,
+    gruposQuitables: () => gruposQuitables,
+    gustoDeAjustes: () => gustoDeAjustes,
     gustosPorReceta: () => gustosPorReceta,
     haceCalor: () => haceCalor,
     hambreCenaValida: () => hambreCenaValida,
@@ -362,6 +374,7 @@ var Motor = (() => {
     notaTomaCorta: () => notaTomaCorta,
     nubeOfrecida: () => nubeOfrecida,
     objetivoSegunFase: () => objetivoSegunFase,
+    opcionesCambioGusto: () => opcionesCambioGusto,
     oposicionDesdeJson: () => oposicionDesdeJson,
     ordenarCompeticiones: () => ordenarCompeticiones,
     parsearParametrosCSV: () => parsearParametrosCSV,
@@ -416,6 +429,7 @@ var Motor = (() => {
     sinFilaDeGluten: () => sinFilaDeGluten,
     solucionComidasFuera: () => solucionComidasFuera,
     solucionDeAlerta: () => solucionDeAlerta,
+    solucionGusto: () => solucionGusto,
     solucionHambre: () => solucionHambre,
     solucionProteina: () => solucionProteina,
     sugerenciaProteinaDia: () => sugerenciaProteinaDia,
@@ -424,12 +438,14 @@ var Motor = (() => {
     textoCita: () => textoCita,
     textoDiabetes: () => textoDiabetes,
     textoDuranteEntreno: () => textoDuranteEntreno,
+    textoExtra: () => textoExtra,
     textoExtrasCarga: () => textoExtrasCarga,
     textoFaseOposicion: () => textoFaseOposicion,
     textoLlegaAPablo: () => textoLlegaAPablo,
     textoNotificacion: () => textoNotificacion,
     textoOtrasAlergias: () => textoOtrasAlergias,
     textoProteinaDia: () => textoProteinaDia,
+    textosCompensacion: () => textosCompensacion,
     tipoDeSesion: () => tipoDeSesion,
     tituloCentro: () => tituloCentro,
     tomaDuranteDia: () => tomaDuranteDia,
@@ -574,8 +590,8 @@ var Motor = (() => {
     const sesiones = p.sesiones ?? [];
     const avisos = [];
     const notas = [];
-    const aviso = (codigo, texto2) => {
-      avisos.push({ codigo, texto: texto2 });
+    const aviso = (codigo, texto3) => {
+      avisos.push({ codigo, texto: texto3 });
     };
     if (p.grasa !== void 0 && !(p.grasa >= 3 && p.grasa <= 70)) throw new Error("grasa es el % graso (3-70)");
     for (const s of sesiones) {
@@ -875,9 +891,9 @@ var Motor = (() => {
       firma
     };
   }
-  function anadirAlerta(lista3, nueva) {
+  function anadirAlerta(lista5, nueva) {
     const dia2 = nueva.fecha.slice(0, 10);
-    const resto = lista3.filter((a2) => !(a2.firma === nueva.firma && a2.fecha.slice(0, 10) === dia2));
+    const resto = lista5.filter((a2) => !(a2.firma === nueva.firma && a2.fecha.slice(0, 10) === dia2));
     return [nueva, ...resto].slice(0, 30);
   }
 
@@ -1092,13 +1108,13 @@ var Motor = (() => {
   ];
 
   // src/motor/csv-simple.ts
-  function filasCsv(texto2) {
+  function filasCsv(texto3) {
     const filas = [];
     let fila = [], celda2 = "", entreComillas = false;
-    for (let i = 0; i < texto2.length; i++) {
-      const c2 = texto2[i];
+    for (let i = 0; i < texto3.length; i++) {
+      const c2 = texto3[i];
       if (entreComillas) {
-        if (c2 === '"' && texto2[i + 1] === '"') {
+        if (c2 === '"' && texto3[i + 1] === '"') {
           celda2 += '"';
           i++;
         } else if (c2 === '"') entreComillas = false;
@@ -1108,7 +1124,7 @@ var Motor = (() => {
         fila.push(celda2);
         celda2 = "";
       } else if (c2 === "\n" || c2 === "\r") {
-        if (c2 === "\r" && texto2[i + 1] === "\n") i++;
+        if (c2 === "\r" && texto3[i + 1] === "\n") i++;
         fila.push(celda2);
         celda2 = "";
         if (fila.some((x) => x !== "")) filas.push(fila);
@@ -1119,8 +1135,8 @@ var Motor = (() => {
     if (fila.some((x) => x !== "")) filas.push(fila);
     return filas;
   }
-  function registros(texto2) {
-    const [cab = [], ...resto] = filasCsv(texto2);
+  function registros(texto3) {
+    const [cab = [], ...resto] = filasCsv(texto3);
     const nombres = cab.map((x) => x.trim());
     return resto.map((f2) => Object.fromEntries(nombres.map((n, i) => [n, (f2[i] ?? "").trim()])));
   }
@@ -1264,13 +1280,13 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   var CLASES = ["sin_gluten_natural", "riesgo", "con_gluten"];
   var COLUMNAS = ["ingrediente", "clase", "necesita_etiqueta", "motivo", "fuente"];
   var clave = (s) => s.trim().toLowerCase();
-  function comprobarGlutenCsv(texto2) {
+  function comprobarGlutenCsv(texto3) {
     const fallos = [];
-    const cab = (texto2.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
+    const cab = (texto3.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
     for (const c2 of COLUMNAS) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
     if (fallos.length) return fallos;
     const vistos = /* @__PURE__ */ new Set();
-    for (const r of registros(texto2)) {
+    for (const r of registros(texto3)) {
       const id = r.ingrediente || "(sin nombre)";
       if (!r.ingrediente) fallos.push("fila sin ingrediente");
       if (vistos.has(clave(id))) fallos.push(`${id}: fila repetida`);
@@ -1282,8 +1298,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     }
     return fallos;
   }
-  function glutenDesdeCsv(texto2) {
-    return new Map(registros(texto2).map((r) => [clave(r.ingrediente), { ingrediente: r.ingrediente, clase: r.clase, necesitaEtiqueta: r.necesita_etiqueta === "si", motivo: r.motivo, fuente: r.fuente }]));
+  function glutenDesdeCsv(texto3) {
+    return new Map(registros(texto3).map((r) => [clave(r.ingrediente), { ingrediente: r.ingrediente, clase: r.clase, necesitaEtiqueta: r.necesita_etiqueta === "si", motivo: r.motivo, fuente: r.fuente }]));
   }
   var tabla;
   var tablaGluten = () => tabla ??= glutenDesdeCsv(GLUTEN_CSV);
@@ -1327,6 +1343,44 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     });
   }
 
+  // src/motor/grupos-alimentos.ts
+  var sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  var PESCADO_AZUL = "salmon|sardin|atun|caballa|boqueron|anchoa|trucha|bonito|jurel";
+  var CARNE_ROJA = "ternera|cerdo|cordero|buey|vaca|lomo|solomillo|hamburguesa";
+  var palabras = (alternativas) => new RegExp(`(^|[^a-z])(${alternativas})`);
+  var ALIMENTOS_DEL_GRUPO = {
+    "pescado": palabras(`${PESCADO_AZUL}|pescad|merluza|bacalao|dorada|lubina|lenguado|rape|gallo`),
+    "pescado azul": palabras(PESCADO_AZUL),
+    "marisco": palabras("marisc|gamba|langostin|mejillon|almeja|berberecho|calamar|sepia|pulpo|cangrejo"),
+    "lacteos": palabras("leche|yogur|queso|kefir|requeson|cuajada|nata|mantequilla|mozzarella"),
+    "huevo": palabras("huevo|clara"),
+    "legumbre": palabras("lenteja|garbanzo|alubia|judia blanca|soja|tofu|tempeh|edamame|guisante|haba|hummus"),
+    "carne roja": palabras(CARNE_ROJA),
+    "carne (toda)": palabras(`${CARNE_ROJA}|pollo|pavo|conejo|jamon|chorizo|embutido|carne`),
+    "frutos secos": palabras("nuez|nueces|almendra|avellana|anacardo|pistacho|cacahuete"),
+    "cereales integrales": palabras("avena|integral|quinoa|centeno|cebada"),
+    "fruta": palabras("kiwi|naranja|manzana|platano|pera|fresa|mandarina|melon|sandia|uva|pina|mango|frutos rojos"),
+    "verdura": palabras("espinaca|brocoli|pimiento|tomate|calabacin|zanahoria|lechuga|judia verde|coliflor|berenjena|acelga|calabaza|pepino|alcachofa|esparrago|puerro|repollo|remolacha|rucula|champinon")
+  };
+  function claveGrupo(grupo) {
+    const k = sinTildes(grupo).trim();
+    return k in ALIMENTOS_DEL_GRUPO ? k : void 0;
+  }
+  var ALTERNATIVAS_ANOTADAS = /* @__PURE__ */ new Set(["leche de coco"]);
+  function esAlternativaVegetal(nombre) {
+    const n = sinTildes(nombre).replace(/\s+/g, " ").trim();
+    if (ALTERNATIVAS_ANOTADAS.has(n)) return true;
+    if (/\b(con|y)\b/.test(n)) return false;
+    if (/^bebida( |$)/.test(n)) return !/\b(leche|lacte[ao]s?|yogur|kefir|nata|queso)\b/.test(n);
+    return /^(yogur|leche|nata|queso|postre)( vegetal( de [a-z]+)?| de (soja|avena|almendras?|arroz))$/.test(n);
+  }
+  function alimentoDelGrupo(grupo, alimento) {
+    const k = claveGrupo(grupo);
+    if (!k) return false;
+    if (k === "lacteos" && esAlternativaVegetal(alimento)) return false;
+    return ALIMENTOS_DEL_GRUPO[k].test(sinTildes(alimento).replace(/(^|\s)sin\s+\S+/g, " "));
+  }
+
   // src/motor/filtro-alergias.ts
   function normalizar(s) {
     return Array.from(s.normalize("NFD")).filter((c2) => c2.codePointAt(0) < 768 || c2.codePointAt(0) > 879).join("").toLowerCase();
@@ -1357,16 +1411,16 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     }]));
     return indiceCategorias;
   }
-  function contienePalabras(texto2, buscado) {
-    return !!buscado && ` ${texto2} `.includes(` ${buscado} `);
+  function contienePalabras(texto3, buscado) {
+    return !!buscado && ` ${texto3} `.includes(` ${buscado} `);
   }
   var ARTICULOS = /* @__PURE__ */ new Set(["el", "la", "lo", "los", "las", "un", "una", "al", "del", "de", "todo", "toda"]);
-  function categoriasDeTexto(texto2, esAlergia) {
-    const raiz = raizAlimento(texto2);
+  function categoriasDeTexto(texto3, esAlergia) {
+    const raiz = raizAlimento(texto3);
     if (!raiz) return [];
-    const palabras = raiz.split(" ");
-    while (palabras.length > 1 && ARTICULOS.has(palabras[0])) palabras.shift();
-    const exacta = palabras.join(" ");
+    const palabras2 = raiz.split(" ");
+    while (palabras2.length > 1 && ARTICULOS.has(palabras2[0])) palabras2.shift();
+    const exacta = palabras2.join(" ");
     const listas = categoriasListas();
     const encontradas = /* @__PURE__ */ new Map();
     const anadir = (c2) => {
@@ -1427,19 +1481,11 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     "caballa"
   ];
   var OTROS_NO_VEGANOS = ["huevo", "miel"];
-  var ALTERNATIVAS_ANOTADAS = /* @__PURE__ */ new Set(["leche de coco"]);
-  function esAlternativaVegetal(nombre) {
-    const n = normalizar(nombre).replace(/\s+/g, " ").trim();
-    if (ALTERNATIVAS_ANOTADAS.has(n)) return true;
-    if (/\b(con|y)\b/.test(n)) return false;
-    if (/^bebida( |$)/.test(n)) return !/\b(leche|lacte[ao]s?|yogur|kefir|nata|queso)\b/.test(n);
-    return /^(yogur|leche|nata|queso|postre)( vegetal( de [a-z]+)?| de (soja|avena|almendras?|arroz))$/.test(n);
-  }
-  function buscarIngrediente(ingredientes, palabras) {
+  function buscarIngrediente(ingredientes, palabras2) {
     for (const ing of ingredientes) {
       const n = raizAlimento(ing.nombre);
-      const lista3 = esAlternativaVegetal(ing.nombre) ? palabras.filter((p) => !LACTEOS.includes(p)) : palabras;
-      if (lista3.some((p) => contienePalabras(n, raizAlimento(p)))) return ing.nombre;
+      const lista5 = esAlternativaVegetal(ing.nombre) ? palabras2.filter((p) => !LACTEOS.includes(p)) : palabras2;
+      if (lista5.some((p) => contienePalabras(n, raizAlimento(p)))) return ing.nombre;
     }
     return void 0;
   }
@@ -1478,6 +1524,10 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         if (ingrediente) return { compatible: false, motivo: { tipo: "no_vegetariano", detalle: `lleva "${ingrediente}" (carne o pescado)` } };
       }
     }
+    for (const grupo of ap.gruposQuitados ?? []) {
+      const ingrediente = receta.ingredientes.find((ing) => alimentoDelGrupo(grupo, ing.nombre));
+      if (ingrediente) return { compatible: false, motivo: { tipo: "evitado", detalle: `lleva "${ingrediente.nombre}" (has quitado: ${grupo})` } };
+    }
     const deAlergia = new Set((ap.deAlergia ?? []).map(raizAlimento));
     for (const evitado of ap.evitados) {
       const raiz = raizAlimento(evitado);
@@ -1494,8 +1544,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     }
     return { compatible: true };
   }
-  function partirTexto(texto2) {
-    return (texto2 ?? "").split(/[,;\n]| y | e | o | ni /i).map((s) => s.trim()).filter(Boolean);
+  function partirTexto(texto3) {
+    return (texto3 ?? "").split(/[,;\n]| y | e | o | ni /i).map((s) => s.trim()).filter(Boolean);
   }
   function alergiasPreferenciasDesdeTexto(alergias, evitanTexto) {
     const deAlergia = partirTexto(alergias.otros);
@@ -1512,16 +1562,16 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const deAlergia = new Set((ap.deAlergia ?? []).map(raizAlimento));
     const vistos = /* @__PURE__ */ new Set();
     const lecturas = [];
-    for (const texto2 of ap.evitados) {
-      const raiz = raizAlimento(texto2);
+    for (const texto3 of ap.evitados) {
+      const raiz = raizAlimento(texto3);
       if (!raiz || vistos.has(raiz)) continue;
       vistos.add(raiz);
       const esAlergia = deAlergia.has(raiz);
-      const categorias = categoriasDeTexto(texto2, esAlergia);
-      const solo = { celiaquia: false, lactosa: false, vegetariano: false, vegano: false, evitados: [texto2], deAlergia: esAlergia ? [texto2] : [] };
+      const categorias = categoriasDeTexto(texto3, esAlergia);
+      const solo = { celiaquia: false, lactosa: false, vegetariano: false, vegano: false, evitados: [texto3], deAlergia: esAlergia ? [texto3] : [] };
       const recetasExcluidas = recetas.filter((r) => !evaluarCompatibilidad(r, solo).compatible).length;
       const lectura = categorias.some((c2) => c2.noComprobable) ? "no_comprobable" : categorias.length ? "categoria" : recetasExcluidas ? "alimento" : "sin_coincidencias";
-      lecturas.push({ texto: texto2, deAlergia: esAlergia, lectura, categorias: categorias.map((c2) => c2.rotulo), recetasExcluidas });
+      lecturas.push({ texto: texto3, deAlergia: esAlergia, lectura, categorias: categorias.map((c2) => c2.rotulo), recetasExcluidas });
     }
     return lecturas;
   }
@@ -1545,8 +1595,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   }
 
   // src/motor/catalogo-recetas.ts
-  function normalizarBusqueda(texto2) {
-    return Array.from(texto2.normalize("NFD")).filter((c2) => c2.codePointAt(0) < 768 || c2.codePointAt(0) > 879).join("").toLowerCase().split(/[^a-z0-9ñ]+/).filter(Boolean).map(singular);
+  function normalizarBusqueda(texto3) {
+    return Array.from(texto3.normalize("NFD")).filter((c2) => c2.codePointAt(0) < 768 || c2.codePointAt(0) > 879).join("").toLowerCase().split(/[^a-z0-9ñ]+/).filter(Boolean).map(singular);
   }
   function singular(p) {
     if (p.length > 4 && p.endsWith("es")) return p.slice(0, -2);
@@ -1557,8 +1607,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const terminos = normalizarBusqueda(consulta);
     if (!terminos.length) return recetas;
     return recetas.filter((r) => {
-      const palabras = [r.nombre, ...r.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
-      return terminos.every((t2) => palabras.some((p) => p.startsWith(t2)));
+      const palabras2 = [r.nombre, ...r.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
+      return terminos.every((t2) => palabras2.some((p) => p.startsWith(t2)));
     });
   }
   var SINONIMOS_BUSQUEDA = {
@@ -1573,20 +1623,20 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   function buscarAlternativas(alternativas, consulta) {
     const terminos = normalizarBusqueda(consulta);
     if (!terminos.length) return { lista: alternativas, sinResultados: false };
-    const lista3 = alternativas.filter((a2) => {
-      const palabras = [a2.receta.nombre, ...a2.receta.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
-      return terminos.every((t2) => palabras.some((p) => p.startsWith(t2) || t2 in SINONIMOS_BUSQUEDA && p.startsWith(SINONIMOS_BUSQUEDA[t2])));
+    const lista5 = alternativas.filter((a2) => {
+      const palabras2 = [a2.receta.nombre, ...a2.receta.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
+      return terminos.every((t2) => palabras2.some((p) => p.startsWith(t2) || t2 in SINONIMOS_BUSQUEDA && p.startsWith(SINONIMOS_BUSQUEDA[t2])));
     });
-    return lista3.length ? { lista: lista3, sinResultados: false } : { lista: alternativas, sinResultados: true };
+    return lista5.length ? { lista: lista5, sinResultados: false } : { lista: alternativas, sinResultados: true };
   }
   function filtrarCatalogo(recetas, f2) {
-    let lista3 = buscarRecetas(recetas, f2.consulta ?? "");
-    if (f2.franja) lista3 = lista3.filter((r) => r.franjas.includes(f2.franja));
+    let lista5 = buscarRecetas(recetas, f2.consulta ?? "");
+    if (f2.franja) lista5 = lista5.filter((r) => r.franjas.includes(f2.franja));
     if (f2.soloFavoritas) {
       const fav = new Set(f2.favoritas ?? []);
-      lista3 = lista3.filter((r) => fav.has(r.id));
+      lista5 = lista5.filter((r) => fav.has(r.id));
     }
-    return lista3;
+    return lista5;
   }
   function favoritasValidas(valor, recetas) {
     if (!Array.isArray(valor)) return [];
@@ -1923,15 +1973,15 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   }
   function declaraCondicion(salud) {
     return (salud ?? []).some((t2) => {
-      const texto2 = normalizarTexto(String(t2)).replace(/[^a-z0-9]+/g, " ").trim();
-      return texto2 !== "" && !SIN_CONDICION.has(texto2);
+      const texto3 = normalizarTexto(String(t2)).replace(/[^a-z0-9]+/g, " ").trim();
+      return texto3 !== "" && !SIN_CONDICION.has(texto3);
     });
   }
   function esPositivo(v) {
     return typeof v === "number" && Number.isFinite(v) && v > 0;
   }
-  function objetivoDesde(texto2) {
-    const t2 = normalizarTexto(texto2 ?? "");
+  function objetivoDesde(texto3) {
+    const t2 = normalizarTexto(texto3 ?? "");
     if (t2.includes("rendimiento") || t2.includes("mantener")) return "mantener";
     if (t2.includes("recomposicion")) return "recomposicion";
     if (t2.includes("ganar musculo") || t2.includes("volumen")) return "ganar_musculo";
@@ -2041,8 +2091,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     merienda: [16.5, 19.5],
     cena: [20, 22.5]
   };
-  function parsearParametrosCSV(texto2) {
-    const lineas = texto2.split(/\r?\n/).filter((l) => l.trim() !== "");
+  function parsearParametrosCSV(texto3) {
+    const lineas = texto3.split(/\r?\n/).filter((l) => l.trim() !== "");
     const p = {
       pesoBase: {},
       factor: { PRE: 1.6, POST: 1.4, toma_ligera_PRE: 1.5, PRE_POST_combinado: 2.2, PRE_fuerza: 1.2, POST_fuerza: 1.2 },
@@ -2208,9 +2258,9 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const grasaTopada = /* @__PURE__ */ new Set();
     const grasaRecibida = /* @__PURE__ */ new Map();
     for (const f2 of franjas) {
-      const hora2 = e.franjas.find((x) => x.franja === f2).hora;
+      const hora3 = e.franjas.find((x) => x.franja === f2).hora;
       const enVentanaPreCarga = sesionesCarga.some((s) => {
-        const a2 = s.inicio - hora2;
+        const a2 = s.inicio - hora3;
         return a2 > 0 && a2 <= 2;
       });
       const g = grasaPorFranja.get(f2);
@@ -2290,9 +2340,9 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         };
         const donde = tomaLigera.restadoDe.map((r) => `${NOMBRE_FRANJA[r.franja]?.toLowerCase() ?? r.franja} \u2212${r.hidrato} g`).join(", ");
         const ya = avisos.findIndex((a2) => a2.startsWith("Entrenas antes de las"));
-        const texto2 = e.tomaLigera === "pautada" ? `Toma ligera pautada antes del entreno (${reservado} g de hidrato r\xE1pido, ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes): cuenta como una comida y se resta un poco de cada comida del d\xEDa (${donde}). El total del d\xEDa no cambia.` : `Toma ligera imprevista antes del entreno (${reservado} g de hidrato r\xE1pido): cuenta como una merienda y se resta de la cena (${donde}). El total del d\xEDa no cambia.`;
-        if (ya >= 0) avisos[ya] = texto2;
-        else avisos.push(texto2);
+        const texto3 = e.tomaLigera === "pautada" ? `Toma ligera pautada antes del entreno (${reservado} g de hidrato r\xE1pido, ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes): cuenta como una comida y se resta un poco de cada comida del d\xEDa (${donde}). El total del d\xEDa no cambia.` : `Toma ligera imprevista antes del entreno (${reservado} g de hidrato r\xE1pido): cuenta como una merienda y se resta de la cena (${donde}). El total del d\xEDa no cambia.`;
+        if (ya >= 0) avisos[ya] = texto3;
+        else avisos.push(texto3);
       }
     }
     let cenaTrasEntreno;
@@ -2302,8 +2352,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       avisos.push("Cena despu\xE9s de entrenar de noche: como llegas con mucha hambre, lleva m\xE1s cantidad (m\xE1s volumen, primero y segundo si hace falta) con las mismas calor\xEDas.");
     } else if (noche) {
       const cena = salida.find((s) => s.franja === "cena");
-      const hora2 = (f2) => e.franjas.find((x) => x.franja === f2).hora;
-      const previa = salida.filter((s) => s.franja !== "cena" && hora2(s.franja) <= noche.inicio).sort((a2, b) => hora2(b.franja) - hora2(a2.franja))[0];
+      const hora3 = (f2) => e.franjas.find((x) => x.franja === f2).hora;
+      const previa = salida.filter((s) => s.franja !== "cena" && hora3(s.franja) <= noche.inicio).sort((a2, b) => hora3(b.franja) - hora3(a2.franja))[0];
       const kH = 4 * cena.hidrato, kG = 9 * cena.grasa;
       const mover = Math.min(FRACCION_CENA_LIGERA * cena.kcalAprox, kH + kG);
       if (previa && mover > 0) {
@@ -2313,7 +2363,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         const grasaAntes = previa.grasa;
         let grasa = previa.grasa + dG, hidrato = previa.hidrato + dH;
         const enVentanaPreCarga = sesionesCarga.some((s) => {
-          const a2 = s.inicio - hora2(previa.franja);
+          const a2 = s.inicio - hora3(previa.franja);
           return a2 > 0 && a2 <= 2;
         });
         const limite = Math.max(p.tope.grasa_pre_carga_g, grasaAntes);
@@ -2364,8 +2414,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       if (k.startsWith("\0")) return sueltos[Number(k.slice(1))];
       const dias = grupos.get(k);
       const n = dias.map((d) => NOMBRE3[d]);
-      const lista3 = n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
-      return `${lista3.charAt(0).toUpperCase()}${lista3.slice(1)}: ${k}`;
+      const lista5 = n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
+      return `${lista5.charAt(0).toUpperCase()}${lista5.slice(1)}: ${k}`;
     });
   }
   var HUECO_MIN_H = 1.5;
@@ -2540,11 +2590,11 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     return s;
   }
   var cacheTokens = /* @__PURE__ */ new Map();
-  function tokens(texto2) {
-    let r = cacheTokens.get(texto2);
+  function tokens(texto3) {
+    let r = cacheTokens.get(texto3);
     if (r === void 0) {
-      r = normalizar2(texto2).split(/[^a-z0-9]+/).filter(Boolean).map(stem);
-      cacheTokens.set(texto2, r);
+      r = normalizar2(texto3).split(/[^a-z0-9]+/).filter(Boolean).map(stem);
+      cacheTokens.set(texto3, r);
     }
     return r.slice();
   }
@@ -2580,8 +2630,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const n = Number(s.trim().replace(",", "."));
     return Number.isFinite(n) && s.trim() !== "" ? n : void 0;
   }
-  function parsearTablaLimites(texto2) {
-    const lineas = texto2.split(/\r?\n/).filter((l) => l.trim() !== "");
+  function parsearTablaLimites(texto3) {
+    const lineas = texto3.split(/\r?\n/).filter((l) => l.trim() !== "");
     const alimentos = [];
     let pesoPlatoRecomendado = 700;
     let pesoPlatoTope = 900;
@@ -2848,6 +2898,14 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   function definirRolIngrediente(nombre, rol) {
     if (ROLES_VALIDOS.includes(rol)) rolesCatalogo.set(normalizar2(nombre), rol);
   }
+  function racionEnTabla(tabla2, nombre) {
+    const l = tabla2.alimentos.find((a2) => !a2.categoria.endsWith("(provisional)") && coincide(nombre, a2.keywords));
+    const maxG = l ? l.recomendado ?? l.tope : void 0;
+    return l && maxG != null ? { minG: l.minimo ?? 0, maxG } : null;
+  }
+  function racionRealista(nombre) {
+    return tablaInyectada ? racionEnTabla(tablaInyectada, nombre) : null;
+  }
   function racionRealistaMinima(nombre) {
     const l = buscarLimite(cargarTabla(), nombre);
     return l?.minimo ?? void 0;
@@ -2955,8 +3013,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     campos.push(actual);
     return campos;
   }
-  function lineasDatos(texto2) {
-    const lineas = texto2.split(/\r?\n/).filter((l) => l.trim() !== "");
+  function lineasDatos(texto3) {
+    const lineas = texto3.split(/\r?\n/).filter((l) => l.trim() !== "");
     return lineas.slice(1).map(parseCsvLine2);
   }
   function parsearRecetas(csvRecetas, csvIngredientes) {
@@ -2965,16 +3023,16 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const ingredientesPorReceta = /* @__PURE__ */ new Map();
     for (const cols of lineasDatos(csvIngredientes)) {
       const [recetaId, ingrediente, gramosRaw] = cols;
-      const lista4 = ingredientesPorReceta.get(recetaId) ?? [];
-      lista4.push({ nombre: ingrediente, gramos: Number(gramosRaw) });
-      ingredientesPorReceta.set(recetaId, lista4);
+      const lista6 = ingredientesPorReceta.get(recetaId) ?? [];
+      lista6.push({ nombre: ingrediente, gramos: Number(gramosRaw) });
+      ingredientesPorReceta.set(recetaId, lista6);
       const iRol = colIng("rol");
       if (iRol >= 0 && cols[iRol]) definirRolIngrediente(ingrediente, cols[iRol].trim());
     }
     const cab = parseCsvLine2(csvRecetas.split(/\r?\n/).find((l) => l.trim() !== "") ?? "");
     const col = (n) => cab.indexOf(n);
     const dato = (cols, n) => col(n) >= 0 ? (cols[col(n)] ?? "").trim() : "";
-    const lista3 = (t2) => t2.split(";").map((x) => x.trim()).filter(Boolean);
+    const lista5 = (t2) => t2.split(";").map((x) => x.trim()).filter(Boolean);
     return lineasDatos(csvRecetas).map((cols) => {
       const [id, nombre, franjasRaw, kcal, proteina, grasa, hidrato, notas] = cols;
       const tipoCol = dato(cols, "tipoPlato");
@@ -2994,11 +3052,11 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         .../fibraAlta/.test(notas ?? "") ? { fibraAlta: true } : {},
         ...["primero", "segundo", "postre"].includes(tipo) ? { tipoPlato: tipo } : {},
         ...uso === "carga" ? { usoDia: "carga" } : {},
-        ...col("alergenos") >= 0 ? { alergenos: lista3(dato(cols, "alergenos")) } : {},
+        ...col("alergenos") >= 0 ? { alergenos: lista5(dato(cols, "alergenos")) } : {},
         ...col("apto_vegano") >= 0 ? { aptitudes: apt } : {},
         ...dato(cols, "bajo_fibra") ? { bajoFibra: dato(cols, "bajo_fibra") === "si" } : {},
         ...dato(cols, "proteina_principal") ? { proteinaPrincipal: dato(cols, "proteina_principal") } : {},
-        ...dato(cols, "base_hidrato") ? { baseHidrato: lista3(dato(cols, "base_hidrato")) } : {},
+        ...dato(cols, "base_hidrato") ? { baseHidrato: lista5(dato(cols, "base_hidrato")) } : {},
         ...dato(cols, "preparacion") ? { preparacion: dato(cols, "preparacion") } : {},
         ...dato(cols, "fibra_g") ? { fibraG: Number(dato(cols, "fibra_g")) } : {},
         ingredientes: ingredientesPorReceta.get(id) ?? []
@@ -3087,13 +3145,13 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
 
   // src/motor/medidas-caseras.ts
   var COLUMNAS2 = ["ingrediente", "medida", "gramos", "estado", "fuente_url_o_nota"];
-  function comprobarMedidasCsv(texto2) {
+  function comprobarMedidasCsv(texto3) {
     const fallos = [];
-    const cab = (texto2.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
+    const cab = (texto3.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
     for (const c2 of COLUMNAS2) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
     if (fallos.length) return fallos;
     const vistas = /* @__PURE__ */ new Set();
-    for (const r of registros(texto2)) {
+    for (const r of registros(texto3)) {
       const id = `${r.ingrediente || "(sin nombre)"} \xB7 ${r.medida || "(sin medida)"}`;
       if (!r.ingrediente) fallos.push("fila sin ingrediente");
       if (!r.medida) fallos.push(`${id}: sin medida`);
@@ -3106,8 +3164,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     }
     return fallos;
   }
-  function medidasDesdeCsv(texto2) {
-    return registros(texto2).map((r) => ({ ingrediente: r.ingrediente, medida: r.medida, gramos: Number(r.gramos.replace(",", ".")), estado: r.estado }));
+  function medidasDesdeCsv(texto3) {
+    return registros(texto3).map((r) => ({ ingrediente: r.ingrediente, medida: r.medida, gramos: Number(r.gramos.replace(",", ".")), estado: r.estado }));
   }
   var FRACCIONES = { 0.5: "\xBD", 1.5: "1\xBD", 2.5: "2\xBD", 3.5: "3\xBD" };
   var mismoNombre = (a2, b) => a2.trim().toLowerCase() === b.trim().toLowerCase();
@@ -3119,7 +3177,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     if (!(gramos > 0)) return void 0;
     const suyas = medidas.filter((m) => mismoNombre(m.ingrediente, ingrediente)).sort((a2, b) => b.gramos - a2.gramos);
     if (!suyas.length) return void 0;
-    const texto2 = (n, m) => {
+    const texto3 = (n, m) => {
       const media = /^media\s+(.+)$/i.exec(m.medida);
       if (!media) return `\u2248 ${FRACCIONES[n] ?? String(n)} \xD7 ${m.medida}`;
       const u = n / 2;
@@ -3133,13 +3191,13 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       const n = gramos / m.gramos;
       if (esMedidaIndivisible(m)) {
         const k = Math.round(n);
-        if (k >= 1 && k <= 4 && Math.abs(n - k) / k <= 0.12) return texto2(k, m);
+        if (k >= 1 && k <= 4 && Math.abs(n - k) / k <= 0.12) return texto3(k, m);
         if (n >= 0.5) return void 0;
         continue;
       }
       if (n > 4.25) return void 0;
       if (n < 0.45) continue;
-      return texto2(Math.min(4, Math.round(n * 2) / 2), m);
+      return texto3(Math.min(4, Math.round(n * 2) / 2), m);
     }
     return void 0;
   }
@@ -4052,8 +4110,8 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         return n;
       };
       const semanaVaria = (r) => !variedadCC || violacionesE2(r) === 0;
-      const intentarBase = (lista3, filtrar) => {
-        const candidatas = filtrar ? lista3.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista3;
+      const intentarBase = (lista5, filtrar) => {
+        const candidatas = filtrar ? lista5.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista5;
         if (!candidatas.length) {
           return { motivo: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y ninguna receta del cat\xE1logo lo cumple` : slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
         }
@@ -4088,13 +4146,13 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         return { elegido: mejor };
       };
       const intentar = (listaTodas, filtrar) => {
-        const lista3 = listaTodas.filter((r) => delDia(r) && variado(r) && semanaVaria(r) && desayunoVale(r));
-        if (!lista3.length) return { motivo: "todas las opciones repiten el plato o la prote\xEDna de la otra comida del d\xEDa" };
+        const lista5 = listaTodas.filter((r) => delDia(r) && variado(r) && semanaVaria(r) && desayunoVale(r));
+        if (!lista5.length) return { motivo: "todas las opciones repiten el plato o la prote\xEDna de la otra comida del d\xEDa" };
         if (evitarIds.size) {
-          const nuevas = intentarBase(lista3.filter((r) => !idsDe(r).some((id) => evitarIds.has(id))), filtrar);
+          const nuevas = intentarBase(lista5.filter((r) => !idsDe(r).some((id) => evitarIds.has(id))), filtrar);
           if (nuevas.elegido && alcanza(nuevas.elegido)) return nuevas;
         }
-        return intentarBase(lista3, filtrar);
+        return intentarBase(lista5, filtrar);
       };
       const alcanza = (e) => !!e && e.desviacion <= slot.kcalObjetivo * 0.1;
       const faltaProteina = (r, factor) => slot.proteinaObjetivoG === void 0 ? 0 : Math.max(0, slot.proteinaObjetivoG - proteinaServida(r, factor));
@@ -4447,8 +4505,8 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   }
   function clasificar(ingrediente) {
     const n = normalizar5(ingrediente);
-    for (const [seccion, palabras] of PALABRAS_SECCION) {
-      if (palabras.some((p) => contienePalabra(n, p))) return seccion;
+    for (const [seccion, palabras2] of PALABRAS_SECCION) {
+      if (palabras2.some((p) => contienePalabra(n, p))) return seccion;
     }
     return "otros";
   }
@@ -4487,8 +4545,8 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       comprar: redondearCompra(ingrediente, Math.round(gramosTotales * 100) / 100)
     })).sort((a2, b) => a2.seccion.localeCompare(b.seccion) || a2.ingrediente.localeCompare(b.ingrediente));
   }
-  function marcarYaEnCasa(lista3, marcados) {
-    return lista3.map((item) => ({ ...item, yaEnCasa: marcados.has(item.ingrediente) }));
+  function marcarYaEnCasa(lista5, marcados) {
+    return lista5.map((item) => ({ ...item, yaEnCasa: marcados.has(item.ingrediente) }));
   }
   var NOMBRE_DIA = {
     L: "lunes",
@@ -4558,10 +4616,10 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     }
     return lineas.join("\n");
   }
-  function evaluarMarcas(lista3, marcas) {
+  function evaluarMarcas(lista5, marcas) {
     const cubiertos = /* @__PURE__ */ new Set();
     const aRevisar = [];
-    for (const item of lista3) {
+    for (const item of lista5) {
       if (!(item.ingrediente in marcas)) continue;
       const marcado = marcas[item.ingrediente];
       if (marcado === null || Math.abs(marcado - item.gramosTotales) < 0.05) cubiertos.add(item.ingrediente);
@@ -4573,12 +4631,12 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const marcas = {};
     const manuales = [];
     if (!valor || typeof valor !== "object") return { marcas, manuales };
-    const { marcados, manuales: lista3 } = valor;
+    const { marcados, manuales: lista5 } = valor;
     for (const m of Array.isArray(marcados) ? marcados : []) {
       if (typeof m === "string") marcas[m] = null;
       else if (Array.isArray(m) && typeof m[0] === "string") marcas[m[0]] = typeof m[1] === "number" && Number.isFinite(m[1]) ? m[1] : null;
     }
-    for (const a2 of Array.isArray(lista3) ? lista3 : []) {
+    for (const a2 of Array.isArray(lista5) ? lista5 : []) {
       if (!a2 || typeof a2 !== "object") continue;
       const { id, nombre, cantidad, unidad, yaEnCasa } = a2;
       if (typeof id !== "string" || typeof nombre !== "string") continue;
@@ -4731,12 +4789,12 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
   function redondear2(n) {
     return Math.round(n * 100) / 100;
   }
-  function estimarCoste(lista3, precios, fracciones = FRACCIONES2) {
+  function estimarCoste(lista5, precios, fracciones = FRACCIONES2) {
     const porNombre = new Map(precios.map((p) => [normalizar6(p.ingrediente), p]));
     let total = 0;
     const porSeccion = {};
     const sinPrecio = [];
-    for (const item of lista3) {
+    for (const item of lista5) {
       const precio = porNombre.get(clavePrecio(item.ingrediente));
       if (!precio) {
         sinPrecio.push(item.ingrediente);
@@ -5468,7 +5526,7 @@ R484,crudo,bocadillo_tostada,frio,no
     { clave: "comedor", texto: "Comedor/cantina" }
   ];
   function etiquetasContextoDia(contexto) {
-    const etiquetas = ETIQUETAS.filter(({ clave: clave2 }) => contexto[clave2]).map(({ texto: texto2 }) => texto2);
+    const etiquetas = ETIQUETAS.filter(({ clave: clave2 }) => contexto[clave2]).map(({ texto: texto3 }) => texto3);
     if (contexto.tiempoCocina !== "normal") {
       etiquetas.push(contexto.tiempoCocina === "poco" ? "Poco tiempo para cocinar" : "Le gusta cocinar");
     }
@@ -5547,8 +5605,8 @@ R484,crudo,bocadillo_tostada,frio,no
   function esFechaValida(fecha) {
     return aUTC(fecha) !== void 0;
   }
-  function esHoraValida(hora2) {
-    return RE_HORA.test(hora2);
+  function esHoraValida(hora3) {
+    return RE_HORA.test(hora3);
   }
   function esLunes(fecha) {
     const t2 = aUTC(fecha);
@@ -5575,7 +5633,7 @@ R484,crudo,bocadillo_tostada,frio,no
   }
   var MAX_DIAS_COMPETICION = 14;
   var MAX_DURACION_PRUEBA_MIN = 3 * 1440;
-  var aMin = (hora2) => Number(hora2.slice(0, 2)) * 60 + Number(hora2.slice(3, 5));
+  var aMin = (hora3) => Number(hora3.slice(0, 2)) * 60 + Number(hora3.slice(3, 5));
   function validarCompeticion(datos) {
     const nombre = (datos.nombre ?? "").trim();
     if (!nombre) return { ok: false, error: "Escribe el nombre de la competici\xF3n." };
@@ -5629,59 +5687,59 @@ R484,crudo,bocadillo_tostada,frio,no
       }
       return { ok: true, datos: { nombre, ...comunes, ...pruebas[0].fecha ? {} : { hora: pruebas[0].hora }, pruebas } };
     }
-    const hora2 = (datos.hora ?? "").trim();
-    if (hora2 && !esHoraValida(hora2)) return { ok: false, error: "La hora debe tener el formato HH:MM (o d\xE9jala vac\xEDa)." };
-    return { ok: true, datos: { nombre, ...comunes, ...hora2 ? { hora: hora2 } : {} } };
+    const hora3 = (datos.hora ?? "").trim();
+    if (hora3 && !esHoraValida(hora3)) return { ok: false, error: "La hora debe tener el formato HH:MM (o d\xE9jala vac\xEDa)." };
+    return { ok: true, datos: { nombre, ...comunes, ...hora3 ? { hora: hora3 } : {} } };
   }
-  function siguienteId(lista3) {
-    const max = lista3.reduce((m, c2) => Math.max(m, Number(c2.id.replace(/^c/, "")) || 0), 0);
+  function siguienteId(lista5) {
+    const max = lista5.reduce((m, c2) => Math.max(m, Number(c2.id.replace(/^c/, "")) || 0), 0);
     return `c${max + 1}`;
   }
-  function anadirCompeticion(lista3, datos) {
+  function anadirCompeticion(lista5, datos) {
     const v = validarCompeticion(datos);
     if (!v.ok) return v;
-    return { ok: true, lista: ordenarCompeticiones([...lista3, { id: siguienteId(lista3), ...v.datos }]) };
+    return { ok: true, lista: ordenarCompeticiones([...lista5, { id: siguienteId(lista5), ...v.datos }]) };
   }
-  function editarCompeticion(lista3, id, datos) {
-    if (!lista3.some((c2) => c2.id === id)) return { ok: false, error: "Esa competici\xF3n ya no existe." };
+  function editarCompeticion(lista5, id, datos) {
+    if (!lista5.some((c2) => c2.id === id)) return { ok: false, error: "Esa competici\xF3n ya no existe." };
     const v = validarCompeticion(datos);
     if (!v.ok) return v;
-    return { ok: true, lista: ordenarCompeticiones(lista3.map((c2) => c2.id === id ? { id, ...v.datos } : c2)) };
+    return { ok: true, lista: ordenarCompeticiones(lista5.map((c2) => c2.id === id ? { id, ...v.datos } : c2)) };
   }
-  function borrarCompeticion(lista3, id) {
-    return lista3.filter((c2) => c2.id !== id);
+  function borrarCompeticion(lista5, id) {
+    return lista5.filter((c2) => c2.id !== id);
   }
-  function ordenarCompeticiones(lista3) {
-    return [...lista3].sort((a2, b) => a2.fecha.localeCompare(b.fecha) || (a2.hora ?? "").localeCompare(b.hora ?? "") || a2.nombre.localeCompare(b.nombre));
+  function ordenarCompeticiones(lista5) {
+    return [...lista5].sort((a2, b) => a2.fecha.localeCompare(b.fecha) || (a2.hora ?? "").localeCompare(b.hora ?? "") || a2.nombre.localeCompare(b.nombre));
   }
-  function competicionesDelDia(lista3, inicio, dia2) {
+  function competicionesDelDia(lista5, inicio, dia2) {
     const fecha = fechaDelDia(inicio, dia2);
-    return ordenarCompeticiones(lista3.filter((c2) => c2.fecha === fecha || c2.fechaFin !== void 0 && c2.fecha < fecha && fecha <= c2.fechaFin));
+    return ordenarCompeticiones(lista5.filter((c2) => c2.fecha === fecha || c2.fechaFin !== void 0 && c2.fecha < fecha && fecha <= c2.fechaFin));
   }
   function competicionesDesdeJson(valor) {
     if (!Array.isArray(valor)) return [];
     const resultado = [];
     for (const x of valor) {
       if (!x || typeof x !== "object") continue;
-      const { id, nombre, fecha, hora: hora2, fechaFin, tipo, pruebas, usaGeles, problemasIntestinales, toleraCarga, calor, cafeina, cafes } = x;
+      const { id, nombre, fecha, hora: hora3, fechaFin, tipo, pruebas, usaGeles, problemasIntestinales, toleraCarga, calor, cafeina, cafes } = x;
       if (typeof id !== "string" || typeof nombre !== "string" || typeof fecha !== "string") continue;
-      const texto2 = (v2) => typeof v2 === "string" ? v2 : void 0;
+      const texto3 = (v2) => typeof v2 === "string" ? v2 : void 0;
       const v = validarCompeticion({
         nombre,
         fecha,
-        hora: texto2(hora2),
-        fechaFin: texto2(fechaFin),
-        tipo: texto2(tipo),
-        usaGeles: texto2(usaGeles),
-        problemasIntestinales: texto2(problemasIntestinales),
-        toleraCarga: texto2(toleraCarga),
-        calor: texto2(calor),
-        cafeina: texto2(cafeina),
+        hora: texto3(hora3),
+        fechaFin: texto3(fechaFin),
+        tipo: texto3(tipo),
+        usaGeles: texto3(usaGeles),
+        problemasIntestinales: texto3(problemasIntestinales),
+        toleraCarga: texto3(toleraCarga),
+        calor: texto3(calor),
+        cafeina: texto3(cafeina),
         cafes: typeof cafes === "number" ? cafes : void 0,
         pruebas: Array.isArray(pruebas) ? pruebas.filter((p) => !!p && typeof p === "object").map((p) => ({
-          hora: texto2(p.hora) ?? "",
+          hora: texto3(p.hora) ?? "",
           duracionMin: Number(p.duracionMin),
-          fecha: texto2(p.fecha)
+          fecha: texto3(p.fecha)
         })) : void 0
       });
       if (v.ok) resultado.push({ id, ...v.datos });
@@ -5749,9 +5807,9 @@ R484,crudo,bocadillo_tostada,frio,no
   }
 
   // src/motor/compra-periodo.ts
-  function conservacionDesdeCsv(texto2) {
+  function conservacionDesdeCsv(texto3) {
     const tabla2 = /* @__PURE__ */ new Map();
-    for (const r of registros(texto2)) {
+    for (const r of registros(texto3)) {
       const lugar = r.lugar ?? r.tipo ?? "";
       const tipo = lugar === "despensa" ? "despensa" : lugar === "nevera" || lugar === "fresco" ? "fresco" : void 0;
       if (!r.ingrediente || !tipo) continue;
@@ -5759,9 +5817,9 @@ R484,crudo,bocadillo_tostada,frio,no
     }
     return tabla2;
   }
-  function comprobarConservacionCsv(texto2, ingredientesCatalogo) {
+  function comprobarConservacionCsv(texto3, ingredientesCatalogo) {
     const fallos = [];
-    const filas = registros(texto2);
+    const filas = registros(texto3);
     const vistos = /* @__PURE__ */ new Set();
     for (const r of filas) {
       const n = r.ingrediente;
@@ -6055,13 +6113,13 @@ zumo de naranja,100,300,zumo,"https://www.ucm.es/data/cont/docs/458-2015-10-22-p
   var FACTOR_LEGUMBRE_COCIDA = 0.4;
   var RE_LEGUMBRE_COCIDA = /\b(garbanzo|lenteja|alubia)s?\b.*\bcocid/i;
   var COLUMNAS5 = ["ingrediente", "min_g", "max_g", "familia", "fuente_url_o_nota", "estado"];
-  function comprobarLimitesIngredientesCsv(texto2) {
+  function comprobarLimitesIngredientesCsv(texto3) {
     const fallos = [];
-    const cab = (texto2.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
+    const cab = (texto3.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
     for (const c2 of COLUMNAS5) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
     if (fallos.length) return fallos;
     const vistos = /* @__PURE__ */ new Set();
-    for (const r of registros(texto2)) {
+    for (const r of registros(texto3)) {
       const id = r.ingrediente || "(sin nombre)";
       if (!r.ingrediente) fallos.push("fila sin ingrediente");
       if (vistos.has(id.toLowerCase())) fallos.push(`${id}: fila duplicada`);
@@ -6076,8 +6134,8 @@ zumo de naranja,100,300,zumo,"https://www.ucm.es/data/cont/docs/458-2015-10-22-p
     }
     return fallos;
   }
-  function limitesIngredientesDesdeCsv(texto2) {
-    return registros(texto2).map((r) => {
+  function limitesIngredientesDesdeCsv(texto3) {
+    return registros(texto3).map((r) => {
       const cocida = RE_LEGUMBRE_COCIDA.test(r.ingrediente);
       const f2 = (g) => Math.round((cocida ? g / FACTOR_LEGUMBRE_COCIDA : g) * 10) / 10;
       return { ingrediente: r.ingrediente, minG: f2(Number(r.min_g.replace(",", "."))), maxG: f2(Number(r.max_g.replace(",", "."))), familia: r.familia, estado: r.estado };
@@ -6092,8 +6150,8 @@ zumo de naranja,100,300,zumo,"https://www.ucm.es/data/cont/docs/458-2015-10-22-p
     const n = Number((s ?? "").replace(",", "."));
     return s !== void 0 && s.trim() !== "" && Number.isFinite(n) ? n : void 0;
   };
-  function comerFueraDesdeCsv(texto2) {
-    return registros(texto2).filter((r) => r.cadena && r.plato && (r.estado === "oficial" || r.estado === "estimacion")).map((r) => ({
+  function comerFueraDesdeCsv(texto3) {
+    return registros(texto3).filter((r) => r.cadena && r.plato && (r.estado === "oficial" || r.estado === "estimacion")).map((r) => ({
       cadena: r.cadena,
       plato: r.plato,
       tamano: r.tamano,
@@ -6108,16 +6166,16 @@ zumo de naranja,100,300,zumo,"https://www.ucm.es/data/cont/docs/458-2015-10-22-p
       fecha: r.fecha_consulta
     }));
   }
-  function comprobarComerFueraCsv(texto2) {
+  function comprobarComerFueraCsv(texto3) {
     const fallos = [];
-    const cab = (texto2.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
+    const cab = (texto3.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
     for (const c2 of ["cadena", "plato", "tamano", "sinonimos", "kcal_unidad", "kcal_100", "peso_g_o_ml", "peso_min_g", "peso_max_g", "estado", "fuente_url", "fecha_consulta"]) {
       if (!cab.includes(c2)) fallos.push(`falta la columna ${c2}`);
     }
     if (fallos.length) return fallos;
     const claves = /* @__PURE__ */ new Set();
     const aliasPorCadena = /* @__PURE__ */ new Map();
-    for (const r of registros(texto2)) {
+    for (const r of registros(texto3)) {
       const id = `${r.cadena} \xB7 ${r.plato} \xB7 ${r.tamano}`;
       if (!r.cadena || !r.plato) {
         fallos.push(`fila sin cadena o plato (${id})`);
@@ -6204,7 +6262,7 @@ zumo de naranja,100,300,zumo,"https://www.ucm.es/data/cont/docs/458-2015-10-22-p
     if (f2.pesoMin !== void 0 && f2.pesoMax !== void 0) return { min: Math.round(f2.kcal100 * f2.pesoMin / 100), max: Math.round(f2.kcal100 * f2.pesoMax / 100) };
     return void 0;
   }
-  function estimarComidaFuera(texto2, tabla2) {
+  function estimarComidaFuera(texto3, tabla2) {
     const genericos = nombresGenericos(tabla2);
     const aliasesDe = (f2) => [f2.plato, ...f2.sinonimos, ...genericos.get(f2) ?? []];
     const conPlural = (a2) => {
@@ -6213,7 +6271,7 @@ zumo de naranja,100,300,zumo,"https://www.ucm.es/data/cont/docs/458-2015-10-22-p
     };
     const conConector = [...new Set(tabla2.flatMap((f2) => aliasesDe(f2).map(normalizarTexto2)).filter((a2) => /\b(?:con|y|mas)\b/.test(a2)).flatMap(conPlural))].sort((a2, b) => b.length - a2.length);
     const proteger = (n) => conConector.reduce((acc, a2) => acc.split(a2).join(a2.replace(/ /g, "_")), n);
-    const trozos = texto2.split(/[,;+]/).flatMap((p) => proteger(normalizarTexto2(p)).split(/\b(?:con|y|mas)\b/)).map((t2) => t2.trim().replace(/_/g, " ")).filter(Boolean);
+    const trozos = texto3.split(/[,;+]/).flatMap((p) => proteger(normalizarTexto2(p)).split(/\b(?:con|y|mas)\b/)).map((t2) => t2.trim().replace(/_/g, " ")).filter(Boolean);
     const cadenas = [...new Set(tabla2.map((f2) => f2.cadena))].map((c2) => ({ c: c2, alias: normalizarTexto2(c2).replace(/ espana$/, "") }));
     const lineas = [];
     const sinReconocer = [];
@@ -6577,12 +6635,12 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     }
     return Array.from(m, ([ingrediente, gramos]) => ({ ingrediente, gramos: Math.round(gramos * 100) / 100 }));
   }
-  function descontarSobras(lista3, sobras) {
+  function descontarSobras(lista5, sobras) {
     const por = new Map(normalizarSobras(sobras).map((s) => [s.ingrediente, s.gramos]));
-    const nombres = new Set(lista3.map((i) => i.ingrediente));
+    const nombres = new Set(lista5.map((i) => i.ingrediente));
     const cubiertos = [];
     const resultado = [];
-    for (const item of lista3) {
+    for (const item of lista5) {
       const tengo = por.get(item.ingrediente);
       if (!tengo) {
         resultado.push(item);
@@ -6793,7 +6851,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
   function generarIcs(eventos, zona, ahora = /* @__PURE__ */ new Date()) {
     return lineasIcs(eventos, zona, ahora).map(plegarLineaIcs).join("\r\n") + "\r\n";
   }
-  var aMinutos = (hora2) => Number(hora2.slice(0, 2)) * 60 + Number(hora2.slice(3, 5));
+  var aMinutos = (hora3) => Number(hora3.slice(0, 2)) * 60 + Number(hora3.slice(3, 5));
   var deMinutos = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
   function conflictosComidaEntreno(eventos) {
     const resultado = [];
@@ -7294,10 +7352,10 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
   }
 
   // src/motor/portapapeles.ts
-  async function copiarAlPortapapeles(texto2, v\u00EDas) {
+  async function copiarAlPortapapeles(texto3, v\u00EDas) {
     if (v\u00EDas.clipboard && typeof v\u00EDas.clipboard.writeText === "function") {
       try {
-        await v\u00EDas.clipboard.writeText(texto2);
+        await v\u00EDas.clipboard.writeText(texto3);
         return true;
       } catch {
         return false;
@@ -7305,7 +7363,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     }
     if (v\u00EDas.copiarConTextarea) {
       try {
-        return v\u00EDas.copiarConTextarea(texto2) === true;
+        return v\u00EDas.copiarConTextarea(texto3) === true;
       } catch {
         return false;
       }
@@ -7807,7 +7865,7 @@ r43,aceite de oliva,10`;
 
   // src/motor/dia-competicion.ts
   var NOTA_PAUTA = "Pauta orientativa.";
-  var aMinutos2 = (hora2) => Number(hora2.slice(0, 2)) * 60 + Number(hora2.slice(3, 5));
+  var aMinutos2 = (hora3) => Number(hora3.slice(0, 2)) * 60 + Number(hora3.slice(3, 5));
   var aHoraTexto = (min) => {
     const m = (Math.round(min) % 1440 + 1440) % 1440;
     return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
@@ -8079,15 +8137,15 @@ r43,aceite de oliva,10`;
   function alertaHambre(valoraciones, hoy, fechaISO, existentes = []) {
     const lunes = lunesDeLaSemana(hoy);
     const firma = `H|${lunes}`;
-    const lista3 = hambresDeLaSemana(valoraciones, hoy);
-    if (lista3.length < VECES_HAMBRE_ALERTA || existentes.some((a2) => a2.firma === firma)) return void 0;
-    const cuales = lista3.map((v) => `${NOMBRE_FRANJA2[v.franja] ?? v.franja} del ${v.fecha.slice(8, 10)}/${v.fecha.slice(5, 7)}`).join(", ");
+    const lista5 = hambresDeLaSemana(valoraciones, hoy);
+    if (lista5.length < VECES_HAMBRE_ALERTA || existentes.some((a2) => a2.firma === firma)) return void 0;
+    const cuales = lista5.map((v) => `${NOMBRE_FRANJA2[v.franja] ?? v.franja} del ${v.fecha.slice(8, 10)}/${v.fecha.slice(5, 7)}`).join(", ");
     return {
       fecha: fechaISO,
       prioritaria: false,
       tipo: "hambre",
       hambre: true,
-      disparadores: [{ pregunta: 0, etiqueta: "hambre", se\u00F1al: `\xABMe he quedado con hambre\xBB ${lista3.length} veces esta semana (desde el lunes ${lunes.slice(8, 10)}/${lunes.slice(5, 7)}): ${cuales}. La app sube el volumen de esas comidas, no las calor\xEDas.` }],
+      disparadores: [{ pregunta: 0, etiqueta: "hambre", se\u00F1al: `\xABMe he quedado con hambre\xBB ${lista5.length} veces esta semana (desde el lunes ${lunes.slice(8, 10)}/${lunes.slice(5, 7)}): ${cuales}. La app sube el volumen de esas comidas, no las calor\xEDas.` }],
       contexto: [],
       sinInterpretar: [],
       firma
@@ -9869,7 +9927,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
       const kcalDia = () => mias().reduce((t2, a2) => t2 + a2.kcalResultante, 0);
       let cambios = 0;
       const hidratoObjetivo = delDia.some((s2) => s2.cargaAlta) ? opciones.hidratoDia?.[dia2] : void 0;
-      const hidratosCon = (lista3, extra) => hidratosServidosDia(lista3, extra ? recetas.concat(recetasNuevas, extra) : recetas.concat(recetasNuevas), dia2);
+      const hidratosCon = (lista5, extra) => hidratosServidosDia(lista5, extra ? recetas.concat(recetasNuevas, extra) : recetas.concat(recetasNuevas), dia2);
       const protegida = (a2) => Boolean(a2.fijada || a2.pedidoPorUsuario || opciones.noMover?.(dia2, a2.franja));
       const subir = (a2, minimoG = 0) => {
         if (protegida(a2)) return false;
@@ -9985,7 +10043,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
   }
 
   // src/motor/solucion-avisos.ts
-  var TIPOS_SOLUCIONABLES = { hambre: "Hambre repetida", proteina: "Prote\xEDna corta", comidas_fuera: "Muchas comidas fuera" };
+  var TIPOS_SOLUCIONABLES = { hambre: "Hambre repetida", proteina: "Prote\xEDna corta", comidas_fuera: "Muchas comidas fuera", gusto: "Cambio de gustos" };
   var PASO_KCAL = 100;
   var PASO_MINIMO_KCAL = 50;
   var MAX_COMIDAS_FUERA_SEMANA = 3;
@@ -10081,16 +10139,314 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
     if (fuera.length <= MAX_COMIDAS_FUERA_SEMANA) return null;
     const orden = [...fuera].sort((a2, b) => Object.keys(NOMBRE_DIA2).indexOf(a2.dia) - Object.keys(NOMBRE_DIA2).indexOf(b.dia) || ORDEN_FRANJA.indexOf(a2.franja) - ORDEN_FRANJA.indexOf(b.franja));
     const dias = [...new Set(orden.map((c2) => c2.dia))];
-    const texto2 = orden.map((c2) => `${NOMBRE2[c2.franja].replace(/^(el|la) /, "")} del ${NOMBRE_DIA2[c2.dia]}`);
+    const texto3 = orden.map((c2) => `${NOMBRE2[c2.franja].replace(/^(el|la) /, "")} del ${NOMBRE_DIA2[c2.dia]}`);
     return {
       tipo: "comidas_fuera",
-      paso: `Ha comido fuera ${fuera.length} veces esta semana (${lista(texto2)}).`,
+      paso: `Ha comido fuera ${fuera.length} veces esta semana (${lista(texto3)}).`,
       hecho: `Cada vez he cuadrado el resto de ese d\xEDa con lo que comi\xF3 fuera (${dias.length} ${dias.length === 1 ? "d\xEDa" : "d\xEDas"}).`,
       propuesta: "Propongo dejar esas comidas fuera fijas en su plan, para que el resto de esos d\xEDas ya venga cuadrado sin que tenga que apuntarlas.",
       accion: { tipo: "plan_fuera", comidas: orden.map((c2) => ({ dia: c2.dia, franja: c2.franja, kcal: Math.round(c2.kcal) })) },
       kcalExtra: 0,
       auto: true
     };
+  }
+
+  // src/motor/compensaciones.ts
+  var ESTADOS = ["candidato_por_validar", "pendiente_limite_fruta", "validada_pablo", "rechazada"];
+  var sinTildes2 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  function parseCsvLine3(linea) {
+    const campos = [];
+    let actual = "";
+    let comillas = false;
+    for (let i = 0; i < linea.length; i++) {
+      const c2 = linea[i];
+      if (comillas) {
+        if (c2 === '"' && linea[i + 1] === '"') {
+          actual += '"';
+          i++;
+        } else if (c2 === '"') comillas = false;
+        else actual += c2;
+      } else if (c2 === '"') comillas = true;
+      else if (c2 === ",") {
+        campos.push(actual);
+        actual = "";
+      } else actual += c2;
+    }
+    campos.push(actual);
+    return campos;
+  }
+  var COLUMNAS6 = ["grupo_quitado", "nutriente", "alimento", "cantidad_g", "veces_semana", "motivo", "fuente", "fdc_id", "estado"];
+  function motivosFila(f2, ref) {
+    const m = [];
+    if (!f2.grupo || !f2.nutriente || !f2.alimento) m.push("grupo, nutriente y alimento son obligatorios");
+    if (!ESTADOS.includes(f2.estado)) m.push(`estado \xAB${f2.estado}\xBB no v\xE1lido`);
+    if (!claveGrupo(f2.grupo)) m.push(`grupo \xAB${f2.grupo}\xBB desconocido`);
+    else if (alimentoDelGrupo(f2.grupo, f2.alimento)) m.push(`${f2.alimento} es del grupo que se quita (${f2.grupo})`);
+    const fdc = ref.catalogo.get(f2.alimento);
+    if (fdc === void 0) m.push("el alimento no est\xE1 en datos/alimentos-usda.csv");
+    else if (f2.fdcId && f2.fdcId !== fdc) m.push(`fdc_id ${f2.fdcId} no coincide con el del cat\xE1logo (${fdc})`);
+    if (!/^https?:\/\/\S+$/.test(f2.fuente)) m.push("la fuente tiene que ser un enlace");
+    if (!Number.isInteger(f2.vecesSemana) || f2.vecesSemana < 1 || f2.vecesSemana > 7) m.push("veces por semana entre 1 y 7");
+    if (!(f2.cantidadG > 0)) m.push("cantidad no v\xE1lida");
+    else {
+      const r = ref.racion(f2.alimento);
+      if (!r) m.push("sin banda en datos/limites-por-alimento.csv");
+      else if (f2.cantidadG < r.minG || f2.cantidadG > r.maxG) m.push(`${f2.cantidadG} g fuera de la raci\xF3n realista (${r.minG}-${r.maxG} g)`);
+    }
+    return m;
+  }
+  function comprobarCompensaciones(csv, ref) {
+    const inf = { filas: [], buenas: [], malas: [], errores: [] };
+    const lineas = csv.replace(/\r\n/g, "\n").split("\n");
+    const cab = parseCsvLine3(lineas[0] ?? "").map((c2) => c2.trim());
+    const idx = Object.fromEntries(COLUMNAS6.map((c2) => [c2, cab.indexOf(c2)]));
+    for (const c2 of COLUMNAS6) if (idx[c2] < 0) inf.errores.push(`falta la columna ${c2}`);
+    if (inf.errores.length) return inf;
+    const vistas = /* @__PURE__ */ new Set();
+    lineas.forEach((l, i) => {
+      if (i === 0 || l.trim() === "") return;
+      const v = parseCsvLine3(l);
+      const campo = (c2) => (v[idx[c2]] ?? "").trim();
+      const f2 = {
+        linea: i + 1,
+        grupo: campo("grupo_quitado"),
+        nutriente: campo("nutriente"),
+        alimento: campo("alimento"),
+        cantidadG: Number(campo("cantidad_g")),
+        vecesSemana: Number(campo("veces_semana")),
+        motivo: campo("motivo"),
+        fuente: campo("fuente"),
+        fdcId: campo("fdc_id"),
+        estado: campo("estado")
+      };
+      const motivos = motivosFila(f2, ref);
+      const clave2 = sinTildes2(`${f2.grupo}|${f2.nutriente}|${f2.alimento}`);
+      if (vistas.has(clave2)) motivos.push("fila repetida");
+      vistas.add(clave2);
+      inf.filas.push(f2);
+      if (motivos.length) {
+        inf.malas.push({ fila: f2, motivos });
+        if (f2.estado === "validada_pablo") inf.errores.push(`l\xEDnea ${f2.linea} (${f2.grupo} \u2192 ${f2.alimento}), validada por Pablo, no pasa: ${motivos.join("; ")}`);
+      } else inf.buenas.push(f2);
+    });
+    if (!inf.filas.length) inf.errores.push("la tabla est\xE1 vac\xEDa");
+    return inf;
+  }
+  function cargarCompensaciones(csv, ref) {
+    return comprobarCompensaciones(csv, ref).buenas.filter((f2) => f2.estado === "validada_pablo");
+  }
+  function gruposQuitables(cargadas) {
+    return [...new Set(cargadas.map((f2) => f2.grupo))];
+  }
+
+  // src/motor/compensaciones-datos.ts
+  var COMPENSACIONES_CSV = `grupo_quitado,nutriente,alimento,cantidad_g,veces_semana,motivo,fuente,falta_en_usda,fdc_id,estado,base_peso,familia_limite,minimo_g,tope_duro_g,aporte_por_toma,unidad_aporte
+pescado,omega-3 ALA,nueces,30,3,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Nueces como opci\xF3n vegetal; no equiparar ALA a EPA/DHA. No cuantifico ALA: registro USDA incluye 18:3 no diferenciado. EPA/DHA pendiente de Pablo.",https://www.aesan.gob.es/dam/jcr:50c0e97e-52a5-4155-b661-68318ed07364/COMPLEMENTOS_1.pdf,no,170187,candidato_por_validar,tal como se consume,Fruto seco,0,40,,
+pescado,prote\xEDna,pechuga de pollo,150,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/171077?api_key=DEMO_KEY,no,171077,candidato_por_validar,"crudo, parte comestible",Pollo / pavo,80,400,33.75,g
+pescado,prote\xEDna,huevo,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. 100 g parte comestible cruda, aproximaci\xF3n operativa de 2 huevos; cocinar. Dos tomas/semana suman unos 4 huevos, no 4 por cada fila.",https://api.nal.usda.gov/fdc/v1/food/171287?api_key=DEMO_KEY,no,171287,candidato_por_validar,"crudo, parte comestible",Huevos,50,240,12.56,g
+pescado,yodo,leche semidesnatada,250,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Fuente alimentaria cualitativa seg\xFAn EFSA; contenido muy variable y no cuantificado aqu\xED. No garantiza cubrir el yodo perdido. Registro USDA: leche 2% enriquecida A/D; no usar su vitamina D como dato de leche espa\xF1ola sin etiqueta. Calcio/B12 orientativos de este registro; yodo solo EFSA.",https://www.efsa.europa.eu/sites/default/files/2017_09_DRVs_summary_report.pdf,no,171267,candidato_por_validar,tal como se consume,Bebida vegetal / leche,0,500,,
+pescado,yodo,huevo,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Fuente alimentaria cualitativa seg\xFAn EFSA; contenido muy variable y no cuantificado aqu\xED. No garantiza cubrir el yodo perdido. 100 g parte comestible cruda, aproximaci\xF3n operativa de 2 huevos; cocinar. Dos tomas/semana suman unos 4 huevos, no 4 por cada fila.",https://www.efsa.europa.eu/sites/default/files/2017_09_DRVs_summary_report.pdf,no,171287,candidato_por_validar,"crudo, parte comestible",Huevos,50,240,,
+pescado azul,omega-3 ALA,nueces,30,3,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Nueces como opci\xF3n vegetal; no equiparar ALA a EPA/DHA. No cuantifico ALA: registro USDA incluye 18:3 no diferenciado. EPA/DHA pendiente de Pablo.",https://www.aesan.gob.es/dam/jcr:50c0e97e-52a5-4155-b661-68318ed07364/COMPLEMENTOS_1.pdf,no,170187,candidato_por_validar,tal como se consume,Fruto seco,0,40,,
+pescado azul,vitamina D,huevo,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. 100 g parte comestible cruda, aproximaci\xF3n operativa de 2 huevos; cocinar. Dos tomas/semana suman unos 4 huevos, no 4 por cada fila. Aporte parcial: no garantiza cubrir vitamina D con esta raci\xF3n/frecuencia.",https://api.nal.usda.gov/fdc/v1/food/171287?api_key=DEMO_KEY,no,171287,candidato_por_validar,"crudo, parte comestible",Huevos,50,240,2.0,\xB5g
+pescado azul,B12,leche semidesnatada,250,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Registro USDA: leche 2% enriquecida A/D; no usar su vitamina D como dato de leche espa\xF1ola sin etiqueta. Calcio/B12 orientativos de este registro; yodo solo EFSA.",https://api.nal.usda.gov/fdc/v1/food/171267?api_key=DEMO_KEY,no,171267,candidato_por_validar,tal como se consume,Bebida vegetal / leche,0,500,1.325,\xB5g
+pescado azul,B12,huevo,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. 100 g parte comestible cruda, aproximaci\xF3n operativa de 2 huevos; cocinar. Dos tomas/semana suman unos 4 huevos, no 4 por cada fila.",https://api.nal.usda.gov/fdc/v1/food/171287?api_key=DEMO_KEY,no,171287,candidato_por_validar,"crudo, parte comestible",Huevos,50,240,0.89,\xB5g
+marisco,hierro,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Hierro vegetal no hemo; contenido no equivale a absorci\xF3n. No garantiza corregir d\xE9ficit.",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,5.661,mg
+marisco,B12,salm\xF3n,150,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/175167?api_key=DEMO_KEY,no,175167,candidato_por_validar,"crudo, parte comestible",Pescado azul,70,350,4.845,\xB5g
+marisco,B12,leche semidesnatada,250,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Registro USDA: leche 2% enriquecida A/D; no usar su vitamina D como dato de leche espa\xF1ola sin etiqueta. Calcio/B12 orientativos de este registro; yodo solo EFSA.",https://api.nal.usda.gov/fdc/v1/food/171267?api_key=DEMO_KEY,no,171267,candidato_por_validar,tal como se consume,Bebida vegetal / leche,0,500,1.325,\xB5g
+marisco,yodo,leche semidesnatada,250,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Fuente alimentaria cualitativa seg\xFAn EFSA; contenido muy variable y no cuantificado aqu\xED. No garantiza cubrir el yodo perdido. Registro USDA: leche 2% enriquecida A/D; no usar su vitamina D como dato de leche espa\xF1ola sin etiqueta. Calcio/B12 orientativos de este registro; yodo solo EFSA.",https://www.efsa.europa.eu/sites/default/files/2017_09_DRVs_summary_report.pdf,no,171267,candidato_por_validar,tal como se consume,Bebida vegetal / leche,0,500,,
+marisco,yodo,huevo,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Fuente alimentaria cualitativa seg\xFAn EFSA; contenido muy variable y no cuantificado aqu\xED. No garantiza cubrir el yodo perdido. 100 g parte comestible cruda, aproximaci\xF3n operativa de 2 huevos; cocinar. Dos tomas/semana suman unos 4 huevos, no 4 por cada fila.",https://www.efsa.europa.eu/sites/default/files/2017_09_DRVs_summary_report.pdf,no,171287,candidato_por_validar,"crudo, parte comestible",Huevos,50,240,,
+l\xE1cteos,calcio,sardina en lata,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Con espina comestible y escurrida; el calcio no aplica a lomos sin espina. Elegir baja en sal y comprobar etiqueta.",https://api.nal.usda.gov/fdc/v1/food/175139?api_key=DEMO_KEY,no,175139,candidato_por_validar,escurrido con espina,Pescado azul,70,350,382.0,mg
+l\xE1cteos,calcio,almendra,30,3,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/170567?api_key=DEMO_KEY,no,170567,candidato_por_validar,tal como se consume,Fruto seco,0,40,80.7,mg
+l\xE1cteos,calcio,alubia blanca cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,175203,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,153.0,mg
+l\xE1cteos,prote\xEDna,sardina en lata,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Con espina comestible y escurrida; el calcio no aplica a lomos sin espina. Elegir baja en sal y comprobar etiqueta.",https://api.nal.usda.gov/fdc/v1/food/175139?api_key=DEMO_KEY,no,175139,candidato_por_validar,escurrido con espina,Pescado azul,70,350,24.62,g
+l\xE1cteos,prote\xEDna,alubia blanca cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,175203,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,16.541,g
+l\xE1cteos,yodo,huevo,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Fuente alimentaria cualitativa seg\xFAn EFSA; contenido muy variable y no cuantificado aqu\xED. No garantiza cubrir el yodo perdido. 100 g parte comestible cruda, aproximaci\xF3n operativa de 2 huevos; cocinar. Dos tomas/semana suman unos 4 huevos, no 4 por cada fila.",https://www.efsa.europa.eu/sites/default/files/2017_09_DRVs_summary_report.pdf,no,171287,candidato_por_validar,"crudo, parte comestible",Huevos,50,240,,
+huevo,prote\xEDna,pechuga de pollo,150,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/171077?api_key=DEMO_KEY,no,171077,candidato_por_validar,"crudo, parte comestible",Pollo / pavo,80,400,33.75,g
+huevo,prote\xEDna,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,15.334,g
+huevo,B12,salm\xF3n,150,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/175167?api_key=DEMO_KEY,no,175167,candidato_por_validar,"crudo, parte comestible",Pescado azul,70,350,4.845,\xB5g
+huevo,B12,yogur natural,125,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,171284,candidato_por_validar,tal como se consume,Yogur,0,250,0.463,\xB5g
+huevo,vitamina D,salm\xF3n,150,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Aporte parcial: no garantiza cubrir vitamina D con esta raci\xF3n/frecuencia.",https://api.nal.usda.gov/fdc/v1/food/175167?api_key=DEMO_KEY,no,175167,candidato_por_validar,"crudo, parte comestible",Pescado azul,70,350,16.5,\xB5g
+legumbre,prote\xEDna,pechuga de pollo,150,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Excluir tambi\xE9n soja/tofu/tempeh/cacahuete si el rechazo abarca toda la familia; estas opciones son de otras familias.",https://api.nal.usda.gov/fdc/v1/food/171077?api_key=DEMO_KEY,no,171077,candidato_por_validar,"crudo, parte comestible",Pollo / pavo,80,400,33.75,g
+legumbre,fibra,copos de avena,50,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Excluir tambi\xE9n soja/tofu/tempeh/cacahuete si el rechazo abarca toda la familia; estas opciones son de otras familias. Con celiaqu\xEDa, solo referencia con certificaci\xF3n sin gluten y selecci\xF3n de cat\xE1logo validada; no asumir que esta entrada gen\xE9rica la tiene.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,173904,candidato_por_validar,seco,Cereal crudo,0,150,5.05,g
+legumbre,fibra,nueces,30,3,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Excluir tambi\xE9n soja/tofu/tempeh/cacahuete si el rechazo abarca toda la familia; estas opciones son de otras familias.",https://api.nal.usda.gov/fdc/v1/food/170187?api_key=DEMO_KEY,no,170187,candidato_por_validar,tal como se consume,Fruto seco,0,40,2.01,g
+legumbre,folato,espinacas,80,3,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Excluir tambi\xE9n soja/tofu/tempeh/cacahuete si el rechazo abarca toda la familia; estas opciones son de otras familias.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,168462,candidato_por_validar,"crudo, parte comestible",Verdura,40,300,155.2,\xB5g
+carne roja,hierro,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Hierro vegetal no hemo; contenido no equivale a absorci\xF3n. No garantiza corregir d\xE9ficit.",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,5.661,mg
+carne roja,hierro,garbanzo cocido,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Hierro vegetal no hemo; contenido no equivale a absorci\xF3n. No garantiza corregir d\xE9ficit.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,173757,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,4.913,mg
+carne roja,B12,sardina en lata,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Con espina comestible y escurrida; el calcio no aplica a lomos sin espina. Elegir baja en sal y comprobar etiqueta.",https://api.nal.usda.gov/fdc/v1/food/175139?api_key=DEMO_KEY,no,175139,candidato_por_validar,escurrido con espina,Pescado azul,70,350,8.94,\xB5g
+carne roja,B12,huevo,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. 100 g parte comestible cruda, aproximaci\xF3n operativa de 2 huevos; cocinar. Dos tomas/semana suman unos 4 huevos, no 4 por cada fila.",https://api.nal.usda.gov/fdc/v1/food/171287?api_key=DEMO_KEY,no,171287,candidato_por_validar,"crudo, parte comestible",Huevos,50,240,0.89,\xB5g
+carne roja,prote\xEDna,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,15.334,g
+carne roja,prote\xEDna,huevo,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. 100 g parte comestible cruda, aproximaci\xF3n operativa de 2 huevos; cocinar. Dos tomas/semana suman unos 4 huevos, no 4 por cada fila.",https://api.nal.usda.gov/fdc/v1/food/171287?api_key=DEMO_KEY,no,171287,candidato_por_validar,"crudo, parte comestible",Huevos,50,240,12.56,g
+carne (toda),hierro,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Hierro vegetal no hemo; contenido no equivale a absorci\xF3n. No garantiza corregir d\xE9ficit.",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,5.661,mg
+carne (toda),hierro,garbanzo cocido,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Hierro vegetal no hemo; contenido no equivale a absorci\xF3n. No garantiza corregir d\xE9ficit.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,173757,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,4.913,mg
+carne (toda),B12,sardina en lata,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Con espina comestible y escurrida; el calcio no aplica a lomos sin espina. Elegir baja en sal y comprobar etiqueta.",https://api.nal.usda.gov/fdc/v1/food/175139?api_key=DEMO_KEY,no,175139,candidato_por_validar,escurrido con espina,Pescado azul,70,350,8.94,\xB5g
+carne (toda),B12,huevo,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. 100 g parte comestible cruda, aproximaci\xF3n operativa de 2 huevos; cocinar. Dos tomas/semana suman unos 4 huevos, no 4 por cada fila.",https://api.nal.usda.gov/fdc/v1/food/171287?api_key=DEMO_KEY,no,171287,candidato_por_validar,"crudo, parte comestible",Huevos,50,240,0.89,\xB5g
+carne (toda),prote\xEDna,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,15.334,g
+carne (toda),prote\xEDna,garbanzo cocido,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,173757,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,15.062,g
+carne (toda),prote\xEDna,huevo,100,2,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. 100 g parte comestible cruda, aproximaci\xF3n operativa de 2 huevos; cocinar. Dos tomas/semana suman unos 4 huevos, no 4 por cada fila.",https://api.nal.usda.gov/fdc/v1/food/171287?api_key=DEMO_KEY,no,171287,candidato_por_validar,"crudo, parte comestible",Huevos,50,240,12.56,g
+frutos secos,grasa insaturada,aceite de oliva,10,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Suma monoinsaturados+poliinsaturados, no equivalencia al perfil graso de todos los frutos secos. Sustituir otra grasa dentro del men\xFA, no a\xF1adir energ\xEDa por defecto.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,171413,candidato_por_validar,tal como se consume,Grasa,0,30,8.348,g
+frutos secos,vitamina E,aceite de oliva,10,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Sustituir otra grasa dentro del men\xFA, no a\xF1adir energ\xEDa por defecto.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,171413,candidato_por_validar,tal como se consume,Grasa,0,30,1.435,mg
+frutos secos,vitamina E,espinacas,80,3,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,168462,candidato_por_validar,"crudo, parte comestible",Verdura,40,300,1.624,mg
+frutos secos,fibra,copos de avena,50,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Con celiaqu\xEDa, solo referencia con certificaci\xF3n sin gluten y selecci\xF3n de cat\xE1logo validada; no asumir que esta entrada gen\xE9rica la tiene.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,173904,candidato_por_validar,seco,Cereal crudo,0,150,5.05,g
+frutos secos,fibra,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,13.43,g
+cereales integrales,fibra,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,13.43,g
+cereales integrales,fibra,garbanzo cocido,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,173757,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,12.92,g
+cereales integrales,fibra,almendra,30,3,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/170567?api_key=DEMO_KEY,no,170567,candidato_por_validar,tal como se consume,Fruto seco,0,40,3.75,g
+cereales integrales,hierro,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Hierro vegetal no hemo; contenido no equivale a absorci\xF3n. No garantiza corregir d\xE9ficit.",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,5.661,mg
+cereales integrales,hierro,garbanzo cocido,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. Hierro vegetal no hemo; contenido no equivale a absorci\xF3n. No garantiza corregir d\xE9ficit.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,173757,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,4.913,mg
+cereales integrales,folato,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,307.7,\xB5g
+cereales integrales,folato,garbanzo cocido,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. ","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,173757,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,292.4,\xB5g
+fruta,vitamina C,pimiento rojo,100,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. No sustituye el grupo de frutas completo; explorar variedades y tolerancia antes de eliminarlo.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,170108,candidato_por_validar,"crudo, parte comestible",Verdura,40,300,127.7,mg
+fruta,vitamina C,br\xF3coli,150,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. No sustituye el grupo de frutas completo; explorar variedades y tolerancia antes de eliminarlo.",https://api.nal.usda.gov/fdc/v1/food/170379?api_key=DEMO_KEY,no,170379,candidato_por_validar,"crudo, parte comestible",Verdura,40,300,133.8,mg
+fruta,fibra,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. No sustituye el grupo de frutas completo; explorar variedades y tolerancia antes de eliminarlo.",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,13.43,g
+fruta,potasio,patata,200,3,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. No sustituye el grupo de frutas completo; explorar variedades y tolerancia antes de eliminarlo.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170026,172475",no,170026,candidato_por_validar,"crudo, parte comestible",Patata / boniato,0,400,850.0,mg
+verdura,vitamina C,kiwi,150,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. 150 g de porci\xF3n comestible propuestos; el CSV de l\xEDmites no fija banda num\xE9rica de fruta: validaci\xF3n cuantitativa de esa familia pendiente. No sustituye el grupo de hortalizas completo; explorar preparaciones y gustos antes de eliminarlo.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,168153,pendiente_limite_fruta,"crudo, parte comestible",Fruta,,,139.05,mg
+verdura,vitamina C,naranja,150,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. 150 g de porci\xF3n comestible propuestos; el CSV de l\xEDmites no fija banda num\xE9rica de fruta: validaci\xF3n cuantitativa de esa familia pendiente. No sustituye el grupo de hortalizas completo; explorar preparaciones y gustos antes de eliminarlo.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,169097,pendiente_limite_fruta,"crudo, parte comestible",Fruta,,,79.8,mg
+verdura,folato,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. No sustituye el grupo de hortalizas completo; explorar preparaciones y gustos antes de eliminarlo.",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,307.7,\xB5g
+verdura,fibra,kiwi,150,7,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. 150 g de porci\xF3n comestible propuestos; el CSV de l\xEDmites no fija banda num\xE9rica de fruta: validaci\xF3n cuantitativa de esa familia pendiente. No sustituye el grupo de hortalizas completo; explorar preparaciones y gustos antes de eliminarlo.","https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170187,171077,171267,171287,175167,175139,170567,170379,172421,173757,171284,175119,173904,172688,171413,168153,169097,170108,168462,175203",no,168153,pendiente_limite_fruta,"crudo, parte comestible",Fruta,,,4.5,g
+verdura,fibra,lenteja cocida,170,4,"Propuesta de encaje; alternativa parcial, no equivalencia ni garant\xEDa de cobertura. Frecuencia orientativa compartida con el resto del men\xFA, no a\xF1adir por cada fila. No sustituye el grupo de hortalizas completo; explorar preparaciones y gustos antes de eliminarlo.",https://api.nal.usda.gov/fdc/v1/food/172421?api_key=DEMO_KEY,no,172421,candidato_por_validar,cocido sin sal,Legumbre cocida,50,300,13.43,g`;
+  var COMPENSACIONES_EXCEPCIONES_CSV = `grupo_quitado,nutriente_o_asunto,estado,motivo,fuente
+pescado; pescado azul,EPA/DHA,consultar con Pablo,"Las nueces aportan un precursor vegetal, no son equivalentes a EPA/DHA. Sin pescado no se ha documentado aqu\xED una soluci\xF3n ordinaria que cubra ambos. No marcar compensado; revisar exclusiones y patr\xF3n completo.",https://www.efsa.europa.eu/sites/default/files/2017_09_DRVs_summary_report.pdf
+pescado azul,vitamina D,consultar con Pablo,"El huevo es aporte parcial. No usar la vitamina D de leche USDA enriquecida como si toda leche la tuviese. Revisar ingesta global y producto real, sin prescribir suplementos.",https://www.efsa.europa.eu/sites/default/files/2017_09_DRVs_summary_report.pdf
+carne (toda); exclusiones m\xFAltiples,B12 en patr\xF3n vegano,consultar con Pablo,"No ofrecer tofu, tempeh, nueces o legumbres como fuente fiable de B12. Las opciones animales del borrador no valen en veganismo. Fortificados exigen etiqueta y raci\xF3n; suplementos fuera de este encargo.",https://www.efsa.europa.eu/sites/default/files/2017_09_DRVs_summary_report.pdf
+l\xE1cteos,calcio: tofu y bebida vegetal fortificada,pendiente_ficha,Tofu firme USDA 172475 est\xE1 coagulado con sulfato c\xE1lcico: su calcio no es universal. No hay l\xEDmite espec\xEDfico tofu en el fichero le\xEDdo. Bebida vegetal fortificada tampoco est\xE1 en alimentos-usda.csv. No importar estas alternativas sin ficha y mapeo.,"https://api.nal.usda.gov/fdc/v1/foods?api_key=DEMO_KEY&fdcIds=170026,172475"
+pescado; marisco; l\xE1cteos; exclusiones m\xFAltiples,yodo,consultar con Pablo,Contenido variable. El cat\xE1logo no contiene una referencia espec\xEDfica de sal yodada. No aumentar sal ni usar algas como soluci\xF3n autom\xE1tica. No puede garantizarse compensaci\xF3n con presencia de fuente solamente.,https://www.efsa.europa.eu/sites/default/files/2017_09_DRVs_summary_report.pdf
+todos,"exclusiones simult\xE1neas, alergias y calor\xEDas",revisi\xF3n de plan completo,Filtrar todas las exclusiones y reglas cl\xEDnicas vigentes antes de proponer nada. No sustituir leche por almendra en alergia a frutos secos ni legumbre por soja si tambi\xE9n est\xE1 excluida. No acumular las frecuencias de cada nutriente como tomas nuevas. Alergias fuera del flujo de gustos de #323.,https://github.com/pabloach4/app-dietas/issues/323
+fruta; verdura,variedad de grupo y suficiencia global,consultar con Pablo,"Cubrir vitamina C, folato o fibra con otro alimento no reemplaza autom\xE1ticamente todo el grupo ni su diversidad. Recuperar opciones toleradas/preparaciones es preferible a una etiqueta de compensaci\xF3n total.",https://www.aesan.gob.es/actualidad/actualidad-noticias/recomendaciones_dieteticas`;
+  var COMPENSACIONES_USDA_CSV = `fdc_id,nombre,rol_defecto,descripcion_usda,kcal_100g,proteina_100g,grasa_100g,hidrato_100g,fibra_100g,alergenos,etiquetas
+168153,kiwi,fruta_lacteo,"Kiwifruit, green, raw",61.0,1.14,0.52,14.66,3.0,,
+168462,espinacas,verdura,"Spinach, raw",23.0,2.86,0.39,3.63,2.2,,
+169097,naranja,fruta_lacteo,"Oranges, raw, all commercial varieties",47.0,0.94,0.12,11.75,2.4,,
+170026,patata,base,"Potatoes, flesh and skin, raw",77.0,2.05,0.09,17.49,2.1,,
+170108,pimiento rojo,verdura,"Peppers, sweet, red, raw",26.0,0.99,0.3,6.03,2.1,,
+170187,nueces,grasa,"Nuts, walnuts, english",654.0,15.23,65.21,13.71,6.7,frutos de c\xE1scara,
+170379,br\xF3coli,verdura,"Broccoli, raw",34.0,2.82,0.37,6.64,2.6,,
+170567,almendra,grasa,"Nuts, almonds",579.0,21.15,49.93,21.55,12.5,frutos de c\xE1scara,
+171077,pechuga de pollo,proteina,"Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",120.0,22.5,2.62,0.0,0.0,,animal;carne
+171267,leche semidesnatada,fruta_lacteo,"Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D",50.0,3.3,1.98,4.8,0.0,l\xE1cteos,animal
+171284,yogur natural,fruta_lacteo,"Yogurt, plain, whole milk",61.0,3.47,3.25,4.66,0.0,l\xE1cteos,animal
+171287,huevo,proteina,"Egg, whole, raw, fresh",143.0,12.56,9.51,0.72,0.0,huevo,animal
+171413,aceite de oliva,grasa,"Oil, olive, salad or cooking",884.0,0.0,100.0,0.0,0.0,,
+172421,lenteja cocida,base,"Lentils, mature seeds, cooked, boiled, without salt",116.0,9.02,0.38,20.13,7.9,,legumbre
+173757,garbanzo cocido,base,"Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt",164.0,8.86,2.59,27.42,7.6,,legumbre
+173904,copos de avena,base,"Cereals, oats, regular and quick, not fortified, dry",379.0,13.15,6.52,67.7,10.1,gluten,
+175139,sardina en lata,proteina,"Fish, sardine, Atlantic, canned in oil, drained solids with bone",208.0,24.62,11.45,0.0,0.0,pescado,animal
+175167,salm\xF3n,proteina,"Fish, salmon, Atlantic, farmed, raw",208.0,20.42,13.42,0.0,0.0,pescado,animal
+175203,alubia blanca cocida,base,"Beans, white, mature seeds, cooked, boiled, without salt",139.0,9.73,0.35,25.09,6.3,,legumbre`;
+
+  // src/motor/gusto-avisos.ts
+  var texto = (x, max = 80) => typeof x === "string" && x.trim() ? x.trim().slice(0, max) : null;
+  var lista2 = (xs) => xs.length <= 1 ? xs[0] ?? "" : `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`;
+  var ARTICULO = {
+    "pescado": "el pescado",
+    "pescado azul": "el pescado azul",
+    "marisco": "el marisco",
+    "lacteos": "los l\xE1cteos",
+    "huevo": "el huevo",
+    "legumbre": "las legumbres",
+    "carne roja": "la carne roja",
+    "carne (toda)": "la carne",
+    "frutos secos": "los frutos secos",
+    "cereales integrales": "los cereales integrales",
+    "fruta": "la fruta",
+    "verdura": "la verdura"
+  };
+  var textoGrupo = (g) => ARTICULO[claveGrupo(g) ?? ""] ?? g.toLowerCase();
+  function accionQuitarGrupoValida(d, filas) {
+    if (!d || typeof d !== "object") return null;
+    const a2 = d;
+    const grupo = texto(a2.grupo, 40);
+    if (a2.tipo !== "quitar_grupo" || !grupo || !claveGrupo(grupo) || !Array.isArray(a2.alimentos) || a2.alimentos.length > 20) return null;
+    const alimentos = [];
+    for (const x of a2.alimentos) {
+      const o = x ?? {};
+      const nutriente = texto(o.nutriente, 60);
+      const alimento = texto(o.alimento);
+      if (!nutriente || !alimento) return null;
+      if (!alimentos.some((y) => y.nutriente === nutriente)) alimentos.push({ nutriente, alimento });
+    }
+    if (filas) {
+      if (!gruposQuitables(filas).some((g) => claveGrupo(g) === claveGrupo(grupo))) return null;
+      const deFila = (n, al) => filas.some((f2) => claveGrupo(f2.grupo) === claveGrupo(grupo) && f2.nutriente === n && f2.alimento === al);
+      if (!alimentos.every((x) => deFila(x.nutriente, x.alimento))) return null;
+    }
+    return { tipo: "quitar_grupo", grupo, alimentos };
+  }
+  function gruposNuevos(antes, ahora) {
+    const ya = new Set(antes.map((g) => claveGrupo(g) ?? g));
+    return ahora.filter((g) => !ya.has(claveGrupo(g) ?? g));
+  }
+  function gruposDeAlergia(ap) {
+    const deAlergia = ap && ap.deAlergia || [];
+    return Object.keys(ALIMENTOS_DEL_GRUPO).filter((g) => deAlergia.some((t2) => claveGrupo(t2) === g || alimentoDelGrupo(g, t2)));
+  }
+  function solucionGusto(grupo, comp) {
+    const delGrupo = comp.nutrientes.filter((n) => claveGrupo(n.grupo) === claveGrupo(grupo));
+    const porAlimento = /* @__PURE__ */ new Map();
+    for (const n of delGrupo) {
+      if (!n.alimento || n.estado !== "compensado" && n.estado !== "en_tu_semana") continue;
+      const p = porAlimento.get(n.alimento) ?? { nutrientes: [], dias: n.dias ?? 0, enSemana: n.estado === "en_tu_semana" };
+      p.nutrientes.push(n.nutriente);
+      porAlimento.set(n.alimento, p);
+    }
+    const dias = (d) => d === 7 ? "todos los d\xEDas" : `${d} ${d === 1 ? "d\xEDa" : "d\xEDas"}`;
+    const partes = [...porAlimento].map(([al, p]) => p.enSemana ? `su semana ya lleva ${al} ${dias(p.dias)} para ${lista2(p.nutrientes)}` : `le he puesto ${al} ${dias(p.dias)} para ${lista2(p.nutrientes)}`);
+    const hecho = partes.length ? `${partes.join("; ").replace(/^./, (c2) => c2.toUpperCase())}.` : "No he podido ponerle nada con cantidades normales.";
+    const asuntos = comp.paraPablo.filter((p) => claveGrupo(p.grupo) === claveGrupo(grupo)).map((p) => p.asunto);
+    for (const n of delGrupo) if (n.estado === "para_pablo" && !asuntos.includes(n.nutriente)) asuntos.push(n.nutriente);
+    const sin = delGrupo.filter((n) => n.estado === "sin_compensar").map((n) => n.nutriente);
+    const propuesta = [
+      asuntos.length ? `Revisa ${lista2(asuntos)}: no se ${asuntos.length === 1 ? "cubre" : "cubren"} solo con comida.` : "",
+      sin.length ? `No he podido compensar ${lista2(sin)} con cantidades normales.` : ""
+    ].filter(Boolean).join(" ") || null;
+    const alimentos = delGrupo.filter((n) => n.alimento && (n.estado === "compensado" || n.estado === "en_tu_semana")).map((n) => ({ nutriente: n.nutriente, alimento: n.alimento }));
+    return { tipo: "gusto", paso: `Ha quitado ${textoGrupo(grupo)} de su semana.`, hecho, propuesta, accion: { tipo: "quitar_grupo", grupo, alimentos }, kcalExtra: 0, auto: true };
+  }
+  function alertaGusto(sol, fechaISO, aplicadaSola) {
+    return {
+      fecha: fechaISO,
+      prioritaria: false,
+      tipo: "gusto",
+      gusto: true,
+      disparadores: [{ pregunta: 0, etiqueta: "gusto", se\u00F1al: sol.paso }],
+      contexto: [],
+      sinInterpretar: [],
+      firma: `G|${claveGrupo(sol.accion.grupo)}|${fechaISO.slice(0, 10)}`,
+      solucion: { tipo: "gusto", paso: sol.paso, hecho: sol.hecho, propuesta: sol.propuesta, accion: sol.accion, auto: true, aplicada: true, sola: aplicadaSola }
+    };
+  }
+  function alertaNotaGusto(nota, fechaISO) {
+    const se\u00F1al = `Elegiste ${nota.elegido} para ${nota.nutriente} (sin ${nota.grupo.toLowerCase()}), pero choca con sus alergias, lo que evita u otro grupo quitado: ${nota.usado ? `sigue con ${nota.usado}` : "se queda sin compensar"}.`;
+    return { fecha: fechaISO, prioritaria: false, tipo: "gusto", gusto: true, disparadores: [{ pregunta: 0, etiqueta: "gusto", se\u00F1al }], contexto: [], sinInterpretar: [], firma: `GN|${claveGrupo(nota.grupo)}|${nota.nutriente}|${nota.elegido}` };
+  }
+  var hora = (t2) => {
+    const n = t2 ? Date.parse(t2) : NaN;
+    return Number.isFinite(n) ? n : 0;
+  };
+  function gustoDeAjustes(ajustes, grupo, desde = 0) {
+    const nada = { deshecho: false, preferidos: {} };
+    if (!Array.isArray(ajustes)) return nada;
+    const delGrupo = ajustes.filter((j2) => j2 && j2.tipo === "gusto" && ["aplicado", "propuesto", "deshecho"].includes(j2.estado)).map((j2) => ({ j: j2, a: accionQuitarGrupoValida(j2.datos) })).filter((x) => x.a && claveGrupo(x.a.grupo) === claveGrupo(grupo) && (!desde || Math.max(hora(x.j.creado), hora(x.j.actualizado)) >= desde || !(x.j.creado || x.j.actualizado)));
+    if (!delGrupo.length) return nada;
+    delGrupo.sort((x, y) => Math.max(hora(y.j.actualizado), hora(y.j.creado)) - Math.max(hora(x.j.actualizado), hora(x.j.creado)) || (y.j.id ?? 0) - (x.j.id ?? 0));
+    const { j, a: a2 } = delGrupo[0];
+    if (j.estado === "deshecho") return { deshecho: true, preferidos: {} };
+    return { deshecho: false, preferidos: Object.fromEntries(a2.alimentos.map((x) => [x.nutriente, x.alimento])) };
+  }
+  function filasCompensacionCentro(csv = COMPENSACIONES_CSV) {
+    const usda = registros(COMPENSACIONES_USDA_CSV);
+    return cargarCompensaciones(csv, { catalogo: new Map(usda.map((r) => [r.nombre.trim(), r.fdc_id.trim()])), racion: (a2) => racionRealista(a2) ?? { minG: 0, maxG: Number.POSITIVE_INFINITY } });
+  }
+  function opcionesCambioGusto(accion, filas) {
+    if (!accion) return [];
+    return accion.alimentos.map((x) => ({
+      nutriente: x.nutriente,
+      actual: x.alimento,
+      opciones: [...new Set(filas.filter((f2) => claveGrupo(f2.grupo) === claveGrupo(accion.grupo) && f2.nutriente === x.nutriente).map((f2) => f2.alimento))]
+    }));
+  }
+  function accionGustoCambiada(accion, elegidos, filas) {
+    if (!accion) return null;
+    return accionQuitarGrupoValida({ ...accion, alimentos: accion.alimentos.map((x) => ({ nutriente: x.nutriente, alimento: elegidos[x.nutriente] || x.alimento })) }, filas);
   }
 
   // src/motor/aplicar-ajustes.ts
@@ -10129,6 +10485,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
       });
       return comidas.length ? { tipo: "plan_fuera", comidas } : null;
     }
+    if (a2.tipo === "quitar_grupo") return accionQuitarGrupoValida(a2);
     return null;
   }
   function efectoAjustes(ajustes) {
@@ -10137,7 +10494,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
     for (const aj of ajustes) {
       if (!aj || aj.estado !== "aplicado") continue;
       const a2 = accionValida(aj.datos);
-      if (!a2) continue;
+      if (!a2 || a2.tipo === "quitar_grupo") continue;
       e.acciones.push(a2);
       if (a2.tipo === "volumen") {
         const g = grupoDeFranja(a2.franja);
@@ -10182,13 +10539,13 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
   var TU = { desayuno: "Tu desayuno", media_manana: "Tu media ma\xF1ana", comida: "Tu comida", merienda: "Tu merienda", cena: "Tu cena" };
   var NOMBRE_GRUPO = { desayuno: "Tu desayuno", principal: "Tu comida y tu cena", pequena: "Tu media ma\xF1ana y tu merienda" };
   var NOMBRE_DIA3 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
-  var lista2 = (xs) => xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`;
+  var lista3 = (xs) => xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`;
   function lineasAjustesPersona(e) {
     const l = [];
     for (const f2 of FRANJAS) if (e.kcalFranja[f2]) l.push(`${TU[f2]} lleva un poco m\xE1s.`);
     if (e.deficitKcal > 0) l.push("Tus comidas llevan un poco m\xE1s de cantidad.");
     for (const g of Object.keys(e.volumen)) if (e.volumen[g]) l.push(`${NOMBRE_GRUPO[g]} ${g === "desayuno" ? "viene" : "vienen"} m\xE1s abundante${g === "desayuno" ? "" : "s"}, con lo mismo de energ\xEDa.`);
-    for (const t2 of e.tentempies) l.push(`${TU[t2.franja]} lleva algo con prote\xEDna ${t2.dias.length === 7 ? "todos los d\xEDas" : `el ${lista2(t2.dias.map((d) => NOMBRE_DIA3[d]))}`}.`);
+    for (const t2 of e.tentempies) l.push(`${TU[t2.franja]} lleva algo con prote\xEDna ${t2.dias.length === 7 ? "todos los d\xEDas" : `el ${lista3(t2.dias.map((d) => NOMBRE_DIA3[d]))}`}.`);
     if (e.fuera.length) l.push("Tus comidas fuera de cada semana ya vienen puestas en el plan, con el resto del d\xEDa cuadrado.");
     return l;
   }
@@ -10212,28 +10569,28 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
   }
 
   // src/motor/centro-ajustes.ts
-  var texto = (x, max = 400) => typeof x === "string" ? x.slice(0, max) : "";
+  var texto2 = (x, max = 400) => typeof x === "string" ? x.slice(0, max) : "";
   function solucionDeAlerta(a2) {
     const s = a2.datos && typeof a2.datos === "object" ? a2.datos.solucion : null;
     if (!s || typeof s !== "object") return null;
     const tipo = typeof s.tipo === "string" && s.tipo in TIPOS_SOLUCIONABLES ? s.tipo : a2.tipo in TIPOS_SOLUCIONABLES ? a2.tipo : null;
     if (!tipo) return null;
-    const paso = texto(s.paso);
+    const paso = texto2(s.paso);
     if (!paso) return null;
-    return { tipo, paso, hecho: texto(s.hecho), propuesta: texto(s.propuesta) || null, accion: accionValida(s.accion), aplicada: s.aplicada === true };
+    return { tipo, paso, hecho: texto2(s.hecho), propuesta: texto2(s.propuesta) || null, accion: accionValida(s.accion), aplicada: s.aplicada === true };
   }
   var igual = (x, y) => JSON.stringify(x) === JSON.stringify(y);
-  var hora = (t2) => {
+  var hora2 = (t2) => {
     const n = t2 ? Date.parse(t2) : NaN;
     return Number.isFinite(n) ? n : 0;
   };
   function ajusteDeAlerta(a2, ajustes, sol = solucionDeAlerta(a2)) {
-    const recientes = [...ajustes].sort((x, y) => hora(y.actualizado || y.creado) - hora(x.actualizado || x.creado) || y.id - x.id);
+    const recientes = [...ajustes].sort((x, y) => hora2(y.actualizado || y.creado) - hora2(x.actualizado || x.creado) || y.id - x.id);
     const propio = recientes.find((j) => j.alerta_id === a2.id && j.usuario === a2.usuario);
     if (propio) return propio;
     if (!sol || !sol.accion) return null;
-    const desde = hora(a2.creada) - 24 * 3600 * 1e3;
-    return recientes.find((j) => j.usuario === a2.usuario && j.tipo === sol.tipo && (j.alerta_id === null || j.alerta_id === void 0) && (j.origen === "app" || j.origen === "auto") && hora(j.creado) >= desde && igual(accionValida(j.datos), sol.accion)) || null;
+    const desde = hora2(a2.creada) - 24 * 3600 * 1e3;
+    return recientes.find((j) => j.usuario === a2.usuario && j.tipo === sol.tipo && (j.alerta_id === null || j.alerta_id === void 0) && (j.origen === "app" || j.origen === "auto") && hora2(j.creado) >= desde && igual(accionValida(j.datos), sol.accion)) || null;
   }
   function vistaSolucion(a2, ajustes) {
     const solucion = solucionDeAlerta(a2);
@@ -10241,9 +10598,14 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
     const ajuste = ajusteDeAlerta(a2, ajustes, solucion);
     const accion = ajuste && accionValida(ajuste.datos) || solucion.accion;
     let modo;
+    const hayAccion = Boolean(accion);
+    if (solucion.tipo === "gusto") {
+      const est = ajuste ? ajuste.estado : null;
+      modo = est === "deshecho" ? "deshecho" : est === "aplicado" && (ajuste.origen === "pablo" || ajuste.alerta_id === a2.id) ? "aplicado" : "nota";
+      return { solucion, ajuste, modo, accion, botones: { vale: hayAccion && (est === "propuesto" || est === "deshecho"), cambiar: hayAccion && est !== "deshecho", deshacer: Boolean(ajuste) && est !== "deshecho" } };
+    }
     if (ajuste) modo = ajuste.estado === "deshecho" ? "deshecho" : ajuste.estado === "aplicado" ? ajuste.origen === "auto" && ajuste.alerta_id !== a2.id ? "nota" : "aplicado" : "propuesta";
     else modo = solucion.aplicada ? "nota" : "propuesta";
-    const hayAccion = Boolean(accion);
     return {
       solucion,
       ajuste,
@@ -10269,7 +10631,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
   }
   var ligar = (a2, j) => j.alerta_id === a2.id ? {} : { alerta_id: a2.id };
   function escrituraDeshacer(vista, a2) {
-    if (!vista.ajuste || vista.ajuste.estado !== "aplicado") return null;
+    if (!vista.ajuste || !(vista.ajuste.estado === "aplicado" || vista.solucion.tipo === "gusto" && vista.ajuste.estado === "propuesto")) return null;
     return { op: "update", id: vista.ajuste.id, cambios: { estado: "deshecho", ...a2 ? ligar(a2, vista.ajuste) : {} } };
   }
   function camposEditables(accion) {
@@ -10300,6 +10662,7 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
     if (accion.tipo === "kcal_franja") return `+${accion.kcal} kcal al d\xEDa en ${nf(accion.franja)}`;
     if (accion.tipo === "deficit") return `${accion.kcal} kcal menos de d\xE9ficit al d\xEDa`;
     if (accion.tipo === "volumen") return `m\xE1s volumen en ${nf(accion.franja)} (mismas kcal)`;
+    if (accion.tipo === "quitar_grupo") return accion.alimentos.length ? `sin ${accion.grupo.toLowerCase()}: ${accion.alimentos.map((x) => `${x.alimento} para ${x.nutriente}`).join(", ")}` : `sin ${accion.grupo.toLowerCase()}, sin compensaciones`;
     if (accion.tipo === "tentempie") return `${accion.receta} en ${nf(accion.franja)} (${accion.kcal} kcal, ${accion.proteinaG} g de prote\xEDna) ${accion.dias.join(", ")}`;
     return `${accion.comidas.length} comida${accion.comidas.length === 1 ? "" : "s"} fuera fija${accion.comidas.length === 1 ? "" : "s"} en el plan`;
   }
@@ -10343,9 +10706,9 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
     return { datos, tamano: JSON.stringify(datos).length };
   }
   function firmaPlan(asignaciones) {
-    const texto2 = [...asignaciones].map((a2) => `${a2.dia}|${a2.franja}|${a2.receta}|${Math.round((a2.racionAjustada ?? 1) * 100)}`).sort().join(";");
+    const texto3 = [...asignaciones].map((a2) => `${a2.dia}|${a2.franja}|${a2.receta}|${Math.round((a2.racionAjustada ?? 1) * 100)}`).sort().join(";");
     let h = 5381;
-    for (let i = 0; i < texto2.length; i++) h = (h * 33 ^ texto2.charCodeAt(i)) >>> 0;
+    for (let i = 0; i < texto3.length; i++) h = (h * 33 ^ texto3.charCodeAt(i)) >>> 0;
     return `${asignaciones.length}-${h.toString(36)}`;
   }
   var idAlerta = (a2) => `${a2.fecha.slice(0, 10)}|${a2.firma}`;
@@ -10674,8 +11037,8 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     }
     const pct = y ? Math.round(x / y * 100) : 0;
     const redonda = y > 0 && pct >= UMBRALES_LOGROS.semanaRedonda;
-    const texto2 = `${conMedalla} de 7 d\xEDas con alguna medalla \xB7 comidas hechas ${x} de ${y}${y ? ` (${pct} %)` : ""}`;
-    return { lunes, diasConMedalla: conMedalla, hechas: x, total: y, pct, redonda, texto: texto2 };
+    const texto3 = `${conMedalla} de 7 d\xEDas con alguna medalla \xB7 comidas hechas ${x} de ${y}${y ? ` (${pct} %)` : ""}`;
+    return { lunes, diasConMedalla: conMedalla, hechas: x, total: y, pct, redonda, texto: texto3 };
   }
   function resumenCincoSemanas(plan, apuntado, hoyISO) {
     const lunes = lunesDe(hoyISO);
@@ -10699,9 +11062,9 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   function textoNotificacion(a2, contacto) {
     return { titulo: `Nueva alerta${a2.prioritaria ? " \xB7 prioritaria" : ""}`, cuerpo: contacto && contacto.trim() ? contacto.trim() : "Persona sin correo guardado" };
   }
-  function mezclarAlerta(lista3, nueva) {
-    if (lista3.some((a2) => a2.id === nueva.id)) return { lista: lista3, esNueva: false };
-    return { lista: [nueva, ...lista3].sort((a2, b) => String(b.creada ?? "").localeCompare(String(a2.creada ?? ""))), esNueva: true };
+  function mezclarAlerta(lista5, nueva) {
+    if (lista5.some((a2) => a2.id === nueva.id)) return { lista: lista5, esNueva: false };
+    return { lista: [nueva, ...lista5].sort((a2, b) => String(b.creada ?? "").localeCompare(String(a2.creada ?? ""))), esNueva: true };
   }
   function alertasNuevas(conocidas, recibidas) {
     const ya = new Set(conocidas.map((a2) => a2.id));
@@ -10715,13 +11078,15 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     celiaquia: "Celiaqu\xEDa",
     derivacion: "Derivaci\xF3n (salud o edad)",
     cita: "Pide cita",
-    hambre: "Hambre repetida"
+    hambre: "Hambre repetida",
+    gusto: "Cambio de gustos"
   };
   var datosDe = (a2) => a2.datos && typeof a2.datos === "object" ? a2.datos : {};
   function clasificarAlerta(a2) {
     const d = datosDe(a2);
     if (a2.tipo === "cita" || d.cita === true) return "cita";
     if (a2.tipo === "hambre" || d.hambre === true) return "hambre";
+    if (a2.tipo === "gusto" || d.gusto === true) return "gusto";
     if (d.freno === true) return "freno";
     if (d.suelo === true) return "suelo";
     if (d.celiaquia === true) return "celiaquia";
@@ -10730,8 +11095,8 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   }
   function motivosAlerta(a2) {
     const disp = datosDe(a2).disparadores;
-    const lista3 = Array.isArray(disp) ? disp : [];
-    const m = lista3.map((x) => {
+    const lista5 = Array.isArray(disp) ? disp : [];
+    const m = lista5.map((x) => {
       const se\u00F1al = typeof x.se\u00F1al === "string" && x.se\u00F1al.trim() ? x.se\u00F1al.trim() : x.etiqueta || "Sin detalle";
       return typeof x.pregunta === "number" && x.pregunta > 0 ? `${se\u00F1al} (pregunta ${x.pregunta}: ${x.etiqueta ?? ""})` : se\u00F1al;
     });
@@ -10831,14 +11196,14 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       };
     });
   }
-  function sinTildes(t2) {
+  function sinTildes3(t2) {
     return String(t2 ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   }
-  function filtrarPersonas(filas, texto2, filtro = "todas") {
-    const palabras = sinTildes(texto2).split(/\s+/).filter(Boolean);
+  function filtrarPersonas(filas, texto3, filtro = "todas") {
+    const palabras2 = sinTildes3(texto3).split(/\s+/).filter(Boolean);
     return filas.filter((f2) => {
-      const donde = sinTildes(f2.nombre + " " + f2.contacto);
-      return palabras.every((w) => donde.includes(w));
+      const donde = sinTildes3(f2.nombre + " " + f2.contacto);
+      return palabras2.every((w) => donde.includes(w));
     }).filter((f2) => filtro === "con-alertas" ? f2.alertasSinAtender > 0 : filtro === "sin-plan" ? !f2.tienePlan : filtro === "revisado" ? f2.revisadoPorPablo : true).sort((a2, b) => b.ultimaActividad.localeCompare(a2.ultimaActividad) || a2.nombre.localeCompare(b.nombre, "es"));
   }
   function historialPlanes(planes, usuario) {
@@ -10851,7 +11216,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     ];
     const vistas = /* @__PURE__ */ new Set();
     return todas.filter((c2) => {
-      const k = [c2.fecha, c2.franja, sinTildes(c2.texto ?? "")].join("|");
+      const k = [c2.fecha, c2.franja, sinTildes3(c2.texto ?? "")].join("|");
       if (vistas.has(k)) return false;
       vistas.add(k);
       return true;
@@ -10965,8 +11330,8 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   function oposicionDesdeJson(valor) {
     if (!valor || typeof valor !== "object") return void 0;
     const x = valor;
-    const texto2 = (v) => typeof v === "string" ? v : void 0;
-    const r = validarOposicion({ tipo: texto2(x.tipo), orden: texto2(x.orden), fechaFisicas: texto2(x.fechaFisicas), fechaEscrito: texto2(x.fechaEscrito), cuerpo: texto2(x.cuerpo) });
+    const texto3 = (v) => typeof v === "string" ? v : void 0;
+    const r = validarOposicion({ tipo: texto3(x.tipo), orden: texto3(x.orden), fechaFisicas: texto3(x.fechaFisicas), fechaEscrito: texto3(x.fechaEscrito), cuerpo: texto3(x.cuerpo) });
     return r.ok ? r.oposicion : void 0;
   }
   var DIAS_SIN_RECORTE_FISICAS = 21;
@@ -11034,8 +11399,8 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (e.verificados < 1) return "activar";
     return e.nivel === "aal2" ? "listo" : "pedir_codigo";
   }
-  function limpiarCodigoTotp(texto2) {
-    const c2 = String(texto2 ?? "").replace(/[\s-]/g, "");
+  function limpiarCodigoTotp(texto3) {
+    const c2 = String(texto3 ?? "").replace(/[\s-]/g, "");
     return /^\d{6}$/.test(c2) ? c2 : null;
   }
 
@@ -11340,13 +11705,13 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (!bajar && !subir) return { semanas, bajar: false, subir: false, superavitNuevo: superavitPct };
     const superavitNuevo = Math.round((superavitPct + (subir ? PASO_SUPERAVIT : -PASO_SUPERAVIT)) * 10) / 10;
     const f2 = (x) => String(x).replace(".", ",");
-    const lista3 = semanas.map((r) => `${f2(r)} %`).join(", ");
+    const lista5 = semanas.map((r) => `${f2(r)} %`).join(", ");
     return {
       semanas,
       bajar,
       subir,
       superavitNuevo,
-      texto: bajar ? `Subes m\xE1s de un ${f2(RITMO_SUBIDA_MAX_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista3}): a ese ritmo se gana sobre todo grasa. El extra de calor\xEDas baja del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.` : `Subes menos de un ${f2(RITMO_SUBIDA_MIN_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista3}): as\xED cuesta ganar m\xFAsculo. El extra de calor\xEDas sube del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.`
+      texto: bajar ? `Subes m\xE1s de un ${f2(RITMO_SUBIDA_MAX_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista5}): a ese ritmo se gana sobre todo grasa. El extra de calor\xEDas baja del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.` : `Subes menos de un ${f2(RITMO_SUBIDA_MIN_PCT)} % de tu peso por semana desde hace ${SEMANAS_SEGUIDAS} semanas (${lista5}): as\xED cuesta ganar m\xFAsculo. El extra de calor\xEDas sube del ${f2(superavitPct)} % al ${f2(superavitNuevo)} %.`
     };
   }
 
@@ -11360,6 +11725,253 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     ];
     if (compite) frases.push("Como compites, elige una con sello antidopaje (por ejemplo, Informed Sport).");
     return frases;
+  }
+
+  // src/motor/compensar-semana.ts
+  var FRANJA_TEXTO = { desayuno: "el desayuno", media_manana: "la media ma\xF1ana", comida: "la comida", merienda: "la merienda", cena: "la cena" };
+  var ORDEN_DIAS = ["L", "X", "V", "D", "M", "J", "S"];
+  function franjasDe(alimento) {
+    const a2 = raizAlimento(alimento);
+    if (/^(nuez|nuece|almendra|yogur|leche|copo|kiwi|naranja|manzana|platano|fresa)/.test(a2)) return ["merienda", "media_manana", "desayuno"];
+    if (/^huevo/.test(a2)) return ["desayuno", "cena", "comida"];
+    return ["comida", "cena"];
+  }
+  var NUTRIENTE_TEXTO = {
+    "omega-3 ala": "el omega-3 de origen vegetal",
+    "proteina": "la prote\xEDna",
+    "fibra": "la fibra",
+    "grasa insaturada": "la grasa buena",
+    "b12": "la vitamina B12",
+    "hierro": "el hierro",
+    "calcio": "el calcio",
+    "yodo": "el yodo",
+    "folato": "el folato",
+    "potasio": "el potasio"
+  };
+  var sinTildes4 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  function textoNutriente(n) {
+    const k = sinTildes4(n);
+    if (NUTRIENTE_TEXTO[k]) return NUTRIENTE_TEXTO[k];
+    if (k.startsWith("vitamina")) return `la ${n}`;
+    return n;
+  }
+  var textoGrupo2 = (g) => claveGrupo(g) === "carne (toda)" ? "carne" : g.toLowerCase();
+  function lista4(xs, y = "y") {
+    return xs.length <= 1 ? xs[0] ?? "" : `${xs.slice(0, -1).join(", ")} ${y} ${xs[xs.length - 1]}`;
+  }
+  var PALABRAS_SOBRAN = /* @__PURE__ */ new Set(["cocida", "cocido", "seca", "seco", "en", "lata", "natural", "asada", "asado", "fresco", "fresca", "semidesnatada", "de"]);
+  var nucleo = (s) => raizAlimento(s).split(" ").filter((w) => !PALABRAS_SOBRAN.has(w)).join(" ");
+  function esElAlimento(ingrediente, alimento) {
+    if (esAlternativaVegetal(ingrediente)) return false;
+    const i = nucleo(ingrediente);
+    const a2 = nucleo(alimento);
+    return !!a2 && (i === a2 || i.startsWith(`${a2} `));
+  }
+  var claveSlot2 = (s) => `${s.dia}|${s.franja}`;
+  function diasConAlimento(asig, recetas, alimento, cantidadG) {
+    const dias = /* @__PURE__ */ new Set();
+    for (const a2 of combinarConRecetas(asig.asignaciones, recetas)) {
+      for (const ing of a2.receta.ingredientes) {
+        if (!esElAlimento(ing.nombre, alimento)) continue;
+        const seca = /\bsec[ao]\b/i.test(ing.nombre) && /\bcocid[ao]\b/i.test(alimento) ? 2.5 : 1;
+        if (ing.gramos * a2.racionAjustada * seca >= cantidadG / 2) dias.add(a2.dia);
+      }
+    }
+    return dias;
+  }
+  function leerExcepciones(csv) {
+    if (!csv) return [];
+    return registros(csv).map((r) => ({
+      grupos: (r.grupo_quitado ?? "").split(";").map((g) => g.trim()).filter(Boolean),
+      asunto: (r.nutriente_o_asunto ?? "").trim(),
+      motivo: (r.motivo ?? "").trim()
+    })).filter((e) => e.asunto);
+  }
+  function esExcepcion(ex, grupo, nutriente, ap) {
+    const n = sinTildes4(nutriente);
+    return ex.some((e) => {
+      if (!e.grupos.some((g) => claveGrupo(g) === claveGrupo(grupo))) return false;
+      const a2 = sinTildes4(e.asunto);
+      if (a2 === n) return true;
+      return a2.startsWith(`${n} en patron vegano`) && ap.vegano;
+    });
+  }
+  function planear(slots, asig, recetas, ap, datos, op) {
+    const ex = leerExcepciones(datos.excepcionesCsv);
+    const grupos = datos.grupos.filter((g) => claveGrupo(g));
+    const extras = [];
+    const nutrientes = [];
+    const restado = /* @__PURE__ */ new Map();
+    const porAlimento = /* @__PURE__ */ new Map();
+    const enSemana = /* @__PURE__ */ new Map();
+    const slotsBuenos = slots.filter((s) => !s.desayunoCarrera && !s.sinFibraAlta && !s.cargaAlta && !s.racionesCarga && !s.hidratoFacil);
+    const vale = (f2) => {
+      if (grupos.some((g) => alimentoDelGrupo(g, f2.alimento))) return false;
+      const r = { id: `compensacion-${f2.alimento}`, nombre: f2.alimento, franjas: [], kcal: 0, proteina: 0, grasa: 0, hidrato: 0, notas: "", ingredientes: [{ nombre: f2.alimento, gramos: f2.cantidadG }] };
+      return evaluarCompatibilidad(r, ap).compatible && datos.kcal100(f2.alimento) !== void 0;
+    };
+    const colocar = (f2, grupo, veces) => {
+      const ya = porAlimento.get(f2.alimento) ?? [];
+      if (ya.length >= veces) return ya;
+      const kcal = Math.round(datos.kcal100(f2.alimento) * f2.cantidadG / 100);
+      const diasOcupados = /* @__PURE__ */ new Set([...ya.map((e) => e.dia), ...enSemana.get(f2.alimento) ?? []]);
+      const nuevos = [];
+      for (const dia2 of ORDEN_DIAS) {
+        if (ya.length + nuevos.length >= veces) break;
+        if (diasOcupados.has(dia2)) continue;
+        for (const franja of franjasDe(f2.alimento)) {
+          const s = slotsBuenos.find((x) => x.dia === dia2 && x.franja === franja);
+          if (!s || op.bloqueados.has(claveSlot2(s)) || restado.has(claveSlot2(s))) continue;
+          const queda = s.kcalObjetivo - kcal;
+          if (queda < Math.max(100, 0.4 * s.kcalObjetivo)) continue;
+          const m = datos.macros100?.(f2.alimento);
+          const g1 = (x) => Math.round(x * f2.cantidadG / 10) / 10;
+          nuevos.push({ dia: dia2, franja, alimento: f2.alimento, gramos: f2.cantidadG, kcal, grupo, nutrientes: [], ...m ? { proteina: g1(m.proteina), grasa: g1(m.grasa), hidrato: g1(m.hidrato) } : {} });
+          break;
+        }
+      }
+      if (ya.length + nuevos.length < veces) return null;
+      for (const e of nuevos) restado.set(claveSlot2(e), e.kcal);
+      extras.push(...nuevos);
+      const todos = [...ya, ...nuevos];
+      porAlimento.set(f2.alimento, todos);
+      return todos;
+    };
+    const paraPablo = [];
+    const deshechos = grupos.filter((g) => (datos.deshechos ?? []).some((d) => claveGrupo(d) === claveGrupo(g)));
+    const notas = [];
+    for (const grupo of grupos) {
+      if (deshechos.includes(grupo)) continue;
+      for (const e of ex) {
+        const delGrupo = e.grupos.some((g) => claveGrupo(g) === claveGrupo(grupo)) || grupos.length > 1 && e.grupos.some((g) => /exclusiones multiples/.test(sinTildes4(g)));
+        if (delGrupo && !paraPablo.some((p) => p.asunto === e.asunto)) paraPablo.push({ grupo, asunto: e.asunto, motivo: e.motivo });
+      }
+      const pref = Object.entries(datos.preferidos ?? {}).find(([g]) => claveGrupo(g) === claveGrupo(grupo))?.[1] ?? {};
+      const filasGrupo = datos.filas.filter((f2) => claveGrupo(f2.grupo) === claveGrupo(grupo)).map((f2, i) => ({ f: f2, i: pref[f2.nutriente] === f2.alimento ? -1 : i })).sort((x, y) => x.i - y.i).map((x) => x.f);
+      const nombresNutriente = [...new Set(filasGrupo.map((f2) => f2.nutriente))];
+      for (const nutriente of nombresNutriente) {
+        if (esExcepcion(ex, grupo, nutriente, ap)) {
+          nutrientes.push({ grupo, nutriente, estado: "para_pablo" });
+          continue;
+        }
+        let hecho;
+        let elegidoNoVale;
+        for (const f2 of filasGrupo.filter((x) => x.nutriente === nutriente)) {
+          if (!vale(f2)) {
+            if (pref[nutriente] === f2.alimento) elegidoNoVale = f2.alimento;
+            continue;
+          }
+          const dias = op.noContar.has(f2.alimento) ? /* @__PURE__ */ new Set() : enSemana.get(f2.alimento) ?? diasConAlimento(asig, recetas, f2.alimento, f2.cantidadG);
+          enSemana.set(f2.alimento, dias);
+          if (dias.size >= f2.vecesSemana) {
+            hecho = { grupo, nutriente, estado: "en_tu_semana", alimento: f2.alimento, dias: dias.size };
+            break;
+          }
+          const puestos = colocar(f2, grupo, f2.vecesSemana - dias.size);
+          if (puestos) {
+            for (const e of puestos) if (!e.nutrientes.includes(nutriente)) e.nutrientes.push(nutriente);
+            hecho = { grupo, nutriente, estado: "compensado", alimento: f2.alimento, dias: puestos.length, franjas: [...new Set(puestos.map((e) => e.franja))], ...dias.size ? { enPlatos: dias.size } : {} };
+            break;
+          }
+        }
+        if (elegidoNoVale) notas.push({ grupo, nutriente, elegido: elegidoNoVale, ...hecho?.alimento ? { usado: hecho.alimento } : {} });
+        nutrientes.push(hecho ?? { grupo, nutriente, estado: "sin_compensar" });
+      }
+    }
+    const nuevosSlots = slots.map((s) => {
+      const k = restado.get(claveSlot2(s));
+      return k ? { ...s, kcalObjetivo: s.kcalObjetivo - k } : s;
+    });
+    const comp = { grupos, extras, nutrientes, paraPablo, textos: [], deshechos, notas };
+    comp.textos = textosCompensacion(comp);
+    return { slots: nuevosSlots, comp };
+  }
+  function textosCompensacion(c2) {
+    const textos = (c2.deshechos ?? []).map((g) => `Sin ${textoGrupo2(g)}: Pablo lo revisa contigo.`);
+    const hechos = /* @__PURE__ */ new Map();
+    for (const n of c2.nutrientes) {
+      const k = `${n.grupo}|${n.estado}|${n.alimento ?? ""}`;
+      hechos.set(k, [...hechos.get(k) ?? [], n]);
+    }
+    for (const ns of hechos.values()) {
+      const n = ns[0];
+      const para = lista4(ns.map((x) => textoNutriente(x.nutriente)));
+      const sin = `Sin ${textoGrupo2(n.grupo)}`;
+      const dias = n.dias === 7 ? "todos los d\xEDas" : `${n.dias} ${n.dias === 1 ? "d\xEDa" : "d\xEDas"}`;
+      if (n.estado === "compensado") {
+        const donde = lista4((n.franjas ?? []).map((f2) => FRANJA_TEXTO[f2]), "o");
+        const mas = n.enPlatos ? ` (y ${n.enPlatos} m\xE1s en tus platos)` : "";
+        textos.push(`${sin}: ${n.alimento} en ${donde} ${dias}${mas}, para ${para}.`);
+      } else if (n.estado === "en_tu_semana") textos.push(`${sin}: tu semana ya lleva ${n.alimento} ${dias}, para ${para}.`);
+      else if (n.estado === "sin_compensar") textos.push(`${sin}: no he podido compensar ${para} con cantidades normales; se lo paso a Pablo.`);
+      else textos.push(`${sin}: ${para} no se puede compensar solo con la comida de la app; lo revisa Pablo.`);
+    }
+    return textos;
+  }
+  function comidasQueFallan(slots, comp, base, nueva) {
+    const fallan = [];
+    const desvio = (r, s, objetivo) => {
+      const a2 = r.asignaciones.find((x) => x.dia === s.dia && x.franja === s.franja);
+      return a2 ? Math.abs(a2.kcalResultante - objetivo) : void 0;
+    };
+    for (const e of comp.extras) {
+      const s = slots.find((x) => x.dia === e.dia && x.franja === e.franja);
+      const objetivo = s.kcalObjetivo - e.kcal;
+      const dn = desvio(nueva, s, objetivo);
+      const db = desvio(base, s, s.kcalObjetivo) ?? 0;
+      if (dn === void 0 || dn > Math.max(60, 0.15 * objetivo) && dn > db + 30) fallan.push(claveSlot2(e));
+    }
+    return fallan;
+  }
+  function comidasQueSePasan(comp, nueva, recetas, datos) {
+    const maxDe = (a2) => datos.racionMax ? datos.racionMax(a2) : racionRealista(a2)?.maxG;
+    const platos = combinarConRecetas(nueva.asignaciones, recetas);
+    const fallan = [];
+    for (const e of comp.extras) {
+      const max = maxDe(e.alimento);
+      if (max === void 0) continue;
+      const a2 = platos.find((x) => x.dia === e.dia && x.franja === e.franja);
+      if (!a2) continue;
+      const enPlato = gramosEscalados(a2.receta, a2.racionAjustada).filter((i) => esElAlimento(i.nombre, e.alimento)).reduce((t2, i) => t2 + i.gramos, 0);
+      if (enPlato > 0 && enPlato + e.gramos > max) fallan.push(claveSlot2(e));
+    }
+    return fallan;
+  }
+  function asignarConCompensaciones(slots, recetas, opciones, datos) {
+    const grupos = datos.grupos.filter((g) => claveGrupo(g));
+    const ap0 = opciones?.alergiasPreferencias ?? { celiaquia: false, lactosa: false, vegetariano: false, vegano: false, evitados: [] };
+    const ap = grupos.length ? { ...ap0, gruposQuitados: [.../* @__PURE__ */ new Set([...ap0.gruposQuitados ?? [], ...grupos])] } : ap0;
+    const op = { ...opciones, alergiasPreferencias: ap };
+    const base = asignarRecetas(slots, recetas, op);
+    const vacia = { grupos, extras: [], nutrientes: [], paraPablo: [], textos: [] };
+    if (!grupos.length) return { asignacion: base, compensacion: vacia };
+    const o = { bloqueados: /* @__PURE__ */ new Set(), noContar: /* @__PURE__ */ new Set() };
+    let actual = base;
+    for (let vuelta = 0; vuelta < 5; vuelta++) {
+      const plan = planear(slots, actual, recetas, ap, datos, o);
+      const nueva = plan.comp.extras.length ? asignarRecetas(plan.slots, recetas, op) : base;
+      const fallan = [.../* @__PURE__ */ new Set([...comidasQueFallan(slots, plan.comp, base, nueva), ...comidasQueSePasan(plan.comp, nueva, recetas, datos)])];
+      const perdidas = plan.comp.nutrientes.filter((n) => n.estado === "en_tu_semana" && n.alimento && diasConAlimento(nueva, recetas, n.alimento, datos.filas.find((f2) => f2.alimento === n.alimento).cantidadG).size < (n.dias ?? 0) && !o.noContar.has(n.alimento));
+      if (!fallan.length && !perdidas.length) return { asignacion: nueva, compensacion: plan.comp };
+      for (const k of fallan) o.bloqueados.add(k);
+      for (const n of perdidas) o.noContar.add(n.alimento);
+      actual = nueva;
+    }
+    const ultimo = planear(slots, base, recetas, ap, datos, o).comp;
+    const nutrientes = ultimo.nutrientes.map((n) => n.estado === "para_pablo" ? n : { grupo: n.grupo, nutriente: n.nutriente, estado: "sin_compensar" });
+    const comp = { ...vacia, nutrientes, paraPablo: ultimo.paraPablo, deshechos: ultimo.deshechos, notas: ultimo.notas };
+    comp.textos = textosCompensacion(comp);
+    return { asignacion: base, compensacion: comp };
+  }
+  var textoExtra = (e) => `${e.gramos} g de ${e.alimento} \xB7 para ${lista4(e.nutrientes.map(textoNutriente))}`;
+  var extrasDe = (c2, dia2, franja) => c2.extras.filter((e) => e.dia === dia2 && e.franja === franja);
+  function compensacionesDeLaApp(limitesCsv, grupos, csv = COMPENSACIONES_CSV) {
+    const usda = registros(COMPENSACIONES_USDA_CSV);
+    const kcal = new Map(usda.map((r) => [r.nombre.trim(), Number(r.kcal_100g)]));
+    const tabla2 = parsearTablaLimites(limitesCsv);
+    const ref = { catalogo: new Map(usda.map((r) => [r.nombre.trim(), r.fdc_id.trim()])), racion: (a2) => racionEnTabla(tabla2, a2) };
+    const macros = new Map(usda.map((r) => [r.nombre.trim(), { proteina: Number(r.proteina_100g) || 0, grasa: Number(r.grasa_100g) || 0, hidrato: Number(r.hidrato_100g) || 0 }]));
+    return { filas: cargarCompensaciones(csv, ref), grupos, racionMax: (a2) => racionEnTabla(tabla2, a2)?.maxG, macros100: (a2) => macros.get(a2), kcal100: (a2) => kcal.has(a2) && kcal.get(a2) > 0 ? kcal.get(a2) : void 0, excepcionesCsv: COMPENSACIONES_EXCEPCIONES_CSV };
   }
   return __toCommonJS(motor_exports);
 })();

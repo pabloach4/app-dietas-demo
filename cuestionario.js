@@ -102,6 +102,19 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   let RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, false);
   /** Catálogo + las comidas compuestas (primero y segundo) que usa un plan, para la compra y el detalle (issue #131). */
   const catalogoPlan = (asignaciones) => RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
+  // #323 parte 2b: lo que la app pone para compensar un grupo quitado (30 g de nueces en la merienda…) también se compra.
+  let compensacionSemana = null;
+  function pedidoCompra(asignaciones) {
+    const items = asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada }));
+    const catalogo = catalogoPlan(asignaciones);
+    const dias = new Set(asignaciones.map((a) => a.dia));
+    for (const e of (compensacionSemana ? compensacionSemana.extras : []).filter((x) => dias.has(x.dia))) {
+      const id = `compensacion|${e.alimento}|${e.gramos}`;
+      if (!catalogo.some((r) => r.id === id)) catalogo.push({ id, nombre: e.alimento, franjas: [e.franja], kcal: e.kcal, proteina: e.proteina ?? 0, grasa: e.grasa ?? 0, hidrato: e.hidrato ?? 0, notas: '', ingredientes: [{ nombre: e.alimento, gramos: e.gramos }] });
+      items.push({ recetaId: id, veces: 1, racion: 1 });
+    }
+    return { items, catalogo };
+  }
 
   // Precios aproximados de supermercado (#265 J): la tabla de Instinct (#266) con la ficha de cada producto, por el bundle.
   const PRECIOS = Motor.parsearPrecios(Motor.PRECIOS_CSV).filas;
@@ -305,9 +318,29 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         <p class="subt hp-estado" aria-live="polite">${cita ? escaparHtml(textoCitaGuardada(cita)) : ''}</p>
         ${!wa ? '' : wa.href
     ? `<a class="btn-secundario hp-whatsapp" href="${escaparHtml(wa.href)}" target="_blank" rel="noopener">💬 Escribir a Pablo por WhatsApp para cerrar la cita</a>`
-    : `<button type="button" class="btn-secundario hp-whatsapp">💬 Escribir a Pablo por WhatsApp para cerrar la cita</button><p class="subt hp-wa-nota" hidden>${escaparHtml(wa.nota)}</p>`}`;
+    : `<button type="button" class="btn-secundario hp-whatsapp">💬 Escribir a Pablo por WhatsApp para cerrar la cita</button><p class="subt hp-wa-nota" hidden>${escaparHtml(wa.nota)}</p>`}${caja.dataset.donde === 'perfil' ? htmlNoMeGusta() : ''}`;
     });
   }
+  // #323 parte 2b: «No me gusta…», con los grupos que tienen compensación cargada (hoy, ninguno: no se pinta nada).
+  function htmlNoMeGusta() {
+    const grupos = gruposQuitablesApp();
+    if (!grupos.length) return '';
+    const casillas = grupos.map((g) => `<label class="hp-op"><input type="checkbox" class="hp-grupo" value="${escaparHtml(g)}"${gruposQuitados.includes(g) ? ' checked' : ''}> ${escaparHtml(g)}</label>`).join('');
+    return `<fieldset class="hp-quitar" style="margin-top:0.8rem"><legend>No me gusta…</legend>
+      <p class="subt">Marca lo que no quieras en tu semana: se quita entero y la app pone otra cosa en tus comidas para que no te falte nada.</p>${casillas}</fieldset>
+      <p class="subt hp-quitar-estado" role="status" hidden></p>`;
+  }
+  document.addEventListener('change', (e) => {
+    const c = e.target.closest && e.target.closest('input.hp-grupo');
+    if (!c) return;
+    gruposQuitados = [...c.closest('.hp-quitar').querySelectorAll('input.hp-grupo:checked')].map((x) => x.value);
+    try { localStorage.setItem(CLAVE_GRUPOS_QUITADOS, JSON.stringify(gruposQuitados)); } catch { falloAlmacenamiento(); }
+    const estado = c.closest('.hablar-pablo').querySelector('.hp-quitar-estado');
+    if (vistaSemana && planActual) {
+      mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
+      if (estado) { estado.textContent = 'Hecho: tu plan de la semana se ha rehecho.'; estado.hidden = false; }
+    }
+  });
   document.addEventListener('click', (e) => {
     const abrir = e.target.closest && e.target.closest('.hp-cita-abrir');
     if (abrir) {
@@ -1459,6 +1492,68 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (Array.isArray(guardada)) listaNegra = guardada.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim().slice(0, 40)).slice(0, 60);
   } catch { /* sin almacenamiento o dato corrupto: lista vacía */ }
   function guardarListaNegra() { try { localStorage.setItem(CLAVE_LISTA_NEGRA, JSON.stringify(listaNegra)); } catch { falloAlmacenamiento(); } }
+  // #323 parte 2b: «No me gusta…» un grupo entero (pescado, lácteos…). La semana se rehace sin él y con sus compensaciones (tabla validada
+  // por Pablo; hasta que la valide, no sale ningún grupo). Se guarda aparte del perfil, como la lista negra.
+  const CLAVE_GRUPOS_QUITADOS = 'app-dietas-grupos-quitados';
+  let gruposQuitados = [];
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_GRUPOS_QUITADOS) || 'null');
+    if (Array.isArray(g)) gruposQuitados = g.filter((x) => typeof x === 'string' && x.trim()).slice(0, 20);
+  } catch { /* sin almacenamiento o dato corrupto: ninguno */ }
+  // Las pruebas pueden pasar una tabla con filas validadas de prueba (window.__COMPENSACIONES_PRUEBA); la app usa la embebida.
+  const datosCompensacion = (grupos) => Motor.compensacionesDeLaApp(LIMITES_POR_ALIMENTO_CSV, grupos, typeof window.__COMPENSACIONES_PRUEBA === 'string' ? window.__COMPENSACIONES_PRUEBA : undefined);
+  // #323 parte 3: las alergias no entran aquí (siguen con su filtro estricto): un grupo cubierto por una alergia no se ofrece ni avisa.
+  const claveG = (g) => String(g).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const gruposConAlergia = () => {
+    try { return respuestasActuales && respuestasActuales.alergias ? Motor.gruposDeAlergia(Motor.alergiasPreferenciasDesdeTexto(respuestasActuales.alergias)) : []; } catch { return []; }
+  };
+  const gruposQuitablesApp = () => { const al = gruposConAlergia(); return Motor.gruposQuitables(datosCompensacion([]).filas).filter((g) => !al.includes(claveG(g))); };
+  /** Solo los grupos que hoy tienen compensación cargada: si Pablo retira una fila, ese grupo deja de quitarse. */
+  const gruposQuitadosVigentes = () => { const q = gruposQuitablesApp(); return gruposQuitados.filter((g) => q.includes(g)); };
+  // #323 parte 3: cuándo quitó la persona cada grupo (para que un «Deshacer» de Pablo de una vez anterior no cuente) y qué grupos ya
+  // se le avisaron a Pablo: un aviso por cambio, no uno por semana rehecha. Desmarcar no avisa.
+  const CLAVE_GUSTO_AVISADO = 'app-dietas-gusto-avisado';
+  function registroGusto(quitados) {
+    let reg = { grupos: [], desde: {} };
+    try { const x = JSON.parse(localStorage.getItem(CLAVE_GUSTO_AVISADO) || 'null'); if (x && Array.isArray(x.grupos)) reg = { grupos: x.grupos.filter((g) => typeof g === 'string'), desde: x.desde && typeof x.desde === 'object' ? x.desde : {} }; } catch { /* sin almacenamiento */ }
+    const nuevos = Motor.gruposNuevos(reg.grupos, quitados);
+    const ahora = new Date().toISOString();
+    const desde = Object.fromEntries(quitados.map((g) => [g, nuevos.includes(g) ? ahora : (reg.desde[g] || ahora)]));
+    if (JSON.stringify(reg.grupos) !== JSON.stringify(quitados) || JSON.stringify(reg.desde) !== JSON.stringify(desde)) {
+      try { localStorage.setItem(CLAVE_GUSTO_AVISADO, JSON.stringify({ grupos: quitados, desde })); } catch { return { nuevos: [], desde }; } // sin almacenamiento, sin avisos (se repetirían)
+    }
+    return { nuevos, desde };
+  }
+  /** Lo que ha hecho Pablo en la nube con cada grupo: deshecho (sin compensaciones) o el alimento elegido por nutriente. */
+  function gustoDePablo(quitados, desde, filas) {
+    const deshechos = []; const preferidos = {};
+    for (const g of quitados) {
+      const x = Motor.gustoDeAjustes(ajustesNube.ajustes, g, Date.parse(desde[g] || '') || 0);
+      if (x.deshecho) { deshechos.push(g); continue; }
+      const validos = Object.entries(x.preferidos).filter(([nutriente, alimento]) => Motor.accionQuitarGrupoValida({ tipo: 'quitar_grupo', grupo: g, alimentos: [{ nutriente, alimento }] }, filas));
+      if (validos.length) preferidos[g] = Object.fromEntries(validos);
+    }
+    return { deshechos, preferidos };
+  }
+  /** El aviso «gusto» con la solución ya aplicada, uno por grupo recién quitado; y la nota si el alimento de Pablo no pasa los filtros. */
+  function avisarGusto(nuevos, comp) {
+    if (!comp) return;
+    const ahora = new Date().toISOString();
+    let hay = false;
+    for (const g of nuevos) {
+      const sol = Motor.solucionGusto(g, comp);
+      const dec = proponerAjuste(sol, null);
+      guardarAlertas(Motor.anadirAlerta(leerAlertas(), Motor.alertaGusto(sol, ahora, Boolean(dec && dec.origen === 'auto'))));
+      hay = true;
+    }
+    for (const n of comp.notas || []) {
+      const al = Motor.alertaNotaGusto(n, ahora);
+      if (leerAlertas().some((a) => a.firma === al.firma)) continue;
+      guardarAlertas(Motor.anadirAlerta(leerAlertas(), al));
+      hay = true;
+    }
+    if (hay) pintarAlertas();
+  }
   // Una sola lista: lo que se escribe en «no me voy a comer» del cuestionario y la lista negra de Perfil son lo mismo (issue #117).
   const partirAlimentos = (t) => String(t || '').split(/[,;]| y /i).map((x) => x.trim().slice(0, 40)).filter(Boolean);
   const sinRepetidos = (items) => items.filter((x, i) => items.findIndex((y) => Motor.raizAlimento(y) === Motor.raizAlimento(x)) === i);
@@ -3255,7 +3350,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     } else if (!asignaciones.length) {
       cuerpo = '<p style="color:var(--gris)">No se ha podido asignar ninguna receta de ejemplo a ninguna franja de los días elegidos.</p>';
     } else {
-      const listaBase = Motor.compraDelPeriodo(asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada })), catalogoPlan(asignaciones), { semanas: periodoDieta.semanas, conservacion: CONSERVACION_ACTIVA, esProtegido: Motor.noSeReescala });
+      const pc = pedidoCompra(asignaciones);
+      const listaBase = Motor.compraDelPeriodo(pc.items, pc.catalogo, { semanas: periodoDieta.semanas, conservacion: CONSERVACION_ACTIVA, esProtegido: Motor.noSeReescala });
       const agrupado = periodoDieta.semanas > 1 && CONSERVACION_ACTIVA.size > 0;
       // Issue #76: una marca solo cuenta como cubierta si la cantidad de la dieta no cambió desde que se marcó.
       const evaluacion = Motor.evaluarMarcas(listaBase, Object.fromEntries(marcadosEnCasa));
@@ -3590,7 +3686,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const dias = DIAS.filter((d) => diasIncluidosCompra.has(d));
     const asignaciones = Motor.filtrarPorDias(asignacionSemanaActual.asignaciones, dias);
     if (!asignaciones.length) return [];
-    return Motor.generarListaCompra(asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada })), catalogoPlan(asignaciones), { esProtegido: Motor.noSeReescala });
+    const pc = pedidoCompra(asignaciones);
+    return Motor.generarListaCompra(pc.items, pc.catalogo, { esProtegido: Motor.noSeReescala });
   }
 
   function entrenosDelDia(dia) {
@@ -3642,6 +3739,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           <span class="dc-ing-compra">${enCompra ? `en la compra de la semana: ${escaparHtml(comprados.get(i.nombre) ?? '—')}` : 'día fuera de la compra'}</span>
         </li>`;
       }).join('');
+      const extrasDet = compensacionSemana ? Motor.extrasDe(compensacionSemana, dia, franja) : []; // #323 parte 2b
+      const filasExtra = extrasDet.map((e) => `
+        <li class="dc-ing dc-ing-compensacion">
+          <span class="dc-ing-nombre">➕ ${escaparHtml(e.alimento)}</span>
+          <span class="dc-ing-gramos">${e.gramos} g</span>
+          <span class="dc-ing-compra">${escaparHtml(Motor.textoExtra(e).split(' · ').slice(1).join(' · '))}</span>
+        </li>`).join('');
       const pasos = Motor.elaboracionEjemplo(asignada.receta.id, asignada.receta);
       const hayCocido = Motor.ingredientesDeLaRacion(asignada.receta, 1).some((i) => Motor.factorCocido(i.nombre));
       const bloqueCocido = hayCocido ? `
@@ -3650,12 +3754,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const vistas = `<div class="dc-vistas" role="group" aria-label="Qué quieres ver de este plato">${[['cantidades', 'Cantidades'], ['receta', 'Receta']].map(([v, t]) => `<button type="button" data-vista="${v}" aria-pressed="${vistaDetalle === v}">${t}</button>`).join('')}</div>`;
       const fila = (letra, clase, objetivo, deLaReceta) => `<tr><th><span class="chip chip-${clase}">${letra}</span></th><td>${objetivo}</td><td>${deLaReceta}</td></tr>`;
       // #257 (punto 15): se compara con lo que lleva la ración que se come (antes, los macros de la receta base).
-      const servido = Motor.macrosConRacion(asignada.receta, asignada.racionAjustada);
+      const servido0 = Motor.macrosConRacion(asignada.receta, asignada.racionAjustada);
+      const suma = (k) => extrasDet.reduce((t, e) => t + (e[k] ?? 0), 0);
+      const servido = { ...servido0, proteina: servido0.proteina + suma('proteina'), grasa: servido0.grasa + suma('grasa'), hidrato: servido0.hidrato + suma('hidrato') };
       const cuadre = `
         <table class="dc-cuadre">
           <thead><tr><th></th><th>Tu objetivo</th><th>Tu ración</th></tr></thead>
           <tbody>
-            <tr class="dc-cuadre-kcal"><th>kcal</th><td><strong>~${f.kcalAprox}</strong></td><td><strong>~${asignada.kcalResultante}</strong></td></tr>
+            <tr class="dc-cuadre-kcal"><th>kcal</th><td><strong>~${f.kcalAprox}</strong></td><td><strong>~${asignada.kcalResultante + suma('kcal')}</strong></td></tr>
             ${fila('P', 'p', `${f.proteina} g`, `~${nf(servido.proteina)} g`)}
             ${fila('G', 'g', `${f.grasa} g`, `~${nf(servido.grasa)} g`)}
             ${fila('H', 'h', `${f.hidrato} g`, `~${nf(servido.hidrato)} g`)}
@@ -3669,7 +3775,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         ${vistas}
         <div class="dc-parte" data-parte="cantidades"${vistaDetalle === 'cantidades' ? '' : ' hidden'}>
         <div class="dc-ings-cab"><span>Ingrediente</span><span>Lo que comes</span><span>Lo que compras</span></div>
-        <ul class="dc-ings">${filas}</ul>
+        <ul class="dc-ings">${filas}${filasExtra}</ul>
         ${bloqueCocido}
         </div>
         <div class="dc-parte" data-parte="receta"${vistaDetalle === 'receta' ? '' : ' hidden'}>
@@ -4156,7 +4262,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // de la compra (pintarListaCompra), para que tarjetas y lista concuerden siempre.
     // Issue #39: antes de proponer una receta, se descarta lo incompatible con alergias/preferencias
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
-    const alergiasPreferencias = Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', '));
+    const quitadosAhora = gruposQuitadosVigentes(); // #323 parte 2b: el catálogo, las sustituciones y el postre tampoco los ofrecen
+    const alergiasPreferencias = { ...Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', ')), ...(quitadosAhora.length ? { gruposQuitados: quitadosAhora } : {}) };
     restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
     pintarDesayunoPref(); // #265 E3: la lista de «siempre el mismo», con las restricciones de ahora
     pintarHambreCena(); // #265 F: la pregunta, solo si esta semana algún entreno acaba de noche con la cena después
@@ -4185,7 +4292,25 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const previa = (preferirUnaVez ?? asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta }))).map((p) => ({ ...p, receta: Motor.sinCarga(p.receta) })); /* #301 */ // #261 C: al aplicar o borrar los gustos, no se conservan los platos de ahora
     const gustos = Motor.gustosPorReceta(RECETAS_EJEMPLO, historialGustos, ATRIBUTOS_RECETAS); // #261 C: solo desempata; sin gustos, vacío
     const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias), ...(previa.length ? { preferir: previa } : {}), desayuno: prefDesayuno, ...(gustos.size ? { gustos } : {}) };
-    const asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador);
+    // #323 parte 2b: con grupos quitados, la semana sale sin ellos y con sus compensaciones en comidas que ya existen. Sus kcal ya se han
+    // restado del objetivo de esa comida: se restan también de slotsSemana para que las sustituciones, el cuadre del día y el cierre de
+    // proteína trabajen con lo que le queda al plato (el día no sube). La dieta siguiente se hace sin compensar, con las kcal enteras.
+    const slotsSinCompensar = slotsSemana.map((s) => ({ ...s }));
+    compensacionSemana = null;
+    let asignacionBase;
+    // #323 parte 3: los grupos de alergia no cuentan aquí (siguen con su filtro); el registro dice qué grupo es nuevo (aviso a Pablo) y
+    // desde cuándo valen sus «Deshacer» y «Cambiar».
+    const gusto = registroGusto(quitadosAhora);
+    if (quitadosAhora.length) {
+      const dc = datosCompensacion(quitadosAhora);
+      Object.assign(dc, gustoDePablo(quitadosAhora, gusto.desde, dc.filas));
+      const r = Motor.asignarConCompensaciones(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador, dc);
+      asignacionBase = r.asignacion;
+      compensacionSemana = r.compensacion;
+      for (const e of compensacionSemana.extras) { const s = slotsSemana.find((x) => x.dia === e.dia && x.franja === e.franja); if (s) s.kcalObjetivo -= e.kcal; }
+      avisarGusto(gusto.nuevos, compensacionSemana);
+    } else asignacionBase = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, opcionesAsignador);
+    const extrasDeSlot = (dia, franja) => (compensacionSemana ? Motor.extrasDe(compensacionSemana, dia, franja) : []);
     // Issue #75: las recetas elegidas a mano se aplican sobre la asignación y se vuelven a validar con el perfil actual.
     const aplicadas = Motor.aplicarSustituciones(asignacionBase, slotsSemana, RECETAS_EJEMPLO, sustituciones, { alergiasPreferencias });
     // Issue #145: lo que no cabe en una comida con cantidades normales se reparte entre las otras comidas del día (sin inflar nada).
@@ -4273,6 +4398,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       plan.dias.filter((d) => (compPorDia.get(d.dia)?.hidratoMinGKg ?? 0) >= 10 && compPorDia.get(d.dia)?.fase !== 'competicion').map((d) => ({ dia: d.dia, hidratoObjetivoG: d.hidratoG })),
       cuadrado.asignaciones, recetasCuadre, cuadrado.dias, admitePostre,
     ).map((e) => [e.dia, e]));
+    if (compensacionSemana && compensacionSemana.extras.length) { // #323 parte 2b: lo servido del día incluye lo que la app pone para compensar
+      const extraDia = (d) => compensacionSemana.extras.filter((e) => e.dia === d).reduce((t, e) => t + e.kcal, 0);
+      cuadrado = { ...cuadrado, dias: cuadrado.dias.map((x) => ({ ...x, servido: x.servido + extraDia(x.dia), objetivo: x.objetivo + extraDia(x.dia) })) };
+    }
     const avisoCuadrePorDia = new Map(cuadrado.dias.filter((x) => x.aviso).map((x) => [x.dia, x.aviso])); // #145: el día que no cuadra lo dice
     // #283: el día con una comida fuera apuntada (con kcal) dice en su cabecera lo que suma y cuánto se pasa, con las cifras de «Hoy».
     const kcalFueraHtml = (d) => {
@@ -4301,9 +4430,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     dietaSiguienteFn = () => {
       const porId = new Map(RECETAS_EJEMPLO.map((r) => [r.id, r]));
       const evitar = [...new Set(asignacionSemana.asignaciones.flatMap((a) => { const r = Motor.recetaDeId(porId, a.receta); return r ? (r.platos ?? [r.id]) : [a.receta]; }))];
-      const base = Motor.asignarRecetas(slotsSemana, RECETAS_EJEMPLO, { ...opcionesAsignador, preferir: undefined, fijadas: fijasPropias, evitar });
+      const base = Motor.asignarRecetas(slotsSinCompensar, RECETAS_EJEMPLO, { ...opcionesAsignador, preferir: undefined, fijadas: fijasPropias, evitar });
       const rc = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(base.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
-      return { ...base, asignaciones: cerrarProteina(Motor.cuadrarDias(base.asignaciones, slotsSemana, rc, { noMover: enCompeticion, admite: admitePostre }), rc).asignaciones }; // #315: con su cierre de proteína
+      return { ...base, asignaciones: cerrarProteina(Motor.cuadrarDias(base.asignaciones, slotsSinCompensar, rc, { noMover: enCompeticion, admite: admitePostre }), rc).asignaciones }; // #315: con su cierre de proteína
     };
     proxima.dieta = null; // el plan se ha recalculado: la dieta siguiente preparada antes ya no vale
     if (proxima.resultado) proxima.obsoleta = true; // #192: la lista ya preparada se rehace con las restricciones de ahora al pintar la compra
@@ -4344,6 +4473,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const frases = Motor.pautaCreatina({ toma: document.getElementById('toma-creatina').checked, edad: respuestas.edad, compite: competiciones.length > 0 });
       caja.hidden = !frases;
       caja.innerHTML = frases ? `<p style="margin:0.4rem 0">💊 ${frases.map(escaparHtml).join(' ')}</p>` : '';
+    }
+    // #323 parte 2b: «Lo que te he cambiado», con los textos honestos de la compensación (lo que no se puede compensar, para Pablo).
+    {
+      const caja = document.getElementById('r-cambiado');
+      const textos = compensacionSemana ? compensacionSemana.textos : [];
+      caja.hidden = !textos.length;
+      caja.innerHTML = textos.length ? `<details class="plegable" open><summary>Lo que te he cambiado</summary><ul class="resumen-lista">${textos.map((t) => `<li>${escaparHtml(t)}</li>`).join('')}</ul></details>` : '';
     }
     // #331 parte 1: cuenta atrás y fase de la oposición.
     {
@@ -4387,7 +4523,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         const recetaHtml = fueraFranja
           ? `<div class="receta-franja fuera-marca">🍴 <strong>${fueraFranja.prevista ? 'Vas a comer fuera' : 'Comida fuera'}</strong>${fueraFranja.noSe ? ': todavía sin decidir' : `: ${escaparHtml(fueraFranja.texto)}`}<div class="receta-dato">${fueraFranja.kcal !== undefined ? `~${fueraFranja.kcal} kcal` : fueraFranja.noSe ? `cuenta como ~${f.kcalAprox} kcal de tu plan` : 'kcal sin apuntar'}</div></div>`
           : asignada
-          ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}${asignada.fijada ? ' <span class="etq-pedido">📌 fijada</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div>${(() => { const n = Motor.notaTomaCorta(f.kcalAprox, asignada, cuadrado.dias.find((x) => x.dia === d.dia)); return n ? `<p class="subt nota-toma-corta" data-slot="${d.dia}|${f.franja}">⚖️ ${escaparHtml(n)}</p>` : ''; })()}<button type="button" class="btn-texto fijar-btn" data-dia="${d.dia}" data-franja="${f.franja}">${semanaFija.has(`${d.dia}|${f.franja}`) ? '📌 Quitar fijación' : '📌 Fijar'}</button></div>`
+          ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}${asignada.fijada ? ' <span class="etq-pedido">📌 fijada</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div>${(() => { const n = Motor.notaTomaCorta(f.kcalAprox, asignada, cuadrado.dias.find((x) => x.dia === d.dia)); return n ? `<p class="subt nota-toma-corta" data-slot="${d.dia}|${f.franja}">⚖️ ${escaparHtml(n)}</p>` : ''; })()}${extrasDeSlot(d.dia, f.franja).map((e) => `<div class="receta-dato compensacion-extra" data-slot="${d.dia}|${f.franja}">➕ ${escaparHtml(Motor.textoExtra(e))} · ~${e.kcal} kcal</div>`).join('')}<button type="button" class="btn-texto fijar-btn" data-dia="${d.dia}" data-franja="${f.franja}">${semanaFija.has(`${d.dia}|${f.franja}`) ? '📌 Quitar fijación' : '📌 Fijar'}</button></div>`
           : `<div class="receta-franja hueco">⚠️ Sin receta de ejemplo que encaje${hueco ? `: ${escaparHtml(hueco.motivo)}` : ''}</div>`;
         return `
           <div class="franja-reparto-card ${f.rol !== 'normal' ? 'destacada' : ''}">

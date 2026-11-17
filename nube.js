@@ -192,7 +192,8 @@
       const r = await sb.from('ajustes').select('id, tipo, datos, estado, origen, creado, actualizado').order('creado', { ascending: true }).limit(200);
       if (r.error || !Array.isArray(r.data)) return;
       const reglas = await sb.rpc('reglas_auto');
-      guardarAjustes({ ajustes: r.data.filter((a) => a && a.estado !== 'deshecho'), reglas: reglas && !reglas.error && reglas.data && typeof reglas.data === 'object' ? reglas.data : {} });
+      // Los «deshecho» de un aviso `gusto` sí se guardan (#323 parte 3): la app quita entonces las compensaciones de ese grupo.
+      guardarAjustes({ ajustes: r.data.filter((a) => a && (a.estado !== 'deshecho' || a.tipo === 'gusto')), reglas: reglas && !reglas.error && reglas.data && typeof reglas.data === 'object' ? reglas.data : {} });
     } catch { /* sin red, sin 011 pegado o cliente distinto: la app sigue como estaba */ }
   }
   // #322 parte 3: las propuestas de la app (y las que aplicó sola con «Arreglarlo siempre así») que cuestionario.js deja en

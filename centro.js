@@ -192,7 +192,13 @@
     const tipoTxt = Motor.TIPOS_SOLUCIONABLES[s.tipo] || s.tipo;
     const enc = reglasAuto[s.tipo] === true;
     let editor = '';
-    if (cambiando === a.id && v.accion) {
+    if (cambiando === a.id && v.accion && v.accion.tipo === 'quitar_grupo') {
+      // #323 parte 3: «Cambiar» un aviso de gustos es elegir otro alimento de las filas validadas de ese grupo y nutriente.
+      const ops = Motor.opcionesCambioGusto(v.accion, filasGusto());
+      editor = `<div class="cc-sol-editor" style="margin-top:0.4rem">${ops.map((o) => `<label class="fila" style="gap:0.4rem;flex-wrap:wrap">Para ${esc(o.nutriente)}
+        <select class="cc-sol-alimento" data-id="${a.id}" data-nutriente="${esc(o.nutriente)}" style="flex:0 0 auto">${o.opciones.map((x) => `<option value="${esc(x)}"${x === o.actual ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>`).join('')}
+        <div class="fila" style="gap:0.4rem"><button class="cc-sol-guardar" data-id="${a.id}" style="flex:0 0 auto">Guardar y aplicar</button><button class="sec cc-sol-cancelar" style="flex:0 0 auto">Cancelar</button></div></div>`;
+    } else if (cambiando === a.id && v.accion) {
       const c = Motor.camposEditables(v.accion);
       editor = `<div class="fila cc-sol-editor" style="gap:0.4rem;flex-wrap:wrap;margin-top:0.4rem">
         ${c.kcal !== null ? `<label style="flex:0 0 auto">kcal <input type="number" class="cc-sol-kcal" data-id="${a.id}" value="${esc(c.kcal)}" min="10" step="10" style="width:6rem"></label>` : ''}
@@ -215,6 +221,10 @@
       <span class="subt cc-sol-ok" data-id="${a.id}" aria-live="polite"></span>
     </div>`;
   }
+
+  // Las filas validadas de compensación (las pruebas pueden pasar las suyas en window.__COMPENSACIONES_PRUEBA).
+  let filasGustoCache = null;
+  const filasGusto = () => filasGustoCache || (filasGustoCache = Motor.filasCompensacionCentro(typeof window.__COMPENSACIONES_PRUEBA === 'string' ? window.__COMPENSACIONES_PRUEBA : undefined));
 
   async function escribirAjuste(e) {
     if (!e) return { error: { message: 'el cambio no es válido (fuera de las cantidades normales)' } };
@@ -246,6 +256,13 @@
     cuerpo.querySelectorAll('.cc-sol-guardar').forEach((b) => b.addEventListener('click', () => {
       const a = alertaDe(b.dataset.id); const v = a && Motor.vistaSolucion(a, datos.ajustes);
       if (!v) return;
+      if (v.accion && v.accion.tipo === 'quitar_grupo') {
+        const elegidos = Object.fromEntries([...cuerpo.querySelectorAll(`.cc-sol-alimento[data-id="${a.id}"]`)].map((x) => [x.dataset.nutriente, x.value]));
+        const nueva = Motor.accionGustoCambiada(v.accion, elegidos, filasGusto());
+        if (!nueva) { decirSol(a.id, 'Ese alimento no está en las compensaciones validadas: no se guarda.'); return; }
+        guardar(a.id, Motor.escrituraVale(a, v, nueva), 'Cambiado: la app lo usará si encaja con sus alergias y lo que evita.');
+        return;
+      }
       const k = cuerpo.querySelector(`.cc-sol-kcal[data-id="${a.id}"]`); const fr = cuerpo.querySelector(`.cc-sol-franja[data-id="${a.id}"]`);
       const nueva = Motor.accionCambiada(v.accion, { kcal: k ? k.value : null, franja: fr ? fr.value : null });
       if (!nueva) { decirSol(a.id, 'Ese cambio se sale de las cantidades normales: no se guarda.'); return; }
