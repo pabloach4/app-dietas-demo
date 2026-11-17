@@ -827,6 +827,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         sesiones: franjaADia(d.dia, franjasDelDia(d.dia), sesionesConActividad),
         sesionesTodas: sesionesTodasDelDia(d.dia, sesionesConActividad),
         sesionesFuerza: sesionesFuerzaDelDia(d.dia, sesionesConActividad), // #319 parte 1
+        sesionesManana: sesionesMananaDelDia(d.dia, sesionesConActividad), // #319 parte 2
         franjas: franjasDelDia(d.dia),
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
         ...(hambreCena ? { hambreCena } : {}), // #265 F
@@ -836,6 +837,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         const rol = f.rol !== 'normal' ? ` (${nombreRol(f.rol)})` : '';
         lineas.push(`  · ${NOMBRE_FRANJA[f.franja] ?? f.franja}${rol}: P ${f.proteina} · G ${f.grasa} · H ${f.hidrato} g`);
       });
+      (repartoT.recuperacionRapida || []).filter((x) => x.toma).forEach((x) => lineas.push(`  · Toma rápida (${horaDecimalATexto(x.fin)}, recuperación): H ${Math.round(x.hidrato)} g`)); // #319 p2
     });
     if (plan.avisos.length) {
       lineas.push('', 'Avisos:');
@@ -3257,6 +3259,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     return sesiones.filter((s) => s.dia === dia && s.horaInicio !== undefined && Motor.ACTIVIDADES[s.actividad]?.tipo === 'fuerza')
       .map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }));
   }
+  // #319 parte 2: las sesiones de carga del día siguiente (tras el domingo, el lunes: la semana se repite), para ver si la siguiente está cerca.
+  function sesionesMananaDelDia(dia, sesiones) {
+    return franjaADia(DIAS[(DIAS.indexOf(dia) + 1) % DIAS.length], [], sesiones);
+  }
   // Issue #59: todas las sesiones con hora del día (también fuerza) para avisar de comidas que caen dentro.
   function sesionesTodasDelDia(dia, sesiones) {
     return sesiones.filter((s) => s.dia === dia && s.horaInicio !== undefined).map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }));
@@ -4263,6 +4269,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         sesiones: franjaADia(d.dia, franjasDelDia(d.dia), sesionesConActividad),
         sesionesTodas: sesionesTodasDelDia(d.dia, sesionesConActividad),
         sesionesFuerza: sesionesFuerzaDelDia(d.dia, sesionesConActividad), // #319 parte 1
+        sesionesManana: sesionesMananaDelDia(d.dia, sesionesConActividad), // #319 parte 2
         franjas: franjasDelDia(d.dia),
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
         ...(hambreCena ? { hambreCena } : {}), // #265 F
@@ -4272,7 +4279,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       if (!excepcionesHorario.has(d.dia)) horarioGeneralDelDia(d.dia).movidas.filter((m) => m.franja !== reparto.tomaDurante?.sustituye).forEach((m) => avisosReparto.push(`${d.dia}: ${m.texto}`)); // #313: la sustituida no se mueve
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...(compPorDia.get(d.dia)?.racionesCarga ? { racionesCarga: true } : {}) /* #301 */, ...(compPorDia.get(d.dia)?.visperaMacros ? { hidratoFacil: true } : {}) /* #321 parte 2 */, ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()), ...((() => { if (f.franja !== 'desayuno' || compPorDia.get(d.dia)?.fase !== 'competicion') return {}; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)); return hf === undefined || salida === undefined || hf < salida ? { desayunoCarrera: 'estricto' } : {}; })()) /* #285 punto 11: el desayuno de la carrera, con la regla de Pablo */ });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...(compPorDia.get(d.dia)?.racionesCarga ? { racionesCarga: true } : {}) /* #301 */, ...(compPorDia.get(d.dia)?.visperaMacros || f.detalle?.recuperacionRapida ? { hidratoFacil: true } : {}) /* #321 parte 2; #319 parte 2: la comida de recuperación, con base de hidrato */, ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()), ...((() => { if (f.franja !== 'desayuno' || compPorDia.get(d.dia)?.fase !== 'competicion') return {}; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)); return hf === undefined || salida === undefined || hf < salida ? { desayunoCarrera: 'estricto' } : {}; })()) /* #285 punto 11: el desayuno de la carrera, con la regla de Pablo */ });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,
@@ -4533,7 +4540,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('r-dias').innerHTML = repartosPorDia.map(({ dia: d, reparto }) => {
       const tomaD = reparto.tomaDurante && reparto.tomaDurante.hidratoG > 0 ? reparto.tomaDurante : null; // #313: la toma durante la sesión cuenta en el día
       const tomaA = reparto.arranque && reparto.arranque.hidratoG > 0 ? reparto.arranque : null; // #321 p1: la toma de arranque cuenta en el día
-      const kcalFranjas = reparto.franjas.reduce((t, x) => t + x.kcalAprox, 0) + (tomaD ? tomaD.kcal : 0) + (tomaA ? tomaA.kcal : 0); // #153: la barra es el % de las kcal del día que lleva cada franja
+      const tomasR = (reparto.recuperacionRapida || []).filter((x) => x.toma); // #319 p2: la toma rápida entre sesiones seguidas cuenta en el día
+      const kcalFranjas = reparto.franjas.reduce((t, x) => t + x.kcalAprox, 0) + (tomaD ? tomaD.kcal : 0) + (tomaA ? tomaA.kcal : 0) + tomasR.reduce((t, x) => t + x.kcal, 0); // #153: la barra es el % de las kcal del día que lleva cada franja
       const franjasHtml = reparto.franjas.map((f) => {
         const pct = kcalFranjas > 0 ? Math.round((f.kcalAprox / kcalFranjas) * 100) : 0;
         const asignada = recetaPorSlot.get(`${d.dia}|${f.franja}`);
@@ -4596,7 +4604,19 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             <div class="franja-barra" aria-hidden="true"><span style="width:${pct}%"></span></div>
             <p class="subt">🏁 Hidratos rápidos, solo si los has probado en entrenos (qué tomar, en la tarjeta del día de competición). Cuenta dentro de las kcal del día: las demás comidas llevan menos hidratos.</p>
           </div>`;
-      })() : '');
+      })() : '') + tomasR.map((tr) => { // #319 parte 2: la toma rápida nada más acabar, cuando la siguiente sesión está a menos de 2 h
+        const pct = kcalFranjas > 0 ? Math.round((tr.kcal / kcalFranjas) * 100) : 0;
+        return `
+          <div class="franja-reparto-card destacada toma-rapida" data-dia="${d.dia}">
+            <div class="franja-reparto-cabecera">
+              <div><div class="nombre">Toma rápida <small>${escaparHtml(horaDecimalATexto(tr.fin))}</small></div><div class="rol">Recuperación rápida</div></div>
+              <div class="macros"><strong>~${Math.round(tr.kcal)}</strong> kcal<div class="franja-barra-pct">${pct} % del día</div></div>
+            </div>
+            <div class="franja-reparto-macros"><span><span class="chip chip-h" aria-hidden="true">H</span>${Math.round(tr.hidrato)} g<span class="sr-solo"> de hidratos</span></span></div>
+            <div class="franja-barra" aria-hidden="true"><span style="width:${pct}%"></span></div>
+            <p class="subt">⚡ Nada más acabar, porque la siguiente sesión está cerca: ${escaparHtml(Motor.TOMA_RAPIDA_EJEMPLO)}. Cuenta dentro de las kcal del día: las demás comidas llevan menos hidratos.</p>
+          </div>`;
+      }).join('');
       const sesionesDelDia = sesiones.map((s, i) => ({ ...s, i })).filter((s) => s.dia === d.dia);
       // #285 punto 11: el día de la prueba, la prueba va primero y las sesiones de siempre dicen que ese día no cuentan (su gasto lo sustituye la prueba).
       const pruebaHoy = compPorDia.get(d.dia)?.fase === 'competicion' ? compiteEseDia(d.dia).flatMap((c) => { const f = Motor.fechaDelDia(calInicio, d.dia); const ps = (c.pruebas ?? []).filter((p) => (p.fecha ?? c.fecha) === f); return ps.length ? ps.map((p) => `${c.nombre} · ${p.hora} · ${p.duracionMin}'`) : [c.nombre]; }) : [];
@@ -4681,6 +4701,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
           ${diasRacionesCarga.has(d.dia) ? `<p class="subt nota-carga" data-dia="${d.dia}">🍝 ${escaparHtml(Motor.TEXTO_RACIONES_CARGA)}</p>` : ''}
           ${diasMenosGrasa.has(d.dia) ? `<p class="subt nota-menos-grasa" data-dia="${d.dia}">🫒 ${escaparHtml(Motor.TEXTO_MENOS_GRASA_CARGA)}</p>` : ''}
+          ${(reparto.recuperacionRapida || []).map((x) => `<p class="subt recuperacion-rapida" data-dia="${d.dia}">⚡ ${escaparHtml(x.texto)}</p>`).join('')}
           ${reparto.tomaSugerida ? `<p class="subt toma-sugerida">Antes de entrenar a las ${escaparHtml(horaDecimalATexto(reparto.tomaSugerida.inicio))}: si te sienta bien, algo ligero 30-60 min antes, por ejemplo ${escaparHtml(Motor.TOMA_AYUNAS.ejemplo)} (unas ${reparto.tomaSugerida.kcal} kcal). Es solo una sugerencia.</p>` : ''}
           ${badgesHtml}
           ${moverHtml}
@@ -4795,6 +4816,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           sesiones: franjaADia(dB.dia, franjasDelDia(dB.dia), sesionesConActividad),
           sesionesTodas: sesionesTodasDelDia(dB.dia, sesionesConActividad),
           sesionesFuerza: sesionesFuerzaDelDia(dB.dia, sesionesConActividad), // #319 parte 1
+          sesionesManana: sesionesMananaDelDia(dB.dia, sesionesConActividad), // #319 parte 2
           franjas: franjasDelDia(dB.dia),
           ...(hambreCena ? { hambreCena } : {}), // #265 F
         });

@@ -99,6 +99,7 @@ var Motor = (() => {
     RECETAS_CATALOGO_INGREDIENTES_CSV: () => RECETAS_CATALOGO_INGREDIENTES_CSV,
     RECETAS_EJEMPLO_CSV: () => RECETAS_EJEMPLO_CSV,
     RECETAS_EJEMPLO_INGREDIENTES_CSV: () => RECETAS_EJEMPLO_INGREDIENTES_CSV,
+    RECUPERACION: () => RECUPERACION,
     RESPALDO_MS: () => RESPALDO_MS,
     RITMO_SUBIDA_MAX_PCT: () => RITMO_SUBIDA_MAX_PCT,
     RITMO_SUBIDA_MIN_PCT: () => RITMO_SUBIDA_MIN_PCT,
@@ -123,6 +124,7 @@ var Motor = (() => {
     TIPOS_SOLUCIONABLES: () => TIPOS_SOLUCIONABLES,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
     TOMA_AYUNAS: () => TOMA_AYUNAS,
+    TOMA_RAPIDA_EJEMPLO: () => TOMA_RAPIDA_EJEMPLO,
     TOPE_DEFICIT: () => TOPE_DEFICIT2,
     TOPE_KCAL_FRANJA: () => TOPE_KCAL_FRANJA,
     TOPE_TENTEMPIE: () => TOPE_TENTEMPIE,
@@ -2080,6 +2082,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   // src/motor/reparto-comidas.ts
   var PRINCIPALES = ["desayuno", "comida", "cena"];
   var SECUNDARIAS = ["media_manana", "merienda"];
+  var RECUPERACION = { hueco_h: 8, larga_h: 2, toma_rapida_hueco_h: 2, sin_pausa_h: 0.25, hidrato_g_kg: 1, fraccion_donante: 0.5 };
+  var TOMA_RAPIDA_EJEMPLO = "un batido de fruta con bebida de soja, o pan con mermelada";
   var FUERZA_MIN_H = 0.75;
   var TOMA_AYUNAS = { ejemplo: "un pl\xE1tano", gramos: 118, kcal: Math.round(89 * 118 / 100), fuente: "USDA FoodData Central, FDC 173944 (Bananas, raw): 89 kcal/100 g; 1 mediano = 118 g" };
   function hhmm(h) {
@@ -2395,6 +2399,65 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         avisos.push(`Cena despu\xE9s de entrenar de noche: como llegas con poca hambre, es m\xE1s ligera (unas ${Math.round(mover)} kcal menos) y eso pasa a ${NOMBRE_FRANJA[previa.franja]?.toLowerCase() ?? previa.franja}, antes del entreno. El total del d\xEDa no cambia.`);
       }
     }
+    const recuperacionRapida = [];
+    {
+      const R = RECUPERACION;
+      const horaDe = (f2) => e.franjas.find((x) => x.franja === f2).hora;
+      const orden = [...sesionesCarga].sort((a2, b) => a2.inicio - b.inicio);
+      const manana = (e.sesionesManana ?? []).map((s) => ({ inicio: s.inicio + 24, fin: s.fin + 24 })).sort((a2, b) => a2.inicio - b.inicio);
+      const objetivo = redondear(R.hidrato_g_kg * (e.peso ?? e.pesoRef));
+      const usadas = /* @__PURE__ */ new Set();
+      const kcalDe = (s) => {
+        s.kcalAprox = redondear(4 * s.proteina + 4 * s.hidrato + 9 * s.grasa);
+      };
+      const quitarDeOtras = (g, salvo) => {
+        const libres = salida.filter((x) => !salvo.has(x.franja));
+        const normales = libres.filter((x) => x.rol === "normal");
+        const cabe = (xs) => xs.reduce((t2, x) => t2 + x.hidrato * R.fraccion_donante, 0);
+        const donantes = cabe(normales) >= g ? normales : libres;
+        const disponible = cabe(donantes);
+        const q = Math.min(g, disponible);
+        if (q <= 0) return 0;
+        let dado = 0;
+        for (const x of donantes) {
+          const antes = x.hidrato;
+          x.hidrato = redondear(x.hidrato - q * x.hidrato * R.fraccion_donante / disponible);
+          dado += antes - x.hidrato;
+          kcalDe(x);
+        }
+        return dado;
+      };
+      for (let i = 0; i < orden.length; i++) {
+        const s = orden[i];
+        const siguiente = [...orden.slice(i + 1), ...manana].find((x) => x.inicio >= s.fin - 1e-9);
+        const hueco = siguiente ? siguiente.inicio - s.fin : Infinity;
+        const larga = s.fin - s.inicio >= R.larga_h - 1e-9 && manana.length > 0;
+        if (!(hueco < R.hueco_h || larga)) continue;
+        if (hueco < R.sin_pausa_h) continue;
+        const porque = hueco < R.hueco_h ? `la siguiente sesi\xF3n est\xE1 a menos de ${R.hueco_h} h` : `ma\xF1ana vuelves a entrenar despu\xE9s de una sesi\xF3n de ${R.larga_h} h o m\xE1s`;
+        const mismoDia = !!siguiente && siguiente.inicio < 24;
+        const post = hueco < R.toma_rapida_hueco_h ? void 0 : principales.filter((f2) => !usadas.has(f2) && horaDe(f2) >= s.fin && (!mismoDia || horaDe(f2) < siguiente.inicio) && !(f2 === "desayuno" && horaDe(f2) - s.fin > p.ventana.POST_hasta_h_despues)).sort((a2, b) => horaDe(a2) - horaDe(b))[0];
+        if (post) {
+          usadas.add(post);
+          const sp = salida.find((x) => x.franja === post);
+          if (sp.hidrato < objetivo) {
+            sp.hidrato = redondear(sp.hidrato + quitarDeOtras(objetivo - sp.hidrato, usadas));
+            kcalDe(sp);
+          }
+          sp.detalle.recuperacionRapida = true;
+          const llega = sp.hidrato >= objetivo - 0.5;
+          const texto3 = `Recuperaci\xF3n r\xE1pida: ${porque}. ${NOMBRE_FRANJA[post]} (${hhmm(horaDe(post))}), despu\xE9s del entreno de ${hhmm(s.inicio)} a ${hhmm(s.fin)}, ` + (llega ? `lleva al menos ${objetivo} g de hidrato (1 g por kilo)` : `lleva ${Math.round(sp.hidrato)} g de hidrato (no llega a 1 g por kilo sin dejar cortas las dem\xE1s comidas)`) + " para recargar, mejor con arroz, pasta, patata o pan. Sale de las dem\xE1s comidas: el total del d\xEDa no cambia.";
+          avisos.push(texto3);
+          recuperacionRapida.push({ inicio: s.inicio, fin: s.fin, franja: post, toma: false, hidrato: sp.hidrato, objetivo, kcal: sp.kcalAprox, texto: texto3 });
+        } else {
+          const g = redondear(quitarDeOtras(objetivo, usadas));
+          if (g <= 0) continue;
+          const texto3 = `Recuperaci\xF3n r\xE1pida: ${porque}. Nada m\xE1s acabar el entreno de las ${hhmm(s.fin)}, una toma r\xE1pida: ${TOMA_RAPIDA_EJEMPLO} (unos ${Math.round(g)} g de hidrato, unas ${Math.round(4 * g)} kcal). Cuenta como una comida: se ha restado de las dem\xE1s y el total del d\xEDa no cambia.`;
+          avisos.push(texto3);
+          recuperacionRapida.push({ inicio: s.inicio, fin: s.fin, toma: true, hidrato: g, objetivo, kcal: redondear(4 * g), texto: texto3 });
+        }
+      }
+    }
     const conflictos = [];
     for (const f2 of e.franjas) {
       for (const ses of e.sesionesTodas ?? sesionesCarga) {
@@ -2407,7 +2470,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       );
     }
     const tomaSugerida = primeraHoraSug && !tomaLigera ? { inicio: primeraHoraSug.inicio, kcal: TOMA_AYUNAS.kcal } : void 0;
-    return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {}, ...cenaTrasEntreno ? { cenaTrasEntreno } : {}, ...tomaSugerida ? { tomaSugerida } : {} };
+    return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {}, ...cenaTrasEntreno ? { cenaTrasEntreno } : {}, ...tomaSugerida ? { tomaSugerida } : {}, ...recuperacionRapida.length ? { recuperacionRapida } : {} };
   }
   function agruparAvisosPorDia(avisos) {
     const NOMBRE4 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
@@ -7146,6 +7209,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       esPrincipal ? `Prote\xEDna (${f(franja.proteina)} g): las comidas principales (desayuno, comida y cena) se reparten la del d\xEDa (${f(contexto.proteinaDia)} g). Como referencia orientativa, hasta unos ${f(Math.round(0.4 * contexto.pesoRef / 5) * 5)} g por comida principal; no es un m\xE1ximo absoluto.` : `Prote\xEDna (${f(franja.proteina)} g): media ma\xF1ana y merienda llevan unos 10 g cada una (menos, si tras las principales no queda tanto), lo normal en un tentempi\xE9.`,
       ...d.proteinaTopeSecundaria ? [esPrincipal ? `Media ma\xF1ana y merienda llevan unos 10 g cada una y el resto de la prote\xEDna del d\xEDa va a las comidas principales: por eso ${franja.proteina > 0.4 * contexto.pesoRef ? `esta principal pasa de los ${f(0.4 * contexto.pesoRef, 1)} g de referencia` : "esta principal lleva m\xE1s que sin ese tope"}.` : "El resto de la prote\xEDna del d\xEDa va a las comidas principales; a cambio, esta toma lleva algo m\xE1s de hidrato (fruta, pan) y conserva sus kcal."] : [],
       ...d.proteinaFuerza ? [`Prote\xEDna: es la comida de despu\xE9s de tu sesi\xF3n de fuerza (o la de antes, si no hay despu\xE9s), as\xED que lleva ${f(franja.proteina)} g, unos 0,4 g por kilo; las dem\xE1s principales llevan un poco menos y el total del d\xEDa no cambia.`] : [],
+      ...d.recuperacionRapida ? ["Recuperaci\xF3n r\xE1pida: tu siguiente sesi\xF3n est\xE1 cerca, as\xED que esta comida de despu\xE9s lleva m\xE1s hidrato (hasta 1 g por kilo) para recargar antes de volver a entrenar. Ese hidrato sale de las dem\xE1s comidas y el total del d\xEDa no cambia."] : [],
       // #260 (punto 30): en palabras («su parte del hidrato del día»), sin «peso de la franja × factor».
       `Hidrato (${f(franja.hidrato)} g): de los ${f(contexto.hidratoDia)} g del d\xEDa, a esta comida le toca su parte${d.factor !== 1 ? `, con un extra (\xD7${f(d.factor, 1)}) por el entreno` : ""}: ${f(franja.hidrato)} g.`,
       franja.rol !== "normal" ? d.fuerza ? TEXTO_ROL_FUERZA[franja.rol] : TEXTO_ROL[franja.rol] : sinCarga2 ? `Sin extra de hidrato: ${contexto.tipoDia === "fuerza" ? "la fuerza sola no cuenta como entreno de carga" : "es un d\xEDa de descanso"}, as\xED que ninguna comida lleva un extra por el entreno.` : "Sin extra de hidrato: esta comida no cae justo antes ni justo despu\xE9s de un entreno de carga.",
