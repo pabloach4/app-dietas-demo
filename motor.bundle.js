@@ -9961,8 +9961,12 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
         const kcalSinEsta = kcalDia() - a2.kcalResultante;
         const errorDiaAntes = Math.abs(kcalDia() - kcalObjetivoDia);
         let mejor;
+        const grupo = GRUPO_VARIEDAD[a2.franja];
+        const pedidas = new Set(salida.filter((x) => x.pedidoPorUsuario || x.fijada).map((x) => x.receta));
+        const agotada = (id) => Boolean(grupo) && !pedidas.has(id) && salida.filter((x) => x !== a2 && GRUPO_VARIEDAD[x.franja] === grupo && x.receta === id).length >= MAX_VECES_GRUPO;
         for (const alt2 of alternativas) {
           if (Math.abs(alt2.kcalResultante - slot.kcalObjetivo) > MARGEN_KCAL_CAMBIO * slot.kcalObjetivo) continue;
+          if (agotada(alt2.receta.id)) continue;
           if (alt2.protegidosSinEscalar.length && alt2.racionAjustada !== 1) continue;
           const errorDia = Math.abs(kcalSinEsta + alt2.kcalResultante - kcalObjetivoDia);
           if (errorDia > TOLERANCIA_DIA * kcalObjetivoDia && errorDia > errorDiaAntes) continue;
