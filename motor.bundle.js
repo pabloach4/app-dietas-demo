@@ -106,6 +106,7 @@ var Motor = (() => {
     RECETAS_CATALOGO_INGREDIENTES_CSV: () => RECETAS_CATALOGO_INGREDIENTES_CSV,
     RECETAS_EJEMPLO_CSV: () => RECETAS_EJEMPLO_CSV,
     RECETAS_EJEMPLO_INGREDIENTES_CSV: () => RECETAS_EJEMPLO_INGREDIENTES_CSV,
+    RECETA_TEMPORADA_CSV: () => RECETA_TEMPORADA_CSV,
     RECUPERACION: () => RECUPERACION,
     RESPALDO_MS: () => RESPALDO_MS,
     RITMO_SUBIDA_MAX_PCT: () => RITMO_SUBIDA_MAX_PCT,
@@ -118,6 +119,7 @@ var Motor = (() => {
     SUPERAVIT_MAXIMO: () => SUPERAVIT_MAXIMO,
     SUPERAVIT_MINIMO: () => SUPERAVIT_MINIMO,
     SUPERAVIT_POR_DEFECTO: () => SUPERAVIT_POR_DEFECTO,
+    TEMPORADAS_RECETA: () => TEMPORADAS_RECETA,
     TEXTOS_LOGROS: () => TEXTOS_LOGROS,
     TEXTO_ALERTA_PERSONA: () => TEXTO_ALERTA_PERSONA,
     TEXTO_MENOS_GRASA_CARGA: () => TEXTO_MENOS_GRASA_CARGA,
@@ -229,6 +231,7 @@ var Motor = (() => {
     comprobarPorcionComestible: () => comprobarPorcionComestible,
     comprobarPrecios: () => comprobarPrecios,
     comprobarTablaOposiciones: () => comprobarTablaOposiciones,
+    comprobarTablaTemporada: () => comprobarTablaTemporada,
     conLimitesIngredientes: () => conLimitesIngredientes,
     conflictosComidaEntreno: () => conflictosComidaEntreno,
     conservacionDesdeCsv: () => conservacionDesdeCsv,
@@ -269,6 +272,7 @@ var Motor = (() => {
     ejemploTomaPrimeraHora: () => ejemploTomaPrimeraHora,
     ejemplosDurante: () => ejemplosDurante,
     elaboracionEjemplo: () => elaboracionEjemplo,
+    encajaTemporada: () => encajaTemporada,
     encimasDe: () => encimasDe,
     enlaceCorreoPablo: () => enlaceCorreoPablo,
     ensayoCarrera: () => ensayoCarrera,
@@ -417,6 +421,7 @@ var Motor = (() => {
     planPabloAplicable: () => planPabloAplicable,
     plegarLineaIcs: () => plegarLineaIcs,
     preferenciaDesayunoValida: () => preferenciaDesayunoValida,
+    preferenciaTemporada: () => preferenciaTemporada,
     proteinaDelDia: () => proteinaDelDia,
     pruebasDeCuerpo: () => pruebasDeCuerpo,
     pruebasPropuestas: () => pruebasPropuestas,
@@ -462,6 +467,8 @@ var Motor = (() => {
     sugerenciaMenosComidas: () => sugerenciaMenosComidas,
     sugerenciaProteinaDia: () => sugerenciaProteinaDia,
     sustitucionesDesdeJson: () => sustitucionesDesdeJson,
+    temporadaDeReceta: () => temporadaDeReceta,
+    temporadaPorRegla: () => temporadaPorRegla,
     tentempieAQuitar: () => tentempieAQuitar,
     textoAccion: () => textoAccion,
     textoCita: () => textoCita,
@@ -3866,6 +3873,77 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     return { asignaciones: salida, dias: diasSalida, recetas: nuevas, diasCarga, diasMenosGrasa };
   }
 
+  // src/motor/temporada-datos.ts
+  var RECETA_TEMPORADA_CSV = `receta_id,temporada,motivo
+R04,fresco,La escalivada se sirve fr\xEDa o a temperatura ambiente
+R20,caliente,El zarangollo es un revuelto de calabac\xEDn y cebolla que se come reci\xE9n hecho
+R110,caliente,La pera cocida se toma templada
+R331,todo,Mezcla patata asada con ensalada y tofu marinado: vale todo el a\xF1o
+`;
+
+  // src/motor/temporada.ts
+  var TEMPORADAS_RECETA = ["caliente", "fresco", "todo"];
+  var normal3 = (t2) => t2.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  var FRESCO_FUERTE = [/^ensalada\b/, /\b(gazpacho|salmorejo|ajoblanco|vichyssoise)\b/, /\b(crema|sopa) fria\b/, /\b(fria|frio)s?$/];
+  var CALIENTE = [
+    /^crema\b/,
+    /\b(sopa|caldo|consome|puchero|potaje|fabada|marmitako|estofad[oa]s?|guis(o|ad[oa]s?)|cazuela)\b/,
+    /^cocido\b/,
+    /\b(chilindron|a la cazadora|en salsa|al horno|gratinad[oa]s?|caldos[oa]|melos[oa]|risotto|polenta|gachas|porridge|avena cocida|migas|menestra|pisto|tumbet)\b/,
+    /^\S+ asad[oa]s?\b/
+    // el asado es el plato («calabaza asada con…»), no una guarnición
+  ];
+  var FRESCO = [/^(bol|bowl|poke)\b/, /\b(marinad[oa]s?|carpaccio|tartar|ceviche|wrap|tostas)\b/, /^batido\b/, /\b(melon|sandia|macedonia)\b/];
+  var LEGUMBRE = /\b(lentejas?|garbanzos?|alubias?|judias? (blancas?|rojas?|pintas?)|fabes)\b/;
+  var LEGUMBRE_NO_GUISO = /\b(hummus|salteados?|ensalada)\b/;
+  var CORRECCIONES = new Map(
+    RECETA_TEMPORADA_CSV.trim().split(/\r?\n/).slice(1).map((l) => {
+      const [id, t2] = l.split(",");
+      return [id, t2];
+    })
+  );
+  function temporadaPorRegla(r) {
+    const n = normal3(r.nombre);
+    if (FRESCO_FUERTE.some((re) => re.test(n))) return "fresco";
+    if (CALIENTE.some((re) => re.test(n))) return "caliente";
+    if (FRESCO.some((re) => re.test(n))) return "fresco";
+    if (r.tipoPlato !== "postre" && !LEGUMBRE_NO_GUISO.test(n) && (LEGUMBRE.test(n) || r.ingredientes.some((i) => LEGUMBRE.test(normal3(i.nombre)) && i.gramos >= 100))) return "caliente";
+    return "todo";
+  }
+  function temporadaDeReceta(r) {
+    return CORRECCIONES.get(r.id) ?? temporadaPorRegla(r);
+  }
+  function encajaTemporada(r, pref, porId) {
+    if (!r.platos || !porId) return temporadaDeReceta(r) === pref;
+    return r.platos.some((id) => {
+      const p = porId.get(id);
+      return !!p && p.tipoPlato !== "postre" && temporadaDeReceta(p) === pref;
+    });
+  }
+  function preferenciaTemporada(fecha) {
+    const m = fecha ? /^\d{4}-(\d{2})-\d{2}$/.exec(fecha) : null;
+    if (!m) return void 0;
+    const mes = Number(m[1]);
+    if (mes >= 11 || mes <= 3) return "caliente";
+    if (mes >= 6 && mes <= 9) return "fresco";
+    return void 0;
+  }
+  function comprobarTablaTemporada(csv, ids) {
+    const errores = [];
+    const [cab, ...filas] = csv.trim().split(/\r?\n/);
+    if (cab !== "receta_id,temporada,motivo") errores.push(`cabecera inesperada: ${cab}`);
+    const vistos = /* @__PURE__ */ new Set();
+    filas.forEach((l, i) => {
+      const [id, t2, ...motivo] = l.split(",");
+      if (!ids.has(id)) errores.push(`fila ${i + 2}: la receta ${id} no existe`);
+      if (vistos.has(id)) errores.push(`fila ${i + 2}: ${id} repetida`);
+      vistos.add(id);
+      if (!TEMPORADAS_RECETA.includes(t2)) errores.push(`fila ${i + 2}: \xAB${t2}\xBB no es caliente, fresco ni todo`);
+      if (!motivo.join(",").trim()) errores.push(`fila ${i + 2}: falta el motivo`);
+    });
+    return errores;
+  }
+
   // src/motor/desayuno-carrera.ts
   var normalizar4 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   var HIDRATO_MIN_DESAYUNO_CARRERA = 0.55;
@@ -3938,6 +4016,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   var PESO_VIOLACION_E2 = 300;
   var PESO_GUSTO = 40;
   var PESO_HIDRATO_FACIL = 30;
+  var PESO_TEMPORADA = 15;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
@@ -4305,7 +4384,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
             continue;
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
-          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) - PESO_GUSTO / 4 * gusto(r);
+          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) - PESO_GUSTO / 4 * gusto(r);
           if (!mejor || clave3(desviacion, dist, falta) < clave3(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
@@ -4544,9 +4623,9 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     }
     return estados;
   }
-  var LEGUMBRE = /\b(lentejas?|garbanzos?|alubias?)\b/i;
+  var LEGUMBRE2 = /\b(lentejas?|garbanzos?|alubias?)\b/i;
   function proteinaServida(r, factor) {
-    const crece = r.ingredientes.some((i) => esPalanca(i.nombre) && (rolIngrediente(i.nombre) === "proteina" || LEGUMBRE.test(i.nombre)));
+    const crece = r.ingredientes.some((i) => esPalanca(i.nombre) && (rolIngrediente(i.nombre) === "proteina" || LEGUMBRE2.test(i.nombre)));
     return r.proteina * (crece ? factor : 1);
   }
   function kcalConRacion(receta, factor) {
@@ -12311,8 +12390,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     return pautas.map((p, i) => {
       if (!p.ensayo || !(exceso > 0)) return p;
       const horas = p.minutos / 60;
-      const normal3 = duranteEntreno(sesiones[i], deportePrincipal2);
-      const gNormal = normal3.opcional ? 0 : normal3.objetivoGHora ?? 0;
+      const normal4 = duranteEntreno(sesiones[i], deportePrincipal2);
+      const gNormal = normal4.opcional ? 0 : normal4.objetivoGHora ?? 0;
       const g = Math.max(gNormal, Math.floor((p.ensayo.gHora - exceso / horas) / 5) * 5);
       if (g >= p.ensayo.gHora) return p;
       exceso -= r0(p.ensayo.gHora * horas) - r0(g * horas);
