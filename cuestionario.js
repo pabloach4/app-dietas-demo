@@ -4368,7 +4368,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     });
     const slotsSemana = []; // issue #30: {dia, franja, kcalObjetivo} de cada franja, para el asignador de recetas
     // #332 p1: la fecha de cada día dice qué se prefiere (caliente de noviembre a marzo, fresco de junio a septiembre); sin calendario, nada.
-    const temporadaDia = (dia) => { const t = calInicio && Motor.esLunes(calInicio) ? Motor.preferenciaTemporada(Motor.fechaDelDia(calInicio, dia)) : undefined; return t ? { temporada: t } : {}; };
+    // #332 p1 (revisión): sin calendario, la temporada va por el mes de hoy (no se enseña ninguna fecha; el motor no lee el reloj, recibe la fecha).
+    // Las pruebas de navegador fijan ese día en window.__FECHA_TEMPORADA_PRUEBA para no depender del mes en que se ejecutan.
+    const hoyTemporada = typeof window.__FECHA_TEMPORADA_PRUEBA === 'string' ? window.__FECHA_TEMPORADA_PRUEBA : Motor.fechaLocalISO(new Date());
+    const temporadaDia = (dia) => { const t = Motor.preferenciaTemporada(calInicio && Motor.esLunes(calInicio) ? Motor.fechaDelDia(calInicio, dia) : hoyTemporada); return t ? { temporada: t } : {}; };
     const filasCSV = []; // issue #31: una fila por día y franja, para el CSV descargable
 
     // Issue #35: primera pasada solo para tener el reparto de kcal/macros de cada día y la semana

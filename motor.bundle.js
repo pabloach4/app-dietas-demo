@@ -3879,6 +3879,8 @@ R04,fresco,La escalivada se sirve fr\xEDa o a temperatura ambiente
 R20,caliente,El zarangollo es un revuelto de calabac\xEDn y cebolla que se come reci\xE9n hecho
 R110,caliente,La pera cocida se toma templada
 R331,todo,Mezcla patata asada con ensalada y tofu marinado: vale todo el a\xF1o
+R31,todo,El bol de arroz con pollo se suele comer caliente: no es una ensalada
+R348,todo,El mel\xF3n va de acompa\xF1amiento: el bocadillo de pavo vale todo el a\xF1o
 `;
 
   // src/motor/temporada.ts
@@ -4016,7 +4018,7 @@ R331,todo,Mezcla patata asada con ensalada y tofu marinado: vale todo el a\xF1o
   var PESO_VIOLACION_E2 = 300;
   var PESO_GUSTO = 40;
   var PESO_HIDRATO_FACIL = 30;
-  var PESO_TEMPORADA = 15;
+  var PESO_TEMPORADA = 8;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
@@ -4384,7 +4386,7 @@ R331,todo,Mezcla patata asada con ensalada y tofu marinado: vale todo el a\xF1o
             continue;
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
-          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) - PESO_GUSTO / 4 * gusto(r);
+          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && esFranjaConLimiteVariedad(slot.franja) && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) - PESO_GUSTO / 4 * gusto(r);
           if (!mejor || clave3(desviacion, dist, falta) < clave3(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
