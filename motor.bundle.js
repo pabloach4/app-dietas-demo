@@ -27,7 +27,11 @@ var Motor = (() => {
     ATRIBUTOS_CSV: () => ATRIBUTOS_CSV,
     AVISO_DESCARGA: () => AVISO_DESCARGA,
     AVISO_ETIQUETA_GLUTEN: () => AVISO_ETIQUETA_GLUTEN,
+    BLOQUES_PROPUESTOS: () => BLOQUES_PROPUESTOS,
     CABECERA_ATRIBUTOS: () => CABECERA_ATRIBUTOS,
+    CAFEINA_MAX_ADULTO_MG: () => CAFEINA_MAX_ADULTO_MG,
+    CAFEINA_MG: () => CAFEINA_MG,
+    CAFEINA_ULTIMA_ANTES: () => CAFEINA_ULTIMA_ANTES,
     CITACION_PROPUESTA: () => CITACION_PROPUESTA,
     CLAVES_NUBE: () => CLAVES_NUBE,
     COMER_FUERA_CSV: () => COMER_FUERA_CSV,
@@ -39,6 +43,7 @@ var Motor = (() => {
     DIAS: () => DIAS,
     DIAS_AVISO_FIN: () => DIAS_AVISO_FIN,
     DIAS_CITA: () => DIAS_CITA,
+    DIAS_ESTUDIO_PROPUESTOS: () => DIAS_ESTUDIO_PROPUESTOS,
     DIAS_SIN_RECORTE_FISICAS: () => DIAS_SIN_RECORTE_FISICAS,
     DOMINIOS_OFICIALES_OPOSICION: () => DOMINIOS_OFICIALES_OPOSICION,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
@@ -66,6 +71,7 @@ var Motor = (() => {
     LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
     MARGEN_KCAL_CAMBIO: () => MARGEN_KCAL_CAMBIO,
     MAX_BAJADA_COMIDA: () => MAX_BAJADA_COMIDA,
+    MAX_BLOQUES_ESTUDIO: () => MAX_BLOQUES_ESTUDIO,
     MAX_COMIDAS_FUERA_SEMANA: () => MAX_COMIDAS_FUERA_SEMANA,
     MAX_DUELOS: () => MAX_DUELOS,
     MAX_INSTANTANEA: () => MAX_INSTANTANEA,
@@ -136,6 +142,7 @@ var Motor = (() => {
     TOMA_AYUNAS: () => TOMA_AYUNAS,
     TOMA_PRIMERA_HORA_NATACION: () => TOMA_PRIMERA_HORA_NATACION,
     TOMA_RAPIDA_EJEMPLO: () => TOMA_RAPIDA_EJEMPLO,
+    TOPE_COMIDA_ESTUDIO: () => TOPE_COMIDA_ESTUDIO,
     TOPE_DEFICIT: () => TOPE_DEFICIT2,
     TOPE_KCAL_FRANJA: () => TOPE_KCAL_FRANJA,
     TOPE_TENTEMPIE: () => TOPE_TENTEMPIE,
@@ -198,6 +205,7 @@ var Motor = (() => {
     avisosVolumen: () => avisosVolumen,
     bandaPesoServido: () => bandaPesoServido,
     bebidaTotalL: () => bebidaTotalL,
+    bloquesDelDia: () => bloquesDelDia,
     borrarCompeticion: () => borrarCompeticion,
     buscarAlternativas: () => buscarAlternativas,
     buscarRecetas: () => buscarRecetas,
@@ -213,8 +221,10 @@ var Motor = (() => {
     claveSlot: () => claveSlot,
     coherenciaKcalMacros: () => coherenciaKcalMacros,
     coincideAlimento: () => coincideAlimento,
+    colocarComidasEstudio: () => colocarComidasEstudio,
     combinarConRecetas: () => combinarConRecetas,
     comerFueraDesdeCsv: () => comerFueraDesdeCsv,
+    comidaSinExcesos: () => comidaSinExcesos,
     comidasFueraPersona: () => comidasFueraPersona,
     compensacionesDeLaApp: () => compensacionesDeLaApp,
     competicionDeOposicion: () => competicionDeOposicion,
@@ -354,6 +364,7 @@ var Motor = (() => {
     horaDeGuardado: () => horaDeGuardado,
     idAlerta: () => idAlerta,
     idCuerpoOposicion: () => idCuerpoOposicion,
+    infoCafeina: () => infoCafeina,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
     ingredientesPrincipales: () => ingredientesPrincipales,
     inicioDeLaSiguiente: () => inicioDeLaSiguiente,
@@ -490,6 +501,7 @@ var Motor = (() => {
     usosVariedadSemana: () => usosVariedadSemana,
     validarCasilla: () => validarCasilla,
     validarCompeticion: () => validarCompeticion,
+    validarEstudio: () => validarEstudio,
     validarHorarioDia: () => validarHorarioDia,
     validarOposicion: () => validarOposicion,
     validarPeticionSiOSi: () => validarPeticionSiOSi,
@@ -2559,7 +2571,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {}, ...cenaTrasEntreno ? { cenaTrasEntreno } : {}, ...tomaSugerida ? { tomaSugerida } : {}, ...recuperacionRapida.length ? { recuperacionRapida } : {} };
   }
   function agruparAvisosPorDia(avisos) {
-    const NOMBRE4 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
+    const NOMBRE5 = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
     const grupos = /* @__PURE__ */ new Map();
     const sueltos = [];
     const orden = [];
@@ -2579,7 +2591,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     return orden.map((k) => {
       if (k.startsWith("\0")) return sueltos[Number(k.slice(1))];
       const dias = grupos.get(k);
-      const n = dias.map((d) => NOMBRE4[d]);
+      const n = dias.map((d) => NOMBRE5[d]);
       const lista5 = n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
       return `${lista5.charAt(0).toUpperCase()}${lista5.slice(1)}: ${k}`;
     });
@@ -11601,6 +11613,128 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     return mejor;
   }
 
+  // src/motor/estudio.ts
+  var MAX_BLOQUES_ESTUDIO = 4;
+  var DIAS_ESTUDIO_PROPUESTOS = ["L", "M", "X", "J", "V"];
+  var BLOQUES_PROPUESTOS = [{ desde: "09:00", hasta: "13:30" }, { desde: "16:00", hasta: "19:30" }];
+  var TOPE_COMIDA_ESTUDIO = 0.35;
+  var MINIMO_MOVER_KCAL = 30;
+  var CAFEINA_MG = { cafes: 80, tes: 50, energeticas: 80, colas: 40 };
+  var CAFEINA_MAX_ADULTO_MG = 400;
+  var CAFEINA_MAX_MENOR_MG_KG = 3;
+  var CAFEINA_ULTIMA_ANTES = "16:00";
+  var MAX_BEBIDAS = 20;
+  function validarEstudio(valor) {
+    if (!valor || typeof valor !== "object") return { ok: true };
+    const x = valor;
+    const lista5 = Array.isArray(x.bloques) ? x.bloques : [];
+    if (lista5.length > MAX_BLOQUES_ESTUDIO) return { ok: false, error: `Como mucho ${MAX_BLOQUES_ESTUDIO} bloques de estudio.` };
+    const bloques = [];
+    for (const [i, b] of lista5.entries()) {
+      const o = b && typeof b === "object" ? b : {};
+      const desde = typeof o.desde === "string" ? o.desde.trim() : "";
+      const hasta = typeof o.hasta === "string" ? o.hasta.trim() : "";
+      if (!desde && !hasta) continue;
+      if (!esHoraValida(desde) || !esHoraValida(hasta)) return { ok: false, error: `Pon la hora de empezar y de acabar del bloque de estudio ${i + 1}.` };
+      if (hasta <= desde) return { ok: false, error: `El bloque de estudio ${i + 1} tiene que acabar despu\xE9s de empezar.` };
+      bloques.push({ desde, hasta });
+    }
+    bloques.sort((a2, b) => a2.desde.localeCompare(b.desde));
+    for (let i = 1; i < bloques.length; i++) if (bloques[i].desde < bloques[i - 1].hasta) return { ok: false, error: "Dos bloques de estudio se pisan: revisa sus horas." };
+    const dias = (Array.isArray(x.dias) ? x.dias : []).filter((d) => DIAS.includes(d));
+    const cafeina = validarCafeina(x.cafeina);
+    if (!cafeina.ok) return cafeina;
+    if (!bloques.length && !cafeina.cafeina) return { ok: true };
+    return { ok: true, estudio: { bloques, dias: DIAS.filter((d) => dias.includes(d)), ...cafeina.cafeina ? { cafeina: cafeina.cafeina } : {} } };
+  }
+  function validarCafeina(valor) {
+    if (!valor || typeof valor !== "object") return { ok: true };
+    const x = valor;
+    const c2 = {};
+    for (const k of ["cafes", "tes", "energeticas", "colas"]) {
+      if (x[k] === void 0 || x[k] === "" || x[k] === null) continue;
+      const n = Number(x[k]);
+      if (!Number.isInteger(n) || n < 0 || n > MAX_BEBIDAS) return { ok: false, error: `Las bebidas con cafe\xEDna van de 0 a ${MAX_BEBIDAS} al d\xEDa.` };
+      if (n > 0) c2[k] = n;
+    }
+    const hora3 = typeof x.horaUltima === "string" ? x.horaUltima.trim() : "";
+    if (hora3 && !esHoraValida(hora3)) return { ok: false, error: "La hora de tu \xFAltima bebida con cafe\xEDna no es v\xE1lida." };
+    if (hora3) c2.horaUltima = hora3;
+    return Object.keys(c2).length ? { ok: true, cafeina: c2 } : { ok: true };
+  }
+  function bloquesDelDia(estudio, dia2) {
+    if (!estudio || !estudio.dias.includes(dia2)) return [];
+    return estudio.bloques.map((b) => ({ inicio: aMinutos2(b.desde) / 60, fin: aMinutos2(b.hasta) / 60 }));
+  }
+  var NOMBRE3 = { desayuno: "El desayuno", comida: "La comida", cena: "La cena" };
+  var PRINCIPALES3 = ["desayuno", "comida", "cena"];
+  var hhmm2 = (h) => {
+    const m = Math.round(h * 60);
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  };
+  function colocarComidasEstudio(franjas, bloques, sesiones = []) {
+    if (!bloques.length) return { franjas, cambios: [] };
+    const principales = franjas.filter((f2) => PRINCIPALES3.includes(f2.franja) && typeof f2.hora === "number");
+    const r = sacarTomasDeSesiones(principales, [...bloques, ...sesiones]);
+    const nuevas = new Map(principales.map((f2, i) => [f2, r.franjas[i]]));
+    const cambios = [];
+    const bloqueDe = (h) => bloques.find((b) => h >= b.inicio && h < b.fin);
+    for (const f2 of principales) {
+      const n = nuevas.get(f2);
+      const b = bloqueDe(f2.hora);
+      if (!b) continue;
+      const nombre = NOMBRE3[f2.franja] ?? f2.franja;
+      if (n.hora !== f2.hora) cambios.push({ franja: f2.franja, de: f2.hora, a: n.hora, texto: `${nombre} pasa a las ${hhmm2(n.hora)}: a las ${hhmm2(f2.hora)} est\xE1s estudiando (de ${hhmm2(b.inicio)} a ${hhmm2(b.fin)}).` });
+      else cambios.push({ franja: f2.franja, de: f2.hora, texto: `${nombre} de las ${hhmm2(f2.hora)} cae en tu bloque de estudio (de ${hhmm2(b.inicio)} a ${hhmm2(b.fin)}) y no cabe antes ni despu\xE9s a una hora normal: haz una pausa para comer.` });
+    }
+    return { franjas: franjas.map((f2) => nuevas.get(f2) ?? f2), cambios };
+  }
+  function comidaSinExcesos(franjas) {
+    const comida = franjas.find((f2) => f2.franja === "comida");
+    const hacia = ["merienda", "media_manana", "cena"].map((x) => franjas.find((f2) => f2.franja === x)).find(Boolean);
+    if (!comida || !hacia) return { franjas, movidoKcal: 0 };
+    const total = franjas.reduce((s, f2) => s + f2.kcalAprox, 0);
+    const sobra = comida.kcalAprox - TOPE_COMIDA_ESTUDIO * total;
+    if (sobra < MINIMO_MOVER_KCAL) return { franjas, movidoKcal: 0 };
+    const g = Math.round(Math.min(sobra / 4, comida.hidrato) * 10) / 10;
+    if (4 * g < MINIMO_MOVER_KCAL) return { franjas, movidoKcal: 0 };
+    const kcal = (p, h, gr) => Math.round(4 * p + 4 * h + 9 * gr);
+    const salida = franjas.map((f2) => {
+      if (f2 === comida) {
+        const h = Math.round((f2.hidrato - g) * 10) / 10;
+        return { ...f2, hidrato: h, kcalAprox: kcal(f2.proteina, h, f2.grasa) };
+      }
+      if (f2 === hacia) {
+        const h = Math.round((f2.hidrato + g) * 10) / 10;
+        return { ...f2, hidrato: h, kcalAprox: kcal(f2.proteina, h, f2.grasa) };
+      }
+      return f2;
+    });
+    const nombreHacia = { merienda: "la merienda", media_manana: "la media ma\xF1ana", cena: "la cena" }[hacia.franja] ?? hacia.franja;
+    const movidoKcal = Math.round(4 * g);
+    return {
+      franjas: salida,
+      movidoKcal,
+      hacia: hacia.franja,
+      texto: `D\xEDa de estudio: la comida va sin excesos (como mucho un 35 % del d\xEDa), para que no te entre el baj\xF3n despu\xE9s. Unas ${movidoKcal} kcal de hidratos pasan a ${nombreHacia}: mejor con fruta.`
+    };
+  }
+  function infoCafeina(c2, opciones = {}) {
+    if (!c2) return void 0;
+    const mg = (c2.cafes ?? 0) * CAFEINA_MG.cafes + (c2.tes ?? 0) * CAFEINA_MG.tes + (c2.energeticas ?? 0) * CAFEINA_MG.energeticas + (c2.colas ?? 0) * CAFEINA_MG.colas;
+    const menor = opciones.edad !== void 0 && opciones.edad < 18;
+    const maxMg = menor && opciones.peso ? Math.round(CAFEINA_MAX_MENOR_MG_KG * opciones.peso) : CAFEINA_MAX_ADULTO_MG;
+    const tarde = mg > 0 && !!c2.horaUltima && c2.horaUltima > CAFEINA_ULTIMA_ANTES;
+    const pasa = mg > maxMg;
+    if (!mg) return { mg, maxMg, pasa, tarde: false, frases: [] };
+    const frases = [`Con lo que tomas son unos ${mg} mg de cafe\xEDna al d\xEDa (aprox.).`];
+    if (pasa) frases.push(menor ? `Pasa de los ${maxMg} mg al d\xEDa (3 mg por kg) que la EFSA considera seguros a tu edad: prueba a cambiar alguno por descafeinado o por agua.` : `Pasa de los ${CAFEINA_MAX_ADULTO_MG} mg al d\xEDa que la EFSA considera seguros para un adulto sano: prueba a cambiar alguno por descafeinado.`);
+    else frases.push(`Est\xE1s dentro de los ${maxMg} mg al d\xEDa que la EFSA considera seguros${menor ? " a tu edad (3 mg por kg)" : " para un adulto sano"}.`);
+    if (tarde) frases.push(`La \xFAltima es a las ${c2.horaUltima}: la cafe\xEDna puede quitarte sue\xF1o horas despu\xE9s. Mejor que la \xFAltima sea antes de las ${CAFEINA_ULTIMA_ANTES}, y luego descafeinado.`);
+    frases.push("Es informaci\xF3n sobre lo que ya tomas, no una recomendaci\xF3n de tomar cafe\xEDna. En el embarazo o la lactancia el l\xEDmite es m\xE1s bajo: h\xE1blalo con Pablo.");
+    return { mg, maxMg, pasa, tarde, frases };
+  }
+
   // src/motor/oposiciones-datos.ts
   var OPOSICIONES_PRUEBAS_CSV = `cuerpo,ambito,prueba,tipo,distancia_o_repeticiones,duracion_aprox_min,orden,mismo_dia,diferencia_por_sexo,fuente_url,fecha_convocatoria
 Polic\xEDa Nacional - Escala B\xE1sica,Espa\xF1a,Circuito de agilidad,agilidad,recorrido del anexo II,pendiente_estimacion_fundada,1,pendiente_citacion,no cambia la prueba,https://www.boe.es/buscar/doc.php?id=BOE-A-2026-15055,2026-07-07
@@ -11950,6 +12084,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     if (cuerpo && !CUERPOS_OPOSICION.some((c2) => c2.id === cuerpo)) return { ok: false, error: "Elige tu cuerpo de la lista (o \xABOtro\xBB)." };
     const jornada = conFisicas ? validarJornada(d) : { ok: true, jornada: {} };
     if (!jornada.ok) return jornada;
+    const estudio = conEscrito ? validarEstudio(d.estudio) : { ok: true };
+    if (!estudio.ok) return estudio;
     return {
       ok: true,
       oposicion: {
@@ -11958,7 +12094,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
         ...fechaFisicas ? { fechaFisicas } : {},
         ...fechaEscrito ? { fechaEscrito } : {},
         ...cuerpo ? { cuerpo } : {},
-        ...jornada.jornada
+        ...jornada.jornada,
+        ...estudio.estudio ? { estudio: estudio.estudio } : {}
       }
     };
   }
@@ -11993,8 +12130,10 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     const x = valor;
     const texto3 = (v) => typeof v === "string" ? v : void 0;
     const datos = { tipo: texto3(x.tipo), orden: texto3(x.orden), fechaFisicas: texto3(x.fechaFisicas), fechaEscrito: texto3(x.fechaEscrito), cuerpo: texto3(x.cuerpo), citacion: texto3(x.citacion), finJornada: texto3(x.finJornada), cafeina: texto3(x.cafeina) };
-    const r = validarOposicion({ ...datos, pruebasFisicas: x.pruebasFisicas });
+    const r = validarOposicion({ ...datos, pruebasFisicas: x.pruebasFisicas, estudio: x.estudio });
     if (r.ok) return r.oposicion;
+    const sinEstudio = validarOposicion({ ...datos, pruebasFisicas: x.pruebasFisicas });
+    if (sinEstudio.ok) return sinEstudio.oposicion;
     const sin = validarOposicion({ ...datos, citacion: void 0, finJornada: void 0 });
     return sin.ok ? sin.oposicion : void 0;
   }
@@ -12828,7 +12967,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
 
   // src/motor/menos-comidas.ts
   var KCAL_DIA_CINCO_COMIDAS = 1400;
-  var NOMBRE3 = { media_manana: "la media ma\xF1ana", merienda: "la merienda" };
+  var NOMBRE4 = { media_manana: "la media ma\xF1ana", merienda: "la merienda" };
   function tentempieAQuitar(franjas) {
     const h = (f2) => franjas.find((x) => x.franja === f2)?.hora;
     const [de, co, ce] = [h("desayuno"), h("comida"), h("cena")];
@@ -12845,8 +12984,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     return {
       quitar,
       dias: bajos,
-      texto: `${cuando} menos de 1.400 kcal y, repartidas en 5 comidas, los tentempi\xE9s quedan muy peque\xF1os. Si te viene bien, puedes hacer 4 comidas: sin ${NOMBRE3[quitar]}, lo suyo pasa al resto y las dem\xE1s horas no cambian.`,
-      boton: `Quitar ${NOMBRE3[quitar]}`
+      texto: `${cuando} menos de 1.400 kcal y, repartidas en 5 comidas, los tentempi\xE9s quedan muy peque\xF1os. Si te viene bien, puedes hacer 4 comidas: sin ${NOMBRE4[quitar]}, lo suyo pasa al resto y las dem\xE1s horas no cambian.`,
+      boton: `Quitar ${NOMBRE4[quitar]}`
     };
   }
   return __toCommonJS(motor_exports);

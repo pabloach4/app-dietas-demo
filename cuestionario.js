@@ -531,6 +531,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('campo-op-fisicas').hidden = !tipo || tipo === 'escrito';
     document.getElementById('op-jornada').hidden = !tipo || tipo === 'escrito';
     document.getElementById('campo-op-escrito').hidden = !tipo || tipo === 'fisicas';
+    document.getElementById('op-estudio').hidden = !tipo || tipo === 'fisicas'; // #331 p4
   }
   document.getElementById('op-tipo').addEventListener('change', () => { verOposicion(); if (!leerPruebasOpo().length) ponerPruebasDelCuerpo(); });
   // #331 parte 2: las pruebas físicas de la jornada, una fila por prueba (nombre, hora y minutos). «aprox.»: la duración la estimó la app
@@ -587,12 +588,50 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (!ponerPruebasDelCuerpo()) window.alert('Para tu cuerpo no tenemos las pruebas de la convocatoria: añádelas a mano.');
   });
   document.getElementById('op-cuerpo').addEventListener('change', () => { if (!leerPruebasOpo().length) ponerPruebasDelCuerpo(); });
+  // #331 parte 4: días de estudio (bloques, días y la cafeína que ya toma). Solo con examen escrito.
+  const bloquesOpoDiv = document.getElementById('op-bloques');
+  document.getElementById('op-dias-estudio').innerHTML = DIAS.map((d) => `<label class="check" style="margin:0"><input type="checkbox" class="op-dia-estudio" value="${d}"> ${({ L: 'Lunes', M: 'Martes', X: 'Miércoles', J: 'Jueves', V: 'Viernes', S: 'Sábado', D: 'Domingo' })[d]}</label>`).join(''); // NOMBRE_DIA_LARGO se declara más abajo
+  function filaBloqueOpo(b = {}) {
+    const f = document.createElement('div');
+    f.className = 'op-bloque';
+    f.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;margin:0 0 0.35rem';
+    f.innerHTML = '<small>De</small><input class="op-b-desde" type="time" aria-label="Empiezas a estudiar" style="font-size:16px">'
+      + '<small>a</small><input class="op-b-hasta" type="time" aria-label="Acabas de estudiar" style="font-size:16px">'
+      + '<button type="button" class="btn-texto op-b-quitar" aria-label="Quitar este bloque">✕</button>';
+    f.querySelector('.op-b-desde').value = b.desde ?? '';
+    f.querySelector('.op-b-hasta').value = b.hasta ?? '';
+    return f;
+  }
+  bloquesOpoDiv.addEventListener('click', (ev) => { const b = ev.target.closest('.op-b-quitar'); if (b) b.closest('.op-bloque').remove(); });
+  document.getElementById('op-anadir-bloque').addEventListener('click', () => {
+    const n = bloquesOpoDiv.querySelectorAll('.op-bloque').length;
+    if (n >= Motor.MAX_BLOQUES_ESTUDIO) return;
+    bloquesOpoDiv.appendChild(filaBloqueOpo(Motor.BLOQUES_PROPUESTOS[n] ?? {}));
+  });
+  const CAMPOS_CAFEINA = [['cafes', 'op-cafes'], ['tes', 'op-tes'], ['energeticas', 'op-energeticas'], ['colas', 'op-colas']];
+  function pintarEstudioOpo(e) {
+    const o = e && typeof e === 'object' ? e : {};
+    bloquesOpoDiv.innerHTML = '';
+    (Array.isArray(o.bloques) ? o.bloques : []).forEach((b) => bloquesOpoDiv.appendChild(filaBloqueOpo(b)));
+    const dias = Array.isArray(o.dias) ? o.dias : Motor.DIAS_ESTUDIO_PROPUESTOS;
+    document.querySelectorAll('.op-dia-estudio').forEach((c) => { c.checked = dias.includes(c.value); });
+    const caf = o.cafeina && typeof o.cafeina === 'object' ? o.cafeina : {};
+    for (const [k, id] of CAMPOS_CAFEINA) document.getElementById(id).value = Number.isInteger(caf[k]) ? String(caf[k]) : '';
+    document.getElementById('op-hora-cafe').value = typeof caf.horaUltima === 'string' ? caf.horaUltima : '';
+  }
+  pintarEstudioOpo();
+  const leerEstudioOpo = () => ({
+    bloques: [...bloquesOpoDiv.querySelectorAll('.op-bloque')].map((f) => ({ desde: f.querySelector('.op-b-desde').value, hasta: f.querySelector('.op-b-hasta').value })),
+    dias: [...document.querySelectorAll('.op-dia-estudio')].filter((c) => c.checked).map((c) => c.value),
+    cafeina: { ...Object.fromEntries(CAMPOS_CAFEINA.map(([k, id]) => [k, document.getElementById(id).value])), horaUltima: document.getElementById('op-hora-cafe').value },
+  });
   const leerOposicion = () => ({
     tipo: document.getElementById('op-tipo').value, orden: document.getElementById('op-orden').value,
     fechaFisicas: document.getElementById('op-fecha-fisicas').value, fechaEscrito: document.getElementById('op-fecha-escrito').value,
     cuerpo: document.getElementById('op-cuerpo').value,
     pruebasFisicas: leerPruebasOpo(), citacion: document.getElementById('op-citacion').value, finJornada: document.getElementById('op-fin').value,
     ...(document.getElementById('op-cafeina').checked ? { cafeina: 'si' } : {}),
+    estudio: leerEstudioOpo(), // #331 p4
   });
   function rellenarOposicion(op) {
     const o = op && typeof op === 'object' ? op : {};
@@ -606,6 +645,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     poner('op-fin', o.finJornada);
     document.getElementById('op-cafeina').checked = o.cafeina === 'si';
     pintarPruebasOpo(o.pruebasFisicas);
+    pintarEstudioOpo(o.estudio); // #331 p4
     verOposicion();
   }
   /** La fase de oposición de hoy, o null si no es opositor o lo que ha puesto no vale. */
@@ -613,6 +653,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (deporteElegido !== 'opositor') return null;
     const v = Motor.validarOposicion(leerOposicion());
     return v.ok ? Motor.faseOposicion(v.oposicion, Motor.fechaLocalISO(new Date())) : null;
+  }
+  /** #331 parte 4: los días de estudio del opositor, o undefined. */
+  function estudioOposicion() {
+    if (deporteElegido !== 'opositor') return undefined;
+    const v = Motor.validarOposicion(leerOposicion());
+    return v.ok ? v.oposicion.estudio : undefined;
   }
   function pintarSesiones(sesiones) {
     sesionesDiv.innerHTML = '';
@@ -3189,7 +3235,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const delPlan = semanaActual ? semanaActual.perfil.sesiones ?? [] : [];
     const sesiones = sesionesTodasDelDia(dia, ultimasSesiones.map((s, i) => ({ ...s, dia: delPlan[i] ? delPlan[i].dia : s.dia })));
     // #318: en los días sin competición, cada comida se queda en su hora normal (ventanas de PARAMETROS_REPARTO_CSV)
-    return Motor.sacarTomasDeSesiones(franjasActuales ?? [], sesiones, { competicion: Boolean(competicionDelDia(dia)) });
+    const base = Motor.sacarTomasDeSesiones(franjasActuales ?? [], sesiones, { competicion: Boolean(competicionDelDia(dia)) });
+    // #331 parte 4: en un día de estudio, las comidas principales que caen en un bloque se colocan alrededor, a horas normales.
+    const bloques = competicionDelDia(dia) ? [] : Motor.bloquesDelDia(estudioOposicion(), dia);
+    if (!bloques.length) return base;
+    const est = Motor.colocarComidasEstudio(base.franjas, bloques, sesiones);
+    return { ...base, franjas: est.franjas, movidas: base.movidas.concat(est.cambios.map((c) => ({ franja: c.franja, texto: c.texto }))) };
   }
   function franjasDelDia(dia) { return excepcionesHorario.get(dia) ?? horarioGeneralDelDia(dia).franjas; }
   let diasAbiertos = new Set(); // qué tarjetas de día quedan desplegadas al volver a pintar
@@ -3412,7 +3463,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   }
   // #318 (c): un tentempié que cae en un entreno y no cabe a una hora normal ni antes ni después se quita y lo suyo pasa a la principal
   // más cercana. Si la toma durante la sesión ya lo sustituye (#313), manda esa. Lo fijado a mano para un día no pasa por aquí.
+  // #331 parte 4: en un día de estudio, la comida de mediodía va sin excesos (como mucho el 35 % del día; lo de más, a la merienda).
   function sinQuitadas(dia, reparto) {
+    const r = sinQuitadasBase(dia, reparto);
+    if (competicionDelDia(dia) || !Motor.bloquesDelDia(estudioOposicion(), dia).length) return r;
+    const c = Motor.comidaSinExcesos(r.franjas);
+    return c.movidoKcal ? { ...r, franjas: c.franjas, avisos: r.avisos.concat(c.texto) } : r;
+  }
+  function sinQuitadasBase(dia, reparto) {
     if (excepcionesHorario.has(dia)) return reparto;
     const q = horarioGeneralDelDia(dia).quitadas.filter((x) => x.franja !== reparto.tomaDurante?.sustituye && reparto.franjas.some((f) => f.franja === x.franja));
     if (!q.length) return reparto;
@@ -4634,8 +4692,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const caja = document.getElementById('r-oposicion');
       const op = estadoOposicionHoy();
       const frases = op ? Motor.textoFaseOposicion(op, op.sinRecorte && ['perder grasa', 'recomposición'].includes(document.getElementById('objetivo').value)) : null;
+      // #331 parte 4: la cafeína que ya toma, solo como información.
+      const est = op ? estudioOposicion() : undefined;
+      const caf = est ? Motor.infoCafeina(est.cafeina, { edad: respuestasActuales?.edad, peso: respuestasActuales?.peso }) : undefined;
       caja.hidden = !frases;
       caja.innerHTML = frases ? `<p style="margin:0.4rem 0">📚 ${frases.map(escaparHtml).join(' ')}</p>` : '';
+      if (frases && caf && caf.frases.length) caja.innerHTML += `<p class="op-cafeina-info" style="margin:0.4rem 0">☕ ${caf.frases.map(escaparHtml).join(' ')}</p>`;
     }
     // Issue #117: qué ha pasado con cada alimento de «sí o sí»: entra en la semana (se marca en la comida) o se explica por qué no.
     {
