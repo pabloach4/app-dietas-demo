@@ -2277,9 +2277,15 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
         return a2 >= p.ventana.PRE_hasta_h_antes - 1e-9 && a2 <= p.ventana.PRE_desde_h_antes + 1e-9;
       });
     }));
+    const intermitentes = e.tipoDia === "descanso" ? [] : e.intermitentes ?? [];
+    const rolesInt = calcularRoles(e.franjas, intermitentes, p.ventana);
+    const intermitentePre = new Set(franjas.filter((f2) => {
+      const m = rolesInt.get(f2);
+      return !!m && (m.has("PRE") || m.has("toma_ligera_PRE"));
+    }));
     for (const f2 of franjas) {
       const hora3 = e.franjas.find((x) => x.franja === f2).hora;
-      const enVentanaPreCarga = partidoPre.has(f2) || sesionesCarga.some((s) => {
+      const enVentanaPreCarga = partidoPre.has(f2) || intermitentePre.has(f2) || sesionesCarga.some((s) => {
         const a2 = s.inicio - hora3;
         return a2 > 0 && a2 <= 2;
       });
@@ -2302,6 +2308,17 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       const hora3 = e.franjas.find((x) => x.franja === f2).hora;
       const s = partidos.find((x) => x.inicio - hora3 >= p.ventana.PRE_hasta_h_antes - 1e-9 && x.inicio - hora3 <= p.ventana.PRE_desde_h_antes + 1e-9);
       avisos.push(`Antes del partido de las ${hhmm(s.inicio)}: ${NOMBRE_FRANJA[f2]?.toLowerCase() ?? f2} (${hhmm(hora3)}) con hidrato f\xE1cil (pasta, arroz, patata o pan blanco), poca grasa y poca fibra, para jugar sin pesadez.`);
+    }
+    const antesDeSesion = /* @__PURE__ */ new Map();
+    for (const f2 of franjas) {
+      if (!intermitentePre.has(f2) || partidoPre.has(f2)) continue;
+      const hora3 = e.franjas.find((x) => x.franja === f2).hora;
+      const s = intermitentes.filter((x) => x.inicio > hora3).sort((a2, b) => a2.inicio - b.inicio)[0];
+      if (s) antesDeSesion.set(s.inicio, [...antesDeSesion.get(s.inicio) ?? [], f2]);
+    }
+    for (const [inicio, fs] of antesDeSesion) {
+      const lista5 = fs.map((f2) => `${NOMBRE_FRANJA[f2]?.toLowerCase() ?? f2} (${hhmm(e.franjas.find((x) => x.franja === f2).hora)})`).join(" y ");
+      avisos.push(`Antes de la sesi\xF3n intensa de las ${hhmm(inicio)}: ${lista5} con poca grasa y poca fibra (nada de legumbre ni ensalada grande), para que no siente mal.`);
     }
     const salida = franjas.map((f2) => {
       const { rol, factor } = rolYFactorPorFranja.get(f2);
@@ -2326,7 +2343,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
           grasaExcesoRecibido: redondear(grasaRecibida.get(f2) ?? 0, 1),
           ...deFuerza.has(f2) ? { fuerza: true } : {},
           ...f2 === objetivoFuerza && proteinaPorPrincipal.get(f2) > pPrincipal ? { proteinaFuerza: true } : {},
-          ...partidoPre.has(f2) ? { partidoPre: true } : {}
+          ...partidoPre.has(f2) ? { partidoPre: true } : {},
+          ...intermitentePre.has(f2) ? { intermitentePre: true } : {}
         }
       };
     });
@@ -3850,6 +3868,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
   }
   function motivoFibra(slot) {
     if (slot.desayunoCarrera) return MOTIVO_DESAYUNO_CARRERA;
+    if (slot.antesSesionIntensa) return slot.maxFibraG !== void 0 ? `antes de una sesi\xF3n intensa la raci\xF3n servida lleva como mucho ${slot.maxFibraG} g de fibra (nada de legumbre ni ensalada grande)` : "antes de una sesi\xF3n intensa se evita la fibra alta (legumbre, integral o verdura cruda)";
     return slot.maxFibraG !== void 0 && !slot.sinFibraAlta ? `antes de la prueba la raci\xF3n servida lleva como mucho ${slot.maxFibraG} g de fibra` : "la v\xEDspera de una competici\xF3n evita la fibra alta (legumbre, integral o verdura cruda)";
   }
   var MOTIVO_DESAYUNO_CARRERA = `el desayuno de la carrera lleva muchos hidratos, poca grasa y poca fibra, sin huevo, pescado ni mucha verdura (por ejemplo, ${EJEMPLO_DESAYUNO_CARRERA})`;
@@ -4060,7 +4079,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         continue;
       }
       if (fibraExcede(slot, receta)) {
-        estadosFijadas.push({ ...base, ok: false, causa: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y esta receta no lo cumple: ese d\xEDa elige la app` : slot.sinFibraAlta ? "es v\xEDspera de competici\xF3n y esta receta lleva fibra alta: ese d\xEDa elige la app" : "es un d\xEDa de competici\xF3n con poca fibra y esta receta lleva demasiada: ese d\xEDa elige la app", arreglo: "Se propone otra receta solo para este d\xEDa." });
+        estadosFijadas.push({ ...base, ok: false, causa: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y esta receta no lo cumple: ese d\xEDa elige la app` : slot.antesSesionIntensa ? "va antes de una sesi\xF3n intensa y esta receta lleva demasiada fibra: ese d\xEDa elige la app" : slot.sinFibraAlta ? "es v\xEDspera de competici\xF3n y esta receta lleva fibra alta: ese d\xEDa elige la app" : "es un d\xEDa de competici\xF3n con poca fibra y esta receta lleva demasiada: ese d\xEDa elige la app", arreglo: "Se propone otra receta solo para este d\xEDa." });
         continue;
       }
       if (!receta.franjas.includes(slot.franja)) {
@@ -4211,7 +4230,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       const intentarBase = (lista5, filtrar) => {
         const candidatas = filtrar ? lista5.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista5;
         if (!candidatas.length) {
-          return { motivo: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y ninguna receta del cat\xE1logo lo cumple` : slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
+          return { motivo: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y ninguna receta del cat\xE1logo lo cumple` : slot.antesSesionIntensa ? "por la fibra (antes de una sesi\xF3n intensa) no hay receta que valga para esta franja" : slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
         }
         let aptas = candidatas;
         if (ap && filtrar) {
@@ -4313,10 +4332,16 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         iSlot--;
         continue;
       }
-      if (!res.elegido && slot.maxFibraG !== void 0) {
+      if (!res.elegido && slot.maxFibraG !== void 0 && !slot.antesSesionIntensa) {
         const { maxFibraG, ...resto } = slot;
         avisos.push(`${slot.dia} ${slot.franja}: no hay receta que lleve tan poca fibra (m\xE1x. ${maxFibraG} g por raci\xF3n servida); se propone la mejor sin fibra alta. A\xF1adir recetas bajas en fibra al cat\xE1logo lo resuelve.`);
         cola[iSlot] = resto;
+        iSlot--;
+        continue;
+      }
+      if (slot.antesSesionIntensa && slot.maxFibraG !== void 0 && !fijada && !reservada && !alcanza(res.elegido)) {
+        const { maxFibraG: _sinTope, ...resto } = slot;
+        cola[iSlot] = { ...resto, sinFibraAlta: true };
         iSlot--;
         continue;
       }

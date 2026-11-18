@@ -829,6 +829,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         sesionesFuerza: sesionesFuerzaDelDia(d.dia, sesionesConActividad), // #319 parte 1
         sesionesManana: sesionesMananaDelDia(d.dia, sesionesConActividad), // #319 parte 2
         partidos: partidosDelDia(d.dia, sesionesConActividad), // #319 parte 3
+        intermitentes: intermitentesDelDia(d.dia, sesionesConActividad), // #319 parte 4
         franjas: franjasDelDia(d.dia),
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
         ...(hambreCena ? { hambreCena } : {}), // #265 F
@@ -3275,6 +3276,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (compPorDiaActual.get(dia)?.fase) return [];
     return sesiones.filter((s) => s.dia === dia && s.horaInicio !== undefined && Motor.esPartido(s)).map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }));
   }
+  // #319 parte 4: las sesiones intermitentes con hora del día (WOD, hyrox, fútbol, pádel…). Un día con competición registrada sigue su pauta.
+  function intermitentesDelDia(dia, sesiones) {
+    if (compPorDiaActual.get(dia)?.fase) return [];
+    return sesiones.filter((s) => s.dia === dia && s.horaInicio !== undefined && Motor.ACTIVIDADES[s.actividad]?.tipo === 'intermitente').map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }));
+  }
   // Issue #59: todas las sesiones con hora del día (también fuerza) para avisar de comidas que caen dentro.
   function sesionesTodasDelDia(dia, sesiones) {
     return sesiones.filter((s) => s.dia === dia && s.horaInicio !== undefined).map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }));
@@ -4292,6 +4298,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         sesionesFuerza: sesionesFuerzaDelDia(d.dia, sesionesConActividad), // #319 parte 1
         sesionesManana: sesionesMananaDelDia(d.dia, sesionesConActividad), // #319 parte 2
         partidos: partidosDelDia(d.dia, sesionesConActividad), // #319 parte 3
+        intermitentes: intermitentesDelDia(d.dia, sesionesConActividad), // #319 parte 4
         franjas: franjasDelDia(d.dia),
         ...(contextoPorDia.get(d.dia).tomaLigera ? { tomaLigera: contextoPorDia.get(d.dia).tomaLigera } : {}), // #64
         ...(hambreCena ? { hambreCena } : {}), // #265 F
@@ -4301,7 +4308,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       if (!excepcionesHorario.has(d.dia)) horarioGeneralDelDia(d.dia).movidas.filter((m) => m.franja !== reparto.tomaDurante?.sustituye).forEach((m) => avisosReparto.push(`${d.dia}: ${m.texto}`)); // #313: la sustituida no se mueve
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...(compPorDia.get(d.dia)?.racionesCarga ? { racionesCarga: true } : {}) /* #301 */, ...(compPorDia.get(d.dia)?.visperaMacros || f.detalle?.recuperacionRapida ? { hidratoFacil: true } : {}) /* #321 parte 2; #319 parte 2: la comida de recuperación, con base de hidrato */, ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()), ...((() => { if (f.franja !== 'desayuno' || compPorDia.get(d.dia)?.fase !== 'competicion') return {}; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)); return hf === undefined || salida === undefined || hf < salida ? { desayunoCarrera: 'estricto' } : {}; })()) /* #285 punto 11: el desayuno de la carrera, con la regla de Pablo */, ...(f.detalle?.partidoPre ? { hidratoFacil: true, maxFibraG: Motor.limiteFibraG('competicion', f.franja) } : visperasPartido.has(d.dia) && f.franja === 'cena' ? { hidratoFacil: true, maxFibraG: Motor.limiteFibraG('vispera', 'cena') } : {}) /* #319 parte 3: antes del partido y la cena de la víspera, poca fibra */ });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...(compPorDia.get(d.dia)?.racionesCarga ? { racionesCarga: true } : {}) /* #301 */, ...(compPorDia.get(d.dia)?.visperaMacros || f.detalle?.recuperacionRapida ? { hidratoFacil: true } : {}) /* #321 parte 2; #319 parte 2: la comida de recuperación, con base de hidrato */, ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()), ...((() => { if (f.franja !== 'desayuno' || compPorDia.get(d.dia)?.fase !== 'competicion') return {}; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)); return hf === undefined || salida === undefined || hf < salida ? { desayunoCarrera: 'estricto' } : {}; })()) /* #285 punto 11: el desayuno de la carrera, con la regla de Pablo */, ...(f.detalle?.partidoPre ? { hidratoFacil: true, maxFibraG: Motor.limiteFibraG('competicion', f.franja) } : visperasPartido.has(d.dia) && f.franja === 'cena' ? { hidratoFacil: true, maxFibraG: Motor.limiteFibraG('vispera', 'cena') } : f.detalle?.intermitentePre ? { maxFibraG: Motor.limiteFibraG('vispera', f.detalle.proteinaTipo === 'principal' ? 'comida' : f.franja), antesSesionIntensa: true } : {}) /* #319 parte 3: antes del partido y la cena de la víspera, poca fibra; #319 parte 4: antes de una sesión intermitente, la fibra de la víspera */ });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,
@@ -4840,6 +4847,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           sesionesFuerza: sesionesFuerzaDelDia(dB.dia, sesionesConActividad), // #319 parte 1
           sesionesManana: sesionesMananaDelDia(dB.dia, sesionesConActividad), // #319 parte 2
           partidos: partidosDelDia(dB.dia, sesionesConActividad), // #319 parte 3
+          intermitentes: intermitentesDelDia(dB.dia, sesionesConActividad), // #319 parte 4
           franjas: franjasDelDia(dB.dia),
           ...(hambreCena ? { hambreCena } : {}), // #265 F
         });
