@@ -3618,11 +3618,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       }
       const gramosTxt = (g) => `${String(Math.round(g * 10) / 10).replace('.', ',')} g`;
       const dietaTxt = (item) => (item.comprar === `${item.gramosTotales} g` ? '' : ` <small class="dieta-dato">(dieta: ${gramosTxt(item.gramosTotales)})</small>`);
+      // #332 p2: «de temporada» junto a la fruta y la verdura que lo son el mes en que empieza la dieta (sin fecha, el de hoy), según el calendario del Ministerio.
+      const mesCompra = Motor.mesDeFecha(calInicio || (typeof window.__FECHA_TEMPORADA_PRUEBA === 'string' ? window.__FECHA_TEMPORADA_PRUEBA : Motor.fechaLocalISO(new Date())));
+      const temporadaTxt = (item) => (Motor.marcarDeTemporada(item.ingrediente, mesCompra) ? ` <small class="dieta-dato de-temporada" data-alimento="${escaparHtml(item.ingrediente)}">de temporada</small>` : '');
       const itemLi = (item) => `
             <li class="item-compra${aRevisar.has(item.ingrediente) ? ' a-revisar' : ''}">
               <label>
                 <input type="checkbox" class="marca-en-casa" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}" ${item.yaEnCasa ? 'checked' : ''} aria-label="Comprado o ya en casa: ${escaparHtml(item.ingrediente)}">
-                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${avisoGlutenHtml(item.ingrediente)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · si quieres, se puede congelar' : ''}</small>` : ''}</span>
+                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${avisoGlutenHtml(item.ingrediente)}${temporadaTxt(item)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · si quieres, se puede congelar' : ''}</small>` : ''}</span>
               </label>
               ${aRevisar.has(item.ingrediente) ? `<div class="aviso-cantidad" role="status">Lo marcaste cuando hacían falta ${gramosTxt(aRevisar.get(item.ingrediente).marcado)} y ahora hacen falta ${gramosTxt(aRevisar.get(item.ingrediente).ahora)}: no se da por cubierto.
                 <button type="button" class="btn-texto marca-confirmar" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}">Sigue cubierto</button></div>` : ''}
@@ -4459,7 +4462,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const hoyTemporada = typeof window.__FECHA_TEMPORADA_PRUEBA === 'string' ? window.__FECHA_TEMPORADA_PRUEBA : Motor.fechaLocalISO(new Date());
     // #331 parte 6: modo barato del opositor; en comida y cena se prefieren huevos, legumbres, atún y pollo (solo desempata).
     const baratoOpo = (() => { if (deporteElegido !== 'opositor') return {}; const v = Motor.validarOposicion(leerOposicion()); return v.ok && v.oposicion.barato ? { barato: true } : {}; })();
-    const temporadaDia = (dia) => { const t = Motor.preferenciaTemporada(calInicio && Motor.esLunes(calInicio) ? Motor.fechaDelDia(calInicio, dia) : hoyTemporada); return t ? { temporada: t } : {}; };
+    const temporadaDia = (dia) => { const fecha = calInicio && Motor.esLunes(calInicio) ? Motor.fechaDelDia(calInicio, dia) : hoyTemporada; const t = Motor.preferenciaTemporada(fecha); const mes = Motor.mesDeFecha(fecha); return { ...(t ? { temporada: t } : {}), ...(mes ? { mesFruta: mes } : {}) /* #332 p2: la fruta de temporada del mes */ }; };
     const filasCSV = []; // issue #31: una fila por día y franja, para el CSV descargable
 
     // Issue #35: primera pasada solo para tener el reparto de kcal/macros de cada día y la semana

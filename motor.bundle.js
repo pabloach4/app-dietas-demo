@@ -92,6 +92,7 @@ var Motor = (() => {
     MENSAJE_DIABETES_PLAN_PABLO: () => MENSAJE_DIABETES_PLAN_PABLO,
     MENSAJE_LLANO_AVISOS: () => MENSAJE_LLANO_AVISOS,
     MENSAJE_SUELO: () => MENSAJE_SUELO,
+    MESES_TEMPORADA: () => MESES_TEMPORADA,
     MIN_DUELOS: () => MIN_DUELOS,
     MIN_DURACION_ESCRITO: () => MIN_DURACION_ESCRITO,
     MIN_GRASA_PLATO_CARGA: () => MIN_GRASA_PLATO_CARGA,
@@ -130,7 +131,9 @@ var Motor = (() => {
     SUPERAVIT_MAXIMO: () => SUPERAVIT_MAXIMO,
     SUPERAVIT_MINIMO: () => SUPERAVIT_MINIMO,
     SUPERAVIT_POR_DEFECTO: () => SUPERAVIT_POR_DEFECTO,
+    TABLA_TEMPORADA_FRUTAS: () => TABLA_TEMPORADA_FRUTAS,
     TEMPORADAS_RECETA: () => TEMPORADAS_RECETA,
+    TEMPORADA_FRUTAS_VERDURAS_CSV: () => TEMPORADA_FRUTAS_VERDURAS_CSV,
     TEXTOS_LOGROS: () => TEXTOS_LOGROS,
     TEXTO_ALERTA_PERSONA: () => TEXTO_ALERTA_PERSONA,
     TEXTO_MENOS_GRASA_CARGA: () => TEXTO_MENOS_GRASA_CARGA,
@@ -295,6 +298,7 @@ var Motor = (() => {
     ensayoDiaPruebas: () => ensayoDiaPruebas,
     entrenoNocheAntesDeCena: () => entrenoNocheAntesDeCena,
     esBaseDeCarga: () => esBaseDeCarga,
+    esDeTemporada: () => esDeTemporada,
     esDesayunoDePan: () => esDesayunoDePan,
     esFechaValida: () => esFechaValida,
     esFranjaConLimiteVariedad: () => esFranjaConLimiteVariedad,
@@ -350,6 +354,8 @@ var Motor = (() => {
     frenarEnsayo: () => frenarEnsayo,
     frenoBajoPeso: () => frenoBajoPeso,
     frenoLogros: () => frenoLogros,
+    frutaFueraDeTemporada: () => frutaFueraDeTemporada,
+    frutasDeReceta: () => frutasDeReceta,
     fueraFijaDelDia: () => fueraFijaDelDia,
     gastoDePrueba: () => gastoDePrueba,
     generarIcs: () => generarIcs,
@@ -398,6 +404,7 @@ var Motor = (() => {
     lunesDeLaSemana: () => lunesDeLaSemana,
     lunesDelInicio: () => lunesDelInicio,
     macrosConRacion: () => macrosConRacion,
+    marcarDeTemporada: () => marcarDeTemporada,
     marcarYaEnCasa: () => marcarYaEnCasa,
     margenHastaMantenimiento: () => margenHastaMantenimiento,
     medallasDia: () => medallasDia,
@@ -405,10 +412,12 @@ var Motor = (() => {
     medidaCasera: () => medidaCasera,
     medidasDesdeCsv: () => medidasDesdeCsv,
     mensajeRevision: () => mensajeRevision,
+    mesDeFecha: () => mesDeFecha,
     mezclarAlerta: () => mezclarAlerta,
     motivosAlerta: () => motivosAlerta,
     moverSesion: () => moverSesion,
     necesitaVentanaNube: () => necesitaVentanaNube,
+    nivelTemporada: () => nivelTemporada,
     nivelVolumenCena: () => nivelVolumenCena,
     nivelesConAjustes: () => nivelesConAjustes,
     noSeReescala: () => noSeReescala,
@@ -3973,6 +3982,75 @@ R348,todo,El mel\xF3n va de acompa\xF1amiento: el bocadillo de pavo vale todo el
     return errores;
   }
 
+  // src/motor/temporada-frutas-datos.ts
+  var TEMPORADA_FRUTAS_VERDURAS_CSV = `alimento,ene,feb,mar,abr,may,jun,jul,ago,sep,oct,nov,dic,fuente
+aguacate,2,2,2,2,1,0,0,0,0,1,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_frutas.pdf
+fresas,2,2,2,2,2,0,0,0,0,0,0,0,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_frutas.pdf
+kiwi,2,2,2,1,0,0,0,0,1,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_frutas.pdf
+mandarina,2,2,2,2,1,0,0,0,1,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_frutas.pdf
+manzana,2,2,2,1,0,0,0,0,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_frutas.pdf
+mel\xF3n,0,0,0,0,1,2,2,2,1,0,0,0,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_frutas.pdf
+naranja,2,2,2,2,2,1,0,0,0,1,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_frutas.pdf
+pera,2,2,2,1,0,1,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_frutas.pdf
+pl\xE1tano,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_frutas.pdf
+sand\xEDa,0,0,0,0,1,2,2,2,1,0,0,0,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_frutas.pdf
+ajo,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+alcachofa,2,2,2,2,2,1,0,0,0,1,1,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+berenjena,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+br\xF3coli,2,2,2,2,2,2,0,0,1,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+calabac\xEDn,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+calabaza,2,2,2,1,1,1,1,1,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+cebolla,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+coliflor,2,2,2,2,1,1,0,0,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+esp\xE1rrago,0,0,2,2,2,2,0,0,2,0,0,0,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+espinacas,2,2,2,2,2,2,0,0,1,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+guisantes,1,1,1,1,2,2,1,0,0,0,0,0,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+jud\xEDa verde,0,0,0,0,0,0,1,2,2,2,1,1,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+lechuga romana,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+lechuga hoja verde,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+pepino,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+pimiento rojo,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+pimiento verde,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+puerro,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+repollo,2,2,2,1,1,1,1,1,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+tomate,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/contenido/campanas/campanas-del-ministerio/frutas/calendario-de-frutas-y-hortalizas-de-temporada/cartel_hortalizas.pdf
+`;
+
+  // src/motor/temporada-frutas.ts
+  var MESES_TEMPORADA = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  var CARTEL_FRUTAS = /cartel_frutas\.pdf$/;
+  var NO_ES_LA_FRUTA = /* @__PURE__ */ new Set(["aguacate"]);
+  var normal4 = (t2) => t2.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  var TABLA_TEMPORADA_FRUTAS = new Map(
+    TEMPORADA_FRUTAS_VERDURAS_CSV.trim().split(/\r?\n/).slice(1).map((l) => {
+      const c2 = l.split(",");
+      return [normal4(c2[0]), { alimento: c2[0], niveles: c2.slice(1, 13).map(Number), fruta: CARTEL_FRUTAS.test(c2[13]) }];
+    })
+  );
+  function mesDeFecha(fecha) {
+    const m = fecha ? /^\d{4}-(\d{2})-\d{2}$/.exec(fecha) : null;
+    const mes = m ? Number(m[1]) : NaN;
+    return mes >= 1 && mes <= 12 ? mes : void 0;
+  }
+  function nivelTemporada(alimento, mes) {
+    return TABLA_TEMPORADA_FRUTAS.get(normal4(alimento))?.niveles[mes - 1];
+  }
+  function esDeTemporada(alimento, mes) {
+    return nivelTemporada(alimento, mes) === 2;
+  }
+  function marcarDeTemporada(alimento, mes) {
+    const f2 = mes ? TABLA_TEMPORADA_FRUTAS.get(normal4(alimento)) : void 0;
+    return !!f2 && f2.niveles[mes - 1] === 2 && f2.niveles.some((n) => n !== 2);
+  }
+  function frutasDeReceta(r, porId) {
+    const ings = r.platos && porId ? r.platos.flatMap((id) => porId.get(id)?.ingredientes ?? []) : r.ingredientes;
+    return [...new Set(ings.map((i) => normal4(i.nombre)).filter((n) => TABLA_TEMPORADA_FRUTAS.get(n)?.fruta && !NO_ES_LA_FRUTA.has(n)))];
+  }
+  function frutaFueraDeTemporada(r, mes, porId) {
+    return frutasDeReceta(r, porId).some((f2) => !esDeTemporada(f2, mes));
+  }
+
   // src/motor/desayuno-carrera.ts
   var normalizar4 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   var HIDRATO_MIN_DESAYUNO_CARRERA = 0.55;
@@ -4047,6 +4125,7 @@ R348,todo,El mel\xF3n va de acompa\xF1amiento: el bocadillo de pavo vale todo el
   var PESO_HIDRATO_FACIL = 30;
   var PESO_TEMPORADA = 8;
   var PESO_BARATO = 8;
+  var PESO_FRUTA_TEMPORADA = 8;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
@@ -4414,7 +4493,7 @@ R348,todo,El mel\xF3n va de acompa\xF1amiento: el bocadillo de pavo vale todo el
             continue;
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
-          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && esFranjaConLimiteVariedad(slot.franja) && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) + (slot.barato && esFranjaConLimiteVariedad(slot.franja) && !proteinaBarata(r, catalogoPorId) ? PESO_BARATO : 0) - PESO_GUSTO / 4 * gusto(r);
+          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && esFranjaConLimiteVariedad(slot.franja) && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) + (slot.barato && esFranjaConLimiteVariedad(slot.franja) && !proteinaBarata(r, catalogoPorId) ? PESO_BARATO : 0) + (slot.mesFruta && slot.franja !== "desayuno" && frutaFueraDeTemporada(r, slot.mesFruta, catalogoPorId) ? PESO_FRUTA_TEMPORADA : 0) - PESO_GUSTO / 4 * gusto(r);
           if (!mejor || clave3(desviacion, dist, falta) < clave3(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
@@ -12653,8 +12732,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     return pautas.map((p, i) => {
       if (!p.ensayo || !(exceso > 0)) return p;
       const horas = p.minutos / 60;
-      const normal4 = duranteEntreno(sesiones[i], deportePrincipal2);
-      const gNormal = normal4.opcional ? 0 : normal4.objetivoGHora ?? 0;
+      const normal5 = duranteEntreno(sesiones[i], deportePrincipal2);
+      const gNormal = normal5.opcional ? 0 : normal5.objetivoGHora ?? 0;
       const g = Math.max(gNormal, Math.floor((p.ensayo.gHora - exceso / horas) / 5) * 5);
       if (g >= p.ensayo.gHora) return p;
       exceso -= r0(p.ensayo.gHora * horas) - r0(g * horas);
