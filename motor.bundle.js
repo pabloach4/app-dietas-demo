@@ -1349,6 +1349,49 @@ az\xFAcar,sin_gluten_natural,no,"ingrediente \xFAnico (az\xFAcar blanco), sin gl
 crema de arroz,riesgo,si,"producto elaborado: la papilla Hero (harina de arroz 99 %, minerales, aroma natural, vitaminas) se anuncia sin gluten pero puede contener leche; hace falta etiqueta y no equivale a la crema de arroz USDA",https://tienda.mercadona.es/product/9579/papilla-sin-gluten-crema-arroz-hero-baby-4-meses-0-azucares-anadidos-caja
 bagel,con_gluten,no,"trigo (la ficha Hacendado declara cereales con gluten y trigo; cereal con gluten, anexo II RE 1169/2011)",https://tienda.mercadona.es/product/23843/pan-bagel-hacendado-paquete
 zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendado es zumo de naranja 100 % y vitamina C; sin gluten por naturaleza (FACE: gen\xE9rico),https://tienda.mercadona.es/product/39010/zumo-pura-naranja-hacendado-brick
+ar\xE1ndanos,sin_gluten_natural,si,"Fruta al natural: FACE p3. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+mango,sin_gluten_natural,si,"Fruta al natural: FACE p3. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+semillas de ch\xEDa,sin_gluten_natural,si,"Semilla natural entera: FACE p5; revisar trazas del envase. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+semillas de s\xE9samo,sin_gluten_natural,si,"Semilla natural entera: FACE p5; revisar trazas del envase; no extender a molida. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+anacardos,sin_gluten_natural,si,"Anacardo crudo entero: FACE p3; no extender a frito/tostado. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+tortilla de trigo integral,con_gluten,si,"Trigo y derivados: FACE p2; producto convencional con trigo, no variante especial sin gluten. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pan rallado,con_gluten,si,"Trigo y derivados: FACE p2; producto convencional con trigo, no variante especial sin gluten. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pasta integral,con_gluten,si,"Trigo y derivados: FACE p2; producto convencional con trigo, no variante especial sin gluten. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+arroz integral,sin_gluten_natural,si,"Arroz integral en grano: FACE p2; revisar posibles trazas. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+noodles de arroz,riesgo,si,"Noodles de arroz son pasta elaborada, no arroz en grano: FACE p2 exige comprobar la mencion sin gluten. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+garbanzo seco,sin_gluten_natural,si,"Garbanzo seco envasado: FACE p4; nunca a granel. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+carne picada de pollo,riesgo,si,"Carne picada: FACE p2, convencional; comprobar ingredientes y contacto cruzado. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+carne picada de pavo,riesgo,si,"Carne picada: FACE p2, convencional; comprobar ingredientes y contacto cruzado. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+contramuslo de pollo sin piel,sin_gluten_natural,si,"Carne fresca sin procesar: FACE p2. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+fiambre de pechuga de pavo,riesgo,si,"Fiambre de ave procesado: FACE p2, convencional; no inferir del pavo fresco. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+salm\xF3n ahumado,sin_gluten_natural,si,"Salmon ahumado sin rebozar: FACE p4, pescado ahumado generico. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+gambas peladas,sin_gluten_natural,si,"Marisco crudo sin rebozar ni salsa: FACE p4. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+langostinos pelados,sin_gluten_natural,si,"Marisco crudo sin rebozar ni salsa: FACE p4. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pulpo cocido,sin_gluten_natural,si,"Pulpo cocido sin salsa/rebozado: FACE p4. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+queso parmesano,sin_gluten_natural,si,"Parmesano duro entero/cuna: FACE p4; rallado es convencional. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+queso feta,sin_gluten_natural,si,"Feta natural en pieza: FACE p4; formulaciones con ingredientes extra o preparados requieren etiqueta. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+queso crema,riesgo,si,"Queso crema/de untar: FACE p4, convencional, segun formulacion. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+mozzarella light,sin_gluten_natural,si,"Mozzarella natural fresca: FACE p4; light no certifica ni descarta gluten, revisar ingredientes. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+queso fresco batido,sin_gluten_natural,si,"Queso quark/batido natural: FACE p4; no extender a sabores/preparados. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+nata para cocinar,riesgo,si,"Nata para cocinar: FACE p4, convencional. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+mayonesa,riesgo,si,"Mayonesa preparada: FACE p5, convencional. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+leche de coco,sin_gluten_natural,si,"Leche de coco: FACE p4; no extender a bebidas vegetales mezcladas. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+apio,sin_gluten_natural,si,"Apio fresco natural: FACE p3. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+cebolleta,sin_gluten_natural,si,"Cebolleta fresca natural: FACE p3. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+curry en polvo,riesgo,si,"Mezcla de especias curry molida: FACE p2, convencional. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+c\xFArcuma,riesgo,si,"Curcuma molida: FACE p2, especias en polvo convencionales. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+pimienta negra,riesgo,si,"Pimienta negra: ficha especia molida; FACE p2, convencional; no confundir con grano entero. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+or\xE9gano,riesgo,si,"Oregano seco procesado/triturado: FACE p2, convencional. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+albahaca,sin_gluten_natural,si,"Albahaca fresca sin procesar: FACE p2/p3; no extender a molida o mezclas. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+laurel,sin_gluten_natural,si,"Hoja de laurel entera envasada: FACE p2; no a granel ni triturada. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+ajo en polvo,riesgo,si,"Ajo en polvo: FACE p2, especia molida convencional. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+guindilla,sin_gluten_natural,si,"Guindilla roja fresca al natural: FACE p3; no confundir con especia molida. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+levadura qu\xEDmica,riesgo,si,"Levadura quimica: FACE p4, convencional; no deducir del bicarbonato puro. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+salsa de soja,con_gluten,si,"Ficha origen shoyu de soja y trigo; FACE p5: salsa de soja con gluten. Tamari/sin gluten es otro producto. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+mostaza,riesgo,si,"Mostaza preparada amarilla: FACE p5, convencional; no confundir con Dijon generica. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+ketchup,riesgo,si,"Ketchup preparado: FACE p5, convencional; comprobar etiqueta. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+vinagre de vino,sin_gluten_natural,si,"Vinagre de vino: FACE p2, generico; no confundir con cremas balsamicas. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+vinagre de arroz,sin_gluten_natural,si,"Vinagre de arroz: FACE p2, generico; no extender a salsas mezcladas. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 `;
 
   // src/motor/gluten.ts
@@ -1447,7 +1490,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     if (ALTERNATIVAS_ANOTADAS.has(n)) return true;
     if (/\b(con|y)\b/.test(n)) return false;
     if (/^bebida( |$)/.test(n)) return !/\b(leche|lacte[ao]s?|yogur|kefir|nata|queso)\b/.test(n);
-    return /^(yogur|leche|nata|queso|postre)( vegetal( de [a-z]+)?| de (soja|avena|almendras?|arroz))$/.test(n);
+    return /^(yogur|leche|nata|queso|postre)( vegetal( de [a-z]+)?| de (soja|avena|almendras?|arroz|coco))$/.test(n);
   }
   function alimentoDelGrupo(grupo, alimento) {
     const k = claveGrupo(grupo);
@@ -1607,7 +1650,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     for (const evitado of ap.evitados) {
       const raiz = raizAlimento(evitado);
       if (!raiz) continue;
-      const ingrediente = receta.ingredientes.find((ing) => coincideAlimento(sinLoQueNoLleva(ing.nombre), evitado));
+      const esLacteo = LACTEOS.some((p) => raizAlimento(p) === raiz);
+      const ingrediente = receta.ingredientes.find((ing) => coincideAlimento(sinLoQueNoLleva(ing.nombre), evitado) && !(esLacteo && esAlternativaVegetal(ing.nombre)));
       if (ingrediente) {
         return { compatible: false, motivo: { tipo: "evitado", detalle: `lleva "${ingrediente.nombre}" (en la lista de alimentos evitados: "${evitado}")` } };
       }
@@ -5083,6 +5127,7 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
     }
     registros(csv).forEach((r, i) => {
       const numFila = i + 2;
+      if (r.precio_medio === "" && /^sin precio: \S/.test(r.nota ?? "")) return;
       const precioMedio = Number(r.precio_medio);
       if (r.precio_medio === "" || !Number.isFinite(precioMedio) || precioMedio < 0) {
         errores.push({ fila: numFila, ingrediente: r.ingrediente, problema: `precio_medio no num\xE9rico o negativo: "${r.precio_medio}"` });
@@ -5097,7 +5142,8 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
     return { filas, errores };
   }
   var BANDA_KG = {
-    proteina: [2, 40],
+    proteina: [2, 60],
+    /* #333: el pulpo cocido ronda 42 €/kg */
     base: [0.5, 20],
     verdura: [0.5, 20],
     fruta_lacteo: [0.5, 20],
@@ -5319,6 +5365,49 @@ az\xFAcar,kg,0.90,"az\xFAcar blanco Hacendado, paquete 1 kg",Mercadona: https://
 bagel,kg,4.73,"pan bagel Hacendado, paquete 4 ud (300 g) a 1,42 EUR",Mercadona: https://tienda.mercadona.es/product/23843/pan-bagel-hacendado-paquete,2026-11-03
 crema de arroz,kg,13.41,"SOLO CANDIDATO: papilla crema de arroz Hero Solo (producto infantil, caja 220 g a 2,95 EUR); no hay crema de arroz para adulto en Mercadona. Equivalencia con USDA \xABCream of Rice\xBB sin comprobar: recalcular macros con la etiqueta",Mercadona: https://tienda.mercadona.es/product/9579/papilla-sin-gluten-crema-arroz-hero-baby-4-meses-0-azucares-anadidos-caja,2026-11-03
 zumo de naranja,l,1.85,"zumo pura naranja Hacendado, brik 1 l",Mercadona: https://tienda.mercadona.es/product/39010/zumo-pura-naranja-hacendado-brick,2026-11-03
+ar\xE1ndanos,kg,13.000,"Ar\xE1ndanos; formato comercial 0.5 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/5507/arandanos-tarrina,2026-11-18
+mango,kg,2.900,"Mango; formato comercial 0.37 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/3050/mango-pieza,2026-11-18
+semillas de ch\xEDa,kg,8.200,"Semillas de ch\xEDa Hacendado; formato comercial 0.25 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/24561/semillas-chia-hacendado-paquete,2026-11-18
+semillas de s\xE9samo,kg,,"sin precio: Solo consta sesamo tostado, no semilla natural de la ficha; sin equivalencia de precio impuesta.",Mercadona: https://tienda.mercadona.es/,2026-11-18
+anacardos,kg,13.500,"Anacardo natural Hacendado; formato comercial 0.2 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/23365/anacardo-natural-hacendado-paquete,2026-11-18
+tortilla de trigo integral,kg,4.306,"Tortillas de trigo integrales Hacendado; formato comercial 0.36 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/80942/tortillas-trigo-integrales-hacendado-paquete,2026-11-18
+pan rallado,kg,1.134,"Pan rallado Hacendado; formato comercial 0.75 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/82219/pan-rallado-hacendado-paquete,2026-11-18
+pasta integral,kg,2.400,"Macarr\xF3n rayado integral Hacendado; formato comercial 0.5 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/35777/pasta-penne-integral-hacendado-paquete,2026-11-18
+arroz integral,kg,1.650,"Arroz integral largo Hacendado; formato comercial 1 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/5184/arroz-integral-largo-hacendado-paquete,2026-11-18
+noodles de arroz,kg,7.000,"Noodles de arroz Hacendado; formato comercial 0.2 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/35981/noodles-arroz-hacendado-paquete,2026-11-18
+garbanzo seco,kg,2.150,"Garbanzo Hacendado; formato comercial 1 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/5214/garbanzo-hacendado-categoria-extra-paquete,2026-11-18
+carne picada de pollo,kg,7.70,"precio aproximado: pechuga de pollo (filetes, bandeja). PENDIENTE_PRECIO_VERIFICADO. Solo preparado de carne picada de pollo, no carne picada pura; precio pendiente.",Mercadona: https://tienda.mercadona.es/product/2787/filetes-pechuga-pollo-bandeja,2026-10-20
+carne picada de pavo,kg,8.75,"precio aproximado: pechuga de pavo (filetes, bandeja). PENDIENTE_PRECIO_VERIFICADO. No encontrado producto exacto de carne picada de pavo en la consulta.",Mercadona: https://tienda.mercadona.es/product/2794/filetes-pechuga-pavo-bandeja,2026-10-20
+contramuslo de pollo sin piel,kg,6.800,"Contramuslos de pollo deshuesados y sin piel; formato comercial 0.62 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/2789/contramuslos-pollo-deshuesados-sin-piel-bandeja,2026-11-18
+fiambre de pechuga de pavo,kg,9.875,"Pechuga de pavo reducido en sal Hacendado finas lonchas; formato comercial 0.4 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/86786/pechuga-pavo-bajo-sal-hacendado-finas-lonchas-pack-2,2026-11-18
+salm\xF3n ahumado,kg,37.000,"Salm\xF3n ahumado Hacendado; formato comercial 0.1 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/53444/salmon-ahumado-hacendado-paquete,2026-11-18
+gambas peladas,kg,13.612,"Gamba pelada cruda tama\xF1o mediano Hacendado ultracongelada; formato comercial peso no informado en la ficha consultada; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/24181/gamba-pelada-cruda-tamano-mediano-hacendado-ultracongelada-paquete,2026-11-18
+langostinos pelados,kg,17.955,"Langostino crudo y pelado Hacendado ultracongelado; formato comercial peso no informado en la ficha consultada; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/24486/langostino-crudo-pelado-hacendado-ultracongelado-bandeja,2026-11-18
+pulpo cocido,kg,42.000,"Patas de pulpo cocido; formato comercial 0.25 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/87775/patas-pulpo-cocido-bandeja,2026-11-18
+queso parmesano,kg,,sin precio: No encontrado parmesano; grana padano no se presenta como parmesano.,Mercadona: https://tienda.mercadona.es/,2026-11-18
+queso feta,kg,16.000,"Queso feta mezcla Hacendado en dados; formato comercial 0.37 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/51197/queso-feta-mezcla-hacendado-dados-tarrina,2026-11-18
+queso crema,kg,4.667,"Queso untar suave de vaca Hacendado; formato comercial 0.3 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/51203/queso-untar-suave-vaca-hacendado-tarrina,2026-11-18
+mozzarella light,kg,7.200,"Mozzarella fresca light de vaca Hacendado; formato comercial 0.25 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/51230/mozzarella-fresca-light-vaca-hacendado-paquete,2026-11-18
+queso fresco batido,kg,2.200,"Queso fresco batido desnatado 0% MG Hacendado; formato comercial 0.5 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/51071/queso-fresco-batido-desnatado-0-mg-hacendado-tarrina,2026-11-18
+nata para cocinar,l,3.100,"Nata ligera para cocinar Hacendado; formato comercial 0.5 l; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA. Producto ligero; no representa todas las natas.",Mercadona: https://tienda.mercadona.es/product/10161/nata-ligera-cocinar-hacendado-brick,2026-11-18
+mayonesa,l,2.960,"Mayonesa Hacendado; formato comercial 0.49 l; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/11550/mayonesa-hacendado-bote,2026-11-18
+leche de coco,l,3.250,"Preparado de coco Hacendado; formato comercial 0.4 l; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA. Referencia comercial procesada, no leche de coco cruda USDA; solo precio orientativo de esta presentacion.",Mercadona: https://tienda.mercadona.es/product/17174/leche-coco-dee-thai-bote,2026-11-18
+apio,kg,2.200,"Apio verde; formato comercial 0.66 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/69275/apio-verde-paquete,2026-11-18
+cebolleta,unidad,0.567,"Cebollas tiernas; formato comercial 1 ud; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA. Precio por unidad del comercio, no kg; no se inventa peso de una cebolleta.",Mercadona: https://tienda.mercadona.es/product/69139/cebollas-tiernas-manojo,2026-11-18
+curry en polvo,kg,19.299,"Curry Hacendado; formato comercial 0.057 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/34125/curry-hacendado-bote,2026-11-18
+c\xFArcuma,kg,21.667,"C\xFArcuma molida Hacendado; formato comercial 0.06 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/34163/curcuma-hacendado-bote,2026-11-18
+pimienta negra,kg,18.572,"Pimienta negra molida Hacendado; formato comercial 0.07 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/34171/pimienta-negra-molida-hacendado-bote,2026-11-18
+or\xE9gano,kg,40.000,"Or\xE9gano Hacendado; formato comercial 0.025 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/5598/oregano-hacendado-bote,2026-11-18
+albahaca,kg,77.500,"Albahaca; formato comercial 0.02 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/69287/albahaca-bandeja,2026-11-18
+laurel,kg,70.840,"Hoja de laurel Hacendado; formato comercial 0.012 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/47994/hoja-laurel-hacendado-paquete,2026-11-18
+ajo en polvo,kg,,sin precio: Solo ajo granulado; no se cambia por ajo en polvo.,Mercadona: https://tienda.mercadona.es/,2026-11-18
+guindilla,kg,,sin precio: Solo guindilla desecada/cayena o en conserva; no guindilla roja fresca de la ficha.,Mercadona: https://tienda.mercadona.es/,2026-11-18
+levadura qu\xEDmica,kg,7.778,"Impulsor gasificante reposter\xEDa Hacendado para uso alimentario; formato comercial 0.09 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/80293/impulsor-gasificante-hacendado-uso-alimentario-caja,2026-11-18
+salsa de soja,l,4.800,"Salsa de Soja Hacendado; formato comercial 0.25 l; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/17360/salsa-soja-hacendado-botella,2026-11-18
+mostaza,kg,3.222,"Mostaza cl\xE1sica Hacendado; formato comercial 0.388 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/23410/mostaza-clasica-hacendado-bote,2026-11-18
+ketchup,kg,1.750,"Ketchup Hacendado; formato comercial 0.6 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/23579/ketchup-hacendado-bote,2026-11-18
+vinagre de vino,l,,"sin precio: Solo vinagre de vino blanco, no tinto de la ficha; no equivalencia impuesta.",Mercadona: https://tienda.mercadona.es/,2026-11-18
+vinagre de arroz,l,,sin precio: No encontrado vinagre de arroz en el catalogo consultado.,Mercadona: https://tienda.mercadona.es/,2026-11-18
 `;
 
   // src/motor/atributos-datos.ts
@@ -5704,6 +5793,43 @@ R481,cocido,bol_desayuno,cuchara_caliente,no
 R482,cocido,bol_desayuno,cuchara_caliente,no
 R483,crudo,bocadillo_tostada,frio,no
 R484,crudo,bocadillo_tostada,frio,no
+R485,cocido,bol_desayuno,cuchara_caliente,no
+R486,crudo,bol_desayuno,cuchara_fria,no
+R487,sarten,bocadillo_tostada,caliente,no
+R488,horno;salteado,plato_combinado,caliente,no
+R489,crudo,snack,frio,no
+R490,crudo,yogur_fruta,cuchara_fria,no
+R491,crudo,bocadillo_tostada,frio,no
+R492,horno,bol_desayuno,templado,no
+R493,cocido;sarten,arroz_plato,templado,no
+R494,sarten,plato_combinado,caliente,no
+R495,sarten;cocido,guiso,caliente,no
+R496,horno,dulce_cuchara,frio,no
+R497,horno,bocadillo_tostada,caliente,no
+R498,horno,bol_desayuno,caliente,no
+R499,horno,plato_combinado,caliente,no
+R500,sarten,bocadillo_tostada,caliente,no
+R501,crudo,bocadillo_tostada,templado,no
+R502,plancha,plato_combinado,caliente,no
+R503,plancha;salteado,plato_combinado,caliente,no
+R504,cocido;salteado,pasta,caliente,no
+R505,horno;cocido,pasta,caliente,no
+R506,cocido;salteado,arroz_plato,templado,no
+R507,cocido,guiso,cuchara_caliente,no
+R508,cocido,guiso,cuchara_caliente,no
+R509,cocido;sarten,pasta,caliente,no
+R510,plancha,plato_combinado,caliente,no
+R511,plancha,plato_combinado,caliente,no
+R512,plancha;cocido,plato_combinado,caliente,no
+R513,cocido,guiso,cuchara_caliente,suave
+R514,sarten,huevo_plato,caliente,no
+R515,cocido,pasta,caliente,suave
+R516,cocido;salteado,arroz_plato,caliente,no
+R517,sarten;cocido,arroz_plato,caliente,suave
+R518,horno;sarten,plato_combinado,caliente,no
+R519,sarten,huevo_plato,caliente,no
+R520,horno,huevo_plato,caliente,no
+R521,horno;cocido,pasta,caliente,no
 `;
 
   // src/motor/atributos-recetas.ts
@@ -6188,7 +6314,8 @@ R484,crudo,bocadillo_tostada,frio,no
       const lugar = r.lugar ?? r.tipo ?? "";
       const tipo = lugar === "despensa" ? "despensa" : lugar === "nevera" || lugar === "fresco" ? "fresco" : void 0;
       if (!r.ingrediente || !tipo) continue;
-      tabla2.set(r.ingrediente, { tipo, congelable: tipo === "fresco" && r.congelable === "si" });
+      const congelable = tipo === "despensa" ? false : r.congelable === "si" ? true : r.congelable === "no" ? false : void 0;
+      tabla2.set(r.ingrediente, congelable === void 0 ? { tipo } : { tipo, congelable });
     }
     return tabla2;
   }
@@ -6205,7 +6332,7 @@ R484,crudo,bocadillo_tostada,frio,no
       if (vistos.has(n)) fallos.push(`${n}: fila duplicada`);
       vistos.add(n);
       if (r.lugar !== "despensa" && r.lugar !== "nevera") fallos.push(`${n}: lugar \xAB${r.lugar}\xBB no permitido (despensa o nevera)`);
-      if (r.congelable !== "si" && r.congelable !== "no") fallos.push(`${n}: congelable \xAB${r.congelable}\xBB no permitido (si o no)`);
+      if (r.congelable !== "si" && r.congelable !== "no" && r.congelable !== "") fallos.push(`${n}: congelable \xAB${r.congelable}\xBB no permitido (si, no o vac\xEDo)`);
       if (!/^https?:\/\//.test(r.fuente_url ?? "")) fallos.push(`${n}: sin fuente_url`);
     }
     const catalogo = new Set(ingredientesCatalogo);
@@ -6366,6 +6493,50 @@ az\xFAcar,despensa,no,Az\xFAcar blanco Hacendado: conservar en lugar seco y fres
 bagel,despensa,si,"Pan Bagel Hacendado: conservar en lugar fresco y seco (ficha). Para consumo cercano; si se congela, hacerlo en porciones. No garantiza varias semanas a temperatura ambiente.",https://tienda.mercadona.es/product/23843/pan-bagel-hacendado-paquete;https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf,no
 crema de arroz,despensa,no,"Producto candidato Mercadona (papilla infantil, ver precios): en lugar fresco y seco, cerrar bien la bolsa; una vez abierta, consumir en 1 mes (ficha del fabricante). Una vez preparada con leche o bebida requiere fr\xEDo. No se propone congelaci\xF3n.",https://tienda.mercadona.es/product/9579/papilla-sin-gluten-crema-arroz-hero-baby-4-meses-0-azucares-anadidos-caja,no
 zumo de naranja,despensa,no,"Zumo pura naranja Hacendado (brik): cerrado, en lugar fresco y seco; una vez abierto, nevera y consumir antes de 4 d\xEDas (ficha). No se propone congelaci\xF3n.",https://tienda.mercadona.es/product/39010/zumo-pura-naranja-hacendado-brick,no
+ar\xE1ndanos,nevera,si,"Producto fresco natural; mantener fresco y separar de carnes crudas. Congelar solo preparado para cocinar o triturar: puede perder textura para consumir crudo. Instruccion del producto de referencia, transcrita del comercio: Conservaci\xF3n entre 2\xBAC y 4\xBAC. Vida \xFAtil 10 d\xEDas.",https://tienda.mercadona.es/product/5507/arandanos-tarrina;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf,no
+mango,despensa,si,"Mango entero sin madurar a temperatura ambiente; maduro o cortado, nevera. La congelacion cambia textura: uso culinario/batidos, no promesa de fruta fresca.",https://tienda.mercadona.es/product/3050/mango-pieza;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf,no
+semillas de ch\xEDa,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Almacenar en lugar fresco y seco.",https://tienda.mercadona.es/product/24561/semillas-chia-hacendado-paquete;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+semillas de s\xE9samo,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco.",https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+anacardos,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Proteger de la luz. Conservar en lugar fresco y seco.",https://tienda.mercadona.es/product/23365/anacardo-natural-hacendado-paquete;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+tortilla de trigo integral,despensa,si,"Tortilla envasada: conservar segun etiqueta; tras abrir, cerrar y seguir instrucciones. Congelacion solo si fabricante la permite; referencia pan/panificados, no plazo universal. Instruccion del producto de referencia, transcrita del comercio: Una vez abierto el envase, volver a cerrar utilizando el sistema de apertura-cierre y conservar en lugar fresco y seco para su consumo en 10 d\xEDas. El envase puede congelarse en casa. Se debe consumir en los 3 meses siguientes a su congelaci\xF3n. Descongelar totalmente antes de utilizar.",https://tienda.mercadona.es/product/80942/tortillas-trigo-integrales-hacendado-paquete;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+pan rallado,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Mantener en lugar fresco y seco.",https://tienda.mercadona.es/product/82219/pan-rallado-hacendado-paquete;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+pasta integral,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Conservar en un lugar fresco, seco y resguardado de la luz.",https://tienda.mercadona.es/product/35777/pasta-penne-integral-hacendado-paquete;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+arroz integral,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Proteger de fuentes de humedad y calor. Una vez abierto, se aconseja mantenerlo en un recipiente cerrado.",https://tienda.mercadona.es/product/5184/arroz-integral-largo-hacendado-paquete;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+noodles de arroz,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Conservar en lugar fresco y seco.",https://tienda.mercadona.es/product/35981/noodles-arroz-hacendado-paquete;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+garbanzo seco,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Conservar en lugar fresco, seco y oscuro",https://tienda.mercadona.es/product/5214/garbanzo-hacendado-categoria-extra-paquete;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+carne picada de pollo,nevera,si,"Carne cruda; nevera y separada de alimentos listos para comer. Congelar antes de caducidad, en porciones. Descongelar en nevera; no volver a congelar cruda tras descongelar.",https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts;https://www.foodsafety.gov/keep-food-safe/4-steps-to-food-safety,no
+carne picada de pavo,nevera,si,"Carne cruda; nevera y separada de alimentos listos para comer. Congelar antes de caducidad, en porciones. Descongelar en nevera; no volver a congelar cruda tras descongelar.",https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts;https://www.foodsafety.gov/keep-food-safe/4-steps-to-food-safety,no
+contramuslo de pollo sin piel,nevera,si,"Carne cruda; nevera y separada de alimentos listos para comer. Congelar antes de caducidad, en porciones. Descongelar en nevera; no volver a congelar cruda tras descongelar. Instruccion del producto de referencia, transcrita del comercio: Conservar de 0 a 4\xBA C",https://tienda.mercadona.es/product/2789/contramuslos-pollo-deshuesados-sin-piel-bandeja;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts;https://www.foodsafety.gov/keep-food-safe/4-steps-to-food-safety,no
+fiambre de pechuga de pavo,nevera,si,"Producto refrigerado; respetar cadena de frio y etiqueta tras abrir. Congelar en porciones antes de caducidad si el fabricante lo permite y no fue descongelado; la calidad puede cambiar. Instruccion del producto de referencia, transcrita del comercio: Mant\xE9ngase entre 0C y 5C / Consumir preferentemente antes del/lote: Ver lateral",https://tienda.mercadona.es/product/86786/pechuga-pavo-bajo-sal-hacendado-finas-lonchas-pack-2;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
+jam\xF3n cocido,nevera,si,"Producto refrigerado; respetar cadena de frio y etiqueta tras abrir. Congelar en porciones antes de caducidad si el fabricante lo permite y no fue descongelado; la calidad puede cambiar. Instruccion del producto de referencia, transcrita del comercio: Mantener entre 0C y 5C. Consumir preferentemente antes del/lote: Ver lateral",https://tienda.mercadona.es/product/60329/jamon-cocido-extra-hacendado-finas-lonchas-paquete;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
+salm\xF3n ahumado,nevera,si,"Producto refrigerado; respetar cadena de frio y etiqueta tras abrir. Congelar en porciones antes de caducidad si el fabricante lo permite y no fue descongelado; la calidad puede cambiar. Instruccion del producto de referencia, transcrita del comercio: Conservar entre 0 y 4C. Una vez abierto, mantener en refrigeraci\xF3n y consumir antes de pasadas 48 horas.",https://tienda.mercadona.es/product/53444/salmon-ahumado-hacendado-paquete;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
+gambas peladas,nevera,si,"Instinct propone \xABcongelador\xBB (se compra ultracongelado); la app no tiene ese lugar: va como fresco que se puede congelar. Referencia comercial ultracongelada: mantener congelada segun etiqueta, no tratar como marisco fresco refrigerado. Descongelar en nevera, no recongelar crudo. Para producto fresco distinto, mantener refrigerado y seguir etiqueta. Instruccion del producto de referencia, transcrita del comercio: Conservar a -18\xB0C.",https://tienda.mercadona.es/product/24181/gamba-pelada-cruda-tamano-mediano-hacendado-ultracongelada-paquete;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
+langostinos pelados,nevera,si,"Instinct propone \xABcongelador\xBB (se compra ultracongelado); la app no tiene ese lugar: va como fresco que se puede congelar. Referencia comercial ultracongelada: mantener congelada segun etiqueta, no tratar como marisco fresco refrigerado. Descongelar en nevera, no recongelar crudo. Para producto fresco distinto, mantener refrigerado y seguir etiqueta. Instruccion del producto de referencia, transcrita del comercio: En el frigor\xEDfico 1 d\xEDa. En el congelador a -18C. Ver fecha de consumo preferente. Para no alterar la calidad de este producto recomendamos no volver a congelar una vez descongelado",https://tienda.mercadona.es/product/24486/langostino-crudo-pelado-hacendado-ultracongelado-bandeja;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
+pulpo cocido,nevera,si,"Producto refrigerado; respetar cadena de frio y etiqueta tras abrir. Congelar en porciones antes de caducidad si el fabricante lo permite y no fue descongelado; la calidad puede cambiar. Instruccion del producto de referencia, transcrita del comercio: Conservar entre 0C y 4C. Una vez abierto, consumir en 24 h. Apto para congelar.",https://tienda.mercadona.es/product/87775/patas-pulpo-cocido-bandeja;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
+queso parmesano,nevera,,PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Queso duro en nevera segun etiqueta. No se propone congelacion por defecto sin instrucciones especificas del producto; puede cambiar textura. Sin plazo universal.,https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+queso feta,nevera,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. No se propone congelacion domestica como opcion por defecto: puede alterar textura/emulsion. Seguir envase. Producto refrigerado o estable cerrado segun presentacion; despues de abrir, nevera segun etiqueta. Instruccion del producto de referencia, transcrita del comercio: Conservar entre +2 Grados Celsius y +6 Grados Celsius, hasta la fecha de caducidad. Una vez abierto, mantener refrigerado y consumir en 5 d\xEDas. En cubos. Con un pr\xE1ctico escurridor.",https://tienda.mercadona.es/product/51197/queso-feta-mezcla-hacendado-dados-tarrina;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+queso crema,nevera,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. No se propone congelacion domestica como opcion por defecto: puede alterar textura/emulsion. Seguir envase. Producto refrigerado o estable cerrado segun presentacion; despues de abrir, nevera segun etiqueta. Instruccion del producto de referencia, transcrita del comercio: Conservar en fr\xEDo entre 2\xBA y 8\xBAC.Una vez abierto conservar en refrigeraci\xF3n y consumir en 5 d\xEDas.",https://tienda.mercadona.es/product/51203/queso-untar-suave-vaca-hacendado-tarrina;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+mozzarella light,nevera,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. No se propone congelacion domestica como opcion por defecto: puede alterar textura/emulsion. Seguir envase. Producto refrigerado o estable cerrado segun presentacion; despues de abrir, nevera segun etiqueta. Instruccion del producto de referencia, transcrita del comercio: Conservar en fr\xEDo entre 0 \xBAC y 8 \xBAC",https://tienda.mercadona.es/product/51230/mozzarella-fresca-light-vaca-hacendado-paquete;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+queso fresco batido,nevera,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. No se propone congelacion domestica como opcion por defecto: puede alterar textura/emulsion. Seguir envase. Producto refrigerado o estable cerrado segun presentacion; despues de abrir, nevera segun etiqueta. Instruccion del producto de referencia, transcrita del comercio: Conservar en fr\xEDo entre +6\xB0C max.",https://tienda.mercadona.es/product/51071/queso-fresco-batido-desnatado-0-mg-hacendado-tarrina;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+nata para cocinar,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. No se propone congelacion domestica como opcion por defecto: puede alterar textura/emulsion. Seguir envase. Producto refrigerado o estable cerrado segun presentacion; despues de abrir, nevera segun etiqueta. Instruccion del producto de referencia, transcrita del comercio: Conservar en lugar fresco y seco. Agitar antes de su consumo. Una vez abierto el envase, conservar en el frigor\xEDfico y consumir antes de 5 d\xEDas. No congelar.",https://tienda.mercadona.es/product/10161/nata-ligera-cocinar-hacendado-brick;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+mayonesa,despensa,no,"No se propone congelacion domestica como opcion por defecto: puede alterar textura/emulsion. Seguir envase. Producto refrigerado o estable cerrado segun presentacion; despues de abrir, nevera segun etiqueta. Instruccion del producto de referencia, transcrita del comercio: Conservar en lugar fresco y seco. Una vez abierto, conservar en refrigerado  un plazo maximo de 1 mes.",https://tienda.mercadona.es/product/11550/mayonesa-hacendado-bote;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+leche de coco,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Presentacion comercial estable cerrada: despensa fresca/seca segun etiqueta; tras abrir, seguir instrucciones del fabricante, con nevera cuando lo indique. No se propone congelacion ni conversion ml a g. Instruccion del producto de referencia, transcrita del comercio: Almacenar a temperatura ambiente. Una vez abierto, no mantenerlo en la lata, trasvasarlo a un recipiente adecuado y conservarlo en el frigor\xEDfico. Una vez abierto se recomienda utilizarlo en 48 horas.",https://tienda.mercadona.es/product/17174/leche-coco-dee-thai-bote;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+apio,nevera,si,Producto fresco natural; mantener fresco y separar de carnes crudas. Congelar solo preparado para cocinar o triturar: puede perder textura para consumir crudo.,https://tienda.mercadona.es/product/69275/apio-verde-paquete;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf,no
+cebolleta,nevera,si,"Producto fresco natural; mantener fresco y separar de carnes crudas. Congelar solo preparado para cocinar o triturar: puede perder textura para consumir crudo. Instruccion del producto de referencia, transcrita del comercio: Conservar en fr\xEDo.",https://tienda.mercadona.es/product/69139/cebollas-tiernas-manojo;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf,no
+curry en polvo,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Conservar en lugar fresco y seco.",https://tienda.mercadona.es/product/34125/curry-hacendado-bote;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+c\xFArcuma,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Conservar en lugar fresco y seco.",https://tienda.mercadona.es/product/34163/curcuma-hacendado-bote;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+pimienta negra,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Conservar en lugar fresco y seco.",https://tienda.mercadona.es/product/34171/pimienta-negra-molida-hacendado-bote;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+or\xE9gano,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Conservar en lugar fresco y seco",https://tienda.mercadona.es/product/5598/oregano-hacendado-bote;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+albahaca,nevera,si,Producto fresco natural; mantener fresco y separar de carnes crudas. Congelar solo preparado para cocinar o triturar: puede perder textura para consumir crudo.,https://tienda.mercadona.es/product/69287/albahaca-bandeja;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf,no
+laurel,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Temperatura: 10-30 \xBAC. Humedad relativa: 70 %m\xE1x. Conservar en lugar fresco y seco. Proteger de la luz solar.",https://tienda.mercadona.es/product/47994/hoja-laurel-hacendado-paquete;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+ajo en polvo,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco.",https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+guindilla,nevera,si,Producto fresco natural; mantener fresco y separar de carnes crudas. Congelar solo preparado para cocinar o triturar: puede perder textura para consumir crudo.,https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf,no
+levadura qu\xEDmica,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Producto seco cerrado: lugar fresco,seco y protegido de humedad, segun etiqueta. No necesita congelacion para este formato. Una vez cocinado o hidratado, ya no se conserva como seco. Instruccion del producto de referencia, transcrita del comercio: Cons\xE9rvese en lugar fresco y seco.",https://tienda.mercadona.es/product/80293/impulsor-gasificante-hacendado-uso-alimentario-caja;https://hgic.clemson.edu/factsheet/food-storage-pantry/;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+salsa de soja,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Presentacion comercial estable cerrada: despensa fresca/seca segun etiqueta; tras abrir, seguir instrucciones del fabricante, con nevera cuando lo indique. No se propone congelacion ni conversion ml a g.",https://tienda.mercadona.es/product/17360/salsa-soja-hacendado-botella;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+mostaza,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Presentacion comercial estable cerrada: despensa fresca/seca segun etiqueta; tras abrir, seguir instrucciones del fabricante, con nevera cuando lo indique. No se propone congelacion ni conversion ml a g.",https://tienda.mercadona.es/product/23410/mostaza-clasica-hacendado-bote;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+ketchup,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Presentacion comercial estable cerrada: despensa fresca/seca segun etiqueta; tras abrir, seguir instrucciones del fabricante, con nevera cuando lo indique. No se propone congelacion ni conversion ml a g. Instruccion del producto de referencia, transcrita del comercio: Una vez abierto conservar en el frigor\xEDfico. Se recomienda consumirlo antes de 1 mes.",https://tienda.mercadona.es/product/23579/ketchup-hacendado-bote;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+vinagre de vino,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Presentacion comercial estable cerrada: despensa fresca/seca segun etiqueta; tras abrir, seguir instrucciones del fabricante, con nevera cuando lo indique. No se propone congelacion ni conversion ml a g.",https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+vinagre de arroz,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Presentacion comercial estable cerrada: despensa fresca/seca segun etiqueta; tras abrir, seguir instrucciones del fabricante, con nevera cuando lo indique. No se propone congelacion ni conversion ml a g.",https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
 `;
 
   // src/motor/limites-ingredientes-datos.ts
@@ -6482,6 +6653,50 @@ az\xFAcar,4,12,endulzante,"https://www.ucm.es/data/cont/docs/458-2015-10-22-peso
 bagel,40,150,pan,"Mercadona Pan Bagel Hacendado: paquete 300 g, 4 ud (75 g/ud) https://tienda.mercadona.es/product/23843/pan-bagel-hacendado-paquete | Tal cual; m\xEDnimo 40 g como medio bagel; m\xE1ximo 150 g conservado del m\xE9todo (familia \xABPan\xBB, 2 bagels de 75 g). | Propuesta de Instinct (#293), activada por el bucle en #292; fuente cotejada.",estimacion
 crema de arroz,30,150,cereal_seco,"https://estilosdevidasaludable.sanidad.gob.es/alimentacionSaludable/habilidades/compra/menus/home.htm | En seco sin cocer; m\xEDnimo 30 g como media raci\xF3n de cereal seco; tope 150 g conservado del m\xE9todo (familia \xABCereal crudo\xBB). Producto concreto sin identificar para uso adulto: ver nota de precios. | Propuesta de Instinct (#293), activada por el bucle en #292; fuente cotejada.",estimacion
 zumo de naranja,100,300,zumo,"https://www.ucm.es/data/cont/docs/458-2015-10-22-pesos-medidas-caseras-raciones-2015.pdf | Tal cual; vaso = 200 g; m\xEDnimo 100 g (medio vaso), m\xE1ximo 300 g (vaso y medio). El m\xE9todo no fija tope para zumo: es estimaci\xF3n de raci\xF3n, no l\xEDmite cl\xEDnico, y no se usa para completar kcal. | Propuesta de Instinct (#293), activada por el bucle en #292; fuente cotejada.",estimacion
+ar\xE1ndanos,15,250,fruta,"datos/limites-por-alimento.csv, familia \xABfruta fresca\xBB (provisional del validador, tope 400). M\xEDnimo 15 g: pu\xF1ado peque\xF1o de cobertura. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+mango,60,240,fruta,"datos/limites-por-alimento.csv, familia \xABfruta fresca\xBB; la misma banda que la pi\xF1a. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+semillas de ch\xEDa,10,40,semilla,"datos/limites-por-alimento.csv, familia \xABFruto seco\xBB (regla 5 de #333: semillas con frutos secos). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+semillas de s\xE9samo,2,40,semilla,"datos/limites-por-alimento.csv, familia \xABFruto seco\xBB (regla 5 de #333). M\xEDnimo 2 g: para espolvorear. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+anacardos,10,40,fruto_seco,"datos/limites-por-alimento.csv, familia \xABFruto seco\xBB (40 g; m\xEDnimo 10 g, Pablo 14/10). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+tortilla de trigo integral,25,75,pan_plano,"datos/limites-por-alimento.csv, familia \xABPan\xBB (tope 150). M\xE1ximo 75 g: dos tortillas de 36 g. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+pan rallado,5,40,pan,"datos/limites-por-alimento.csv, familia \xABPan\xBB (tope 150). Banda de 5-40 g: va de ligaz\xF3n o rebozado, no de pan. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+pasta integral,30,150,cereal_seco,"datos/limites-por-alimento.csv, familia \xABCereal crudo\xBB (150 g en crudo). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+arroz integral,30,150,cereal_seco,"datos/limites-por-alimento.csv, familia \xABCereal crudo\xBB (150 g en crudo). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+noodles de arroz,30,150,cereal_seco,"datos/limites-por-alimento.csv, familia \xABCereal crudo\xBB (150 g en seco). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+garbanzo seco,30,125,legumbre_seca,"datos/limites-por-alimento.csv, familia \xABLegumbre seca\xBB (125 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+carne picada de pollo,80,300,carne,"datos/limites-por-alimento.csv, familia \xABPollo / pavo\xBB (80-300 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+carne picada de pavo,80,300,carne,"datos/limites-por-alimento.csv, familia \xABPollo / pavo\xBB (80-300 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+contramuslo de pollo sin piel,80,300,carne,"datos/limites-por-alimento.csv, familia \xABPollo / pavo\xBB (80-300 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+fiambre de pechuga de pavo,30,100,embutido,"datos/limites-por-alimento.csv, familia \xABEmbutido/jam\xF3n curado\xBB (m\xE1x. 100 g; habitual 30-60). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+jam\xF3n cocido,30,100,embutido,"datos/limites-por-alimento.csv, familia \xABEmbutido/jam\xF3n curado\xBB (m\xE1x. 100 g; habitual 30-60). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+salm\xF3n ahumado,30,100,embutido,"datos/limites-por-alimento.csv, familia \xABEmbutido/jam\xF3n curado\xBB: pescado curado en lonchas (m\xE1x. 100 g; habitual 30-60). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+gambas peladas,30,250,marisco,"datos/limites-por-alimento.csv, familia \xABMarisco\xBB (250 g). M\xEDnimo 30 g: acompa\xF1a a otra prote\xEDna. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+langostinos pelados,60,250,marisco,"datos/limites-por-alimento.csv, familia \xABMarisco\xBB (60-250 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+pulpo cocido,60,300,marisco,"datos/limites-por-alimento.csv, familia \xABSepia / calamar / pulpo\xBB (300 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+queso parmesano,5,60,queso_curado,"datos/limites-por-alimento.csv, familia \xABQueso curado\xBB (60 g). M\xEDnimo 5 g: rallado por encima. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+queso feta,10,60,queso_curado,"datos/limites-por-alimento.csv, familia \xABQueso curado\xBB (regla 5 de #333: grasa 21,5 % > 20 %). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+queso crema,10,60,queso_curado,"datos/limites-por-alimento.csv, familia \xABQueso curado\xBB (regla 5 de #333: grasa 34,4 % > 20 %). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+mozzarella light,20,60,queso_mozzarella,"datos/limites-por-alimento.csv, familia \xABQueso curado\xBB; la misma banda que la mozzarella de la app (20-60 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+queso fresco batido,60,300,queso_fresco,"datos/limites-por-alimento.csv, familia \xABQueso fresco / reques\xF3n / cottage\xBB (300 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+nata para cocinar,5,30,grasa,"datos/limites-por-alimento.csv, familia \xABGrasa (aceite, mantequilla, nata, mayonesa...)\xBB (30 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+mayonesa,5,30,grasa,"datos/limites-por-alimento.csv, familia \xABGrasa (aceite, mantequilla, nata, mayonesa...)\xBB (30 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+leche de coco,10,30,grasa,"datos/limites-por-alimento.csv, familia \xABGrasa\xBB (30 g): con 23,8 % de grasa cuenta como la nata. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+apio,10,200,hortaliza,"datos/limites-por-alimento.csv, familia \xABVerdura\xBB (200 g). M\xEDnimo 10 g: arom\xE1tico del caldo. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+cebolleta,5,200,cebolla,"datos/limites-por-alimento.csv, familia \xABCebolla y puerro\xBB (200 g; incluye cebolleta). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+curry en polvo,0.5,5,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). Mostaza por prudencia: las mezclas de curry suelen llevar su semilla. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+c\xFArcuma,0.2,3,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+pimienta negra,0.1,2,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+or\xE9gano,0.2,2,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+albahaca,1,10,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+laurel,0.2,2,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+ajo en polvo,0.5,3,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+guindilla,1,5,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+levadura qu\xEDmica,1,5,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+salsa de soja,3,20,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+mostaza,3,15,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+ketchup,5,20,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+vinagre de vino,3,20,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos (ajo, especias, sal, vinagre...)\xBB (20 g). Sulfitos: el vinagre de vino suele declararlos. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+vinagre de arroz,3,20,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos (ajo, especias, sal, vinagre...)\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
 `;
 
   // src/motor/limites-ingredientes.ts
@@ -8867,7 +9082,44 @@ R480,"Arroz con bebida de soja, az\xFAcar y canela",desayuno,456,13.5,4.9,88.1,E
 R481,Crema de arroz con leche y miel,desayuno,472,13.0,5.3,92.0,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,0.55,,cereal,l\xE1cteos,si,no,no,pendiente_ficha,si,10,nuevo,Cocer la crema de arroz seca en la leche caliente removiendo hasta que espese; a\xF1adir az\xFAcar y miel.,carga
 R482,Crema de arroz con bebida de soja y az\xFAcar,desayuno,459,12.9,4.8,89.5,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,2.02,,cereal,soja,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,si,10,nuevo,Cocer la crema de arroz seca en la bebida de soja caliente removiendo hasta que espese; a\xF1adir el az\xFAcar.,carga
 R483,"Bagel con mermelada, miel y leche",desayuno,423,16.3,6.0,76.8,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,1.49,,pan,gluten;l\xE1cteos,si,no,no,no,si,5,nuevo,"Abrir el bagel, tostarlo si se quiere y untar mermelada y miel. Leche aparte.",carga
-R484,Pan blanco con pavo y zumo de naranja,desayuno,454,35.5,4.7,65.8,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,2.77,pechuga de pavo asada,pan,gluten,no,no,pendiente_ficha,no,si,5,nuevo,Rellenar el pan con el pavo en lonchas. Zumo aparte.,carga`;
+R484,Pan blanco con pavo y zumo de naranja,desayuno,454,35.5,4.7,65.8,EJEMPLO | desayuno de v\xEDspera o de carrera (#292): bajo fibra \u22643 g; cifras USDA SR Legacy sin validar,unico,2.77,pechuga de pavo asada,pan,gluten,no,no,pendiente_ficha,no,si,5,nuevo,Rellenar el pan con el pavo en lonchas. Zumo aparte.,carga
+R485,Gachas de avena con huevo y ar\xE1ndanos,desayuno,335,17,10.5,44.1,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P3-6): cifras USDA SR Legacy sin validar",unico,6.01,huevo,avena,gluten;huevo;l\xE1cteos,si,no,no,no,no,10,dietfarma-combinacion,"Calentar la leche con la avena en un cazo, removiendo, hasta que espese. Batir el huevo con un poco de leche, a\xF1adirlo al cazo y seguir removiendo a fuego bajo un par de minutos, hasta que el huevo cuaje del todo y quede cremoso. Servir con canela y los ar\xE1ndanos por encima.",normal
+R486,"Avena remojada con ch\xEDa, fresas y almendras",desayuno,432,17.9,17.7,53.7,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P3-7): cifras USDA SR Legacy sin validar",unico,11.42,,avena,cacahuete;frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,5,dietfarma-combinacion,"La noche antes, mezclar en un tarro la avena, la leche, la ch\xEDa, la crema de cacahuete y la canela; tapar y dejar en la nevera (m\xEDnimo 2 horas). Por la ma\xF1ana, a\xF1adir las fresas troceadas y las almendras.",normal
+R487,Wrap integral de tortilla francesa con salm\xF3n ahumado y r\xFAcula,cena,409,25.3,24.8,20.5,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P3-8): cifras USDA SR Legacy sin validar; adaptaciones: r\xFAcula 15\u219220 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,4.1,huevo,pan,gluten;huevo;l\xE1cteos;pescado,no,no,no,no,no,10,dietfarma-combinacion,"Batir los huevos y cuajarlos finos en una sart\xE9n con unas gotas de aceite. Apoyar encima la tortilla de trigo, dar la vuelta al conjunto y tostar un momento. Untar el queso crema y repartir la cebolla en tiras finas, la r\xFAcula y el salm\xF3n. Doblar en cuatro y servir.",normal
+R488,Bol de boniato al horno con pollo picado y aguacate,comida,458,29.5,19.4,44.7,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P3-10): cifras USDA SR Legacy sin validar; adaptaciones: queso fresco batido 50\u219260 g para llegar a la raci\xF3n m\xEDnima de comida o cena; miel 3\u21925 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,9.06,carne picada de pollo,boniato,l\xE1cteos,no,no,no,pendiente_ficha,no,45,dietfarma-combinacion,"Asar el boniato en dados con canela a 200 \xB0C unos 35-40 minutos. Saltear el pollo picado con el calabac\xEDn y el pimiento en trozos y el aceite, hasta que la carne est\xE9 bien hecha. Montar el bol con el boniato, el pollo con las verduras, el queso fresco batido y el aguacate en dados, y terminar con un hilo de miel.",normal
+R489,Tortitas de ma\xEDz con aguacate y pavo,media_manana;merienda,170,11,5.2,20.9,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P3-12a): cifras USDA SR Legacy sin validar",unico,2.6,fiambre de pechuga de pavo,tortita de ma\xEDz,,no,no,si,pendiente_ficha,si,5,dietfarma-combinacion,"Chafar el aguacate con el zumo de lim\xF3n, extenderlo sobre las tortitas y cubrir con el pavo.",normal
+R490,Yogur con copos de avena y fresas,desayuno;media_manana;merienda,178,7.5,5.6,25.5,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P3-12b): cifras USDA SR Legacy sin validar; adaptaciones: muesli: Sin ficha de muesli; se adapta con copos de avena (no se usa granola).",unico,3.62,,avena,gluten;l\xE1cteos,si,no,no,no,no,3,dietfarma-combinacion,Poner el yogur en un cuenco y a\xF1adir los copos de avena y las fresas en trozos (valen congeladas).,normal
+R491,Bocadillo integral de crema de cacahuete con mermelada,desayuno;merienda,253,9.7,7.2,38.2,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P3-12c): cifras USDA SR Legacy sin validar",unico,4.26,,pan,cacahuete;gluten,si,si,si,no,no,5,dietfarma-combinacion,"Tostar el pan si se quiere. Untar una rebanada con la crema de cacahuete y la otra con la mermelada, cerrar y cortar en dos.",normal
+R492,Bizcocho de taza de pl\xE1tano y avena al horno,desayuno,376,16.6,12.1,53.2,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P4-1): cifras USDA SR Legacy sin validar",unico,6.92,huevo,avena,cacahuete;gluten;huevo;l\xE1cteos,si,no,no,no,no,25,dietfarma-combinacion,"Triturar el pl\xE1tano con el huevo, la avena, la levadura y la leche. Verter en un recipiente individual para horno y hornear a 180 \xB0C unos 20 minutos, hasta que cuaje. Servir con los ar\xE1ndanos y la crema de cacahuete. Aguanta 3-4 d\xEDas tapado en la nevera; se calienta 30 segundos en el microondas.",normal
+R493,"Bol de pollo glaseado con arroz, aguacate y mango",comida;cena,556,36.4,15.2,68.3,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P4-4): cifras USDA SR Legacy sin validar",unico,4.86,pechuga de pollo,cereal,gluten;mostaza;soja,no,no,si,no,no,25,dietfarma-combinacion,"Cocer el arroz y dejarlo templar. Trocear el pollo, sazonarlo con el ajo en polvo, pimienta y la mitad del aceite, y dorarlo en una sart\xE9n muy caliente; reservar. En la misma sart\xE9n, a fuego bajo, reducir dos minutos la salsa de soja con la mostaza, la miel y el zumo de lim\xF3n. Volver a echar el pollo y cocinarlo en la salsa unos 5 minutos, hasta que est\xE9 bien hecho. Servir el arroz con el pollo, el aguacate y el mango en dados, regando con la salsa.",normal
+R494,Hamburguesitas de at\xFAn y zanahoria con r\xFAcula y parmesano,comida;cena,337,29,15.2,21.5,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P4-5): cifras USDA SR Legacy sin validar; adaptaciones: copos de avena 15\u219220 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,4.19,at\xFAn en lata,avena,gluten;huevo;l\xE1cteos;pescado;sulfitos,no,no,no,no,no,20,dietfarma-combinacion,"Escurrir el at\xFAn, rallar la zanahoria y picar la cebolla y el perejil. Moler los copos de avena. Mezclarlo todo con el huevo, sal y pimienta y formar dos hamburguesas. Hacerlas en la sart\xE9n con parte del aceite, unos 4 minutos por cada lado, hasta que est\xE9n hechas por dentro. Acompa\xF1ar con la r\xFAcula ali\xF1ada con el vinagre, el resto del aceite y el parmesano.",normal
+R495,Alb\xF3ndigas de pollo y queso cottage en salsa de tomate,comida;cena,439,39.3,22.6,20,"EJEMPLO | cottage_en_elaboracion | dietfarma-combinacion (#333 tanda 1, P4-9): cifras USDA SR Legacy sin validar; adaptaciones: huevo 15\u219250 g para llegar a la raci\xF3n m\xEDnima de comida o cena; queso cottage 45\u219260 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,3.57,carne picada de pollo,pan,gluten;huevo;l\xE1cteos,no,no,no,no,no,30,dietfarma-combinacion,"Las cantidades son para una raci\xF3n; para tres d\xEDas, multiplicar por tres. Mezclar el pollo picado con el queso cottage, el huevo, el pan rallado, el or\xE9gano, el ajo en polvo, sal y pimienta, sin amasar demasiado. Formar las alb\xF3ndigas con las manos mojadas y dorarlas en la sart\xE9n con el aceite. A\xF1adir el tomate triturado, tapar y dejar unos 15 minutos a fuego bajo, hasta que est\xE9n hechas por dentro. Servir con el parmesano rallado por encima.",normal
+R496,Tarta de yogur griego y pl\xE1tano con ar\xE1ndanos,merienda,115,11.2,2.8,11.9,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P4-11): cifras USDA SR Legacy sin validar",postre,1.14,,fruta,huevo;l\xE1cteos,si,no,no,pendiente_ficha,si,60,dietfarma-combinacion,"Los gramos son de una raci\xF3n (un cuarto de la tarta); para la tarta entera, por cuatro. Triturar el pl\xE1tano con el yogur y el huevo y a\xF1adir los ar\xE1ndanos con cuidado. Verter en un molde de unos 18 cm con papel de horno y hornear a 180 \xB0C 45-50 minutos, hasta que los bordes est\xE9n firmes y el centro cuajado. Dejar enfriar del todo antes de desmoldar. Aguanta 3-4 d\xEDas en la nevera.",normal
+R497,"S\xE1ndwich de huevo, mozzarella y tomate en air fryer",desayuno;cena,283,19.1,10.2,28.8,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P4-12a): cifras USDA SR Legacy sin validar; adaptaciones: queso light en lonchas: Sin ficha de \xABlonchas light\xBB; se adapta con mozzarella light (170847, semidesnatada), que funde igual en el s\xE1ndwich.; tomate 30\u219240 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,4.51,huevo,pan,gluten;huevo;l\xE1cteos,si,no,no,no,no,15,dietfarma-combinacion,"Hacer un agujero en el centro de una rebanada. Sobre la otra, poner la mozzarella y el tomate en rodajas y cubrir con la rebanada del agujero. Cascar el huevo en el hueco con or\xE9gano y sal. Air fryer a 180 \xB0C 8-10 minutos, hasta que el huevo est\xE9 cuajado.",normal
+R498,Tortitas de pl\xE1tano y avena en air fryer,desayuno;merienda,316,12.7,7.7,51.6,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P4-12b): cifras USDA SR Legacy sin validar",unico,7.18,huevo,avena,gluten;huevo,si,no,si,no,no,15,dietfarma-combinacion,"Chafar el pl\xE1tano y mezclarlo con la avena, el huevo, la levadura y la canela. Repartir la masa en moldecitos aptos para air fryer y cocinar a 175 \xB0C 8-12 minutos, d\xE1ndoles la vuelta a mitad.",normal
+R499,Pizza de masa de avena y yogur con at\xFAn y champi\xF1ones,comida;cena,467,45.7,12,45.7,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P5-1): cifras USDA SR Legacy sin validar; adaptaciones: r\xFAcula 10\u219220 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,7.42,at\xFAn en lata,avena,gluten;l\xE1cteos;pescado,no,no,no,no,no,25,dietfarma-combinacion,"Moler la avena y mezclarla con el yogur y una pizca de sal hasta tener una masa (si se pega, un poco m\xE1s de avena). Extenderla fina sobre papel de horno y hornearla sola 5 minutos a 200 \xB0C. Cubrir con el tomate triturado, la mozzarella, el at\xFAn y los champi\xF1ones en l\xE1minas, y hornear 5-10 minutos m\xE1s. A\xF1adir la r\xFAcula al sacarla.",normal
+R500,Burrito integral de revuelto con espinacas y queso fresco,desayuno;merienda,300,16.4,17.6,19.2,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P5-5): cifras USDA SR Legacy sin validar",unico,4.41,huevo,pan,gluten;huevo;l\xE1cteos,si,no,no,no,no,10,dietfarma-combinacion,"Cuajar el huevo en revuelto a fuego medio-bajo con el aceite, sal y pimienta, y a\xF1adir las espinacas hasta que se ablanden. Calentar la tortilla de trigo, poner el queso fresco y el revuelto y enrollar.",normal
+R501,Burritos de alubias rojas y aguacate,comida;cena,496,21.1,15.1,72.2,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P5-6): cifras USDA SR Legacy sin validar",unico,21.54,alubia roja cocida,legumbre,gluten,si,si,si,no,no,10,dietfarma-combinacion,"Aclarar las alubias y calentarlas. Chafar el aguacate con el zumo de lim\xF3n, sal y pimienta. Calentar las dos tortillas de trigo, rellenarlas con las alubias y el aguacate y enrollarlas.",normal
+R502,Hamburguesa casera de salm\xF3n y puerro con ensalada,comida;cena,365,29.2,21.3,13.5,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P5-8): cifras USDA SR Legacy sin validar",unico,2.7,salm\xF3n,,gluten;mostaza;pescado,no,no,si,no,si,20,dietfarma-combinacion,"Picar el salm\xF3n, sin piel ni espinas, a cuchillo o con pocos golpes de picadora, sin triturarlo del todo. Mezclarlo con el puerro muy picado, la mostaza, el pan rallado y una pizca de sal y formar las hamburguesas. Hacerlas en la sart\xE9n con el aceite, un par de minutos por lado (m\xE1s si son gruesas), hasta que est\xE9n hechas por dentro. Servir con la lechuga y el tomate.",normal
+R503,Hamburguesa de pavo con champi\xF1ones salteados y queso fresco,comida;cena,472,44.9,29.6,9.2,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P5-9): cifras USDA SR Legacy sin validar",unico,2.48,carne picada de pavo,,l\xE1cteos;mostaza,no,no,no,pendiente_ficha,si,20,dietfarma-combinacion,"Salpimentar el pavo picado, formar las hamburguesas y aplastarlas. Saltear los champi\xF1ones laminados con el aceite y reservarlos. En la misma sart\xE9n, dorar las hamburguesas a fuego fuerte y acabarlas a fuego bajo 4-5 minutos, hasta que est\xE9n bien hechas. Servir con los champi\xF1ones, el queso fresco, el tomate, la r\xFAcula y la mostaza.",normal
+R504,Fideos de arroz con pollo y salsa de cacahuete,comida,553,32,15.4,70.5,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P5-12): cifras USDA SR Legacy sin validar; adaptaciones: miel 3\u21925 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,3.56,pechuga de pollo,cereal,cacahuete;gluten;soja,no,no,si,no,no,20,dietfarma-combinacion,"Cocer los fideos de arroz como diga el paquete y escurrirlos. Saltear el pollo en tiras con la zanahoria en bastones y el aceite, hasta que el pollo est\xE9 bien hecho. Batir la crema de cacahuete con el ajo picado, la salsa de soja, la miel y un chorrito de agua caliente hasta que quede cremosa. Mezclarlo todo y servir.",normal
+R505,Pasta integral con pesto de aguacate y tomates asados,comida,431,15.8,17,60.6,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P6-3): cifras USDA SR Legacy sin validar; adaptaciones: espinacas 5\u219240 g para llegar a la raci\xF3n m\xEDnima de comida o cena; r\xFAcula 15\u219220 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,10.73,,cereal,gluten;l\xE1cteos;sulfitos,si,no,no,no,no,25,dietfarma-combinacion,"Asar los tomates (cherry o en trozos) con sal, pimienta, parte del aceite y el vinagre a 200 \xB0C unos 20 minutos. Cocer la pasta. Triturar el aguacate con la albahaca, el ajo, el zumo de lim\xF3n, las espinacas, el resto del aceite y la mitad del parmesano. Mezclar la pasta con el pesto y los tomates y servir con la r\xFAcula y el resto del parmesano. Est\xE1 buena tambi\xE9n fr\xEDa.",normal
+R506,Bol de arroz integral con garbanzos al piment\xF3n y verduras,comida,473,16.7,11.5,78.9,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P6-8): cifras USDA SR Legacy sin validar",unico,13.97,garbanzo cocido,cereal;legumbre,,si,si,si,pendiente_ficha,no,35,dietfarma-combinacion,"Cocer el arroz integral. Saltear unos minutos los garbanzos escurridos con la mitad del aceite, el piment\xF3n y el comino. Servir sobre el arroz templado con las espinacas y la zanahoria rallada, y ali\xF1ar con el resto del aceite y el zumo de lim\xF3n.",normal
+R507,Potaje de garbanzos con bacalao y espinacas,comida,587,40.9,17,70.2,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P8-potaje): cifras USDA SR Legacy sin validar; adaptaciones: bacalao desalado: Sin ficha de bacalao desalado; la combinaci\xF3n se adapta con bacalao fresco (no se igualan sus cifras).; bacalao fresco 75\u219280 g para llegar a la raci\xF3n m\xEDnima de comida o cena; huevo 15\u219250 g para llegar a la raci\xF3n m\xEDnima de comida o cena; pan blanco 8\u219220 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,12.93,bacalao fresco,legumbre,gluten;huevo;pescado,no,no,si,no,no,100,dietfarma-combinacion,"Los gramos son de una raci\xF3n; sale mejor para cuatro y aguanta 3 d\xEDas en la nevera. Dejar los garbanzos en remojo la noche anterior y cocerlos con un ajo y el laurel (15 minutos en olla r\xE1pida o 90 a fuego lento). Cocer el huevo aparte (uno por plato). Pochar la cebolla en tiras con parte del aceite y el resto del ajo y, fuera del fuego, a\xF1adir el piment\xF3n. Juntar los garbanzos con su caldo y el sofrito, a\xF1adir las espinacas poco a poco y cocer 2 minutos. Agregar el bacalao en trozos y cocer 5 minutos a fuego bajo. Tostar el pan y majar una parte para espesar; el resto, para acompa\xF1ar. Servir con el huevo picado. Con garbanzos de bote bien aclarados se a\xF1aden al final.",normal
+R508,Puchero de contramuslo de pollo con garbanzos y verduras,comida,492,32.9,12.6,63.4,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P8-puchero): cifras USDA SR Legacy sin validar; adaptaciones: tocino de cerdo: Corte y salado sin fijar; la combinaci\xF3n se adapta: la grasa del puchero la pone el aceite, con los mismos gramos.",unico,11.42,contramuslo de pollo sin piel,legumbre;patata,apio,no,no,si,pendiente_ficha,no,150,dietfarma-combinacion,"Los gramos son de una raci\xF3n; sale mejor para cuatro y aguanta 3 d\xEDas en la nevera. Dejar los garbanzos en remojo la noche anterior. Poner en una olla el pollo y los garbanzos con agua abundante, llevar a ebullici\xF3n y cocer 1 hora a fuego lento, quitando la espuma. A\xF1adir la patata, la zanahoria, el puerro y el apio en trozos grandes y seguir unos 90 minutos, hasta que todo est\xE9 tierno (en olla r\xE1pida, mucho menos: seg\xFAn su manual). Servir con un poco de caldo y el aceite en crudo por encima.",normal
+R509,Pasta integral cremosa con salm\xF3n y gambas,comida,546,39.7,22.6,48.3,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P8-pasta): cifras USDA SR Legacy sin validar",unico,6.2,salm\xF3n,cereal,crust\xE1ceos;gluten;l\xE1cteos;pescado,no,no,no,no,no,25,dietfarma-combinacion,"Cocer la pasta. Pochar la cebolla picada con el aceite unos 10 minutos. Subir el fuego, echar las gambas y, a media cocci\xF3n, el salm\xF3n en dados. A\xF1adir la nata y dejar unos 5 minutos, hasta que el pescado est\xE9 hecho. Mezclar con la pasta y servir con pimienta.",normal
+R510,Merluza a la plancha con lim\xF3n y perejil,comida;cena,178,28.7,5.8,1.2,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P9-pescadilla): cifras USDA SR Legacy sin validar",segundo,0.11,merluza,,pescado,no,no,si,pendiente_ficha,si,10,dietfarma-combinacion,"Si es congelada, descongelarla en la nevera y cocinarla en cuanto est\xE9. Secar los filetes y salarlos. Hacerlos a la plancha con el aceite a fuego medio-alto, 2-3 minutos por el lado de la piel y 2 por el otro, hasta que est\xE9n opacos y firmes. Servir con el zumo de lim\xF3n y el perejil.",normal
+R511,Langostinos pelados a la plancha con lim\xF3n,comida;cena,151,24.2,5.7,1.4,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P9-langostinos): cifras USDA SR Legacy sin validar",segundo,0.06,langostinos pelados,,crust\xE1ceos,no,no,si,pendiente_ficha,si,10,dietfarma-combinacion,"Si son congelados, descongelarlos en la nevera y cocinarlos enseguida. Hacerlos a la plancha con el aceite 2 minutos, darles la vuelta, rociar con el zumo de lim\xF3n y dejar 1-2 minutos m\xE1s, hasta que est\xE9n opacos.",normal
+R512,Pulpo a la plancha sobre patata con piment\xF3n,comida;cena,474,48.9,11.4,42.1,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P9-pulpo): cifras USDA SR Legacy sin validar",unico,4.55,pulpo cocido,patata,moluscos,no,no,si,pendiente_ficha,no,25,dietfarma-combinacion,"Usar pulpo ya cocido. Cocer o calentar la patata y cortarla en rodajas. Hacer unos cortes en el pulpo y dorarlo por los dos lados en la sart\xE9n con parte del aceite, hasta que est\xE9 bien caliente. Servirlo sobre la patata con el piment\xF3n y el resto del aceite.",normal
+R513,Curry de garbanzos con leche de coco y arroz integral,comida,508,18.6,15.8,76.8,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P9-curry): cifras USDA SR Legacy sin validar",unico,15.51,garbanzo cocido,cereal;legumbre,mostaza,si,si,si,pendiente_ficha,no,35,dietfarma-combinacion,"Cocer el arroz integral. Dorar el ajo picado en el aceite y a\xF1adir el curry unos segundos. Echar los garbanzos escurridos, la leche de coco y las espinacas y cocer 10 minutos a fuego suave, removiendo. Ajustar de sal y pimienta y servir con el arroz.",normal
+R514,Huevos al horno de sart\xE9n con tomate y pimiento,comida;cena,253,15.3,15.5,15.1,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P9-shakshuka): cifras USDA SR Legacy sin validar",unico,5.18,huevo,,huevo,si,no,si,pendiente_ficha,no,25,dietfarma-combinacion,"Pochar con el aceite la cebolla, el ajo y el pimiento en trozos. A\xF1adir el piment\xF3n, el comino y el tomate triturado y dejar reducir unos minutos. Abrir dos huecos, cascar un huevo en cada uno y tapar hasta que clara y yema est\xE9n cuajadas. Servir con perejil.",normal
+R515,Fideos de arroz con tofu y verduras al curry de coco en una sola sart\xE9n,comida,597,31.8,23.5,72.6,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, 4nov-noodles): cifras USDA SR Legacy sin validar",unico,11.19,tofu firme,cereal,frutos de c\xE1scara;gluten;mostaza;soja,si,si,si,no,no,20,dietfarma-combinacion,"Cortar el br\xF3coli en ramitos y trocear el pimiento y la cebolla (valen congelados); desmigar el tofu. En una sart\xE9n amplia con tapa, poner los fideos secos en el centro y alrededor el tofu, las verduras y los anacardos. A\xF1adir el curry, la c\xFArcuma, el piment\xF3n, el ajo en polvo, la salsa de soja, la leche de coco y un vaso peque\xF1o de agua. Tapar y cocinar a fuego medio el tiempo que diga el paquete (unos 8-10 minutos), separando los fideos de vez en cuando y a\xF1adiendo agua si se seca. Servir cuando fideos y verduras est\xE9n tiernos.",normal
+R516,"Arroz salteado con gambas, huevo, jam\xF3n cocido y verduras",comida;cena,535,40.4,12.5,64,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, 4nov-arroz-frito): cifras USDA SR Legacy sin validar",unico,4.73,gambas peladas,cereal,crust\xE1ceos;gluten;huevo;soja,no,no,si,no,no,30,dietfarma-combinacion,"Cocer el arroz en el doble de agua con una pizca de sal a fuego muy suave, unos 20 minutos, hasta que quede suelto. Cortar la zanahoria y el jam\xF3n cocido en dados y batir el huevo. En un wok con el aceite a fuego fuerte, saltear las gambas medio minuto por lado y reservarlas. Saltear la zanahoria y los guisantes 2 minutos, a\xF1adir el jam\xF3n y seguir 2 minutos. Hacer hueco en el centro, cuajar ah\xED el huevo removiendo y mezclar. A\xF1adir el arroz, la salsa de soja, la pimienta y las gambas, y saltear hasta que todo est\xE9 bien hecho.",normal
+R517,Pollo glaseado al estilo coreano con arroz,comida;cena,505,42.3,8.7,61.2,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, 5nov-pollo-coreano): cifras USDA SR Legacy sin validar; adaptaciones: stevia: Se quita: la miel ya endulza el glaseado, y la ficha de stevia en polvo no casa con sus kcal.",unico,1.63,pechuga de pollo,cereal,gluten;s\xE9samo;soja,no,no,si,no,si,30,dietfarma-combinacion,"Cortar el pollo en dados y mezclarlo con la pimienta y un tercio de la salsa de soja. Cocer el arroz, dejarlo reposar y ali\xF1arlo con la mitad del vinagre de arroz. Dorar el pollo con el aceite a fuego fuerte 6-8 minutos, hasta que est\xE9 hecho por dentro (o en air fryer a 200 \xB0C 10-12 minutos). Para el glaseado, echar en la sart\xE9n el resto de la soja, el ketchup, la guindilla picada, el resto del vinagre, la miel y dos cucharadas de agua, y remover 2-3 minutos hasta que espese. Volver a echar el pollo y mezclar hasta que brille. Servir con el arroz, la cebolleta picada y el s\xE9samo.",normal
+R518,Lomo de bacalao al horno con pisto y mayonesa gratinada,comida;cena,336,34.1,17.9,9.2,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, 9nov-bacalao): cifras USDA SR Legacy sin validar; adaptaciones: pisto en conserva: Sin ficha del pisto de bote; se adapta con un pisto casero de verduras de la app (190 g en lugar de 150).",unico,3.09,bacalao fresco,,huevo;mostaza;pescado,no,no,si,pendiente_ficha,no,35,dietfarma-combinacion,"Si el bacalao es congelado, descongelarlo en la nevera desde la v\xEDspera. Pochar el calabac\xEDn, el pimiento y la cebolla en trozos con el aceite y a\xF1adir el tomate triturado hasta tener un pisto. Extenderlo en una fuente de horno y poner encima el bacalao. Cubrir la parte de arriba del pescado con una capa fina de mayonesa y hornear a 200 \xB0C unos 20 minutos, hasta que se dore y el bacalao se separe en lascas.",normal
+R519,Tortilla fina de patata doblada con mozzarella y pavo,comida;cena,537,39.4,26.3,35.2,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, 9nov-tortilla-fina): cifras USDA SR Legacy sin validar",unico,4.03,huevo,patata,huevo;l\xE1cteos,no,no,no,pendiente_ficha,no,25,dietfarma-combinacion,"Cortar la patata pelada en l\xE1minas muy finas. En una sart\xE9n antiadherente con el aceite, colocarlas solapadas cubriendo el fondo, tapar y dejar unos 5 minutos a fuego medio, hasta que est\xE9n tiernas. Echar por encima el huevo batido con sal para que ligue la base. Repartir la mozzarella y poner el pavo en una mitad. Cuando la base se despegue, doblar como una empanadilla y dejar un par de minutos m\xE1s, hasta que se dore y la mozzarella funda.",normal
+R520,"Cestita de tortilla integral con huevo, jam\xF3n cocido y mozzarella en air fryer",desayuno;cena,491,37.1,27.8,22.3,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, 9nov-tortilla-harina): cifras USDA SR Legacy sin validar",unico,4.61,huevo,pan,gluten;huevo;l\xE1cteos,no,no,no,no,no,25,dietfarma-combinacion,"Forrar la cesta de la air fryer con papel y encajar la tortilla de trigo con los bordes hacia arriba. Cascar dentro los huevos y batirlos ah\xED con sal y la pimienta. Cubrir con el jam\xF3n cocido, el tomate en rodajas y la mozzarella. Air fryer a 170 \xB0C unos 20-25 minutos, hasta que el huevo cuaje y la mozzarella se dore; reposar un par de minutos y cortar.",normal
+R521,Pasta con salm\xF3n y feta al horno con tomate y espinacas,comida,692,41.8,30.2,62.8,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, 9nov-pasta-salmon): cifras USDA SR Legacy sin validar",unico,5.53,salm\xF3n,cereal,gluten;l\xE1cteos;pescado,no,no,no,no,no,35,dietfarma-combinacion,"Poner en una fuente de horno el salm\xF3n sin piel y el feta, uno junto al otro, con los tomates (partidos si son grandes), las espinacas y el ajo picado alrededor. Regar con el aceite y a\xF1adir or\xE9gano, sal y pimienta. Hornear a 200 \xB0C 20-25 minutos, hasta que el salm\xF3n est\xE9 hecho. Mientras, cocer la pasta y guardar un poco del agua. Desmenuzar el salm\xF3n y mezclarlo con el feta y las verduras hasta tener una salsa, aclar\xE1ndola con el agua de la pasta si hace falta. A\xF1adir la pasta, remover y servir.",normal`;
   var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
 R01,garbanzo cocido,140,base,173757,peso cocido,
 R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
@@ -10258,7 +10510,260 @@ R483,miel,10,condimento,169640,peso a\xF1adido,
 R483,leche semidesnatada,250,fruta_lacteo,171267,tal cual,
 R484,pan blanco,75,base,174924,tal cual,
 R484,pechuga de pavo asada,90,proteina,171496,cocido,
-R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
+R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,
+R485,copos de avena,40,base,173904,peso seco,
+R485,leche semidesnatada,150,fruta_lacteo,171267,tal cual,
+R485,huevo,50,proteina,171287,crudo,
+R485,ar\xE1ndanos,60,fruta_lacteo,171711,crudo,
+R485,canela,1,condimento,171320,tal cual,
+R486,copos de avena,45,base,173904,peso seco,
+R486,leche semidesnatada,200,fruta_lacteo,171267,tal cual,
+R486,semillas de ch\xEDa,10,grasa,170554,tal cual,
+R486,crema de cacahuete,5,grasa,172470,tal cual,
+R486,fresas,70,fruta_lacteo,167762,crudo,
+R486,almendra,10,grasa,170567,tal cual,
+R486,canela,1,condimento,171320,tal cual,
+R487,tortilla de trigo integral,36,base,174081,tal cual,
+R487,huevo,100,proteina,171287,crudo,
+R487,salm\xF3n ahumado,40,proteina,171985,tal cual,
+R487,queso crema,20,grasa,173418,tal cual,
+R487,cebolla,15,aromatico,170000,crudo,
+R487,r\xFAcula,20,verdura,169387,crudo,
+R487,aceite de oliva,3,grasa,171413,tal cual,
+R488,boniato,150,base,168482,crudo,
+R488,carne picada de pollo,110,proteina,171116,crudo,
+R488,calabac\xEDn,50,verdura,169291,crudo,
+R488,pimiento rojo,40,verdura,170108,crudo,
+R488,queso fresco batido,60,fruta_lacteo,170894,tal cual,
+R488,aguacate,40,grasa,171705,crudo,
+R488,aceite de oliva,4,grasa,171413,tal cual,
+R488,miel,5,condimento,169640,peso a\xF1adido,
+R488,canela,1,condimento,171320,tal cual,
+R489,tortita de ma\xEDz,20,base,168857,tal cual,
+R489,aguacate,30,grasa,171705,crudo,
+R489,zumo de lim\xF3n,3,condimento,167747,tal cual,
+R489,fiambre de pechuga de pavo,40,proteina,174572,tal cual,
+R490,yogur natural,125,fruta_lacteo,171284,tal cual,
+R490,copos de avena,20,base,173904,peso seco,
+R490,fresas,80,fruta_lacteo,167762,crudo,
+R491,pan integral,60,base,172688,tal cual,
+R491,crema de cacahuete,10,grasa,172470,tal cual,
+R491,mermelada,15,condimento,169641,peso a\xF1adido,
+R492,pl\xE1tano,55,fruta_lacteo,173944,crudo,
+R492,huevo,50,proteina,171287,crudo,
+R492,copos de avena,40,base,173904,peso seco,
+R492,levadura qu\xEDmica,2,condimento,172804,tal cual,
+R492,leche semidesnatada,90,fruta_lacteo,171267,tal cual,
+R492,ar\xE1ndanos,50,fruta_lacteo,171711,crudo,
+R492,crema de cacahuete,5,grasa,172470,tal cual,
+R493,pechuga de pollo,130,proteina,171077,crudo,
+R493,arroz,60,base,169756,peso seco,
+R493,aguacate,40,grasa,171705,crudo,
+R493,mango,60,fruta_lacteo,169910,crudo,
+R493,salsa de soja,15,condimento,174277,tal cual,
+R493,mostaza,5,condimento,172234,tal cual,
+R493,miel,7,condimento,169640,peso a\xF1adido,
+R493,zumo de lim\xF3n,5,condimento,167747,tal cual,
+R493,aceite de oliva,5,grasa,171413,tal cual,
+R493,ajo en polvo,1,condimento,171325,tal cual,
+R494,at\xFAn en lata,80,proteina,173709,escurrido,
+R494,huevo,50,proteina,171287,crudo,
+R494,zanahoria,40,verdura,170393,crudo,
+R494,cebolla,20,aromatico,170000,crudo,
+R494,copos de avena,20,base,173904,peso seco,
+R494,perejil,2,condimento,170416,tal cual,
+R494,aceite de oliva,6,grasa,171413,tal cual,
+R494,r\xFAcula,40,verdura,169387,crudo,
+R494,queso parmesano,8,proteina,170848,tal cual,
+R494,vinagre de vino,5,condimento,172240,tal cual,
+R495,carne picada de pollo,125,proteina,171116,crudo,
+R495,huevo,50,proteina,171287,crudo,
+R495,pan rallado,15,aromatico,174928,tal cual,
+R495,or\xE9gano,1,condimento,171328,tal cual,
+R495,ajo en polvo,1,condimento,171325,tal cual,
+R495,aceite de oliva,4,grasa,171413,tal cual,
+R495,tomate triturado,125,verdura,170051,tal cual,
+R495,queso cottage,60,proteina,172182,tal cual,
+R495,queso parmesano,5,proteina,170848,tal cual,
+R496,pl\xE1tano,30,fruta_lacteo,173944,crudo,
+R496,yogur griego,75,fruta_lacteo,170894,tal cual,
+R496,huevo,25,proteina,171287,crudo,
+R496,ar\xE1ndanos,15,fruta_lacteo,171711,crudo,
+R497,pan integral,60,base,172688,tal cual,
+R497,mozzarella light,20,proteina,170847,tal cual,
+R497,huevo,50,proteina,171287,crudo,
+R497,tomate,40,verdura,170457,crudo,
+R497,or\xE9gano,1,condimento,171328,tal cual,
+R498,pl\xE1tano,100,fruta_lacteo,173944,crudo,
+R498,copos de avena,40,base,173904,peso seco,
+R498,huevo,50,proteina,171287,crudo,
+R498,levadura qu\xEDmica,2,condimento,172804,tal cual,
+R498,canela,1,condimento,171320,tal cual,
+R499,yogur griego,100,fruta_lacteo,170894,tal cual,
+R499,copos de avena,55,base,173904,peso seco,
+R499,tomate triturado,60,verdura,170051,tal cual,
+R499,mozzarella,30,proteina,170845,tal cual,
+R499,at\xFAn en lata,100,proteina,173709,escurrido,
+R499,champi\xF1\xF3n,40,verdura,169251,crudo,
+R499,r\xFAcula,20,verdura,169387,crudo,
+R500,tortilla de trigo integral,36,base,174081,tal cual,
+R500,huevo,50,proteina,171287,crudo,
+R500,espinacas,40,verdura,168462,crudo,
+R500,queso fresco,30,proteina,172223,tal cual,
+R500,aceite de oliva,2,grasa,171413,tal cual,
+R501,tortilla de trigo integral,72,base,174081,tal cual,
+R501,alubia roja cocida,150,base,175194,cocido,
+R501,aguacate,50,grasa,171705,crudo,
+R501,zumo de lim\xF3n,10,condimento,167747,tal cual,
+R502,salm\xF3n,130,proteina,175167,crudo,
+R502,puerro,25,aromatico,169246,crudo,
+R502,mostaza,3,condimento,172234,tal cual,
+R502,pan rallado,8,aromatico,174928,tal cual,
+R502,aceite de oliva,3,grasa,171413,tal cual,
+R502,lechuga romana,50,verdura,169247,crudo,
+R502,tomate,60,verdura,170457,crudo,
+R503,carne picada de pavo,150,proteina,171505,crudo,
+R503,champi\xF1\xF3n,100,verdura,169251,crudo,
+R503,queso fresco,60,proteina,172223,tal cual,
+R503,tomate,80,verdura,170457,crudo,
+R503,r\xFAcula,20,verdura,169387,crudo,
+R503,mostaza,5,condimento,172234,tal cual,
+R503,aceite de oliva,3,grasa,171413,tal cual,
+R504,noodles de arroz,70,base,169742,peso seco,
+R504,pechuga de pollo,100,proteina,171077,crudo,
+R504,zanahoria,50,verdura,170393,crudo,
+R504,crema de cacahuete,18,grasa,172470,tal cual,
+R504,salsa de soja,8,condimento,174277,tal cual,
+R504,miel,5,condimento,169640,peso a\xF1adido,
+R504,ajo,3,condimento,169230,crudo,
+R504,aceite de oliva,3,grasa,171413,tal cual,
+R505,pasta integral,70,base,169738,peso seco,
+R505,tomate,80,verdura,170457,crudo,
+R505,aceite de oliva,8,grasa,171413,tal cual,
+R505,vinagre de vino,5,condimento,172240,tal cual,
+R505,aguacate,30,grasa,171705,crudo,
+R505,albahaca,4,condimento,172232,tal cual,
+R505,ajo,1,condimento,169230,crudo,
+R505,zumo de lim\xF3n,10,condimento,167747,tal cual,
+R505,espinacas,40,verdura,168462,crudo,
+R505,queso parmesano,8,proteina,170848,tal cual,
+R505,r\xFAcula,20,verdura,169387,crudo,
+R506,arroz integral,50,base,169703,peso seco,
+R506,garbanzo cocido,120,base,173757,cocido,
+R506,piment\xF3n,2,condimento,171329,tal cual,
+R506,comino,1,condimento,170923,tal cual,
+R506,espinacas,50,verdura,168462,crudo,
+R506,zanahoria,40,verdura,170393,crudo,
+R506,aceite de oliva,6,grasa,171413,tal cual,
+R506,zumo de lim\xF3n,10,condimento,167747,tal cual,
+R507,garbanzo seco,75,base,173756,peso seco,
+R507,bacalao fresco,80,proteina,171955,crudo,
+R507,espinacas,60,verdura,168462,crudo,
+R507,cebolla,75,aromatico,170000,crudo,
+R507,ajo,8,condimento,169230,crudo,
+R507,huevo,50,proteina,171287,crudo,
+R507,pan blanco,20,base,174924,tal cual,
+R507,piment\xF3n,1,condimento,171329,tal cual,
+R507,laurel,0.5,condimento,170917,tal cual,
+R507,aceite de oliva,6,grasa,171413,tal cual,
+R508,garbanzo seco,60,base,173756,peso seco,
+R508,contramuslo de pollo sin piel,90,proteina,173627,crudo,
+R508,patata,100,base,170026,crudo,
+R508,zanahoria,50,verdura,170393,crudo,
+R508,puerro,20,aromatico,169246,crudo,
+R508,apio,15,aromatico,169988,crudo,
+R508,aceite de oliva,5,grasa,171413,tal cual,
+R509,pasta integral,60,base,169738,peso seco,
+R509,salm\xF3n,110,proteina,175167,crudo,
+R509,gambas peladas,40,proteina,175179,crudo,
+R509,nata para cocinar,15,grasa,170857,tal cual,
+R509,cebolla,40,aromatico,170000,crudo,
+R509,aceite de oliva,3,grasa,171413,tal cual,
+R510,merluza,175,proteina,171964,crudo,
+R510,aceite de oliva,5,grasa,171413,tal cual,
+R510,zumo de lim\xF3n,15,condimento,167747,tal cual,
+R510,perejil,2,condimento,170416,tal cual,
+R511,langostinos pelados,120,proteina,175179,crudo,
+R511,aceite de oliva,5,grasa,171413,tal cual,
+R511,zumo de lim\xF3n,20,condimento,167747,tal cual,
+R512,pulpo cocido,150,proteina,174249,cocido,
+R512,patata,200,base,170026,crudo,
+R512,aceite de oliva,8,grasa,171413,tal cual,
+R512,piment\xF3n,1,condimento,171329,tal cual,
+R513,garbanzo cocido,150,base,173757,cocido,
+R513,leche de coco,30,grasa,170172,tal cual,
+R513,curry en polvo,2,condimento,170924,tal cual,
+R513,ajo,3,condimento,169230,crudo,
+R513,aceite de oliva,3,grasa,171413,tal cual,
+R513,arroz integral,40,base,169703,peso seco,
+R513,espinacas,40,verdura,168462,crudo,
+R514,huevo,100,proteina,171287,crudo,
+R514,tomate triturado,150,verdura,170051,tal cual,
+R514,cebolla,40,aromatico,170000,crudo,
+R514,pimiento rojo,50,verdura,170108,crudo,
+R514,ajo,4,condimento,169230,crudo,
+R514,comino,1,condimento,170923,tal cual,
+R514,piment\xF3n,1,condimento,171329,tal cual,
+R514,aceite de oliva,5,grasa,171413,tal cual,
+R514,perejil,2,condimento,170416,tal cual,
+R515,noodles de arroz,60,base,169742,peso seco,
+R515,tofu firme,120,proteina,172475,crudo,
+R515,br\xF3coli,100,verdura,170379,crudo,
+R515,pimiento rojo,50,verdura,170108,crudo,
+R515,cebolla,30,aromatico,170000,crudo,
+R515,anacardos,10,grasa,170162,tal cual,
+R515,leche de coco,30,grasa,170172,tal cual,
+R515,salsa de soja,7,condimento,174277,tal cual,
+R515,curry en polvo,3,condimento,170924,tal cual,
+R515,c\xFArcuma,1,condimento,172231,tal cual,
+R515,piment\xF3n,1,condimento,171329,tal cual,
+R515,ajo en polvo,1,condimento,171325,tal cual,
+R516,arroz,65,base,169756,peso seco,
+R516,gambas peladas,100,proteina,175179,crudo,
+R516,jam\xF3n cocido,35,proteina,173863,tal cual,
+R516,huevo,50,proteina,171287,crudo,
+R516,guisantes,40,verdura,170419,crudo,
+R516,zanahoria,50,verdura,170393,crudo,
+R516,aceite de oliva,5,grasa,171413,tal cual,
+R516,salsa de soja,10,condimento,174277,tal cual,
+R516,pimienta negra,0.5,condimento,170931,tal cual,
+R517,pechuga de pollo,160,proteina,171077,crudo,
+R517,arroz,60,base,169756,peso seco,
+R517,salsa de soja,15,condimento,174277,tal cual,
+R517,ketchup,15,condimento,168556,tal cual,
+R517,guindilla,3,condimento,170106,crudo,
+R517,vinagre de arroz,15,condimento,172237,tal cual,
+R517,miel,8,condimento,169640,peso a\xF1adido,
+R517,pimienta negra,0.5,condimento,170931,tal cual,
+R517,aceite de oliva,3,grasa,171413,tal cual,
+R517,cebolleta,10,aromatico,170005,crudo,
+R517,semillas de s\xE9samo,2,grasa,170150,tal cual,
+R518,bacalao fresco,180,proteina,171955,crudo,
+R518,calabac\xEDn,60,verdura,169291,crudo,
+R518,pimiento rojo,40,verdura,170108,crudo,
+R518,cebolla,30,aromatico,170000,crudo,
+R518,tomate triturado,60,verdura,170051,crudo,
+R518,mayonesa,15,grasa,171009,tal cual,
+R518,aceite de oliva,5,grasa,171413,tal cual,
+R519,patata,180,base,170026,crudo,
+R519,huevo,120,proteina,171287,crudo,
+R519,mozzarella light,40,proteina,170847,tal cual,
+R519,fiambre de pechuga de pavo,50,proteina,174572,tal cual,
+R519,aceite de oliva,8,grasa,171413,tal cual,
+R520,tortilla de trigo integral,36,base,174081,tal cual,
+R520,huevo,120,proteina,171287,crudo,
+R520,jam\xF3n cocido,40,proteina,173863,tal cual,
+R520,tomate,80,verdura,170457,crudo,
+R520,mozzarella,50,proteina,170845,tal cual,
+R520,pimienta negra,0.5,condimento,170931,tal cual,
+R521,pasta,70,base,168927,peso seco,
+R521,salm\xF3n,120,proteina,175167,crudo,
+R521,queso feta,35,proteina,173420,tal cual,
+R521,tomate,120,verdura,170457,crudo,
+R521,espinacas,60,verdura,168462,crudo,
+R521,ajo,5,condimento,169230,crudo,
+R521,aceite de oliva,5,grasa,171413,tal cual,
+R521,or\xE9gano,1,condimento,171328,tal cual,`;
 
   // src/motor/coherencia-nutricional.ts
   var TOLERANCIA_RELATIVA = 0.1;
