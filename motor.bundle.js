@@ -562,6 +562,7 @@ var Motor = (() => {
 
   // src/motor/calcular.ts
   var DIAS = ["L", "M", "X", "J", "V", "S", "D"];
+  var OBJETIVOS = ["perder_grasa", "recomposicion", "mantener", "ganar_musculo"];
   var RITMO_POR_DEFECTO = { magro: 0.5, normal: 0.6, obesidad: 0.75 };
   var TOPE_DEFICIT = { magro: 0.25, normal: 0.25, obesidad: 0.3 };
   var TOPE_DEFICIT_ENTRENO = 0.25;
@@ -607,6 +608,12 @@ var Motor = (() => {
       avisos.push({ codigo, texto: texto3 });
     };
     if (p.grasa !== void 0 && !(p.grasa >= 3 && p.grasa <= 70)) throw new Error("grasa es el % graso (3-70)");
+    const validar = (campo, valor, validos, desconocido) => {
+      if (valor !== void 0 && !validos.includes(valor)) throw new Error(`${campo} ${desconocido}: ${valor} (valores: ${validos.join(", ")})`);
+    };
+    validar("vida", p.vida, Object.keys(PAL_VIDA), "desconocida");
+    validar("sexo", p.sexo, Object.keys(SUELO_KCAL), "desconocido");
+    validar("objetivo", p.objetivo, OBJETIVOS, "desconocido");
     for (const s of sesiones) {
       if (!ACTIVIDADES[s.actividad]) throw new Error(`actividad desconocida: ${s.actividad}`);
       if (!(s.minutos > 0)) throw new Error(`minutos no v\xE1lidos: ${s.dia} ${s.actividad}`);
@@ -11890,8 +11897,62 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       };
     });
   }
+  var BRICK = { huecoMaxMin: 15, fraccionCarrera: 1 / 3 };
+  var esBici = (s) => deporteDeSesion(s.actividad) === "ciclismo";
+  var esCarrera = (s) => deporteDeSesion(s.actividad) === "running";
+  function juntarBricks(sesiones, pautas, deportePrincipal2) {
+    const salida = [...pautas];
+    const usadas = /* @__PURE__ */ new Set();
+    const orden = sesiones.map((s, i) => i).filter((i) => typeof sesiones[i].horaInicio === "number").sort((a2, b) => sesiones[a2].horaInicio - sesiones[b].horaInicio);
+    for (let k = 0; k + 1 < orden.length; k++) {
+      const a2 = orden[k];
+      const b = orden[k + 1];
+      if (usadas.has(a2) || usadas.has(b) || pautas[a2].ensayo || pautas[b].ensayo) continue;
+      const sa = sesiones[a2];
+      const sb = sesiones[b];
+      const hueco = (sb.horaInicio - (sa.horaInicio + sa.minutos / 60)) * 60;
+      if (!(hueco >= 0 && hueco < BRICK.huecoMaxMin)) continue;
+      const bici = esBici(sa) && esCarrera(sb) ? a2 : esCarrera(sa) && esBici(sb) ? b : -1;
+      if (bici < 0) continue;
+      const carrera = bici === a2 ? b : a2;
+      const sBici = sesiones[bici];
+      const sCarr = sesiones[carrera];
+      const total = sBici.minutos + sCarr.minutos;
+      const dura = intensidadDeSesion(sBici) === "intensa" || intensidadDeSesion(sCarr) === "intensa";
+      const junta = duranteEntreno({ actividad: sBici.actividad, minutos: total, ...dura ? { dura: true } : {}, ...sBici.nombre ? { nombre: sBici.nombre } : {} }, deportePrincipal2);
+      usadas.add(a2);
+      usadas.add(b);
+      if (!junta.ghHora || junta.objetivoGHora === void 0) continue;
+      const fCarr = Math.min(BRICK.fraccionCarrera, sCarr.minutos / total);
+      const totalG = junta.objetivoTotalG ?? 0;
+      const gCarr = Math.floor(totalG * fCarr);
+      const parte = (p, s, g, f2, esCarr) => {
+        const horas = s.minutos / 60;
+        const porHora = (x) => horas > 0 ? r0(x / horas) : 0;
+        const ghHora = [porHora(junta.ghHora[0] * total / 60 * f2), porHora(junta.ghHora[1] * total / 60 * f2)];
+        const nota = esCarr ? "Bici y carrera seguidas: toma la mayor parte en la bici. En la carrera, solo gel o bebida." : "Bici y carrera seguidas: toma la mayor parte en la bici, que es donde mejor se tolera; en la carrera, solo gel o bebida.";
+        return {
+          ...p,
+          ghHora,
+          objetivoGHora: porHora(g),
+          totalG: [r0(ghHora[0] * horas), r0(ghHora[1] * horas)],
+          objetivoTotalG: g,
+          opcional: junta.opcional,
+          solido: esCarr ? false : junta.solido,
+          nota: esCarr ? nota : [nota, junta.nota].filter(Boolean).join(" "),
+          bebidaLHora: junta.bebidaLHora,
+          bebidaObjetivoLHora: junta.bebidaObjetivoLHora,
+          sales: junta.sales,
+          brick: { minutosTotal: total, totalG }
+        };
+      };
+      salida[bici] = parte(pautas[bici], sBici, totalG - gCarr, 1 - fCarr, false);
+      salida[carrera] = parte(pautas[carrera], sCarr, gCarr, fCarr, true);
+    }
+    return salida;
+  }
   function tomaDuranteDia(sesiones, franjas, deportePrincipal2, ensayo, hidratoDiaG) {
-    const pautas = frenarEnsayo(sesiones, sesiones.map((s) => duranteEntreno(s, deportePrincipal2, ensayo)), deportePrincipal2, hidratoDiaG);
+    const pautas = juntarBricks(sesiones, frenarEnsayo(sesiones, sesiones.map((s) => duranteEntreno(s, deportePrincipal2, ensayo)), deportePrincipal2, hidratoDiaG), deportePrincipal2);
     const cuentan = sesiones.map((s, i) => ({ s, p: pautas[i] })).filter(({ p }) => cuentaG(p) > 0);
     const hidratoG = cuentan.reduce((t2, { p }) => t2 + (p.objetivoTotalG ?? 0), 0);
     const toma = { pautas, hidratoG, kcal: 4 * hidratoG };
@@ -11945,7 +12006,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (!p.ghHora || p.objetivoGHora === void 0) return void 0;
     const total = p.objetivoTotalG !== void 0 ? `, unos ${p.objetivoTotalG} g en total` : "";
     const cuenta = p.opcional ? "opcional" : `tu plan cuenta ${p.objetivoGHora} g por hora${total}`;
-    const partes = p.ensayo ? [`Ensayo de carrera (semana ${p.ensayo.semana} de ${p.ensayo.semanas}): ${p.ensayo.gHora} g/h${p.ensayo.frenadoDesde ? ` (tocaban ${p.ensayo.frenadoDesde} g/h, pero no caben: lo que tomas durante la sesi\xF3n no puede llevarse m\xE1s de la mitad de los hidratos del d\xEDa)` : ""}, con lo mismo que vas a tomar el d\xEDa de la prueba (${p.ensayo.productos}; ${p.ensayo.competicion})${total ? ` \xB7 ${total.slice(2)}` : ""}.`] : [`Durante la sesi\xF3n: ${rango(p.ghHora, "g")} de hidratos por hora (${cuenta}).`, `Ejemplos: ${ejemplosDurante(p).join("; ")}.`];
+    const partes = p.ensayo ? [`Ensayo de carrera (semana ${p.ensayo.semana} de ${p.ensayo.semanas}): ${p.ensayo.gHora} g/h${p.ensayo.frenadoDesde ? ` (tocaban ${p.ensayo.frenadoDesde} g/h, pero no caben: lo que tomas durante la sesi\xF3n no puede llevarse m\xE1s de la mitad de los hidratos del d\xEDa)` : ""}, con lo mismo que vas a tomar el d\xEDa de la prueba (${p.ensayo.productos}; ${p.ensayo.competicion})${total ? ` \xB7 ${total.slice(2)}` : ""}.`] : p.brick ? [`Durante la sesi\xF3n: ${p.opcional ? "opcional, " : ""}unos ${p.objetivoTotalG ?? 0} g de hidratos (${p.brick.totalG} g entre la bici y la carrera, ${p.brick.minutosTotal} min seguidos).`, `Ejemplos: ${ejemplosDurante(p).join("; ")}.`] : [`Durante la sesi\xF3n: ${rango(p.ghHora, "g")} de hidratos por hora (${cuenta}).`, `Ejemplos: ${ejemplosDurante(p).join("; ")}.`];
     const litros = bebidaTotalL(p);
     if (p.bebidaLHora) partes.push(`Bebe ${rango(p.bebidaLHora, "L")} por hora${litros ? ` (${rango(litros, "L")} en total)` : ""}, seg\xFAn el calor y lo que sudes; con sales si pasa de 2 h o si hace calor.`);
     if (p.nota) partes.push(p.nota);

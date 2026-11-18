@@ -4676,7 +4676,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
               if (pruebaHoy.length || !Motor.ACTIVIDADES[s.actividad]) return '';
               const u = ultimasSesiones[s.i] ?? {};
               // #319 parte 5: si es un ensayo, la pauta del reparto del día (con el freno de la mitad del hidrato ya aplicado).
-              const pEnsayo = (reparto.tomaDurante?.pautas ?? []).find((pd) => pd.ensayo && pd.minutos === s.minutos && pd.deporte === Motor.deporteDeSesion(s.actividad, deporteElegido));
+              // #317: bici y carrera seguidas, también la del reparto (la toma va junta y la mayor parte en la bici).
+              const pEnsayo = (reparto.tomaDurante?.pautas ?? []).find((pd) => (pd.ensayo || pd.brick) && pd.minutos === s.minutos && pd.deporte === Motor.deporteDeSesion(s.actividad, deporteElegido));
               const t = pEnsayo ? Motor.textoDuranteEntreno(pEnsayo) : Motor.textoDuranteEntreno(Motor.duranteEntreno({ actividad: s.actividad, minutos: s.minutos, ...(u.dura || s.dura ? { dura: true } : {}), ...(u.tipo || u.nota || u.deporte ? { nombre: u.tipo || u.nota || u.deporte } : {}) }, deporteElegido, ensayoDelDia(d.dia)));
               return t ? `<p class="subt durante-sesion" data-dia="${d.dia}">🍌 ${escaparHtml(t)}</p>` : '';
             })()}
