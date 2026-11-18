@@ -3271,7 +3271,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   function sesionesMananaDelDia(dia, sesiones) {
     return franjaADia(DIAS[(DIAS.indexOf(dia) + 1) % DIAS.length], [], sesiones);
   }
-  // #319 parte 3: los partidos de fútbol con hora del día («Partido»). Un día con competición registrada sigue su pauta.
+  // #319 parte 3: los partidos con hora del día (fútbol «Partido» o pádel «Torneo»). Un día con competición registrada sigue su pauta.
   function partidosDelDia(dia, sesiones) {
     if (compPorDiaActual.get(dia)?.fase) return [];
     return sesiones.filter((s) => s.dia === dia && s.horaInicio !== undefined && Motor.esPartido(s)).map((s) => ({ inicio: s.horaInicio, fin: s.horaInicio + s.minutos / 60 }));
