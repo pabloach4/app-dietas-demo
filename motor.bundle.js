@@ -126,6 +126,7 @@ var Motor = (() => {
     TIPOS_SOLUCIONABLES: () => TIPOS_SOLUCIONABLES,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
     TOMA_AYUNAS: () => TOMA_AYUNAS,
+    TOMA_PRIMERA_HORA_NATACION: () => TOMA_PRIMERA_HORA_NATACION,
     TOMA_RAPIDA_EJEMPLO: () => TOMA_RAPIDA_EJEMPLO,
     TOPE_DEFICIT: () => TOPE_DEFICIT2,
     TOPE_KCAL_FRANJA: () => TOPE_KCAL_FRANJA,
@@ -255,6 +256,7 @@ var Motor = (() => {
     duranteEntreno: () => duranteEntreno,
     editarCompeticion: () => editarCompeticion,
     efectoAjustes: () => efectoAjustes,
+    ejemploTomaPrimeraHora: () => ejemploTomaPrimeraHora,
     ejemplosDurante: () => ejemplosDurante,
     elaboracionEjemplo: () => elaboracionEjemplo,
     encimasDe: () => encimasDe,
@@ -2092,6 +2094,16 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   var TOMA_RAPIDA_EJEMPLO = "un batido de fruta con bebida de soja, o pan con mermelada";
   var FUERZA_MIN_H = 0.75;
   var TOMA_AYUNAS = { ejemplo: "un pl\xE1tano", gramos: 118, kcal: Math.round(89 * 118 / 100), fuente: "USDA FoodData Central, FDC 173944 (Bananas, raw): 89 kcal/100 g; 1 mediano = 118 g" };
+  var TOMA_PRIMERA_HORA_NATACION = [
+    { ejemplo: "pan blanco con miel (40 g de pan y 15 g de miel)", kcal: Math.round((266 * 40 + 304 * 15) / 100) },
+    { ejemplo: "un vaso de zumo de naranja (200 ml)", kcal: Math.round(43 * 200 / 100) }
+  ];
+  function ejemploTomaPrimeraHora(natacion) {
+    const platano = `${TOMA_AYUNAS.ejemplo} (unas ${TOMA_AYUNAS.kcal} kcal)`;
+    if (!natacion) return platano;
+    const [pan, zumo] = TOMA_PRIMERA_HORA_NATACION;
+    return `${platano}, ${pan.ejemplo}, unas ${pan.kcal} kcal, o ${zumo.ejemplo}, unas ${zumo.kcal} kcal`;
+  }
   function hhmm(h) {
     const total = (Math.round(h * 60) % 1440 + 1440) % 1440;
     return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
@@ -2205,7 +2217,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const desayunoForzadoPost = primeraHora !== void 0 && horaDesayuno !== void 0 && horaDesayuno >= primeraHora.fin && horaDesayuno - primeraHora.fin <= p.ventana.POST_hasta_h_despues;
     if (primeraHoraSug) {
       avisos.push(
-        `Entrenas antes de las ${p.bordePrimeraHora.sesion_antes_de_h}:00 sin una comida principal cerca: si te sienta bien, toma algo ligero ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes, por ejemplo ${TOMA_AYUNAS.ejemplo} (unas ${TOMA_AYUNAS.kcal} kcal). Es solo una sugerencia: no se ha reservado nada en el plan. Si te lo tomas, m\xE1rcalo en Hoy (\xABMe la he tomado\xBB) y esas kcal se quitan del resto del d\xEDa; si no, el d\xEDa sigue igual.` + (desayunoForzadoPost ? " El desayuno cuenta como la comida de despu\xE9s del entreno, con m\xE1s hidrato." : "")
+        `Entrenas antes de las ${p.bordePrimeraHora.sesion_antes_de_h}:00 sin una comida principal cerca: si te sienta bien, toma algo ligero ${p.bordePrimeraHora.toma_pre_min_antes}-${p.bordePrimeraHora.toma_pre_max_antes} min antes, por ejemplo ${ejemploTomaPrimeraHora(e.natacion)}. Es solo una sugerencia: no se ha reservado nada en el plan. Si te lo tomas, m\xE1rcalo en Hoy (\xABMe la he tomado\xBB) y esas kcal se quitan del resto del d\xEDa; si no, el d\xEDa sigue igual.` + (desayunoForzadoPost ? " El desayuno cuenta como la comida de despu\xE9s del entreno, con m\xE1s hidrato." : "")
       );
     }
     const pPrincipalCap = p.proteinaPrincipal.g_kg_max * e.pesoRef;
@@ -2260,11 +2272,14 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const proteinaPorPrincipal = new Map(principales.map((f2) => [f2, pPrincipal]));
     const principalesFuerza = principales.filter((f2) => rolesFuerza.get(f2).size > 0);
     const objetivoFuerza = principalesFuerza.find((f2) => rolesFuerza.get(f2).has("POST")) ?? principalesFuerza.find((f2) => rolesFuerza.get(f2).has("PRE"));
-    if (objetivoFuerza && principales.length > 1 && pPrincipal < pPrincipalCap) {
+    const desayunoNatacion = e.natacion && desayunoForzadoPost && principales.includes("desayuno") ? "desayuno" : void 0;
+    const objetivoProteina = objetivoFuerza ?? desayunoNatacion;
+    if (objetivoProteina && principales.length > 1 && pPrincipal < pPrincipalCap) {
       const otras = principales.length - 1;
       const sube = Math.min(pPrincipalCap - pPrincipal, Math.max(0, (pPrincipal - pPrincipalMinAviso) * otras));
-      if (sube > 0) principales.forEach((f2) => proteinaPorPrincipal.set(f2, f2 === objetivoFuerza ? pPrincipal + sube : pPrincipal - sube / otras));
+      if (sube > 0) principales.forEach((f2) => proteinaPorPrincipal.set(f2, f2 === objetivoProteina ? pPrincipal + sube : pPrincipal - sube / otras));
     }
+    if (desayunoNatacion) avisos.push("Despu\xE9s de nadar: el desayuno, de los grandes y con prote\xEDna de verdad (huevos, pavo o queso fresco con pan; un yogur solo se queda corto), porque el agua fr\xEDa da m\xE1s hambre.");
     const pesoBase = (f2) => p.pesoBase[f2] ?? 0;
     const sumaPesoContextual = franjas.reduce((s, f2) => s + pesoBase(f2) * rolYFactorPorFranja.get(f2).factor, 0);
     const sumaPesoBase = franjas.reduce((s, f2) => s + pesoBase(f2), 0);
@@ -2347,7 +2362,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
           ...deFuerza.has(f2) ? { fuerza: true } : {},
           ...f2 === objetivoFuerza && proteinaPorPrincipal.get(f2) > pPrincipal ? { proteinaFuerza: true } : {},
           ...partidoPre.has(f2) ? { partidoPre: true } : {},
-          ...intermitentePre.has(f2) ? { intermitentePre: true } : {}
+          ...intermitentePre.has(f2) ? { intermitentePre: true } : {},
+          ...f2 === desayunoNatacion ? { desayunoGrande: true } : {}
         }
       };
     });
