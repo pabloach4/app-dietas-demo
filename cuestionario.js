@@ -4472,7 +4472,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const noMoverProteina = (dia, franja) => enCompeticion(dia) || Object.prototype.hasOwnProperty.call(sustituciones, `${dia}|${franja}`);
     // #326 parte 1: gimnasio («ganar músculo», «recomposición» o fuerza como deporte principal): proteína repartida, unos 0,4 g/kg en
     // cada principal y 4 tomas con 0,25 g/kg o 20 g, cambiando recetas como el cierre (sin inflar nada).
-    const esGimnasio = ['ganar_musculo', 'recomposicion'].includes(semana.perfil.objetivo) || deporteElegido === 'gimnasio';
+    const esGimnasio = Motor.usaRepartoProteinaGimnasio(semana.perfil.objetivo, deporteElegido, sesionesConActividad); // #331 parte 3: el opositor, si hay fuerza o CrossFit
     const repartoProteina = esGimnasio && semana.perfil.peso > 0 ? Motor.repartoProteinaGimnasio(semana.perfil.peso) : undefined;
     const cerrarProteina = (cuad, rc) => {
       const cp = Motor.cuadrarProteina(cuad.asignaciones, slotsSemana, rc, { proteinaDia, hidratoDia, alergiasPreferencias, noMover: noMoverProteina, ...(repartoProteina ? { repartoProteina } : {}) });

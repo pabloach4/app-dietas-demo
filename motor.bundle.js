@@ -486,6 +486,7 @@ var Motor = (() => {
     tituloCentro: () => tituloCentro,
     tomaDuranteDia: () => tomaDuranteDia,
     totalesPorDia: () => totalesPorDia,
+    usaRepartoProteinaGimnasio: () => usaRepartoProteinaGimnasio,
     usosVariedadSemana: () => usosVariedadSemana,
     validarCasilla: () => validarCasilla,
     validarCompeticion: () => validarCompeticion,
@@ -10166,6 +10167,11 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
   var UMBRAL_PROTEINA_DIA = 0.9;
   var MARGEN_KCAL_CAMBIO = 0.1;
   var PRINCIPALES2 = ["desayuno", "comida", "cena"];
+  function usaRepartoProteinaGimnasio(objetivo, deportePrincipal2, sesiones = []) {
+    if (objetivo === "ganar_musculo" || objetivo === "recomposicion" || deportePrincipal2 === "gimnasio") return true;
+    if (deportePrincipal2 !== "opositor") return false;
+    return sesiones.some((s) => /^(fuerza|crossfit|calistenia)/.test(s.actividad) && !/^ensayo/i.test(s.tipo ?? s.nota ?? ""));
+  }
   function repartoProteinaGimnasio(pesoKg) {
     return { principalG: Math.round(0.4 * pesoKg), tomaG: Math.round(Math.min(0.25 * pesoKg, 20)), tomas: 4 };
   }
