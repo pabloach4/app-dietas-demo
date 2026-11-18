@@ -1169,6 +1169,12 @@
             <small class="ayuda">Salen solas según tu cuerpo, de su convocatoria oficial. Las duraciones con «aprox.» las estima la app. Cambia lo que no cuadre con tu citación: la hora de citación y el final de la jornada son lo que más mueve las comidas.</small>
           </div>
           <div class="campo" id="campo-op-escrito" hidden><label for="op-fecha-escrito">Fecha del examen escrito</label><input id="op-fecha-escrito" type="date"></div>
+          <!-- #331 parte 5: el día del examen escrito. Con la hora y la duración, las comidas que caen en el examen se colocan alrededor. -->
+          <div id="op-examen" class="op-examen" hidden style="display:flex;flex-wrap:wrap;gap:0.3rem 0.8rem;align-items:center;margin:0 0 0.6rem">
+            <label>Empieza a las <input id="op-hora-escrito" type="time" style="font-size:16px"></label>
+            <label>Dura <input id="op-duracion-escrito" type="number" inputmode="numeric" min="15" max="480" step="5" style="width:4.2rem;font-size:16px"> min</label>
+            <small class="ayuda" style="flex-basis:100%">Opcional. Ese día: desayuno de los de siempre, nada nuevo y agua; si es largo y lo permiten, algo pequeño (fruta o frutos secos).</small>
+          </div>
           <!-- #331 parte 4: días de estudio. Las comidas se colocan alrededor de los bloques, a horas normales; la cafeína es solo información. -->
           <details id="op-estudio" class="plegable op-estudio" hidden style="margin:0 0 0.6rem">
             <summary style="font-size:0.95rem;font-weight:600">Tus días de estudio (opcional)</summary>
@@ -1710,12 +1716,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=9e542d6"></script>
-<script src="fuentes.js?v=9e542d6"></script>
-<script src="motor.bundle.js?v=9e542d6"></script>
-<script src="cuestionario.js?v=9e542d6"></script>
-<script src="nube.js?v=9e542d6"></script>
-<script src="pwa.js?v=9e542d6"></script>
+<script src="novedades.js?v=5dfb460"></script>
+<script src="fuentes.js?v=5dfb460"></script>
+<script src="motor.bundle.js?v=5dfb460"></script>
+<script src="cuestionario.js?v=5dfb460"></script>
+<script src="nube.js?v=5dfb460"></script>
+<script src="pwa.js?v=5dfb460"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

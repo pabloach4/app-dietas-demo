@@ -531,6 +531,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('campo-op-fisicas').hidden = !tipo || tipo === 'escrito';
     document.getElementById('op-jornada').hidden = !tipo || tipo === 'escrito';
     document.getElementById('campo-op-escrito').hidden = !tipo || tipo === 'fisicas';
+    document.getElementById('op-examen').hidden = !tipo || tipo === 'fisicas'; // #331 p5
     document.getElementById('op-estudio').hidden = !tipo || tipo === 'fisicas'; // #331 p4
   }
   document.getElementById('op-tipo').addEventListener('change', () => { verOposicion(); if (!leerPruebasOpo().length) ponerPruebasDelCuerpo(); });
@@ -632,6 +633,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     pruebasFisicas: leerPruebasOpo(), citacion: document.getElementById('op-citacion').value, finJornada: document.getElementById('op-fin').value,
     ...(document.getElementById('op-cafeina').checked ? { cafeina: 'si' } : {}),
     estudio: leerEstudioOpo(), // #331 p4
+    horaEscrito: document.getElementById('op-hora-escrito').value, duracionEscritoMin: document.getElementById('op-duracion-escrito').value, // #331 p5
   });
   function rellenarOposicion(op) {
     const o = op && typeof op === 'object' ? op : {};
@@ -640,6 +642,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     poner('op-orden', o.orden, ['fisicas_antes', 'fisicas_despues']);
     poner('op-fecha-fisicas', o.fechaFisicas);
     poner('op-fecha-escrito', o.fechaEscrito);
+    poner('op-hora-escrito', o.horaEscrito); // #331 p5
+    document.getElementById('op-duracion-escrito').value = Number.isInteger(o.duracionEscritoMin) ? String(o.duracionEscritoMin) : '';
     poner('op-cuerpo', o.cuerpo, Motor.CUERPOS_OPOSICION.map((c) => c.id));
     poner('op-citacion', o.citacion);
     poner('op-fin', o.finJornada);
@@ -653,6 +657,20 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (deporteElegido !== 'opositor') return null;
     const v = Motor.validarOposicion(leerOposicion());
     return v.ok ? Motor.faseOposicion(v.oposicion, Motor.fechaLocalISO(new Date())) : null;
+  }
+  /** #331 parte 5: el plan del día del examen escrito si `dia` es ese día (sin fecha de inicio del plan, la próxima fecha de ese día). */
+  function examenDelDia(dia) {
+    if (deporteElegido !== 'opositor') return undefined;
+    const v = Motor.validarOposicion(leerOposicion());
+    if (!v.ok) return undefined;
+    return Motor.planDiaExamen(v.oposicion, calInicio ? Motor.fechaDelDia(calInicio, dia) : fechaProximaDe(dia));
+  }
+  /** Los bloques del opositor ese día: el examen (si es el día del examen) o sus bloques de estudio. */
+  function bloquesOpoDelDia(dia) {
+    if (competicionDelDia(dia)) return { bloques: [], motivo: 'estudio' };
+    const ex = examenDelDia(dia);
+    if (ex) return { bloques: ex.bloque ? [ex.bloque] : [], motivo: 'examen', examen: ex };
+    return { bloques: Motor.bloquesDelDia(estudioOposicion(), dia), motivo: 'estudio' };
   }
   /** #331 parte 4: los días de estudio del opositor, o undefined. */
   function estudioOposicion() {
@@ -3237,9 +3255,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // #318: en los días sin competición, cada comida se queda en su hora normal (ventanas de PARAMETROS_REPARTO_CSV)
     const base = Motor.sacarTomasDeSesiones(franjasActuales ?? [], sesiones, { competicion: Boolean(competicionDelDia(dia)) });
     // #331 parte 4: en un día de estudio, las comidas principales que caen en un bloque se colocan alrededor, a horas normales.
-    const bloques = competicionDelDia(dia) ? [] : Motor.bloquesDelDia(estudioOposicion(), dia);
+    // #331 parte 5: el día del examen escrito, el examen es el bloque (y no cuentan los de estudio).
+    const { bloques, motivo } = bloquesOpoDelDia(dia);
     if (!bloques.length) return base;
-    const est = Motor.colocarComidasEstudio(base.franjas, bloques, sesiones);
+    const est = Motor.colocarComidasEstudio(base.franjas, bloques, sesiones, { motivo });
     return { ...base, franjas: est.franjas, movidas: base.movidas.concat(est.cambios.map((c) => ({ franja: c.franja, texto: c.texto }))) };
   }
   function franjasDelDia(dia) { return excepcionesHorario.get(dia) ?? horarioGeneralDelDia(dia).franjas; }
@@ -3464,9 +3483,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // #318 (c): un tentempié que cae en un entreno y no cabe a una hora normal ni antes ni después se quita y lo suyo pasa a la principal
   // más cercana. Si la toma durante la sesión ya lo sustituye (#313), manda esa. Lo fijado a mano para un día no pasa por aquí.
   // #331 parte 4: en un día de estudio, la comida de mediodía va sin excesos (como mucho el 35 % del día; lo de más, a la merienda).
+  // #331 parte 5: el día del examen escrito lleva sus avisos (desayuno de siempre, agua, algo pequeño si es largo) y, con hora, la comida
+  // sin excesos como en un día de estudio.
   function sinQuitadas(dia, reparto) {
-    const r = sinQuitadasBase(dia, reparto);
-    if (competicionDelDia(dia) || !Motor.bloquesDelDia(estudioOposicion(), dia).length) return r;
+    const base = sinQuitadasBase(dia, reparto);
+    const { bloques, examen } = bloquesOpoDelDia(dia);
+    const r = examen ? { ...base, avisos: base.avisos.concat(examen.avisos) } : base;
+    if (!bloques.length) return r;
     const c = Motor.comidaSinExcesos(r.franjas);
     return c.movidoKcal ? { ...r, franjas: c.franjas, avisos: r.avisos.concat(c.texto) } : r;
   }

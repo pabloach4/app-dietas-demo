@@ -54,6 +54,7 @@ var Motor = (() => {
     ENCIMAS_PAN: () => ENCIMAS_PAN,
     ENSAYO: () => ENSAYO,
     ETIQUETA_FASE: () => ETIQUETA_FASE,
+    EXAMEN_LARGO_MIN: () => EXAMEN_LARGO_MIN,
     FACTOR_LEGUMBRE_COCIDA: () => FACTOR_LEGUMBRE_COCIDA,
     FILTROS_PERSONAS: () => FILTROS_PERSONAS,
     FRACCION_CENA_LIGERA: () => FRACCION_CENA_LIGERA,
@@ -74,6 +75,7 @@ var Motor = (() => {
     MAX_BLOQUES_ESTUDIO: () => MAX_BLOQUES_ESTUDIO,
     MAX_COMIDAS_FUERA_SEMANA: () => MAX_COMIDAS_FUERA_SEMANA,
     MAX_DUELOS: () => MAX_DUELOS,
+    MAX_DURACION_ESCRITO: () => MAX_DURACION_ESCRITO,
     MAX_INSTANTANEA: () => MAX_INSTANTANEA,
     MAX_KG_PERDIDOS_CREIBLE: () => MAX_KG_PERDIDOS_CREIBLE,
     MAX_MOTIVO_CITA: () => MAX_MOTIVO_CITA,
@@ -89,6 +91,7 @@ var Motor = (() => {
     MENSAJE_LLANO_AVISOS: () => MENSAJE_LLANO_AVISOS,
     MENSAJE_SUELO: () => MENSAJE_SUELO,
     MIN_DUELOS: () => MIN_DUELOS,
+    MIN_DURACION_ESCRITO: () => MIN_DURACION_ESCRITO,
     MIN_GRASA_PLATO_CARGA: () => MIN_GRASA_PLATO_CARGA,
     NOMBRE_FRANJA_CENTRO: () => NOMBRE_FRANJA_CENTRO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
@@ -428,6 +431,7 @@ var Motor = (() => {
     pesoCocido: () => pesoCocido,
     pesoServido: () => pesoServido,
     planDiaCompeticion: () => planDiaCompeticion,
+    planDiaExamen: () => planDiaExamen,
     planDiaFisicas: () => planDiaFisicas,
     planPabloAplicable: () => planPabloAplicable,
     plegarLineaIcs: () => plegarLineaIcs,
@@ -11672,7 +11676,8 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     const m = Math.round(h * 60);
     return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
   };
-  function colocarComidasEstudio(franjas, bloques, sesiones = []) {
+  function colocarComidasEstudio(franjas, bloques, sesiones = [], opciones = {}) {
+    const examen = opciones.motivo === "examen";
     if (!bloques.length) return { franjas, cambios: [] };
     const principales = franjas.filter((f2) => PRINCIPALES3.includes(f2.franja) && typeof f2.hora === "number");
     const r = sacarTomasDeSesiones(principales, [...bloques, ...sesiones]);
@@ -11684,34 +11689,35 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       const b = bloqueDe(f2.hora);
       if (!b) continue;
       const nombre = NOMBRE3[f2.franja] ?? f2.franja;
-      if (n.hora !== f2.hora) cambios.push({ franja: f2.franja, de: f2.hora, a: n.hora, texto: `${nombre} pasa a las ${hhmm2(n.hora)}: a las ${hhmm2(f2.hora)} est\xE1s estudiando (de ${hhmm2(b.inicio)} a ${hhmm2(b.fin)}).` });
-      else cambios.push({ franja: f2.franja, de: f2.hora, texto: `${nombre} de las ${hhmm2(f2.hora)} cae en tu bloque de estudio (de ${hhmm2(b.inicio)} a ${hhmm2(b.fin)}) y no cabe antes ni despu\xE9s a una hora normal: haz una pausa para comer.` });
+      const tramo = `de ${hhmm2(b.inicio)} a ${hhmm2(b.fin)}`;
+      if (n.hora !== f2.hora) cambios.push({ franja: f2.franja, de: f2.hora, a: n.hora, texto: examen ? `${nombre} pasa a las ${hhmm2(n.hora)}: a las ${hhmm2(f2.hora)} est\xE1s en el examen (${tramo}).` : `${nombre} pasa a las ${hhmm2(n.hora)}: a las ${hhmm2(f2.hora)} est\xE1s estudiando (${tramo}).` });
+      else cambios.push({ franja: f2.franja, de: f2.hora, texto: examen ? `${nombre} de las ${hhmm2(f2.hora)} cae en el examen (${tramo}) y no cabe antes ni despu\xE9s a una hora normal: t\xF3mala antes de entrar o al salir, aunque sea fuera de su hora.` : `${nombre} de las ${hhmm2(f2.hora)} cae en tu bloque de estudio (${tramo}) y no cabe antes ni despu\xE9s a una hora normal: haz una pausa para comer.` });
     }
     return { franjas: franjas.map((f2) => nuevas.get(f2) ?? f2), cambios };
+  }
+  function esComidaDeEntreno(f2) {
+    const d = f2.detalle;
+    if (!d) return false;
+    return typeof d.factor === "number" && d.factor !== 1 || !!(d.fuerza || d.proteinaFuerza || d.recuperacionRapida || d.partidoPre || d.intermitentePre);
   }
   function comidaSinExcesos(franjas) {
     const comida = franjas.find((f2) => f2.franja === "comida");
     const hacia = ["merienda", "media_manana", "cena"].map((x) => franjas.find((f2) => f2.franja === x)).find(Boolean);
-    if (!comida || !hacia) return { franjas, movidoKcal: 0 };
+    if (!comida || !hacia || esComidaDeEntreno(comida)) return { franjas, movidoKcal: 0 };
     const total = franjas.reduce((s, f2) => s + f2.kcalAprox, 0);
     const sobra = comida.kcalAprox - TOPE_COMIDA_ESTUDIO * total;
     if (sobra < MINIMO_MOVER_KCAL) return { franjas, movidoKcal: 0 };
     const g = Math.round(Math.min(sobra / 4, comida.hidrato) * 10) / 10;
     if (4 * g < MINIMO_MOVER_KCAL) return { franjas, movidoKcal: 0 };
-    const kcal = (p, h, gr) => Math.round(4 * p + 4 * h + 9 * gr);
+    const r13 = (x) => Math.round(x * 10) / 10;
+    const mueve = Math.round(4 * g);
     const salida = franjas.map((f2) => {
-      if (f2 === comida) {
-        const h = Math.round((f2.hidrato - g) * 10) / 10;
-        return { ...f2, hidrato: h, kcalAprox: kcal(f2.proteina, h, f2.grasa) };
-      }
-      if (f2 === hacia) {
-        const h = Math.round((f2.hidrato + g) * 10) / 10;
-        return { ...f2, hidrato: h, kcalAprox: kcal(f2.proteina, h, f2.grasa) };
-      }
+      if (f2 === comida) return { ...f2, hidrato: r13(f2.hidrato - g), kcalAprox: f2.kcalAprox - mueve };
+      if (f2 === hacia) return { ...f2, hidrato: r13(f2.hidrato + g), kcalAprox: f2.kcalAprox + mueve };
       return f2;
     });
     const nombreHacia = { merienda: "la merienda", media_manana: "la media ma\xF1ana", cena: "la cena" }[hacia.franja] ?? hacia.franja;
-    const movidoKcal = Math.round(4 * g);
+    const movidoKcal = mueve;
     return {
       franjas: salida,
       movidoKcal,
@@ -11731,7 +11737,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (pasa) frases.push(menor ? `Pasa de los ${maxMg} mg al d\xEDa (3 mg por kg) que la EFSA considera seguros a tu edad: prueba a cambiar alguno por descafeinado o por agua.` : `Pasa de los ${CAFEINA_MAX_ADULTO_MG} mg al d\xEDa que la EFSA considera seguros para un adulto sano: prueba a cambiar alguno por descafeinado.`);
     else frases.push(`Est\xE1s dentro de los ${maxMg} mg al d\xEDa que la EFSA considera seguros${menor ? " a tu edad (3 mg por kg)" : " para un adulto sano"}.`);
     if (tarde) frases.push(`La \xFAltima es a las ${c2.horaUltima}: la cafe\xEDna puede quitarte sue\xF1o horas despu\xE9s. Mejor que la \xFAltima sea antes de las ${CAFEINA_ULTIMA_ANTES}, y luego descafeinado.`);
-    frases.push("Es informaci\xF3n sobre lo que ya tomas, no una recomendaci\xF3n de tomar cafe\xEDna. En el embarazo o la lactancia el l\xEDmite es m\xE1s bajo: h\xE1blalo con Pablo.");
+    frases.push("Es informaci\xF3n sobre lo que ya tomas, no una recomendaci\xF3n de tomar cafe\xEDna. En el embarazo o la lactancia la EFSA pone el l\xEDmite en 200 mg al d\xEDa: h\xE1blalo con Pablo.");
     return { mg, maxMg, pasa, tarde, frases };
   }
 
@@ -12086,6 +12092,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     if (!jornada.ok) return jornada;
     const estudio = conEscrito ? validarEstudio(d.estudio) : { ok: true };
     if (!estudio.ok) return estudio;
+    const examen = conEscrito ? validarExamen(d) : { ok: true, examen: {} };
+    if (!examen.ok) return examen;
     return {
       ok: true,
       oposicion: {
@@ -12095,9 +12103,22 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
         ...fechaEscrito ? { fechaEscrito } : {},
         ...cuerpo ? { cuerpo } : {},
         ...jornada.jornada,
-        ...estudio.estudio ? { estudio: estudio.estudio } : {}
+        ...estudio.estudio ? { estudio: estudio.estudio } : {},
+        ...examen.examen
       }
     };
+  }
+  var MIN_DURACION_ESCRITO = 15;
+  var MAX_DURACION_ESCRITO = 480;
+  function validarExamen(d) {
+    const hora3 = (d.horaEscrito ?? "").trim();
+    if (hora3 && !esHoraValida(hora3)) return { ok: false, error: "La hora del examen escrito no es v\xE1lida." };
+    const v = d.duracionEscritoMin;
+    const vacia = v === void 0 || v === null || typeof v === "string" && v.trim() === "";
+    const dur = vacia ? void 0 : Number(v);
+    if (dur !== void 0 && (!Number.isInteger(dur) || dur < MIN_DURACION_ESCRITO || dur > MAX_DURACION_ESCRITO)) return { ok: false, error: `La duraci\xF3n del examen escrito va de ${MIN_DURACION_ESCRITO} a ${MAX_DURACION_ESCRITO} minutos.` };
+    if (hora3 && dur !== void 0 && aMinutos2(hora3) + dur > 24 * 60) return { ok: false, error: "El examen escrito tiene que acabar el mismo d\xEDa: revisa la hora y la duraci\xF3n." };
+    return { ok: true, examen: { ...hora3 ? { horaEscrito: hora3 } : {}, ...dur !== void 0 ? { duracionEscritoMin: dur } : {} } };
   }
   function validarJornada(d) {
     const citacion = (d.citacion ?? "").trim();
@@ -12130,12 +12151,19 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     const x = valor;
     const texto3 = (v) => typeof v === "string" ? v : void 0;
     const datos = { tipo: texto3(x.tipo), orden: texto3(x.orden), fechaFisicas: texto3(x.fechaFisicas), fechaEscrito: texto3(x.fechaEscrito), cuerpo: texto3(x.cuerpo), citacion: texto3(x.citacion), finJornada: texto3(x.finJornada), cafeina: texto3(x.cafeina) };
-    const r = validarOposicion({ ...datos, pruebasFisicas: x.pruebasFisicas, estudio: x.estudio });
-    if (r.ok) return r.oposicion;
-    const sinEstudio = validarOposicion({ ...datos, pruebasFisicas: x.pruebasFisicas });
-    if (sinEstudio.ok) return sinEstudio.oposicion;
-    const sin = validarOposicion({ ...datos, citacion: void 0, finJornada: void 0 });
-    return sin.ok ? sin.oposicion : void 0;
+    const examen = { horaEscrito: texto3(x.horaEscrito), duracionEscritoMin: x.duracionEscritoMin };
+    const intentos = [
+      { ...datos, ...examen, pruebasFisicas: x.pruebasFisicas, estudio: x.estudio },
+      { ...datos, ...examen, pruebasFisicas: x.pruebasFisicas },
+      { ...datos, pruebasFisicas: x.pruebasFisicas, estudio: x.estudio },
+      { ...datos, pruebasFisicas: x.pruebasFisicas },
+      { ...datos, citacion: void 0, finJornada: void 0 }
+    ];
+    for (const d of intentos) {
+      const r = validarOposicion(d);
+      if (r.ok) return r.oposicion;
+    }
+    return void 0;
   }
   var DIAS_SIN_RECORTE_FISICAS = 21;
   var MS_DIA4 = 864e5;
@@ -12195,6 +12223,27 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     if (estado.sinRecorte && fase !== "final_fisicas" && fase !== "dia_fisicas") frases.push("Son las 3 \xFAltimas semanas antes de las f\xEDsicas: no se recortan kcal, para que llegues fuerte.");
     if (objetivoCambiado) frases.push("Por eso estos d\xEDas el plan es para mantener tu peso; perder grasa se retoma despu\xE9s de las pruebas.");
     return frases;
+  }
+  var EXAMEN_LARGO_MIN = 120;
+  var textoDuracion = (min) => {
+    const h = Math.floor(min / 60), m = min % 60;
+    if (!h) return `${m} min`;
+    return `${h} h${m ? ` ${m} min` : ""}`;
+  };
+  function planDiaExamen(op, fecha) {
+    if (op.tipo === "fisicas" || !op.fechaEscrito || op.fechaEscrito !== fecha) return void 0;
+    const dur = op.duracionEscritoMin;
+    const inicio = op.horaEscrito ? aMinutos2(op.horaEscrito) : void 0;
+    const bloque = inicio !== void 0 && dur !== void 0 ? { inicio: inicio / 60, fin: (inicio + dur) / 60 } : void 0;
+    const largo = dur !== void 0 && dur >= EXAMEN_LARGO_MIN;
+    const avisos = [
+      `D\xEDa del examen escrito${op.horaEscrito ? ` (a las ${op.horaEscrito})` : ""}: desayuno de los de siempre y nada nuevo en todo el d\xEDa (ni platos que no hayas probado ni suplementos).`,
+      "Lleva una botella de agua y bebe a sorbos."
+    ];
+    if (largo) avisos.push(`Es un examen largo (${textoDuracion(dur)}): si lo permiten, lleva algo peque\xF1o para la mitad, como una pieza de fruta o un pu\xF1ado de frutos secos.`);
+    else if (dur === void 0) avisos.push("Si el examen es largo (2 horas o m\xE1s) y lo permiten, lleva algo peque\xF1o: una pieza de fruta o un pu\xF1ado de frutos secos.");
+    avisos.push("Si tomas caf\xE9, el de siempre: hoy no es d\xEDa de tomar m\xE1s de lo habitual.");
+    return { ...bloque ? { bloque } : {}, largo, avisos };
   }
   var ID_COMPETICION_OPOSICION = "oposicion-fisicas";
   var HUECO_PROPUESTO_MIN = 30;
