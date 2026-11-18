@@ -313,6 +313,7 @@ var Motor = (() => {
     fraccionesDesdeCsv: () => fraccionesDesdeCsv,
     franjaComidaLibre: () => franjaComidaLibre,
     franjasConAjustes: () => franjasConAjustes,
+    frenarEnsayo: () => frenarEnsayo,
     frenoBajoPeso: () => frenoBajoPeso,
     frenoLogros: () => frenoLogros,
     fueraFijaDelDia: () => fueraFijaDelDia,
@@ -11382,7 +11383,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   var KCAL_G_HIDRATO = 4;
   function esPartido(s) {
     if (s.actividad === "futbol_partido") return true;
-    return s.actividad === "padel" && (s.nota ?? "").trim().toLowerCase() === "torneo";
+    return s.actividad === "padel" && (s.tipo ?? s.nota ?? "").trim().toLowerCase() === "torneo";
   }
   function aplicarVisperasPartido(plan, peso, diasPartido, saltar = /* @__PURE__ */ new Set()) {
     const partidos = new Set(diasPartido);
@@ -11680,7 +11681,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   }
 
   // src/motor/ensayo-carrera.ts
-  var ENSAYO = { semanas: 6, inicioGHora: 40, minPrueba: 90, minSesion: 90 };
+  var ENSAYO = { semanas: 6, inicioGHora: 40, minPrueba: 90, minSesion: 90, maxFraccionHidratoDia: 0.5 };
   var MS_DIA5 = 864e5;
   var diasEntre2 = (a2, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a2}T00:00:00Z`)) / MS_DIA5);
   var a5 = (x) => Math.round(x / 5) * 5;
@@ -11850,9 +11851,32 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   }
   var bebidaTotalL = (p) => p.bebidaLHora ? [r12(p.bebidaLHora[0] * p.minutos / 60), r12(p.bebidaLHora[1] * p.minutos / 60)] : void 0;
   var FRANJAS_SUSTITUIBLES = ["media_manana", "merienda"];
-  function tomaDuranteDia(sesiones, franjas, deportePrincipal2, ensayo) {
-    const pautas = sesiones.map((s) => duranteEntreno(s, deportePrincipal2, ensayo));
-    const cuentan = sesiones.map((s, i) => ({ s, p: pautas[i] })).filter(({ p }) => !p.opcional && (p.objetivoTotalG ?? 0) > 0);
+  var cuentaG = (p) => !p.opcional && (p.objetivoTotalG ?? 0) > 0 ? p.objetivoTotalG : 0;
+  function frenarEnsayo(sesiones, pautas, deportePrincipal2, hidratoDiaG) {
+    if (!(typeof hidratoDiaG === "number" && hidratoDiaG > 0) || !pautas.some((p) => p.ensayo)) return pautas;
+    let exceso = pautas.reduce((t2, p) => t2 + cuentaG(p), 0) - ENSAYO.maxFraccionHidratoDia * hidratoDiaG;
+    if (!(exceso > 0)) return pautas;
+    return pautas.map((p, i) => {
+      if (!p.ensayo || !(exceso > 0)) return p;
+      const horas = p.minutos / 60;
+      const normal3 = duranteEntreno(sesiones[i], deportePrincipal2);
+      const gNormal = normal3.opcional ? 0 : normal3.objetivoGHora ?? 0;
+      const g = Math.max(gNormal, Math.floor((p.ensayo.gHora - exceso / horas) / 5) * 5);
+      if (g >= p.ensayo.gHora) return p;
+      exceso -= r0(p.ensayo.gHora * horas) - r0(g * horas);
+      return {
+        ...p,
+        ghHora: [g, g],
+        objetivoGHora: g,
+        totalG: [r0(g * horas), r0(g * horas)],
+        objetivoTotalG: r0(g * horas),
+        ensayo: { ...p.ensayo, gHora: g, frenadoDesde: p.ensayo.frenadoDesde ?? p.ensayo.gHora }
+      };
+    });
+  }
+  function tomaDuranteDia(sesiones, franjas, deportePrincipal2, ensayo, hidratoDiaG) {
+    const pautas = frenarEnsayo(sesiones, sesiones.map((s) => duranteEntreno(s, deportePrincipal2, ensayo)), deportePrincipal2, hidratoDiaG);
+    const cuentan = sesiones.map((s, i) => ({ s, p: pautas[i] })).filter(({ p }) => cuentaG(p) > 0);
     const hidratoG = cuentan.reduce((t2, { p }) => t2 + (p.objetivoTotalG ?? 0), 0);
     const toma = { pautas, hidratoG, kcal: 4 * hidratoG };
     for (const { s } of cuentan) {
@@ -11905,7 +11929,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (!p.ghHora || p.objetivoGHora === void 0) return void 0;
     const total = p.objetivoTotalG !== void 0 ? `, unos ${p.objetivoTotalG} g en total` : "";
     const cuenta = p.opcional ? "opcional" : `tu plan cuenta ${p.objetivoGHora} g por hora${total}`;
-    const partes = p.ensayo ? [`Ensayo de carrera (semana ${p.ensayo.semana} de ${p.ensayo.semanas}): ${p.ensayo.gHora} g/h, con lo mismo que vas a tomar el d\xEDa de la prueba (${p.ensayo.productos}; ${p.ensayo.competicion})${total ? ` \xB7 ${total.slice(2)}` : ""}.`] : [`Durante la sesi\xF3n: ${rango(p.ghHora, "g")} de hidratos por hora (${cuenta}).`, `Ejemplos: ${ejemplosDurante(p).join("; ")}.`];
+    const partes = p.ensayo ? [`Ensayo de carrera (semana ${p.ensayo.semana} de ${p.ensayo.semanas}): ${p.ensayo.gHora} g/h${p.ensayo.frenadoDesde ? ` (tocaban ${p.ensayo.frenadoDesde} g/h, pero no caben: lo que tomas durante la sesi\xF3n no puede llevarse m\xE1s de la mitad de los hidratos del d\xEDa)` : ""}, con lo mismo que vas a tomar el d\xEDa de la prueba (${p.ensayo.productos}; ${p.ensayo.competicion})${total ? ` \xB7 ${total.slice(2)}` : ""}.`] : [`Durante la sesi\xF3n: ${rango(p.ghHora, "g")} de hidratos por hora (${cuenta}).`, `Ejemplos: ${ejemplosDurante(p).join("; ")}.`];
     const litros = bebidaTotalL(p);
     if (p.bebidaLHora) partes.push(`Bebe ${rango(p.bebidaLHora, "L")} por hora${litros ? ` (${rango(litros, "L")} en total)` : ""}, seg\xFAn el calor y lo que sudes; con sales si pasa de 2 h o si hace calor.`);
     if (p.nota) partes.push(p.nota);

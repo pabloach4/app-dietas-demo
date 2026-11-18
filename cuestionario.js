@@ -566,12 +566,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         sel.addEventListener('change', () => {
           if (sel.value === '') return;
           const t = tiposDelDeporte()[Number(sel.value)];
-          nuevaFilaSesion(d, '', MINUTOS_SESION_NUEVA, undefined, t ? t.actividad : undefined, t ? t.nombre : undefined, t ? t.nombre : '__otra__'); // #274
+          nuevaFilaSesion(d, '', MINUTOS_SESION_NUEVA, undefined, t ? t.actividad : undefined, undefined, t ? t.nombre : '__otra__'); // #274; el tipo va en su campo, la nota queda libre (#319)
         });
         sesionesDiv.appendChild(bloque);
       });
     }
-    sesiones.forEach((s) => nuevaFilaSesion(s.dia, s.deporte, s.minutos, s.horaInicio, s.actividad, s.nota, undefined, s.dura));
+    sesiones.forEach((s) => nuevaFilaSesion(s.dia, s.deporte, s.minutos, s.horaInicio, s.actividad, s.nota, s.tipo, s.dura));
     rotularDias();
   }
   function rotularDias() {
@@ -590,7 +590,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   }
   botonesDeporte.addEventListener('click', (ev) => { const b = ev.target.closest('.dp-btn'); if (b) elegirDeporte(b.dataset.deporte); });
 
-  /** `tipoInicial`: nombre del tipo recién elegido en el día, o '__otra__' («Otra actividad…»). */
+  /** `tipoInicial`: nombre del tipo (recién elegido en el día o guardado en `tipo`), o '__otra__' («Otra actividad…»). Lo guardado antes
+   *  del 18/11 no trae `tipo`: una nota que es exactamente el nombre de un tipo se sigue leyendo como ese tipo. */
   function nuevaFilaSesion(dia, deporte, minutos, horaInicio, actividad, nota, tipoInicial, dura) {
     const fila = document.createElement('div');
     fila.className = 'sesion sesion-card';
@@ -623,7 +624,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const selDeporte = fila.querySelector('.s-deporte');
     const selCompleta = fila.querySelector('.s-actividad-completa');
     if (bloqueDia) {
-      // Por días la actividad va siempre explícita; el tipo elegido («Series») se escribe como nota y se ve en el plan.
+      // Por días la actividad va siempre explícita. El tipo elegido («Series», «Torneo») va en su propio campo (`data-tipo` → `tipo`) y la
+      // nota de la persona no se toca (#319, 18/11: antes el tipo se escribía en la nota y, si ya había una, el tipo se perdía).
       selDeporte.value = '__otro__';
       if (actividadFila) selCompleta.value = actividadFila;
       const selTipo = fila.querySelector('.s-tipo');
@@ -632,13 +634,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const tipo = tipoInicial === '__otra__' ? undefined : Motor.tipoDeSesion(deporteElegido, actividadFila, tipoInicial || nota);
       selTipo.value = tipo ? String(tiposDelDeporte().indexOf(tipo)) : '__otra__';
       selCompleta.hidden = !!tipo;
-      let nombreTipo = tipo ? tipo.nombre : '';
+      fila.dataset.tipo = tipo ? tipo.nombre : '';
       selTipo.addEventListener('change', () => {
         const t = tiposDelDeporte()[Number(selTipo.value)];
         selCompleta.hidden = !!t;
         if (t) selCompleta.value = t.actividad;
-        if (notaEl.value.trim() === '' || notaEl.value.trim() === nombreTipo) notaEl.value = t ? t.nombre : '';
-        nombreTipo = t ? t.nombre : '';
+        // Lo guardado antes con el tipo como nota: esa nota era el tipo, no algo que escribiera la persona; al cambiar de tipo se quita.
+        if (fila.dataset.tipo && notaEl.value.trim() === fila.dataset.tipo) notaEl.value = '';
+        fila.dataset.tipo = t ? t.nombre : '';
       });
     } else if (actividad) {
       selDeporte.value = '__otro__';
@@ -664,6 +667,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         horaInicio: textoAHora(fila.querySelector('.s-hora').value),
         nota: Motor.limpiarNotaSesion(fila.querySelector('.s-nota').value), // se conserva y se muestra; no entra en el cálculo (#69)
         ...(fila.querySelector('.s-dura').checked ? { dura: true } : {}), // #300: dura y corta cuenta como día de entreno normal
+        ...(fila.dataset.tipo ? { tipo: fila.dataset.tipo } : {}), // #319: el tipo elegido, aparte de la nota
       };
       return deporteSel === '__otro__'
         ? { ...base, deporte: fila.querySelector('.s-actividad-completa').selectedOptions[0].textContent, actividad: fila.querySelector('.s-actividad-completa').value }
@@ -2281,7 +2285,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const d = planActual.dias.find((x) => x.dia === dia);
     const { reparto } = vistaSemana.repartosPorDia.find((r) => r.dia.dia === dia);
     // La hora de inicio no viaja en el perfil del motor: está en ultimasSesiones, en el mismo orden.
-    const sesiones = sesionesSemana.map((s, i) => ({ ...s, horaInicio: (ultimasSesiones[i] ?? {}).horaInicio, nota: (ultimasSesiones[i] ?? {}).nota, deporte: (ultimasSesiones[i] ?? {}).deporte })).filter((s) => s.dia === dia);
+    const sesiones = sesionesSemana.map((s, i) => ({ ...s, horaInicio: (ultimasSesiones[i] ?? {}).horaInicio, nota: (ultimasSesiones[i] ?? {}).nota, tipo: (ultimasSesiones[i] ?? {}).tipo, deporte: (ultimasSesiones[i] ?? {}).deporte })).filter((s) => s.dia === dia);
     let entrenosHtml = sesiones.length
       ? sesiones.map((s) => `<li class="fila entreno"><span class="fila-icono" aria-hidden="true">${iconoActividad(s.actividad)}</span><div class="fila-texto"><strong>${escaparHtml(nombreSesion(s))}${notaSesionHtml(s)}</strong><span class="fila-sub">${s.minutos}'${s.horaInicio !== undefined ? ` · ${horaDecimalATexto(s.horaInicio)}` : ' · hora sin indicar'}</span></div></li>`).join('')
       : '<li>Día sin entreno: hoy los músculos se recuperan solos, tú solo tienes que comer bien.</li>';
@@ -2539,7 +2543,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   }
 
   // Nota libre de la sesión (#69), escapada, para añadir tras el nombre de la actividad.
-  const notaSesionHtml = (s) => (s.nota ? ` · «${escaparHtml(s.nota)}»` : '');
+  // #319: el tipo elegido y la nota de la persona, cada uno con su «»; una nota antigua que repite el tipo sale una vez.
+  const notaSesionHtml = (s) => [s.tipo, s.nota !== s.tipo ? s.nota : undefined].filter(Boolean).map((x) => ` · «${escaparHtml(x)}»`).join('');
 
   function escaparHtml(t) {
     const tabla = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -2665,7 +2670,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const sesiones = (semanaActual.perfil.sesiones ?? []).map((s, i) => {
       const hora = (ultimasSesiones[i] ?? {}).horaInicio;
       return {
-        dia: s.dia, minutos: s.minutos, nota: (ultimasSesiones[i] ?? {}).nota, hora: hora === undefined ? undefined : horaDecimalATexto(hora),
+        dia: s.dia, minutos: s.minutos, nota: [(ultimasSesiones[i] ?? {}).tipo, (ultimasSesiones[i] ?? {}).nota].filter((x, k, xs) => x && xs.indexOf(x) === k).join(' · ') || undefined, hora: hora === undefined ? undefined : horaDecimalATexto(hora),
         nombre: (Motor.ACTIVIDADES[s.actividad] && Motor.ACTIVIDADES[s.actividad].nombre) || s.actividad,
       };
     });
@@ -2967,7 +2972,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       ...(document.getElementById('toma-creatina').checked ? { creatina: true } : {}), // #326 parte 3
       deportePrincipal: deporteElegido,
       ...(deporteElegido === 'opositor' ? { oposicion: leerOposicion() } : {}), // #331 parte 1
-      sesiones: leerSesiones().map(({ dia, deporte, minutos, horaInicio, actividad, nota, dura }) => ({ dia, deporte, minutos, horaInicio, actividad, nota, ...(dura ? { dura } : {}) })),
+      sesiones: leerSesiones().map(({ dia, deporte, minutos, horaInicio, actividad, nota, dura, tipo }) => ({ dia, deporte, minutos, horaInicio, actividad, nota, ...(dura ? { dura } : {}), ...(tipo ? { tipo } : {}) })),
       franjas: Object.fromEntries(Array.from(franjasDiv.children).map((fila) => [
         fila.dataset.franja, { activa: fila.querySelector('.f-activa').checked, hora: fila.querySelector('.f-hora').value },
       ])),
@@ -3308,11 +3313,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // (se mira el horario antes de sacar las tomas de las sesiones). El resto de comidas baja sus hidratos; la competición no pasa por aquí.
   function conTomaDurante(dia, reparto, sesionesConActividad) {
     const ses = sesionesConActividad.filter((s) => s.dia === dia && s.minutos > 0 && s.actividad && Motor.ACTIVIDADES[s.actividad]).map((s) => ({
-      actividad: s.actividad, minutos: s.minutos, ...(s.dura ? { dura: true } : {}), ...(s.nota || s.deporte ? { nombre: s.nota || s.deporte } : {}),
+      actividad: s.actividad, minutos: s.minutos, ...(s.dura ? { dura: true } : {}), ...(s.tipo || s.nota || s.deporte ? { nombre: s.tipo || s.nota || s.deporte } : {}),
       ...(Number.isFinite(s.horaInicio) ? { horaInicio: s.horaInicio } : {}),
     }));
     if (!ses.length) return sinQuitadas(dia, reparto);
-    const toma = Motor.tomaDuranteDia(ses, excepcionesHorario.get(dia) ?? franjasActuales ?? [], deporteElegido, ensayoDelDia(dia));
+    const toma = Motor.tomaDuranteDia(ses, excepcionesHorario.get(dia) ?? franjasActuales ?? [], deporteElegido, ensayoDelDia(dia), reparto.franjas.reduce((t, f) => t + f.hidrato, 0)); // #319 p5: freno con el hidrato del día
     return sinQuitadas(dia, { ...reparto, franjas: Motor.repartoConTomaDurante(reparto.franjas, toma), tomaDurante: toma });
   }
   // #319 parte 5: ensayo de carrera en las 6 semanas antes de una prueba de más de 90 min (hace falta la fecha de inicio del plan).
@@ -3741,7 +3746,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   }
 
   function entrenosDelDia(dia) {
-    return (semanaActual.perfil.sesiones ?? []).map((s, i) => ({ ...s, horaInicio: (ultimasSesiones[i] ?? {}).horaInicio, nota: (ultimasSesiones[i] ?? {}).nota, deporte: (ultimasSesiones[i] ?? {}).deporte })).filter((s) => s.dia === dia);
+    return (semanaActual.perfil.sesiones ?? []).map((s, i) => ({ ...s, horaInicio: (ultimasSesiones[i] ?? {}).horaInicio, nota: (ultimasSesiones[i] ?? {}).nota, tipo: (ultimasSesiones[i] ?? {}).tipo, deporte: (ultimasSesiones[i] ?? {}).deporte })).filter((s) => s.dia === dia);
   }
   // #260 (punto 32): la sesión con las palabras de la persona («Pádel», «Cardio»), no con el nombre técnico de la tabla de actividades.
   function nombreSesion(s) {
@@ -4658,7 +4663,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         <div class="dia-sesiones">
           ${sesionesDelDia.map((s) => `
             <div class="sesion-mover">
-              <span>${escaparHtml(nombreSesion({ ...s, deporte: (ultimasSesiones[s.i] ?? {}).deporte }))} · ${s.minutos}'${notaSesionHtml({ nota: (ultimasSesiones[s.i] ?? {}).nota })}${pruebaHoy.length ? ' <small class="sesion-no-cuenta">(ese día no cuenta: compites)</small>' : ''}</span>
+              <span>${escaparHtml(nombreSesion({ ...s, deporte: (ultimasSesiones[s.i] ?? {}).deporte }))} · ${s.minutos}'${notaSesionHtml({ nota: (ultimasSesiones[s.i] ?? {}).nota, tipo: (ultimasSesiones[s.i] ?? {}).tipo })}${pruebaHoy.length ? ' <small class="sesion-no-cuenta">(ese día no cuenta: compites)</small>' : ''}</span>
               <label>mover a
                 <select class="mover-select" data-indice="${s.i}">
                   ${DIAS.map((dd) => `<option value="${dd}" ${dd === d.dia ? 'selected' : ''}>${dd}</option>`).join('')}
@@ -4668,7 +4673,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             ${(() => { // #313 parte 3: qué tomar durante la sesión (solo si lleva hidratos; el día de la prueba manda su propio combustible)
               if (pruebaHoy.length || !Motor.ACTIVIDADES[s.actividad]) return '';
               const u = ultimasSesiones[s.i] ?? {};
-              const t = Motor.textoDuranteEntreno(Motor.duranteEntreno({ actividad: s.actividad, minutos: s.minutos, ...(u.dura || s.dura ? { dura: true } : {}), ...(u.nota || u.deporte ? { nombre: u.nota || u.deporte } : {}) }, deporteElegido, ensayoDelDia(d.dia)));
+              // #319 parte 5: si es un ensayo, la pauta del reparto del día (con el freno de la mitad del hidrato ya aplicado).
+              const pEnsayo = (reparto.tomaDurante?.pautas ?? []).find((pd) => pd.ensayo && pd.minutos === s.minutos && pd.deporte === Motor.deporteDeSesion(s.actividad, deporteElegido));
+              const t = pEnsayo ? Motor.textoDuranteEntreno(pEnsayo) : Motor.textoDuranteEntreno(Motor.duranteEntreno({ actividad: s.actividad, minutos: s.minutos, ...(u.dura || s.dura ? { dura: true } : {}), ...(u.tipo || u.nota || u.deporte ? { nombre: u.tipo || u.nota || u.deporte } : {}) }, deporteElegido, ensayoDelDia(d.dia)));
               return t ? `<p class="subt durante-sesion" data-dia="${d.dia}">🍌 ${escaparHtml(t)}</p>` : '';
             })()}
           `).join('')}
