@@ -634,6 +634,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     ...(document.getElementById('op-cafeina').checked ? { cafeina: 'si' } : {}),
     estudio: leerEstudioOpo(), // #331 p4
     horaEscrito: document.getElementById('op-hora-escrito').value, duracionEscritoMin: document.getElementById('op-duracion-escrito').value, // #331 p5
+    fechaReconocimiento: document.getElementById('op-fecha-reconocimiento').value, // #331 p6
+    ...(document.getElementById('op-barato').checked ? { barato: 'si' } : {}), ...(document.getElementById('op-taper').checked ? { taper: 'si' } : {}),
   });
   function rellenarOposicion(op) {
     const o = op && typeof op === 'object' ? op : {};
@@ -648,6 +650,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     poner('op-citacion', o.citacion);
     poner('op-fin', o.finJornada);
     document.getElementById('op-cafeina').checked = o.cafeina === 'si';
+    poner('op-fecha-reconocimiento', o.fechaReconocimiento); // #331 p6
+    document.getElementById('op-barato').checked = o.barato === 'si';
+    document.getElementById('op-taper').checked = o.taper === 'si';
     pintarPruebasOpo(o.pruebasFisicas);
     pintarEstudioOpo(o.estudio); // #331 p4
     verOposicion();
@@ -4452,6 +4457,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // #332 p1 (revisión): sin calendario, la temporada va por el mes de hoy (no se enseña ninguna fecha; el motor no lee el reloj, recibe la fecha).
     // Las pruebas de navegador fijan ese día en window.__FECHA_TEMPORADA_PRUEBA para no depender del mes en que se ejecutan.
     const hoyTemporada = typeof window.__FECHA_TEMPORADA_PRUEBA === 'string' ? window.__FECHA_TEMPORADA_PRUEBA : Motor.fechaLocalISO(new Date());
+    // #331 parte 6: modo barato del opositor; en comida y cena se prefieren huevos, legumbres, atún y pollo (solo desempata).
+    const baratoOpo = (() => { if (deporteElegido !== 'opositor') return {}; const v = Motor.validarOposicion(leerOposicion()); return v.ok && v.oposicion.barato ? { barato: true } : {}; })();
     const temporadaDia = (dia) => { const t = Motor.preferenciaTemporada(calInicio && Motor.esLunes(calInicio) ? Motor.fechaDelDia(calInicio, dia) : hoyTemporada); return t ? { temporada: t } : {}; };
     const filasCSV = []; // issue #31: una fila por día y franja, para el CSV descargable
 
@@ -4478,7 +4485,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       reparto.avisos.forEach((a) => avisosReparto.push(`${d.dia}: ${a}`));
       if (!excepcionesHorario.has(d.dia)) horarioGeneralDelDia(d.dia).movidas.filter((m) => m.franja !== reparto.tomaDurante?.sustituye).forEach((m) => avisosReparto.push(`${d.dia}: ${m.texto}`)); // #313: la sustituida no se mueve
       reparto.franjas.forEach((f) => {
-        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...temporadaDia(d.dia) /* #332 p1 */, ...(compPorDia.get(d.dia)?.racionesCarga ? { racionesCarga: true } : {}) /* #301 */, ...(compPorDia.get(d.dia)?.visperaMacros || f.detalle?.recuperacionRapida ? { hidratoFacil: true } : {}) /* #321 parte 2; #319 parte 2: la comida de recuperación, con base de hidrato */, ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : f.detalle?.desayunoGrande ? Math.min(2, nivelesVolumen()[Motor.grupoDeFranja(f.franja)] + 1) /* #319 parte 6: el desayuno del nadador, de los grandes */ : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()), ...((() => { if (f.franja !== 'desayuno' || compPorDia.get(d.dia)?.fase !== 'competicion') return {}; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)); return hf === undefined || salida === undefined || hf < salida ? { desayunoCarrera: 'estricto' } : {}; })()) /* #285 punto 11: el desayuno de la carrera, con la regla de Pablo */, ...(f.detalle?.partidoPre || f.detalle?.intermitentePre ? { maxGrasaG: Math.max(15, f.grasa) } : {}) /* #319 parte 4, revisión: la ración servida, como mucho 15 g de grasa */, ...(f.detalle?.partidoPre ? { hidratoFacil: true, maxFibraG: Motor.limiteFibraG('competicion', f.franja) } : visperasPartido.has(d.dia) && f.franja === 'cena' ? { hidratoFacil: true, maxFibraG: Motor.limiteFibraG('vispera', 'cena') } : f.detalle?.intermitentePre ? { maxFibraG: Motor.limiteFibraG('vispera', f.detalle.proteinaTipo === 'principal' ? 'comida' : f.franja), antesSesionIntensa: true } : {}) /* #319 parte 3: antes del partido y la cena de la víspera, poca fibra; #319 parte 4: antes de una sesión intermitente, la fibra de la víspera */ });
+        slotsSemana.push({ dia: d.dia, franja: f.franja, kcalObjetivo: f.kcalAprox, proteinaObjetivoG: f.proteina, cargaAlta: d.tipo === 'carga_alta', ...temporadaDia(d.dia) /* #332 p1 */, ...baratoOpo /* #331 p6 */, ...(compPorDia.get(d.dia)?.racionesCarga ? { racionesCarga: true } : {}) /* #301 */, ...(compPorDia.get(d.dia)?.visperaMacros || f.detalle?.recuperacionRapida ? { hidratoFacil: true } : {}) /* #321 parte 2; #319 parte 2: la comida de recuperación, con base de hidrato */, ...((() => { const n = f.franja === 'cena' && reparto.cenaTrasEntreno ? Motor.nivelVolumenCena(nivelesVolumen().principal, reparto.cenaTrasEntreno.hambre) : f.detalle?.desayunoGrande ? Math.min(2, nivelesVolumen()[Motor.grupoDeFranja(f.franja)] + 1) /* #319 parte 6: el desayuno del nadador, de los grandes */ : nivelesVolumen()[Motor.grupoDeFranja(f.franja)]; return n !== 0 ? { bandaPeso: Motor.bandaPesoServido(f.franja, n) } : {}; })()) /* #265 F: «con mucha», la cena tras el entreno de noche, un nivel más */, ...(compPorDia.get(d.dia)?.sinFibraAlta ? { sinFibraAlta: true } : {}), ...((() => { const cd = compPorDia.get(d.dia); const fase = cd && (cd.fase === 'competicion' || (cd.fase !== 'recuperacion' && cd.sinFibraAlta)) ? (cd.fase === 'competicion' ? 'competicion' : 'vispera') : undefined; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const lim = Motor.limiteFibraG(fase, f.franja, hf, fase === 'competicion' ? Motor.finUltimaPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)) : undefined); return lim !== undefined ? { maxFibraG: lim } : {}; })()), ...((() => { if (f.franja !== 'desayuno' || compPorDia.get(d.dia)?.fase !== 'competicion') return {}; const hf = (franjasDelDia(d.dia).find((x) => x.franja === f.franja) || {}).hora; const salida = Motor.inicioPrimeraPruebaH(competiciones, Motor.fechaDelDia(calInicio, d.dia)); return hf === undefined || salida === undefined || hf < salida ? { desayunoCarrera: 'estricto' } : {}; })()) /* #285 punto 11: el desayuno de la carrera, con la regla de Pablo */, ...(f.detalle?.partidoPre || f.detalle?.intermitentePre ? { maxGrasaG: Math.max(15, f.grasa) } : {}) /* #319 parte 4, revisión: la ración servida, como mucho 15 g de grasa */, ...(f.detalle?.partidoPre ? { hidratoFacil: true, maxFibraG: Motor.limiteFibraG('competicion', f.franja) } : visperasPartido.has(d.dia) && f.franja === 'cena' ? { hidratoFacil: true, maxFibraG: Motor.limiteFibraG('vispera', 'cena') } : f.detalle?.intermitentePre ? { maxFibraG: Motor.limiteFibraG('vispera', f.detalle.proteinaTipo === 'principal' ? 'comida' : f.franja), antesSesionIntensa: true } : {}) /* #319 parte 3: antes del partido y la cena de la víspera, poca fibra; #319 parte 4: antes de una sesión intermitente, la fibra de la víspera */ });
         filasCSV.push({
           dia: d.dia, tipo: d.tipo, franja: f.franja,
           kcal: f.kcalAprox, proteina_g: f.proteina, grasa_g: f.grasa, hidrato_g: f.hidrato,
@@ -4721,6 +4728,15 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       caja.hidden = !frases;
       caja.innerHTML = frases ? `<p style="margin:0.4rem 0">📚 ${frases.map(escaparHtml).join(' ')}</p>` : '';
       if (frases && caf && caf.frases.length) caja.innerHTML += `<p class="op-cafeina-info" style="margin:0.4rem 0">☕ ${caf.frases.map(escaparHtml).join(' ')}</p>`;
+      // #331 parte 6: ensayo del día de pruebas, aviso del reconocimiento médico, modo barato y táper del domingo (solo información).
+      const vOp = frases ? Motor.validarOposicion(leerOposicion()) : null;
+      if (vOp && vOp.ok) {
+        const hoyOp = Motor.fechaLocalISO(new Date());
+        const porIdOp = new Map(RECETAS_EJEMPLO.map((r) => [r.id, r]));
+        const comidasOp = asignacionSemana.asignaciones.filter((a) => a.franja === 'comida').map((a) => ({ dia: a.dia, nombre: (Motor.recetaDeId(porIdOp, a.receta) || { nombre: a.receta }).nombre }));
+        const ideas = [Motor.ensayoDiaPruebas(vOp.oposicion, hoyOp), Motor.avisoReconocimiento(vOp.oposicion, hoyOp), ...Motor.ideasCocinaOposicion(vOp.oposicion, comidasOp)].filter(Boolean);
+        if (ideas.length) caja.innerHTML += `<ul class="resumen-lista op-ideas" style="margin:0.4rem 0">${ideas.map((t) => `<li>${escaparHtml(t)}</li>`).join('')}</ul>`;
+      }
     }
     // Issue #117: qué ha pasado con cada alimento de «sí o sí»: entra en la semana (se marca en la comida) o se explica por qué no.
     {

@@ -42,6 +42,7 @@ var Motor = (() => {
     DEPORTES_PRINCIPALES: () => DEPORTES_PRINCIPALES,
     DIAS: () => DIAS,
     DIAS_AVISO_FIN: () => DIAS_AVISO_FIN,
+    DIAS_AVISO_RECONOCIMIENTO: () => DIAS_AVISO_RECONOCIMIENTO,
     DIAS_CITA: () => DIAS_CITA,
     DIAS_ESTUDIO_PROPUESTOS: () => DIAS_ESTUDIO_PROPUESTOS,
     DIAS_SIN_RECORTE_FISICAS: () => DIAS_SIN_RECORTE_FISICAS,
@@ -53,6 +54,7 @@ var Motor = (() => {
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
     ENCIMAS_PAN: () => ENCIMAS_PAN,
     ENSAYO: () => ENSAYO,
+    ENSAYO_FISICAS_DIAS: () => ENSAYO_FISICAS_DIAS,
     ETIQUETA_FASE: () => ETIQUETA_FASE,
     EXAMEN_LARGO_MIN: () => EXAMEN_LARGO_MIN,
     FACTOR_LEGUMBRE_COCIDA: () => FACTOR_LEGUMBRE_COCIDA,
@@ -203,6 +205,7 @@ var Motor = (() => {
     avisoDietaTerminada: () => avisoDietaTerminada,
     avisoFinDeLaDieta: () => avisoFinDeLaDieta,
     avisoMoluscoSuelto: () => avisoMoluscoSuelto,
+    avisoReconocimiento: () => avisoReconocimiento,
     avisoSoloPescado: () => avisoSoloPescado,
     avisosParaPersona: () => avisosParaPersona,
     avisosVolumen: () => avisosVolumen,
@@ -289,6 +292,7 @@ var Motor = (() => {
     encimasDe: () => encimasDe,
     enlaceCorreoPablo: () => enlaceCorreoPablo,
     ensayoCarrera: () => ensayoCarrera,
+    ensayoDiaPruebas: () => ensayoDiaPruebas,
     entrenoNocheAntesDeCena: () => entrenoNocheAntesDeCena,
     esBaseDeCarga: () => esBaseDeCarga,
     esDesayunoDePan: () => esDesayunoDePan,
@@ -367,6 +371,7 @@ var Motor = (() => {
     horaDeGuardado: () => horaDeGuardado,
     idAlerta: () => idAlerta,
     idCuerpoOposicion: () => idCuerpoOposicion,
+    ideasCocinaOposicion: () => ideasCocinaOposicion,
     infoCafeina: () => infoCafeina,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
     ingredientesPrincipales: () => ingredientesPrincipales,
@@ -3527,6 +3532,11 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     }
     return b;
   }
+  var BARATAS = /* @__PURE__ */ new Set(["huevo", "legumbre", "atun", "pollo"]);
+  function proteinaBarata(r, porId) {
+    for (const g of gruposProteina(r, porId)) if (!BARATAS.has(g)) return false;
+    return true;
+  }
 
   // src/motor/desayuno-preferido.ts
   var ENCIMAS_PAN = [
@@ -4036,6 +4046,7 @@ R348,todo,El mel\xF3n va de acompa\xF1amiento: el bocadillo de pavo vale todo el
   var PESO_GUSTO = 40;
   var PESO_HIDRATO_FACIL = 30;
   var PESO_TEMPORADA = 8;
+  var PESO_BARATO = 8;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
@@ -4403,7 +4414,7 @@ R348,todo,El mel\xF3n va de acompa\xF1amiento: el bocadillo de pavo vale todo el
             continue;
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
-          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && esFranjaConLimiteVariedad(slot.franja) && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) - PESO_GUSTO / 4 * gusto(r);
+          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && esFranjaConLimiteVariedad(slot.franja) && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) + (slot.barato && esFranjaConLimiteVariedad(slot.franja) && !proteinaBarata(r, catalogoPorId) ? PESO_BARATO : 0) - PESO_GUSTO / 4 * gusto(r);
           if (!mejor || clave3(desviacion, dist, falta) < clave3(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
@@ -12094,6 +12105,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     if (!estudio.ok) return estudio;
     const examen = conEscrito ? validarExamen(d) : { ok: true, examen: {} };
     if (!examen.ok) return examen;
+    const fechaReconocimiento = (d.fechaReconocimiento ?? "").trim();
+    if (fechaReconocimiento && !esFechaValida(fechaReconocimiento)) return { ok: false, error: "La fecha del reconocimiento m\xE9dico no es v\xE1lida." };
     return {
       ok: true,
       oposicion: {
@@ -12104,7 +12117,10 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
         ...cuerpo ? { cuerpo } : {},
         ...jornada.jornada,
         ...estudio.estudio ? { estudio: estudio.estudio } : {},
-        ...examen.examen
+        ...examen.examen,
+        ...fechaReconocimiento ? { fechaReconocimiento } : {},
+        ...d.barato === "si" ? { barato: "si" } : {},
+        ...d.taper === "si" ? { taper: "si" } : {}
       }
     };
   }
@@ -12150,7 +12166,20 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     if (!valor || typeof valor !== "object") return void 0;
     const x = valor;
     const texto3 = (v) => typeof v === "string" ? v : void 0;
-    const datos = { tipo: texto3(x.tipo), orden: texto3(x.orden), fechaFisicas: texto3(x.fechaFisicas), fechaEscrito: texto3(x.fechaEscrito), cuerpo: texto3(x.cuerpo), citacion: texto3(x.citacion), finJornada: texto3(x.finJornada), cafeina: texto3(x.cafeina) };
+    const datos = {
+      tipo: texto3(x.tipo),
+      orden: texto3(x.orden),
+      fechaFisicas: texto3(x.fechaFisicas),
+      fechaEscrito: texto3(x.fechaEscrito),
+      cuerpo: texto3(x.cuerpo),
+      citacion: texto3(x.citacion),
+      finJornada: texto3(x.finJornada),
+      cafeina: texto3(x.cafeina),
+      // #331 p6: una fecha de reconocimiento corrupta se descarta sola, sin tirar lo demás.
+      fechaReconocimiento: esFechaValida(texto3(x.fechaReconocimiento) ?? "") ? texto3(x.fechaReconocimiento) : void 0,
+      barato: texto3(x.barato),
+      taper: texto3(x.taper)
+    };
     const examen = { horaEscrito: texto3(x.horaEscrito), duracionEscritoMin: x.duracionEscritoMin };
     const intentos = [
       { ...datos, ...examen, pruebasFisicas: x.pruebasFisicas, estudio: x.estudio },
@@ -12246,6 +12275,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     return { ...bloque ? { bloque } : {}, largo, avisos };
   }
   var ID_COMPETICION_OPOSICION = "oposicion-fisicas";
+  var antesDesayunoFisicas = (primera) => (primera - 150) % 60 === 0 ? 150 : 120;
   var HUECO_PROPUESTO_MIN = 30;
   var HUECO_MINIMO_MIN = 10;
   function pruebasPropuestas(cuerpo, sexo, citacion = CITACION_PROPUESTA, finJornada) {
@@ -12297,7 +12327,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
       if (e.tipo === "recuperacion" && finJornada > finPruebas) return { ...e, minuto: finJornada + 30 };
       if (e.tipo === "previa") {
         const primera = p.pruebas[0].inicio;
-        const antes = (primera - 150) % 60 === 0 ? 150 : 120;
+        const antes = antesDesayunoFisicas(primera);
         return { ...e, minuto: Math.max(0, primera - antes), titulo: `Desayuno (${antes === 150 ? "2,5" : "2"} h antes de la primera prueba)`, detalle: "El de siempre: hidratos, poca grasa y poca fibra, nada nuevo.", hidratoG: [Math.round(peso * 1), Math.round(peso * 2)] };
       }
       return e;
@@ -12309,6 +12339,43 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     ];
     if (op.citacion) avisos.push(`Te citan a las ${op.citacion}${op.finJornada ? ` y la jornada acaba hacia las ${op.finJornada}` : ""}: si cambian las horas de las pruebas, c\xE1mbialas en tu perfil y el plan se mueve con ellas.`);
     return { c: c2, p: { ...p, nombre: "Pruebas f\xEDsicas", linea, avisos }, finJornada };
+  }
+  var ENSAYO_FISICAS_DIAS = [14, 21];
+  var DIAS_AVISO_RECONOCIMIENTO = 28;
+  var diasEntre2 = (hoy, f2) => Math.round((utc(f2) - utc(hoy)) / MS_DIA4);
+  function ensayoDiaPruebas(op, hoy) {
+    if (op.tipo === "escrito" || !op.fechaFisicas) return void 0;
+    const d = diasEntre2(hoy, op.fechaFisicas);
+    if (d < ENSAYO_FISICAS_DIAS[0] || d > ENSAYO_FISICAS_DIAS[1]) return void 0;
+    const primera = op.pruebasFisicas?.length ? [...op.pruebasFisicas].sort((a2, b) => a2.hora.localeCompare(b.hora))[0].hora : void 0;
+    const quedan = d - ENSAYO_FISICAS_DIAS[0];
+    const cuando = quedan === 0 ? "hoy es el \xFAltimo d\xEDa bueno para hacer" : `${quedan === 1 ? "hoy o ma\xF1ana" : `en los pr\xF3ximos ${quedan + 1} d\xEDas`}, haz`;
+    const hora3 = primera ? ` a la hora de las pruebas (la primera, a las ${primera}), con el mismo desayuno a las ${aHoraTexto(Math.max(0, aMinutos2(primera) - antesDesayunoFisicas(aMinutos2(primera))))}` : " a la hora de las pruebas, con el mismo desayuno 2 h antes";
+    return `Ensayo del d\xEDa de pruebas: ${cuando} un entreno como si fuera el d\xEDa de las f\xEDsicas,${hora3} y, entre prueba y prueba, agua y lo peque\xF1o que vayas a llevar (un pl\xE1tano o una barrita). As\xED sabes qu\xE9 te sienta bien; el d\xEDa de las pruebas, nada nuevo.`;
+  }
+  function avisoReconocimiento(op, hoy) {
+    const choque = "nada de dietas de choque ni de dejar de comer o de beber para llegar a un peso; come como siempre";
+    if (!op.fechaReconocimiento) {
+      if (op.tipo === "escrito" || faseOposicion(op, hoy).fase === "terminada") return void 0;
+      return `Si tu oposici\xF3n tiene reconocimiento m\xE9dico, apunta la fecha. Antes de \xE9l, ${choque}.`;
+    }
+    const d = diasEntre2(hoy, op.fechaReconocimiento);
+    if (d < 0 || d > DIAS_AVISO_RECONOCIMIENTO) return void 0;
+    if (d === 0) return "Hoy es el reconocimiento m\xE9dico: desayuna como siempre, salvo que te hayan pedido ir en ayunas para un an\xE1lisis. Nada de dejar de comer o de beber para pesar menos.";
+    return `${d === 1 ? "Ma\xF1ana es" : `Faltan ${d} d\xEDas para`} el reconocimiento m\xE9dico: ${choque}. Si el peso te preocupa, com\xE9ntalo con Pablo.`;
+  }
+  function ideasCocinaOposicion(op, comidas = []) {
+    const frases = [];
+    if (op.barato) frases.push("Modo barato: en comidas y cenas, la app elige antes los platos con huevos, legumbres, at\xFAn o pollo, que son de las prote\xEDnas m\xE1s asequibles. En la lista de la compra ves lo que cuesta la semana.");
+    if (op.taper) {
+      const NOMBRE5 = { L: "lunes", M: "martes", X: "mi\xE9rcoles" };
+      const lista5 = ["L", "M", "X"].map((d) => {
+        const c2 = comidas.find((x) => x.dia === d);
+        return c2 ? `${NOMBRE5[d]}: ${c2.nombre}` : void 0;
+      }).filter((x) => !!x);
+      frases.push(`T\xE1per del domingo: cocina el domingo las comidas del lunes al mi\xE9rcoles${lista5.length ? ` (${lista5.join("; ")})` : ""}. Gu\xE1rdalas en t\xE1peres cerrados en la nevera en cuanto se templen (antes de 2 horas) y c\xF3melas en 3-4 d\xEDas. Las del jueves y el viernes, coc\xEDnalas el mi\xE9rcoles o congela esos t\xE1peres el mismo domingo.`);
+    }
+    return frases;
   }
 
   // src/motor/dos-pasos.ts
@@ -12410,7 +12477,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
   // src/motor/ensayo-carrera.ts
   var ENSAYO = { semanas: 6, inicioGHora: 40, minPrueba: 90, minSesion: 90, maxFraccionHidratoDia: 0.5 };
   var MS_DIA5 = 864e5;
-  var diasEntre2 = (a2, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a2}T00:00:00Z`)) / MS_DIA5);
+  var diasEntre3 = (a2, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a2}T00:00:00Z`)) / MS_DIA5);
   var a5 = (x) => Math.round(x / 5) * 5;
   function duracionCompeticion(c2) {
     return c2.pruebas?.length ? Math.max(...c2.pruebas.map((p) => p.duracionMin)) : DURACION_PROPUESTA_MIN[c2.tipo ?? "otra"];
@@ -12424,7 +12491,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     let mejor;
     for (const c2 of competiciones) {
       if (c2.tipo === "categoria_peso") continue;
-      const dias = diasEntre2(fecha, c2.fecha);
+      const dias = diasEntre3(fecha, c2.fecha);
       if (!(dias >= 1 && dias <= ENSAYO.semanas * 7)) continue;
       const dur = duracionCompeticion(c2);
       if (!(dur > ENSAYO.minPrueba)) continue;
