@@ -12020,7 +12020,11 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
       }
       if (e.tipo === "entre") return { ...e, detalle: `${e.detalle} Unos sorbos de agua y algo peque\xF1o que ya conozcas: un pl\xE1tano, una barrita de cereales o pan con membrillo.` };
       if (e.tipo === "recuperacion" && finJornada > finPruebas) return { ...e, minuto: finJornada + 30 };
-      if (e.tipo === "previa") return { ...e, titulo: "Desayuno (2-3 h antes de la primera prueba)", detalle: "El de siempre: hidratos, poca grasa y poca fibra, nada nuevo.", hidratoG: [Math.round(peso * 1), Math.round(peso * 2)] };
+      if (e.tipo === "previa") {
+        const primera = p.pruebas[0].inicio;
+        const antes = (primera - 150) % 60 === 0 ? 150 : 120;
+        return { ...e, minuto: Math.max(0, primera - antes), titulo: `Desayuno (${antes === 150 ? "2,5" : "2"} h antes de la primera prueba)`, detalle: "El de siempre: hidratos, poca grasa y poca fibra, nada nuevo.", hidratoG: [Math.round(peso * 1), Math.round(peso * 2)] };
+      }
       return e;
     }).sort((a2, b) => a2.minuto - b.minuto);
     const avisos = [
