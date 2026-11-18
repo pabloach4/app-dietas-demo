@@ -3866,6 +3866,13 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const f2 = fibraServidaEstimada(r, slot);
     return f2 !== void 0 && f2 > slot.maxFibraG;
   }
+  function grasaExcede(slot, r) {
+    if (slot.maxGrasaG === void 0 || !(r.kcal > 0)) return false;
+    return r.grasa * Math.min(2, Math.max(0.5, slot.kcalObjetivo / r.kcal)) > slot.maxGrasaG;
+  }
+  function digestivoExcede(slot, r) {
+    return fibraExcede(slot, r) || grasaExcede(slot, r);
+  }
   function motivoFibra(slot) {
     if (slot.desayunoCarrera) return MOTIVO_DESAYUNO_CARRERA;
     if (slot.antesSesionIntensa) return slot.maxFibraG !== void 0 ? `antes de una sesi\xF3n intensa la raci\xF3n servida lleva como mucho ${slot.maxFibraG} g de fibra (nada de legumbre ni ensalada grande)` : "antes de una sesi\xF3n intensa se evita la fibra alta (legumbre, integral o verdura cruda)";
@@ -4197,7 +4204,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       const ap = opciones.alergiasPreferencias;
       const franjaVale = (r) => r.franjas.includes(slot.franja) || r.tipoPlato === "postre" && (r.franjas.includes("merienda") || r.franjas.includes("media_manana"));
       const diaVale = (r) => !(r.usoDia === "carga" && !slot.cargaAlta && !slot.desayunoCarrera);
-      const vale = (r) => franjaVale(r) && diaVale(r) && !fibraExcede(slot, r) && (!ap || evaluarCompatibilidad(r, ap).compatible);
+      const vale = (r) => franjaVale(r) && diaVale(r) && !digestivoExcede(slot, r) && (!ap || evaluarCompatibilidad(r, ap).compatible);
       const esUnico = (r) => !r.tipoPlato || r.tipoPlato === "unico" || r.tipoPlato === "postre" && slot.franja !== "comida" && slot.franja !== "cena";
       const otraDelDia = otraComidaDelDia(slot);
       let distintaDelDia = true;
@@ -4228,7 +4235,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       };
       const semanaVaria = (r) => !variedadCC || violacionesE2(r) === 0;
       const intentarBase = (lista5, filtrar) => {
-        const candidatas = filtrar ? lista5.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !fibraExcede(slot, r)) : lista5;
+        const candidatas = filtrar ? lista5.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !digestivoExcede(slot, r)) : lista5;
         if (!candidatas.length) {
           return { motivo: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y ninguna receta del cat\xE1logo lo cumple` : slot.antesSesionIntensa ? "por la fibra (antes de una sesi\xF3n intensa) no hay receta que valga para esta franja" : slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
         }
@@ -4313,7 +4320,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
             }
             const solo = res.elegido?.receta;
             if (solo && !solo.platos && !alcanza(res.elegido)) {
-              const conPostre = postres.filter((po) => po.id !== solo.id && (!limitada || usosDe(po) < maxRep)).map((po) => componer([solo, po])).filter((c2) => !fibraExcede(slot, c2));
+              const conPostre = postres.filter((po) => po.id !== solo.id && (!limitada || usosDe(po) < maxRep)).map((po) => componer([solo, po])).filter((c2) => !digestivoExcede(slot, c2));
               if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
             }
           }
@@ -4329,6 +4336,12 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         const aviso = prefDesayuno.modo === "mismo" ? `Desayuno: el que elegiste para todos los d\xEDas${nombre ? ` (\xAB${nombre}\xBB)` : ""} no se puede servir (${nombre ? res.motivo ?? "no encaja" : "ya no est\xE1 en el cat\xE1logo"}); esos d\xEDas se propone otro.` : `Desayuno: no hay ning\xFAn desayuno de pan con lo que elegiste que encaje (${res.motivo ?? "no encaja"}); esos d\xEDas se propone otro.`;
         if (!avisos.includes(aviso)) avisos.push(aviso);
         sinPreferenciaDesayuno.add(claveSlotSiOSi(slot));
+        iSlot--;
+        continue;
+      }
+      if (slot.maxGrasaG !== void 0 && !fijada && !reservada && !alcanza(res.elegido)) {
+        const { maxGrasaG: _sinTopeGrasa, ...resto } = slot;
+        cola[iSlot] = resto;
         iSlot--;
         continue;
       }
@@ -4454,7 +4467,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
           }
           {
             const sl = slots.find((s) => s.dia === a2.dia && s.franja === a2.franja);
-            if (sl && fibraExcede(sl, r)) continue;
+            if (sl && digestivoExcede(sl, r)) continue;
           }
           const slot = slots.find((s) => s.dia === a2.dia && s.franja === a2.franja);
           if (!slot) continue;
