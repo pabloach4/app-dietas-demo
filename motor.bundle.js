@@ -354,6 +354,7 @@ var Motor = (() => {
     frenarEnsayo: () => frenarEnsayo,
     frenoBajoPeso: () => frenoBajoPeso,
     frenoLogros: () => frenoLogros,
+    frutaDeTemporada: () => frutaDeTemporada,
     frutaFueraDeTemporada: () => frutaFueraDeTemporada,
     frutasDeReceta: () => frutasDeReceta,
     fueraFijaDelDia: () => fueraFijaDelDia,
@@ -4050,6 +4051,10 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
   function frutaFueraDeTemporada(r, mes, porId) {
     return frutasDeReceta(r, porId).some((f2) => !esDeTemporada(f2, mes));
   }
+  function frutaDeTemporada(r, mes, porId) {
+    const f2 = frutasDeReceta(r, porId);
+    return f2.length > 0 && f2.every((x) => esDeTemporada(x, mes)) && f2.some((x) => marcarDeTemporada(x, mes));
+  }
 
   // src/motor/desayuno-carrera.ts
   var normalizar4 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -4126,6 +4131,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
   var PESO_TEMPORADA = 8;
   var PESO_BARATO = 8;
   var PESO_FRUTA_TEMPORADA = 8;
+  var MAX_USOS_PREMIO_FRUTA = 2;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
@@ -4408,6 +4414,8 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
     const idsDe = (r) => r.platos ?? [r.id];
     const evitarIds = new Set(opciones.evitar ?? []);
     const usosDe = (r) => Math.max(...idsDe(r).map((id) => usos.get(id) ?? 0));
+    const usosFruta = /* @__PURE__ */ new Map();
+    const usosFrutaDe = (r) => Math.max(...idsDe(r).map((id) => usosFruta.get(id) ?? 0));
     const gustos = opciones.gustos;
     const gusto = (r) => gustos?.size ? idsDe(r).reduce((s, id) => s + (gustos.get(id) ?? 0), 0) / idsDe(r).length : 0;
     const otraComidaDelDia = (slot) => {
@@ -4493,7 +4501,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
             continue;
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
-          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && esFranjaConLimiteVariedad(slot.franja) && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) + (slot.barato && esFranjaConLimiteVariedad(slot.franja) && !proteinaBarata(r, catalogoPorId) ? PESO_BARATO : 0) + (slot.mesFruta && slot.franja !== "desayuno" && frutaFueraDeTemporada(r, slot.mesFruta, catalogoPorId) ? PESO_FRUTA_TEMPORADA : 0) - PESO_GUSTO / 4 * gusto(r);
+          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && esFranjaConLimiteVariedad(slot.franja) && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) + (slot.barato && esFranjaConLimiteVariedad(slot.franja) && !proteinaBarata(r, catalogoPorId) ? PESO_BARATO : 0) - (slot.mesFruta && slot.franja !== "desayuno" && usosFrutaDe(r) < MAX_USOS_PREMIO_FRUTA && frutaDeTemporada(r, slot.mesFruta, catalogoPorId) ? PESO_FRUTA_TEMPORADA : 0) - PESO_GUSTO / 4 * gusto(r);
           if (!mejor || clave3(desviacion, dist, falta) < clave3(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
@@ -4600,6 +4608,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
       }
       const elegido = res.elegido;
       if (limitada) for (const id of idsDe(elegido.receta)) usos.set(id, (usos.get(id) ?? 0) + 1);
+      for (const id of idsDe(elegido.receta)) usosFruta.set(id, (usosFruta.get(id) ?? 0) + 1);
       if (grupo) {
         usadosPorGrupo.set(grupo, /* @__PURE__ */ new Set([...usadosGrupo, elegido.receta.id]));
         ultimoPorGrupo.set(grupo, elegido.receta.id);
