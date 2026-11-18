@@ -28,6 +28,7 @@ var Motor = (() => {
     AVISO_DESCARGA: () => AVISO_DESCARGA,
     AVISO_ETIQUETA_GLUTEN: () => AVISO_ETIQUETA_GLUTEN,
     CABECERA_ATRIBUTOS: () => CABECERA_ATRIBUTOS,
+    CITACION_PROPUESTA: () => CITACION_PROPUESTA,
     CLAVES_NUBE: () => CLAVES_NUBE,
     COMER_FUERA_CSV: () => COMER_FUERA_CSV,
     CONSEJOS_DERIVADO: () => CONSEJOS_DERIVADO,
@@ -39,6 +40,7 @@ var Motor = (() => {
     DIAS_AVISO_FIN: () => DIAS_AVISO_FIN,
     DIAS_CITA: () => DIAS_CITA,
     DIAS_SIN_RECORTE_FISICAS: () => DIAS_SIN_RECORTE_FISICAS,
+    DOMINIOS_OFICIALES_OPOSICION: () => DOMINIOS_OFICIALES_OPOSICION,
     DURACION_PROPUESTA_MIN: () => DURACION_PROPUESTA_MIN,
     EDAD_MINIMA_CAFEINA: () => EDAD_MINIMA_CAFEINA,
     EDAD_MINIMA_CREATINA: () => EDAD_MINIMA_CREATINA,
@@ -56,6 +58,7 @@ var Motor = (() => {
     GLUTEN_CSV: () => GLUTEN_CSV,
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
     HORA_ENTRENO_NOCHE: () => HORA_ENTRENO_NOCHE,
+    ID_COMPETICION_OPOSICION: () => ID_COMPETICION_OPOSICION,
     ISOTONICA_G_HIDRATO_100ML: () => ISOTONICA_G_HIDRATO_100ML,
     KCAL_DIA_CINCO_COMIDAS: () => KCAL_DIA_CINCO_COMIDAS,
     LIMITES_INGREDIENTES_CSV: () => LIMITES_INGREDIENTES_CSV,
@@ -68,6 +71,7 @@ var Motor = (() => {
     MAX_INSTANTANEA: () => MAX_INSTANTANEA,
     MAX_KG_PERDIDOS_CREIBLE: () => MAX_KG_PERDIDOS_CREIBLE,
     MAX_MOTIVO_CITA: () => MAX_MOTIVO_CITA,
+    MAX_PRUEBAS_FISICAS: () => MAX_PRUEBAS_FISICAS,
     MAX_SUBIDA_COMIDA: () => MAX_SUBIDA_COMIDA,
     MEDIDAS_CASERAS_CSV: () => MEDIDAS_CASERAS_CSV,
     MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
@@ -86,6 +90,7 @@ var Motor = (() => {
     NOTA_PAUTA: () => NOTA_PAUTA,
     NOTA_PAUTA_ORIENTATIVA: () => NOTA_PAUTA_ORIENTATIVA,
     OPCIONES_GELES: () => OPCIONES_GELES,
+    OPOSICIONES_PRUEBAS_CSV: () => OPOSICIONES_PRUEBAS_CSV,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
     PARTE_MINIMA_HIDRATOS_CARGA: () => PARTE_MINIMA_HIDRATOS_CARGA,
@@ -123,6 +128,7 @@ var Motor = (() => {
     TIPOS_ALERTA: () => TIPOS_ALERTA,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TIPOS_OPOSICION: () => TIPOS_OPOSICION,
+    TIPOS_PRUEBA_OPOSICION: () => TIPOS_PRUEBA_OPOSICION,
     TIPOS_SOLUCIONABLES: () => TIPOS_SOLUCIONABLES,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
     TOMA_AYUNAS: () => TOMA_AYUNAS,
@@ -209,6 +215,7 @@ var Motor = (() => {
     comerFueraDesdeCsv: () => comerFueraDesdeCsv,
     comidasFueraPersona: () => comidasFueraPersona,
     compensacionesDeLaApp: () => compensacionesDeLaApp,
+    competicionDeOposicion: () => competicionDeOposicion,
     competicionesDelDia: () => competicionesDelDia,
     competicionesDesdeJson: () => competicionesDesdeJson,
     componerComida: () => componerComida,
@@ -221,6 +228,7 @@ var Motor = (() => {
     comprobarMedidasCsv: () => comprobarMedidasCsv,
     comprobarPorcionComestible: () => comprobarPorcionComestible,
     comprobarPrecios: () => comprobarPrecios,
+    comprobarTablaOposiciones: () => comprobarTablaOposiciones,
     conLimitesIngredientes: () => conLimitesIngredientes,
     conflictosComidaEntreno: () => conflictosComidaEntreno,
     conservacionDesdeCsv: () => conservacionDesdeCsv,
@@ -235,6 +243,7 @@ var Motor = (() => {
     cuadrarConComidaFuera: () => cuadrarConComidaFuera,
     cuadrarDias: () => cuadrarDias,
     cuadrarProteina: () => cuadrarProteina,
+    cuerposDeTabla: () => cuerposDeTabla,
     decidirAjuste: () => decidirAjuste,
     deducirDeportePrincipal: () => deducirDeportePrincipal,
     definirParametrosReparto: () => definirParametrosReparto,
@@ -253,6 +262,7 @@ var Motor = (() => {
     diabetesValida: () => diabetesValida,
     diasConSuelo: () => diasConSuelo,
     duelosTerminados: () => duelosTerminados,
+    duracionPruebaOposicion: () => duracionPruebaOposicion,
     duranteEntreno: () => duranteEntreno,
     editarCompeticion: () => editarCompeticion,
     efectoAjustes: () => efectoAjustes,
@@ -304,6 +314,7 @@ var Motor = (() => {
     filaAlerta: () => filaAlerta,
     filaPlanPablo: () => filaPlanPablo,
     filasCompensacionCentro: () => filasCompensacionCentro,
+    filasPruebasOposicion: () => filasPruebasOposicion,
     filtrarAlertas: () => filtrarAlertas,
     filtrarCatalogo: () => filtrarCatalogo,
     filtrarPersonas: () => filtrarPersonas,
@@ -338,6 +349,7 @@ var Motor = (() => {
     historialPlanes: () => historialPlanes,
     horaDeGuardado: () => horaDeGuardado,
     idAlerta: () => idAlerta,
+    idCuerpoOposicion: () => idCuerpoOposicion,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
     ingredientesPrincipales: () => ingredientesPrincipales,
     inicioDeLaSiguiente: () => inicioDeLaSiguiente,
@@ -401,10 +413,13 @@ var Motor = (() => {
     pesoCocido: () => pesoCocido,
     pesoServido: () => pesoServido,
     planDiaCompeticion: () => planDiaCompeticion,
+    planDiaFisicas: () => planDiaFisicas,
     planPabloAplicable: () => planPabloAplicable,
     plegarLineaIcs: () => plegarLineaIcs,
     preferenciaDesayunoValida: () => preferenciaDesayunoValida,
     proteinaDelDia: () => proteinaDelDia,
+    pruebasDeCuerpo: () => pruebasDeCuerpo,
+    pruebasPropuestas: () => pruebasPropuestas,
     puntuacionGusto: () => puntuacionGusto,
     racionCargaMaxima: () => racionCargaMaxima,
     racionEnPalabras: () => racionEnPalabras,
@@ -435,6 +450,7 @@ var Motor = (() => {
     semanaDeLaDieta: () => semanaDeLaDieta,
     semanasValidas: () => semanasValidas,
     sesionCruzaMedianoche: () => sesionCruzaMedianoche,
+    sexoDePrueba: () => sexoDePrueba,
     siguienteDuelo: () => siguienteDuelo,
     sinCarga: () => sinCarga,
     sinFilaDeGluten: () => sinFilaDeGluten,
@@ -1446,8 +1462,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     const anadir = (c2) => {
       if (encontradas.has(c2.cat.clave)) return;
       encontradas.set(c2.cat.clave, c2.cat);
-      for (const clave2 of c2.cat.incluye ?? []) {
-        const hija = listas.get(clave2);
+      for (const clave3 of c2.cat.incluye ?? []) {
+        const hija = listas.get(clave3);
         if (hija) anadir(hija);
       }
     };
@@ -2023,8 +2039,8 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
     if (s.actividad) {
       return ACTIVIDADES[s.actividad] ? { clave: s.actividad } : { opciones: Object.keys(ACTIVIDADES) };
     }
-    const clave2 = MAPA_DEPORTES[normalizarTexto(s.deporte)];
-    return clave2 ? { clave: clave2 } : { opciones: Object.keys(ACTIVIDADES) };
+    const clave3 = MAPA_DEPORTES[normalizarTexto(s.deporte)];
+    return clave3 ? { clave: clave3 } : { opciones: Object.keys(ACTIVIDADES) };
   }
   function perfilDesdeCuestionario(r, opciones = {}) {
     const actuales = peculiaridadesRevision(r);
@@ -2136,18 +2152,18 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
       ventanaComida: Object.fromEntries(Object.entries(VENTANAS_COMIDA_DEFECTO).map(([f2, v]) => [f2, [...v]]))
     };
     for (const linea of lineas.slice(1)) {
-      const [grupo, clave2, franja, valorRaw] = linea.split(",");
+      const [grupo, clave3, franja, valorRaw] = linea.split(",");
       const valor = Number(valorRaw);
       if (!Number.isFinite(valor)) continue;
       if (grupo === "peso_base") p.pesoBase[franja] = valor;
-      else if (grupo === "factor_contexto") p.factor[clave2] = valor;
-      else if (grupo === "ventana_horas") p.ventana[clave2] = valor;
-      else if (grupo === "tope") p.tope[clave2] = valor;
-      else if (grupo === "proteina_principal") p.proteinaPrincipal[clave2] = valor;
-      else if (grupo === "borde_primera_hora") p.bordePrimeraHora[clave2] = valor;
-      else if (grupo === "ventana_comida" && (clave2 === "desde" || clave2 === "hasta")) {
+      else if (grupo === "factor_contexto") p.factor[clave3] = valor;
+      else if (grupo === "ventana_horas") p.ventana[clave3] = valor;
+      else if (grupo === "tope") p.tope[clave3] = valor;
+      else if (grupo === "proteina_principal") p.proteinaPrincipal[clave3] = valor;
+      else if (grupo === "borde_primera_hora") p.bordePrimeraHora[clave3] = valor;
+      else if (grupo === "ventana_comida" && (clave3 === "desde" || clave3 === "hasta")) {
         const v = p.ventanaComida[franja] ??= [0, 24];
-        v[clave2 === "desde" ? 0 : 1] = valor;
+        v[clave3 === "desde" ? 0 : 1] = valor;
       }
     }
     return p;
@@ -3227,7 +3243,7 @@ zumo de naranja,sin_gluten_natural,no,la lista de ingredientes del zumo Hacendad
   var normalizar3 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   function factorCocido(ingrediente) {
     const n = normalizar3(ingrediente);
-    return FACTORES_COCIDO_EJEMPLO.find(([clave2]) => n === clave2 || n.startsWith(`${clave2} `))?.[1];
+    return FACTORES_COCIDO_EJEMPLO.find(([clave3]) => n === clave3 || n.startsWith(`${clave3} `))?.[1];
   }
   function pesoCocido(ingrediente, gramosSecos) {
     const factor = factorCocido(ingrediente);
@@ -3988,8 +4004,8 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     }
     const principales = platos.filter((p) => p.tipoPlato !== "postre");
     const franjas = (principales.length ? principales : platos)[0].franjas.filter((f2) => (principales.length ? principales : platos).every((p) => p.franjas.includes(f2)));
-    const aptitud = (clave2) => {
-      const valores = platos.map((p) => p.aptitudes?.[clave2] ?? "pendiente_ficha");
+    const aptitud = (clave3) => {
+      const valores = platos.map((p) => p.aptitudes?.[clave3] ?? "pendiente_ficha");
       return valores.includes("no") ? "no" : valores.every((v) => v === "si") ? "si" : "pendiente_ficha";
     };
     return {
@@ -4290,7 +4306,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
           const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) - PESO_GUSTO / 4 * gusto(r);
-          if (!mejor || clave2(desviacion, dist, falta) < clave2(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
+          if (!mejor || clave3(desviacion, dist, falta) < clave3(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
         return { elegido: mejor };
@@ -4306,7 +4322,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       };
       const alcanza = (e) => !!e && e.desviacion <= slot.kcalObjetivo * 0.1;
       const faltaProteina = (r, factor) => slot.proteinaObjetivoG === void 0 ? 0 : Math.max(0, slot.proteinaObjetivoG - proteinaServida(r, factor));
-      const clave2 = (desv, dist, falta = 0) => desv > slot.kcalObjetivo * 0.1 ? 1e9 + desv : dist * 1e5 + desv + 4 * falta;
+      const clave3 = (desv, dist, falta = 0) => desv > slot.kcalObjetivo * 0.1 ? 1e9 + desv : dist * 1e5 + desv + 4 * falta;
       const fijada = fijadasPorSlot.get(claveSlotSiOSi(slot));
       const reservada = fijada ? void 0 : reservas.get(claveSlotSiOSi(slot));
       const preferida = fijada || reservada ? void 0 : preferidasPorSlot.get(claveSlotSiOSi(slot));
@@ -4335,7 +4351,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
             const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
             const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));
             const parejas = primeros.flatMap((p) => segundos.filter((s) => combinanBien(p, s)).map((s) => componer([p, s])));
-            const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave2(b.elegido.desviacion, b.elegido.dist ?? 0, b.elegido.falta ?? 0) < clave2(a2.elegido.desviacion, a2.elegido.dist ?? 0, a2.elegido.falta ?? 0)) ? b : a2;
+            const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave3(b.elegido.desviacion, b.elegido.dist ?? 0, b.elegido.falta ?? 0) < clave3(a2.elegido.desviacion, a2.elegido.dist ?? 0, a2.elegido.falta ?? 0)) ? b : a2;
             if (parejas.length) {
               const r2 = intentar(parejas, false);
               res = mejorDe(res, r2);
@@ -4901,23 +4917,23 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
     const vistos = /* @__PURE__ */ new Set();
     if (!errores.some((e) => e.fila === 1)) {
       for (const r of registros(csv)) {
-        const clave2 = normalizar6(r.ingrediente);
-        if (vistos.has(clave2)) fallos.push(`${r.ingrediente}: fila repetida`);
-        vistos.add(clave2);
+        const clave3 = normalizar6(r.ingrediente);
+        if (vistos.has(clave3)) fallos.push(`${r.ingrediente}: fila repetida`);
+        vistos.add(clave3);
       }
     }
     for (const f2 of filas) {
-      const clave2 = normalizar6(f2.ingrediente);
+      const clave3 = normalizar6(f2.ingrediente);
       if (!/^https?:\/\//.test(f2.fuente.replace(/^[^:]+:\s*/, ""))) fallos.push(`${f2.ingrediente}: falta la fuente (tienda y enlace a la ficha)`);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(f2.fechaConsulta)) fallos.push(`${f2.ingrediente}: fecha de consulta "${f2.fechaConsulta}" (se espera AAAA-MM-DD)`);
-      const rol = rolDe.get(clave2);
+      const rol = rolDe.get(clave3);
       const [min, max] = f2.unidad === "kg" ? rol ? BANDA_KG[rol] ?? [0.5, 80] : [0.5, 80] : f2.unidad === "l" ? BANDA_L : BANDA_UNIDAD;
       if (f2.precioMedio < min || f2.precioMedio > max) {
         fallos.push(`${f2.ingrediente}: ${f2.precioMedio} \u20AC/${f2.unidad} fuera de lo normal${rol ? ` para ${rol}` : ""} (${min}\u2013${max})`);
       }
     }
-    for (const [clave2, rol] of rolDe) {
-      if (!vistos.has(clavePrecio(clave2))) fallos.push(`${catalogo.find((c2) => normalizar6(c2.ingrediente) === clave2).ingrediente} (${rol}): sin precio`);
+    for (const [clave3, rol] of rolDe) {
+      if (!vistos.has(clavePrecio(clave3))) fallos.push(`${catalogo.find((c2) => normalizar6(c2.ingrediente) === clave3).ingrediente} (${rol}): sin precio`);
     }
     return fallos;
   }
@@ -5688,7 +5704,7 @@ R484,crudo,bocadillo_tostada,frio,no
     { clave: "comedor", texto: "Comedor/cantina" }
   ];
   function etiquetasContextoDia(contexto) {
-    const etiquetas = ETIQUETAS.filter(({ clave: clave2 }) => contexto[clave2]).map(({ texto: texto3 }) => texto3);
+    const etiquetas = ETIQUETAS.filter(({ clave: clave3 }) => contexto[clave3]).map(({ texto: texto3 }) => texto3);
     if (contexto.tiempoCocina !== "normal") {
       etiquetas.push(contexto.tiempoCocina === "poco" ? "Poco tiempo para cocinar" : "Le gusta cocinar");
     }
@@ -7469,21 +7485,21 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     let huecos = resultado.huecos.map((h) => ({ ...h }));
     const avisos = [...resultado.avisos];
     const invalidadas = [];
-    for (const [clave2, recetaId] of Object.entries(sustituciones)) {
-      const slot = slots.find((s) => claveSlot(s.dia, s.franja) === clave2);
+    for (const [clave3, recetaId] of Object.entries(sustituciones)) {
+      const slot = slots.find((s) => claveSlot(s.dia, s.franja) === clave3);
       const receta = recetaDeId(new Map(recetas.map((r) => [r.id, r])), recetaId);
       if (!slot) {
-        invalidadas.push({ clave: clave2, recetaId, motivo: "esa comida ya no existe en tu plan" });
+        invalidadas.push({ clave: clave3, recetaId, motivo: "esa comida ya no existe en tu plan" });
         continue;
       }
       if (!receta) {
-        invalidadas.push({ clave: clave2, recetaId, motivo: "la receta ya no est\xE1 en el cat\xE1logo" });
+        invalidadas.push({ clave: clave3, recetaId, motivo: "la receta ya no est\xE1 en el cat\xE1logo" });
         continue;
       }
-      const usos = usosVariedadSemana(asignaciones, clave2);
+      const usos = usosVariedadSemana(asignaciones, clave3);
       const e = evaluar(slot, receta, { ...opciones, usosSemana: usos });
       if ("motivo" in e) {
-        invalidadas.push({ clave: clave2, recetaId, motivo: e.motivo });
+        invalidadas.push({ clave: clave3, recetaId, motivo: e.motivo });
         continue;
       }
       const nueva = {
@@ -7494,8 +7510,8 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
         kcalResultante: e.kcalResultante,
         ...e.protegidosSinEscalar.length ? { protegidosSinEscalar: e.protegidosSinEscalar } : {}
       };
-      asignaciones = asignaciones.filter((a2) => claveSlot(a2.dia, a2.franja) !== clave2);
-      huecos = huecos.filter((h) => claveSlot(h.dia, h.franja) !== clave2);
+      asignaciones = asignaciones.filter((a2) => claveSlot(a2.dia, a2.franja) !== clave3);
+      huecos = huecos.filter((h) => claveSlot(h.dia, h.franja) !== clave3);
       asignaciones.push(nueva);
       for (const av of e.avisos) avisos.push(`${slot.dia} ${slot.franja}: "${receta.nombre}" ${av}.`);
     }
@@ -10096,11 +10112,11 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
         if (protegida(a2)) return false;
         const slot = delDia.find((s2) => s2.franja === a2.franja);
         if (!slot) return false;
-        const clave2 = claveSlot(dia2, a2.franja);
+        const clave3 = claveSlot(dia2, a2.franja);
         const { alternativas } = alternativasParaSlot(slot, recetas.concat(recetasNuevas), {
           alergiasPreferencias: opciones.alergiasPreferencias,
           actual: a2.receta,
-          usosSemana: usosVariedadSemana(salida, clave2),
+          usosSemana: usosVariedadSemana(salida, clave3),
           maxRepeticionesSemana: opciones.maxRepeticionesSemana
         });
         const actualProt = proteinaDe(porId, a2);
@@ -10387,9 +10403,9 @@ R484,zumo de naranja,250,fruta_lacteo,169100,tal cual,`;
         estado: campo("estado")
       };
       const motivos = motivosFila(f2, ref);
-      const clave2 = sinTildes2(`${f2.grupo}|${f2.nutriente}|${f2.alimento}`);
-      if (vistas.has(clave2)) motivos.push("fila repetida");
-      vistas.add(clave2);
+      const clave3 = sinTildes2(`${f2.grupo}|${f2.nutriente}|${f2.alimento}`);
+      if (vistas.has(clave3)) motivos.push("fila repetida");
+      vistas.add(clave3);
       inf.filas.push(f2);
       if (motivos.length) {
         inf.malas.push({ fila: f2, motivos });
@@ -10862,11 +10878,11 @@ fruta; verdura,variedad de grupo y suficiencia global,consultar con Pablo,"Cubri
   }
   function instantaneaLocal(leer) {
     const datos = {};
-    for (const clave2 of CLAVES_NUBE) {
-      const crudo = leer(clave2);
+    for (const clave3 of CLAVES_NUBE) {
+      const crudo = leer(clave3);
       if (crudo === null || crudo === "") continue;
       try {
-        datos[clave2] = JSON.parse(crudo);
+        datos[clave3] = JSON.parse(crudo);
       } catch {
       }
     }
@@ -11011,9 +11027,9 @@ fruta; verdura,variedad de grupo y suficiencia global,consultar con Pablo,"Cubri
     return revisarSiguienteGuardada(asignaciones.map((a2) => ({ dia: a2.dia, franja: a2.franja, receta: a2.receta })), catalogo, ap);
   }
   function etiquetaPlanPablo(enUso, deP) {
-    const clave2 = (x) => `${x.dia}|${x.franja}|${x.receta}`;
-    const uso = new Set(enUso.map(clave2));
-    return deP.every((x) => uso.has(clave2(x))) && enUso.length === deP.length ? "pablo" : "pablo_con_cambios";
+    const clave3 = (x) => `${x.dia}|${x.franja}|${x.receta}`;
+    const uso = new Set(enUso.map(clave3));
+    return deP.every((x) => uso.has(clave3(x))) && enUso.length === deP.length ? "pablo" : "pablo_con_cambios";
   }
   var TEXTO_PLAN_PABLO = {
     pablo: "Revisado por Pablo",
@@ -11498,6 +11514,309 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     return mejor;
   }
 
+  // src/motor/oposiciones-datos.ts
+  var OPOSICIONES_PRUEBAS_CSV = `cuerpo,ambito,prueba,tipo,distancia_o_repeticiones,duracion_aprox_min,orden,mismo_dia,diferencia_por_sexo,fuente_url,fecha_convocatoria
+Polic\xEDa Nacional - Escala B\xE1sica,Espa\xF1a,Circuito de agilidad,agilidad,recorrido del anexo II,pendiente_estimacion_fundada,1,pendiente_citacion,no cambia la prueba,https://www.boe.es/buscar/doc.php?id=BOE-A-2026-15055,2026-07-07
+Polic\xEDa Nacional - Escala B\xE1sica,Espa\xF1a,Dominadas en barra (hombres),fuerza,m\xE1ximo de repeticiones v\xE1lidas,pendiente_estimacion_fundada,2,pendiente_citacion,hombres: dominadas; mujeres: suspensi\xF3n,https://www.boe.es/buscar/doc.php?id=BOE-A-2026-15055,2026-07-07
+Polic\xEDa Nacional - Escala B\xE1sica,Espa\xF1a,Suspensi\xF3n en barra (mujeres),fuerza,m\xE1ximo tiempo mantenido,pendiente_estimacion_fundada,2,pendiente_citacion,hombres: dominadas; mujeres: suspensi\xF3n,https://www.boe.es/buscar/doc.php?id=BOE-A-2026-15055,2026-07-07
+Polic\xEDa Nacional - Escala B\xE1sica,Espa\xF1a,Carrera 1000 m,resistencia,1000 m,pendiente_estimacion_fundada,3,pendiente_citacion,no cambia la prueba,https://www.boe.es/buscar/doc.php?id=BOE-A-2026-15055,2026-07-07
+Guardia Civil - Cabos y Guardias,Espa\xF1a,Carrera 2000 m (R2),resistencia,2000 m,pendiente_estimacion_fundada,determina_tribunal,pendiente_citacion,no cambia la prueba; s\xED var\xEDan marcas,https://www.boe.es/buscar/doc.php?id=BOE-A-2026-9982,2026-05-05
+Guardia Civil - Cabos y Guardias,Espa\xF1a,Circuito agilidad y coordinaci\xF3n (C1),agilidad,recorrido del ap\xE9ndice II,pendiente_estimacion_fundada,determina_tribunal,pendiente_citacion,no cambia la prueba; s\xED var\xEDan marcas,https://www.boe.es/buscar/doc.php?id=BOE-A-2026-9982,2026-05-05
+Guardia Civil - Cabos y Guardias,Espa\xF1a,Extensiones de brazos (P3),fuerza,repeticiones; no se extraen baremos,pendiente_estimacion_fundada,determina_tribunal,pendiente_citacion,no cambia la prueba; s\xED var\xEDan marcas,https://www.boe.es/buscar/doc.php?id=BOE-A-2026-9982,2026-05-05
+Guardia Civil - Cabos y Guardias,Espa\xF1a,Nataci\xF3n libre 50 m (O1),natacion,50 m,pendiente_estimacion_fundada,determina_tribunal,pendiente_citacion,no cambia la prueba; s\xED var\xEDan marcas,https://www.boe.es/buscar/doc.php?id=BOE-A-2026-9982,2026-05-05
+Polic\xEDa Local,Comunitat Valenciana - Ayuntamiento de Val\xE8ncia - 100 plazas 2026,Carrera de velocidad,velocidad,60 m,pendiente_estimacion_fundada,no_fijado_expresamente,pendiente_citacion,no; solo baremos,https://www.valencia.es/documents/20142/594713/anuncio%20bases%20convoctoria%20bop%2023-10-2026%281%29.pdf/16ccffec-5953-2a8f-9d55-168bc92f4a26,2026-10-08
+Polic\xEDa Local,Comunitat Valenciana - Ayuntamiento de Val\xE8ncia - 100 plazas 2026,Lanzamiento de bal\xF3n medicinal,fuerza,1 lanzamiento; segundo intento solo si primero nulo,pendiente_estimacion_fundada,no_fijado_expresamente,pendiente_citacion,hombres 4 kg; mujeres 3 kg,https://www.valencia.es/documents/20142/594713/anuncio%20bases%20convoctoria%20bop%2023-10-2026%281%29.pdf/16ccffec-5953-2a8f-9d55-168bc92f4a26,2026-10-08
+Polic\xEDa Local,Comunitat Valenciana - Ayuntamiento de Val\xE8ncia - 100 plazas 2026,Carrera de resistencia,resistencia,1000 m,pendiente_estimacion_fundada,no_fijado_expresamente,pendiente_citacion,no; solo baremos,https://www.valencia.es/documents/20142/594713/anuncio%20bases%20convoctoria%20bop%2023-10-2026%281%29.pdf/16ccffec-5953-2a8f-9d55-168bc92f4a26,2026-10-08
+Polic\xEDa Local,Comunitat Valenciana - Ayuntamiento de Val\xE8ncia - 100 plazas 2026,Nataci\xF3n estilo libre,natacion,50 m,pendiente_estimacion_fundada,no_fijado_expresamente,pendiente_citacion,no; solo baremos,https://www.valencia.es/documents/20142/594713/anuncio%20bases%20convoctoria%20bop%2023-10-2026%281%29.pdf/16ccffec-5953-2a8f-9d55-168bc92f4a26,2026-10-08
+Polic\xEDa Local,Catalu\xF1a - Barcelona Guardia Urbana - GUB 2025 (134 plazas),Press de banca,fuerza,repeticiones en un m\xE1ximo de 45 s; 40 kg hombres / 25 kg mujeres,hasta_0.75,determina_tribunal,si_por_aspirante_segun_citacion_2026-02-05_o_06,carga 40/25 kg; finalizaci\xF3n 36/23 repeticiones,https://ajuntament.barcelona.cat/seuelectronica/estatics/files/convocatories/29_2025_Bases_agent_GUB_enllacos.pdf,2025-03-19
+Polic\xEDa Local,Catalu\xF1a - Barcelona Guardia Urbana - GUB 2025 (134 plazas),Circuito de agilidad con transporte de saco,agilidad,1 circuito; 2 intentos no consecutivos,pendiente_estimacion_fundada,determina_tribunal,si_por_aspirante_segun_citacion_2026-02-05_o_06,valla hombres ~90 cm / mujeres ~80 cm; saco hombres ~20 kg / mujeres ~15 kg,https://ajuntament.barcelona.cat/seuelectronica/estatics/files/convocatories/29_2025_Bases_agent_GUB_enllacos.pdf,2025-03-19
+Polic\xEDa Local,Catalu\xF1a - Barcelona Guardia Urbana - GUB 2025 (134 plazas),Course navette,otra,idas y vueltas de 20 m; hasta agotamiento,variable_no_estimada,determina_tribunal,si_por_aspirante_segun_citacion_2026-02-05_o_06,no; solo baremos,https://ajuntament.barcelona.cat/seuelectronica/estatics/files/convocatories/29_2025_Bases_agent_GUB_enllacos.pdf,2025-03-19
+Polic\xEDa Local,Andaluc\xEDa - G\xE1dor (Almer\xEDa) - 1 plaza OEP 2026,Carrera de velocidad,velocidad,50 m,pendiente_estimacion_fundada,1,no_acreditado_en_bases,no; solo baremos,https://www.juntadeandalucia.es/boja/2026/132/67,2026-06-18
+Polic\xEDa Local,Andaluc\xEDa - G\xE1dor (Almer\xEDa) - 1 plaza OEP 2026,Flexiones de brazos en suspensi\xF3n pura (dominadas),fuerza,repeticiones completas,pendiente_estimacion_fundada,2,no_acreditado_en_bases,solo hombres; alternativa al bal\xF3n medicinal de mujeres,https://www.juntadeandalucia.es/boja/2026/132/67,2026-06-18
+Polic\xEDa Local,Andaluc\xEDa - G\xE1dor (Almer\xEDa) - 1 plaza OEP 2026,Lanzamiento de bal\xF3n medicinal,fuerza,bal\xF3n de 3 kg,pendiente_estimacion_fundada,2,no_acreditado_en_bases,solo mujeres; alternativa a dominadas de hombres,https://www.juntadeandalucia.es/boja/2026/132/67,2026-06-18
+Polic\xEDa Local,Andaluc\xEDa - G\xE1dor (Almer\xEDa) - 1 plaza OEP 2026,Salto vertical,salto,distancia vertical,pendiente_estimacion_fundada,3,no_acreditado_en_bases,no; solo baremos,https://www.juntadeandalucia.es/boja/2026/132/67,2026-06-18
+Polic\xEDa Local,Andaluc\xEDa - G\xE1dor (Almer\xEDa) - 1 plaza OEP 2026,Circuito de agilidad,agilidad,1 circuito,pendiente_estimacion_fundada,4,no_acreditado_en_bases,no; solo baremos,https://www.juntadeandalucia.es/boja/2026/132/67,2026-06-18
+Polic\xEDa Local,Andaluc\xEDa - G\xE1dor (Almer\xEDa) - 1 plaza OEP 2026,Carrera de resistencia general,resistencia,1000 m,pendiente_estimacion_fundada,5,no_acreditado_en_bases,no; solo baremos,https://www.juntadeandalucia.es/boja/2026/132/67,2026-06-18
+Polic\xEDa Local,Comunidad de Madrid - Ayuntamiento de Madrid - 561 plazas diciembre 2025,Carrera de resistencia,otra,800 m,pendiente_estimacion_fundada,determina_tribunal,pendiente_citacion,no; solo baremos,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/PoliciaTL2025/Ficheros/BasesPoliciaMunicipalboam9829.pdf,2025-12-02
+Polic\xEDa Local,Comunidad de Madrid - Ayuntamiento de Madrid - 561 plazas diciembre 2025,Carrera de velocidad,velocidad,60 m,pendiente_estimacion_fundada,determina_tribunal,pendiente_citacion,no; solo baremos,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/PoliciaTL2025/Ficheros/BasesPoliciaMunicipalboam9829.pdf,2025-12-02
+Polic\xEDa Local,Comunidad de Madrid - Ayuntamiento de Madrid - 561 plazas diciembre 2025,Lanzamiento de bal\xF3n medicinal,fuerza,1 lanzamiento; hasta 3 intentos,pendiente_estimacion_fundada,determina_tribunal,pendiente_citacion,hombres 5 kg; mujeres 3 kg,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/PoliciaTL2025/Ficheros/BasesPoliciaMunicipalboam9829.pdf,2025-12-02
+Polic\xEDa Local,Comunidad de Madrid - Ayuntamiento de Madrid - 561 plazas diciembre 2025,Salto de longitud desde parado,salto,1 salto; hasta 3 intentos,pendiente_estimacion_fundada,determina_tribunal,pendiente_citacion,no; solo baremos,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/PoliciaTL2025/Ficheros/BasesPoliciaMunicipalboam9829.pdf,2025-12-02
+Polic\xEDa Local,Comunidad de Madrid - Ayuntamiento de Madrid - 561 plazas diciembre 2025,Nataci\xF3n,natacion,25 m,pendiente_estimacion_fundada,determina_tribunal,pendiente_citacion,no; solo baremos,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/PoliciaTL2025/Ficheros/BasesPoliciaMunicipalboam9829.pdf,2025-12-02
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Carrera de velocidad,velocidad,200 m,pendiente_estimacion_fundada,1_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Carrera de resistencia org\xE1nica,resistencia,1500 m,pendiente_estimacion_fundada,2_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Acu\xE1tica y subacu\xE1tica combinada,natacion,25 m buceo + 75 m nataci\xF3n,pendiente_estimacion_fundada,3_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Trepa de cuerda lisa,fuerza,6.5 m,pendiente_estimacion_fundada,4_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Carrera vertical en torre,otra,8 plantas subida y bajada; dos bidones de 5 litros,pendiente_estimacion_fundada,5_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Aptitud en espacios confinados,otra,circuito en U de tramos 4+5+4 m,pendiente_estimacion_fundada,6_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Aptitud de trabajo en altura,otra,escalera vertical hasta ~6.20 m; observaci\xF3n e identificaci\xF3n,pendiente_estimacion_fundada,7_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Movimiento manual de cargas,otra,10 sacos de 20 kg a balda y regreso a matriz,pendiente_estimacion_fundada,8_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Desplazamiento de carga con maza,otra,desplazamiento de conjunto por carril con maza,pendiente_estimacion_fundada,9_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Corte en madera,otra,2 cortes de tabl\xF3n,pendiente_estimacion_fundada,10_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Colocaci\xF3n de puntal telesc\xF3pico met\xE1lico,otra,montar y colocar 1 puntal,pendiente_estimacion_fundada,11_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Ayuntamiento de Madrid - Bombero/a Especialista - 152 plazas 2025,Manejo de pala,otra,llenar caj\xF3n de ~0.5 m3 de arena,pendiente_estimacion_fundada,12_salvo_cambio_tribunal,no_fijado_en_bases,no; diferencias de baremo o indumentaria no cambian ejercicio,https://sede.madrid.es/UnidadWeb/Contenidos/Oposiciones/2025/BomberoEspecialista2025/BombEspec2025_DecretoBases.pdf,2025-10-14
+Bomberos,Comunidad de Madrid - Bombero Especialista Conductor - Orden 877/2026,Nataci\xF3n estilo libre,natacion,100 m,pendiente_estimacion_fundada,determina_organo_seleccion,pendiente_citacion,no; solo baremos,https://www.bocm.es/boletin/CM_Orden_BOCM/2026/04/08/BOCM-20260408-1.PDF,2026-03-20
+Bomberos,Comunidad de Madrid - Bombero Especialista Conductor - Orden 877/2026,Trepa a brazo de cuerda lisa,fuerza,6 m y descenso controlado,pendiente_estimacion_fundada,determina_organo_seleccion,pendiente_citacion,no; solo baremos,https://www.bocm.es/boletin/CM_Orden_BOCM/2026/04/08/BOCM-20260408-1.PDF,2026-03-20
+Bomberos,Comunidad de Madrid - Bombero Especialista Conductor - Orden 877/2026,Press de banca,fuerza,40 kg; repeticiones en m\xE1ximo 60 s,hasta_1,determina_organo_seleccion,pendiente_citacion,no; solo baremos,https://www.bocm.es/boletin/CM_Orden_BOCM/2026/04/08/BOCM-20260408-1.PDF,2026-03-20
+Bomberos,Comunidad de Madrid - Bombero Especialista Conductor - Orden 877/2026,Carrera,velocidad,60 m,pendiente_estimacion_fundada,determina_organo_seleccion,pendiente_citacion,no; solo baremos,https://www.bocm.es/boletin/CM_Orden_BOCM/2026/04/08/BOCM-20260408-1.PDF,2026-03-20
+Bomberos,Comunidad de Madrid - Bombero Especialista Conductor - Orden 877/2026,Carrera,velocidad,300 m,pendiente_estimacion_fundada,determina_organo_seleccion,pendiente_citacion,no; solo baremos,https://www.bocm.es/boletin/CM_Orden_BOCM/2026/04/08/BOCM-20260408-1.PDF,2026-03-20
+Bomberos,Comunidad de Madrid - Bombero Especialista Conductor - Orden 877/2026,Carrera,resistencia,2000 m,pendiente_estimacion_fundada,determina_organo_seleccion,pendiente_citacion,no; solo baremos,https://www.bocm.es/boletin/CM_Orden_BOCM/2026/04/08/BOCM-20260408-1.PDF,2026-03-20
+Bomberos,Comunidad de Madrid - Bombero Especialista Conductor - Orden 877/2026,Tolerancia al trabajo en espacios confinados,otra,recorrido sin luz con posibles pasos estrechos y niveles,intervalo_normativo_5_a_10,tercer_ejercicio;_orden_interno_no_fijado,no_mismo_bloque_que_segundo_ejercicio,no,https://www.bocm.es/boletin/CM_Orden_BOCM/2026/04/08/BOCM-20260408-1.PDF,2026-03-20
+Bomberos,Comunidad de Madrid - Bombero Especialista Conductor - Orden 877/2026,Tolerancia al trabajo en altura,otra,caminar por superficie a m\xE1s de 20 m; identificar caracteres,hasta_5,tercer_ejercicio;_orden_interno_no_fijado,no_mismo_bloque_que_segundo_ejercicio,no,https://www.bocm.es/boletin/CM_Orden_BOCM/2026/04/08/BOCM-20260408-1.PDF,2026-03-20
+Bomberos,Barcelona - Bomber/a SPCPEIS - 60 plazas 2025,Dominadas,fuerza,repeticiones en 30 s,ventana_0.5,determina_tribunal,si_por_aspirante_segun_citacion_rectificada_2026,no; solo baremos,https://ajuntament.barcelona.cat/seuelectronica/estatics/files/convocatories/30_2025_Bases_bomber_enllacos.pdf,2025-03-06
+Bomberos,Barcelona - Bomber/a SPCPEIS - 60 plazas 2025,Arrastre de maniqu\xED,fuerza,circuito con maniqu\xED ~70 kg \xB11 kg,pendiente_estimacion_fundada,determina_tribunal,si_por_aspirante_segun_citacion_rectificada_2026,no; solo baremos,https://ajuntament.barcelona.cat/seuelectronica/estatics/files/convocatories/30_2025_Bases_bomber_enllacos.pdf,2025-03-06
+Bomberos,Barcelona - Bomber/a SPCPEIS - 60 plazas 2025,Course navette,otra,idas y vueltas de 20 m; distancia total variable,variable_no_estimada,ultima,si_por_aspirante_segun_citacion_rectificada_2026,no; solo baremos,https://ajuntament.barcelona.cat/seuelectronica/estatics/files/convocatories/30_2025_Bases_bomber_enllacos.pdf,2025-03-06
+Bomberos,Barcelona - Bomber/a SPCPEIS - 60 plazas 2025,Circuito de agilidad,agilidad,circuito; 2 intentos no consecutivos,pendiente_estimacion_fundada,determina_tribunal,si_por_aspirante_segun_citacion_rectificada_2026,vallas 90 cm hombres / 80 cm mujeres \xB11 cm,https://ajuntament.barcelona.cat/seuelectronica/estatics/files/convocatories/30_2025_Bases_bomber_enllacos.pdf,2025-03-06
+Bomberos,Barcelona - Bomber/a SPCPEIS - 60 plazas 2025,Circuito de piscina,natacion,50 m con inmersiones; 2 obst\xE1culos y recuperaci\xF3n de objeto,pendiente_estimacion_fundada,determina_tribunal,si_por_aspirante_segun_citacion_rectificada_2026,no; solo baremos,https://ajuntament.barcelona.cat/seuelectronica/estatics/files/convocatories/30_2025_Bases_bomber_enllacos.pdf,2025-03-06
+Bomberos,Sevilla - Bombero/a - bases 31 plazas 2023 ampliadas a 67 en 2024,Nataci\xF3n estilo libre,natacion,100 m,pendiente_estimacion_fundada,cuarto_ejercicio;_determina_tribunal,no_fijado_en_bases,no; solo baremos,https://www.sevilla.org/servicios/empleo/servicio-de-recursos-humanos/convocatorias-oposiciones-concursos/ayuntamiento-de-sevilla/funcionario/acceso-libre/bombero-31-plazas/01-bases-bop.pdf,2023-11-03
+Bomberos,Sevilla - Bombero/a - bases 31 plazas 2023 ampliadas a 67 en 2024,Flexiones en barra (dominadas),fuerza,repeticiones completas,pendiente_estimacion_fundada,cuarto_ejercicio;_determina_tribunal,no_fijado_en_bases,no; solo baremos,https://www.sevilla.org/servicios/empleo/servicio-de-recursos-humanos/convocatorias-oposiciones-concursos/ayuntamiento-de-sevilla/funcionario/acceso-libre/bombero-31-plazas/01-bases-bop.pdf,2023-11-03
+Bomberos,Sevilla - Bombero/a - bases 31 plazas 2023 ampliadas a 67 en 2024,Salto de longitud sin carrera,salto,2 intentos; mejor marca,pendiente_estimacion_fundada,cuarto_ejercicio;_determina_tribunal,no_fijado_en_bases,no; solo baremos,https://www.sevilla.org/servicios/empleo/servicio-de-recursos-humanos/convocatorias-oposiciones-concursos/ayuntamiento-de-sevilla/funcionario/acceso-libre/bombero-31-plazas/01-bases-bop.pdf,2023-11-03
+Bomberos,Sevilla - Bombero/a - bases 31 plazas 2023 ampliadas a 67 en 2024,Carrera de velocidad,velocidad,50 m,pendiente_estimacion_fundada,cuarto_ejercicio;_determina_tribunal,no_fijado_en_bases,no; solo baremos,https://www.sevilla.org/servicios/empleo/servicio-de-recursos-humanos/convocatorias-oposiciones-concursos/ayuntamiento-de-sevilla/funcionario/acceso-libre/bombero-31-plazas/01-bases-bop.pdf,2023-11-03
+Bomberos,Sevilla - Bombero/a - bases 31 plazas 2023 ampliadas a 67 en 2024,Carrera de resistencia,resistencia,1500 m,pendiente_estimacion_fundada,cuarto_ejercicio;_determina_tribunal,no_fijado_en_bases,no; solo baremos,https://www.sevilla.org/servicios/empleo/servicio-de-recursos-humanos/convocatorias-oposiciones-concursos/ayuntamiento-de-sevilla/funcionario/acceso-libre/bombero-31-plazas/01-bases-bop.pdf,2023-11-03
+Bomberos,Sevilla - Bombero/a - bases 31 plazas 2023 ampliadas a 67 en 2024,Trepa de cuerda,fuerza,hombres 4 m / mujeres 3.5 m contados desde 1.5 m del suelo,pendiente_estimacion_fundada,cuarto_ejercicio;_determina_tribunal,no_fijado_en_bases,distancia de trepa distinta,https://www.sevilla.org/servicios/empleo/servicio-de-recursos-humanos/convocatorias-oposiciones-concursos/ayuntamiento-de-sevilla/funcionario/acceso-libre/bombero-31-plazas/01-bases-bop.pdf,2023-11-03
+Bomberos,Sevilla - Bombero/a - bases 31 plazas 2023 ampliadas a 67 en 2024,Press de banca,fuerza,repeticiones en 30 s; hombres 45 kg / mujeres 36 kg,ventana_0.5,cuarto_ejercicio;_determina_tribunal,no_fijado_en_bases,carga distinta,https://www.sevilla.org/servicios/empleo/servicio-de-recursos-humanos/convocatorias-oposiciones-concursos/ayuntamiento-de-sevilla/funcionario/acceso-libre/bombero-31-plazas/01-bases-bop.pdf,2023-11-03
+Bomberos,Sevilla - Bombero/a - bases 31 plazas 2023 ampliadas a 67 en 2024,Tolerancia al trabajo en altura,otra,exterior de balc\xF3n de torre; identificar caracteres,hasta_1,sexto_ejercicio;_orden_interno_no_fijado,no_mismo_bloque_que_cuarto_ejercicio,no,https://www.sevilla.org/servicios/empleo/servicio-de-recursos-humanos/convocatorias-oposiciones-concursos/ayuntamiento-de-sevilla/funcionario/acceso-libre/bombero-31-plazas/01-bases-bop.pdf,2023-11-03
+Bomberos,Sevilla - Bombero/a - bases 31 plazas 2023 ampliadas a 67 en 2024,Orientaci\xF3n y confinamiento,otra,recorrido de longitud m\xE1xima 32 m con visibilidad nula,hasta_5,sexto_ejercicio;_orden_interno_no_fijado,no_mismo_bloque_que_cuarto_ejercicio,no,https://www.sevilla.org/servicios/empleo/servicio-de-recursos-humanos/convocatorias-oposiciones-concursos/ayuntamiento-de-sevilla/funcionario/acceso-libre/bombero-31-plazas/01-bases-bop.pdf,2023-11-03
+Mossos d'Esquadra,Catalu\xF1a - Mossos escala b\xE1sica 46/26 - 1587 plazas,Circuito de agilidad,agilidad,voltereta; plinto 1 m; vallas; saco 10+10 m,pendiente_estimacion_fundada,no_fijado_en_bases,no_acreditado,s\xED; valla H90/M80 cm; saco H20/M15 kg; baremo distinto,https://dogc.gencat.cat/ca/document-del-dogc/?documentId=1046460,2026-06-03
+Mossos d'Esquadra,Catalu\xF1a - Mossos escala b\xE1sica 46/26 - 1587 plazas,Presi\xF3n sobre banco,fuerza,m\xE1ximas repeticiones en 45 s; H40/M25 kg,hasta_0.75_limite_normativo,no_fijado_en_bases,no_acreditado,s\xED; carga distinta; misma modalidad,https://dogc.gencat.cat/ca/document-del-dogc/?documentId=1046460,2026-06-03
+Mossos d'Esquadra,Catalu\xF1a - Mossos escala b\xE1sica 46/26 - 1587 plazas,Course navette,otra,trayectos 20 m; progresi\xF3n cada minuto; hasta agotamiento,variable_no_media,no_fijado_en_bases,no_acreditado,no; misma modalidad; solo baremos distintos,https://dogc.gencat.cat/ca/document-del-dogc/?documentId=1046460,2026-06-03
+Ertzaintza y polic\xEDa local,Pa\xEDs Vasco - Conjunta 7 - 430 Ertzaintza + 163 polic\xEDa local,Nataci\xF3n libre,natacion,50 m; dos largos de 25 m,pendiente_estimacion_fundada,no_fijado_en_bases,tribunal_puede_agrupar_no_confirma,no; misma modalidad; solo baremos distintos,https://www.euskadi.eus/bopv2/datos/2026/10/2604557a.shtml,2026-09-09
+Ertzaintza y polic\xEDa local,Pa\xEDs Vasco - Conjunta 7 - 430 Ertzaintza + 163 polic\xEDa local,Press banca,fuerza,repeticiones; H35/M25 kg; anexo sin ventana temporal expresa,pendiente_estimacion_fundada,no_fijado_en_bases,tribunal_puede_agrupar_no_confirma,s\xED; carga distinta; misma modalidad,https://www.euskadi.eus/bopv2/datos/2026/10/2604557a.shtml,2026-09-09
+Ertzaintza y polic\xEDa local,Pa\xEDs Vasco - Conjunta 7 - 430 Ertzaintza + 163 polic\xEDa local,Circuito de agilidad,agilidad,vallas 0.72 m y banderolas; dos intentos; mejor tiempo,pendiente_estimacion_fundada,no_fijado_en_bases,tribunal_puede_agrupar_no_confirma,no; misma modalidad; solo baremos distintos,https://www.euskadi.eus/bopv2/datos/2026/10/2604557a.shtml,2026-09-09
+Ertzaintza y polic\xEDa local,Pa\xEDs Vasco - Conjunta 7 - 430 Ertzaintza + 163 polic\xEDa local,Course navette,otra,trayectos 20 m; hasta fin por avisos,variable_no_media,no_fijado_en_bases,tribunal_puede_agrupar_no_confirma,no; misma modalidad; solo baremos distintos,https://www.euskadi.eus/bopv2/datos/2026/10/2604557a.shtml,2026-09-09
+Polic\xEDa Foral,Navarra - Polic\xEDa Foral agente - 34 plazas 2026,Press banca,fuerza,m\xE1ximas repeticiones en 60 s; H38/M20 kg,hasta_1_limite_normativo,tribunal,no_acreditado,s\xED; carga distinta; misma modalidad,https://bon.navarra.es/es/anuncio/-/texto/2026/40/4,2026-02-09
+Polic\xEDa Foral,Navarra - Polic\xEDa Foral agente - 34 plazas 2026,Dominio del medio acu\xE1tico,natacion,50 m; dos largos de 25 m; 2 m buceo en ida y vuelta,pendiente_estimacion_fundada,tribunal,no_acreditado,no; misma modalidad; solo baremos distintos,https://bon.navarra.es/es/anuncio/-/texto/2026/40/4,2026-02-09
+Polic\xEDa Foral,Navarra - Polic\xEDa Foral agente - 34 plazas 2026,Test de Barrow,agilidad,dos recorridos A+B en sentidos opuestos; rect\xE1ngulo 8.66x5 m y poste central,pendiente_estimacion_fundada,tribunal,no_acreditado,no; misma modalidad; solo baremos distintos,https://bon.navarra.es/es/anuncio/-/texto/2026/40/4,2026-02-09
+Polic\xEDa Foral,Navarra - Polic\xEDa Foral agente - 34 plazas 2026,Course navette,otra,trayectos 20 m; cada periodo aproximadamente 1 min,variable_no_media,tribunal,no_acreditado,no; misma modalidad; solo baremos distintos,https://bon.navarra.es/es/anuncio/-/texto/2026/40/4,2026-02-09
+Polic\xEDa Foral,Navarra - Polic\xEDa Foral agente - 34 plazas 2026,Saltos laterales,otra,m\xE1ximos saltos en 30 s; list\xF3n 25 cm; pies juntos o paralelos,0.5_ventana_normativa,tribunal,no_acreditado,no; misma modalidad; solo baremos distintos,https://bon.navarra.es/es/anuncio/-/texto/2026/40/4,2026-02-09
+Fuerzas Armadas,Estatal - ingreso tropa y mariner\xEDa - convocatoria 2026,Flexo-extensiones de brazos,fuerza,repeticiones en m\xE1ximo 2 min; barbilla en almohadilla 10 cm,hasta_2_limite_normativo,junta_educacion_fisica,no_acreditado,misma ejecuci\xF3n; marca de aptitud distinta,https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-436,2025-12-29
+Fuerzas Armadas,Estatal - ingreso tropa y mariner\xEDa - convocatoria 2026,Plancha isom\xE9trica,fuerza,permanencia correcta; apoyo antebrazos y puntas de pies,variable_no_media,junta_educacion_fisica,no_acreditado,misma ejecuci\xF3n y marca de ingreso,https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-436,2025-12-29
+Fuerzas Armadas,Estatal - ingreso tropa y mariner\xEDa - convocatoria 2026,Circuito agilidad-velocidad,agilidad,eslalon 7 conos; P1-P2 separados 16 m; vuelta con pelota,pendiente_estimacion_fundada,junta_educacion_fisica,no_acreditado,misma ejecuci\xF3n; marca de aptitud distinta,https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-436,2025-12-29
+Fuerzas Armadas,Estatal - ingreso tropa y mariner\xEDa - convocatoria 2026,Carrera continua,resistencia,2000 m,pendiente_estimacion_fundada,junta_educacion_fisica,no_acreditado,misma ejecuci\xF3n; marca de aptitud distinta,https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-436,2025-12-29
+Vigilancia Aduanera,Estatal - Agentes SVA - Investigaci\xF3n y Mar\xEDtima - acceso libre 2025,Carrera de velocidad,velocidad,50 m; salida en pie; 2 intentos,pendiente_estimacion_fundada,tribunal_puede_modificar,tribunal_misma_o_distinta_fecha,misma prueba; marca distinta,https://www.boe.es/buscar/doc.php?id=BOE-A-2025-27143,2025-12-22
+Vigilancia Aduanera,Estatal - Agentes SVA - Investigaci\xF3n y Mar\xEDtima - acceso libre 2025,Carrera de 800 m,otra,800 m; 1 intento; NO >=1000 m,pendiente_estimacion_fundada,tribunal_puede_modificar,tribunal_misma_o_distinta_fecha,misma prueba; marca distinta,https://www.boe.es/buscar/doc.php?id=BOE-A-2025-27143,2025-12-22
+Vigilancia Aduanera,Estatal - Agentes SVA - Investigaci\xF3n y Mar\xEDtima - acceso libre 2025,Salto de longitud con carrera,salto,2 intentos; hasta 1 min disponible para iniciar/realizar cada intento,pendiente_estimacion_fundada,tribunal_puede_modificar,tribunal_misma_o_distinta_fecha,misma modalidad; distancia m\xEDnima distinta,https://www.boe.es/buscar/doc.php?id=BOE-A-2025-27143,2025-12-22
+Vigilancia Aduanera,Estatal - Agentes SVA - Investigaci\xF3n y Mar\xEDtima - acceso libre 2025,Nataci\xF3n libre con zambullida,natacion,50 m continuos; 1 intento,pendiente_estimacion_fundada,tribunal_puede_modificar,tribunal_misma_o_distinta_fecha,misma prueba; marca distinta,https://www.boe.es/buscar/doc.php?id=BOE-A-2025-27143,2025-12-22
+Agentes forestales,Comunidad de Madrid - Agente Forestal C1 - 96 plazas Orden 1783/2025,Press banca,fuerza,18 repeticiones; H40/M20 kg \xB15%; m\xE1ximo 60 s,hasta_1_limite_normativo,no_acreditado_secuencia_interna,citado_24_o_25nov_distribucion_pendiente,carga distinta; mismo m\xEDnimo de repeticiones,https://www.bocm.es/boletin/CM_Orden_BOCM/2025/08/13/BOCM-20250813-2.PDF,2025-07-18
+Agentes forestales,Comunidad de Madrid - Agente Forestal C1 - 96 plazas Orden 1783/2025,Carrera en pista,resistencia,2000 m,pendiente_estimacion_fundada,no_acreditado_secuencia_interna,citado_24_o_25nov_distribucion_pendiente,misma prueba; marca distinta,https://www.bocm.es/boletin/CM_Orden_BOCM/2025/08/13/BOCM-20250813-2.PDF,2025-07-18
+Polic\xEDa Local,Galicia - proceso unitario PR461B 2026,Carrera velocidad,velocidad,50 m; 2 intentos,pendiente_estimacion_fundada,1,no_acreditado,no; misma modalidad,https://www.xunta.gal/dog/Publicados/2026/20260731/AnuncioG0759-220726-0001_es.html,2026-07-21
+Polic\xEDa Local,Galicia - proceso unitario PR461B 2026,Dominadas estrictas - hombres,fuerza,repeticiones continuas; 2 intentos,pendiente_estimacion_fundada,2_alternativa,no_acreditado,s\xED; hombres dominadas / mujeres suspensi\xF3n,https://www.xunta.gal/dog/Publicados/2026/20260731/AnuncioG0759-220726-0001_es.html,2026-07-21
+Polic\xEDa Local,Galicia - proceso unitario PR461B 2026,Suspensi\xF3n en barra - mujeres,fuerza,permanencia; 2 intentos,pendiente_estimacion_fundada,2_alternativa,no_acreditado,s\xED; hombres dominadas / mujeres suspensi\xF3n,https://www.xunta.gal/dog/Publicados/2026/20260731/AnuncioG0759-220726-0001_es.html,2026-07-21
+Polic\xEDa Local,Galicia - proceso unitario PR461B 2026,Salto horizontal desde parado,salto,2 intentos,pendiente_estimacion_fundada,3,no_acreditado,no; misma modalidad,https://www.xunta.gal/dog/Publicados/2026/20260731/AnuncioG0759-220726-0001_es.html,2026-07-21
+Polic\xEDa Local,Galicia - proceso unitario PR461B 2026,Carrera resistencia,resistencia,1000 m; 1 intento,pendiente_estimacion_fundada,4,no_acreditado,no; misma modalidad,https://www.xunta.gal/dog/Publicados/2026/20260731/AnuncioG0759-220726-0001_es.html,2026-07-21
+Polic\xEDa Local,Galicia - proceso unitario PR461B 2026,Nataci\xF3n libre,natacion,25 m sin giros; 1 intento,pendiente_estimacion_fundada,5,no_acreditado,no; misma modalidad,https://www.xunta.gal/dog/Publicados/2026/20260731/AnuncioG0759-220726-0001_es.html,2026-07-21
+Polic\xEDa Local,Asturias - proceso unificado 2026 - resoluci\xF3n 27 febrero,Carrera velocidad,velocidad,100 m,pendiente_estimacion_fundada,1,no_acreditado,no; misma modalidad,https://miprincipado.asturias.es/bopa/2026/03/05/2026-01736.pdf,2026-02-27
+Polic\xEDa Local,Asturias - proceso unificado 2026 - resoluci\xF3n 27 febrero,Salto a pies juntos,salto,salto horizontal desde parado,pendiente_estimacion_fundada,2,no_acreditado,no; misma modalidad,https://miprincipado.asturias.es/bopa/2026/03/05/2026-01736.pdf,2026-02-27
+Polic\xEDa Local,Asturias - proceso unificado 2026 - resoluci\xF3n 27 febrero,Lanzamiento bal\xF3n medicinal,fuerza,H5/M3 kg; lanzamiento con ambas manos,pendiente_estimacion_fundada,3,no_acreditado,s\xED; carga H5/M3 kg,https://miprincipado.asturias.es/bopa/2026/03/05/2026-01736.pdf,2026-02-27
+Polic\xEDa Local,Asturias - proceso unificado 2026 - resoluci\xF3n 27 febrero,Carrera resistencia,resistencia,2000 m,pendiente_estimacion_fundada,4,no_acreditado,no; misma modalidad,https://miprincipado.asturias.es/bopa/2026/03/05/2026-01736.pdf,2026-02-27
+Polic\xEDa Local,Asturias - proceso unificado 2026 - resoluci\xF3n 27 febrero,Nataci\xF3n libre,natacion,100 m; 1 intento,pendiente_estimacion_fundada,5,no_acreditado,no; misma modalidad,https://miprincipado.asturias.es/bopa/2026/03/05/2026-01736.pdf,2026-02-27
+Polic\xEDa Local,Arag\xF3n - proceso unificado HAP/678/2026,Trepa cuerda lisa,fuerza,6 m,pendiente_estimacion_fundada,1_30sep,no_30sep_y_02oct2026,no; misma modalidad,https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1447319890404,2026-04-24
+Polic\xEDa Local,Arag\xF3n - proceso unificado HAP/678/2026,Salto vertical,salto,desde pies juntos,pendiente_estimacion_fundada,2_30sep,no_30sep_y_02oct2026,no; misma modalidad,https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1447319890404,2026-04-24
+Polic\xEDa Local,Arag\xF3n - proceso unificado HAP/678/2026,Levantamiento suelo sobre cabeza,fuerza,3 repeticiones consecutivas; H40/M30 kg m\xE1s anillas,pendiente_estimacion_fundada,3_30sep,no_30sep_y_02oct2026,s\xED; carga H40/M30 kg,https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1447319890404,2026-04-24
+Polic\xEDa Local,Arag\xF3n - proceso unificado HAP/678/2026,Nataci\xF3n libre,natacion,50 m,pendiente_estimacion_fundada,4_30sep,no_30sep_y_02oct2026,no; misma modalidad,https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1447319890404,2026-04-24
+Polic\xEDa Local,Arag\xF3n - proceso unificado HAP/678/2026,Carrera resistencia,resistencia,1500 m,pendiente_estimacion_fundada,bloque_02oct,no_30sep_y_02oct2026,no; misma modalidad,https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1447319890404,2026-04-24
+Polic\xEDa Local,Arag\xF3n - proceso unificado HAP/678/2026,Salto longitud con carrera,salto,3 intentos,pendiente_estimacion_fundada,bloque_02oct,no_30sep_y_02oct2026,no; misma modalidad,https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1447319890404,2026-04-24
+Polic\xEDa Local,Cantabria - Castro Urdiales - Agente 6 plazas 2026,Carrera velocidad,velocidad,60 m; 1 intento,pendiente_estimacion_fundada,tribunal,no_acreditado,no; misma modalidad,https://boc.cantabria.es/boces/verAnuncioAction.do?idAnuBlob=434126,2026-04-13
+Polic\xEDa Local,Cantabria - Castro Urdiales - Agente 6 plazas 2026,Carrera resistencia,resistencia,1000 m; 1 intento,pendiente_estimacion_fundada,tribunal,no_acreditado,no; misma modalidad,https://boc.cantabria.es/boces/verAnuncioAction.do?idAnuBlob=434126,2026-04-13
+Polic\xEDa Local,Cantabria - Castro Urdiales - Agente 6 plazas 2026,Longitud desde parado,salto,2 intentos,pendiente_estimacion_fundada,tribunal,no_acreditado,no; misma modalidad,https://boc.cantabria.es/boces/verAnuncioAction.do?idAnuBlob=434126,2026-04-13
+Polic\xEDa Local,Cantabria - Castro Urdiales - Agente 6 plazas 2026,Lanzamiento bal\xF3n medicinal,fuerza,H5/M3 kg; 2 intentos,pendiente_estimacion_fundada,tribunal,no_acreditado,s\xED; carga H5/M3 kg,https://boc.cantabria.es/boces/verAnuncioAction.do?idAnuBlob=434126,2026-04-13
+Polic\xEDa Local,Cantabria - Castro Urdiales - Agente 6 plazas 2026,Nataci\xF3n libre,natacion,50 m; 1 intento,pendiente_estimacion_fundada,tribunal,no_acreditado,no; misma modalidad,https://boc.cantabria.es/boces/verAnuncioAction.do?idAnuBlob=434126,2026-04-13
+Polic\xEDa Local,La Rioja - F.PL/26 - Resoluci\xF3n 15/2026; marco modificado 2025,Lanzamiento bal\xF3n medicinal,fuerza,3 kg ambos sexos; desde parado,pendiente_estimacion_fundada,no_acreditado,no_acreditado,no; misma modalidad y carga; baremos distintos,https://ias1.larioja.org/boletin/Bor_Boletin_visor_Servlet?referencia=39079214-1-PDF-575584,2026-02-20
+Polic\xEDa Local,La Rioja - F.PL/26 - Resoluci\xF3n 15/2026; marco modificado 2025,Circuito agilidad,agilidad,vallas y banderines; salida derecha o izquierda,pendiente_estimacion_fundada,no_acreditado,no_acreditado,no; misma modalidad y carga; baremos distintos,https://ias1.larioja.org/boletin/Bor_Boletin_visor_Servlet?referencia=39079214-1-PDF-575584,2026-02-20
+Polic\xEDa Local,La Rioja - F.PL/26 - Resoluci\xF3n 15/2026; marco modificado 2025,Carrera resistencia,resistencia,1000 m; 1 intento,pendiente_estimacion_fundada,no_acreditado,no_acreditado,no; misma modalidad y carga; baremos distintos,https://ias1.larioja.org/boletin/Bor_Boletin_visor_Servlet?referencia=39079214-1-PDF-575584,2026-02-20
+Polic\xEDa Local,La Rioja - F.PL/26 - Resoluci\xF3n 15/2026; marco modificado 2025,Nataci\xF3n libre,natacion,50 m; salida borde exterior,pendiente_estimacion_fundada,no_acreditado,no_acreditado,no; misma modalidad y carga; baremos distintos,https://ias1.larioja.org/boletin/Bor_Boletin_visor_Servlet?referencia=39079214-1-PDF-575584,2026-02-20
+Polic\xEDa Local,Navarra - Pamplona 5 plazas; muestra municipal,Dominio medio acu\xE1tico,natacion,50 m libre,pendiente_estimacion_fundada,lo_fija_tribunal,tribunal_puede_uno_o_varios_dias,no; misma modalidad; solo baremos distintos,https://sedeelectronica.pamplona.es/VerDocumento/VerDocumento.aspx?IDdoc=1455995,2025-12-22
+Polic\xEDa Local,Navarra - Pamplona 5 plazas; muestra municipal,Test de Barrow,agilidad,recorrido A+B; rect\xE1ngulo 8.66 x 5 m,pendiente_estimacion_fundada,lo_fija_tribunal,tribunal_puede_uno_o_varios_dias,no; misma modalidad; solo baremos distintos,https://sedeelectronica.pamplona.es/VerDocumento/VerDocumento.aspx?IDdoc=1455995,2025-12-22
+Polic\xEDa Local,Navarra - Pamplona 5 plazas; muestra municipal,Press de banca,fuerza,H38 kg; M25 kg; m\xE1ximo repeticiones en 60 s,1_ventana_oficial,lo_fija_tribunal,tribunal_puede_uno_o_varios_dias,s\xED; carga distinta; misma modalidad,https://sedeelectronica.pamplona.es/VerDocumento/VerDocumento.aspx?IDdoc=1455995,2025-12-22
+Polic\xEDa Local,Navarra - Pamplona 5 plazas; muestra municipal,Course Navette,resistencia,tramos 20 m progresivos,pendiente_estimacion_fundada,lo_fija_tribunal,tribunal_puede_uno_o_varios_dias,no; misma modalidad; solo baremos distintos,https://sedeelectronica.pamplona.es/VerDocumento/VerDocumento.aspx?IDdoc=1455995,2025-12-22
+Polic\xEDa Local,Regi\xF3n de Murcia - Ayuntamiento Murcia 50 plazas; muestra municipal,Circuito agilidad,agilidad,circuito anexo II,pendiente_estimacion_fundada,lo_fija_tribunal,no_consta_citacion_validada,no; misma modalidad; solo baremos distintos,https://www.borm.es/services/anuncio/ano/2026/numero/1605/pdf,2026-03-27
+Polic\xEDa Local,Regi\xF3n de Murcia - Ayuntamiento Murcia 50 plazas; muestra municipal,Dominadas H,fuerza,repeticiones; umbral contradictorio no transcrito,pendiente_estimacion_fundada,lo_fija_tribunal,no_consta_citacion_validada,s\xED; H dominadas; M suspensi\xF3n; variantes excluyentes,https://www.borm.es/services/anuncio/ano/2026/numero/1605/pdf,2026-03-27
+Polic\xEDa Local,Regi\xF3n de Murcia - Ayuntamiento Murcia 50 plazas; muestra municipal,Suspensi\xF3n M,fuerza,mantener posici\xF3n en barra,pendiente_estimacion_fundada,lo_fija_tribunal,no_consta_citacion_validada,s\xED; H dominadas; M suspensi\xF3n; variantes excluyentes,https://www.borm.es/services/anuncio/ano/2026/numero/1605/pdf,2026-03-27
+Polic\xEDa Local,Regi\xF3n de Murcia - Ayuntamiento Murcia 50 plazas; muestra municipal,Carrera resistencia,resistencia,1000 m,pendiente_estimacion_fundada,lo_fija_tribunal,no_consta_citacion_validada,no; misma modalidad; solo baremos distintos,https://www.borm.es/services/anuncio/ano/2026/numero/1605/pdf,2026-03-27
+Polic\xEDa Local,Extremadura - Tribunal \xDAnico 35 plazas 2026,Circuito agilidad,agilidad,circuito anexo II,pendiente_estimacion_fundada,1,no_consta_citacion_validada,no; misma modalidad; solo baremos distintos,https://doe.juntaex.es/pdfs/doe/2026/1700o/26050101.pdf,2026-09-01
+Polic\xEDa Local,Extremadura - Tribunal \xDAnico 35 plazas 2026,Dominadas H,fuerza,m\xE1ximo repeticiones,pendiente_estimacion_fundada,2,no_consta_citacion_validada,s\xED; H dominadas; M suspensi\xF3n; variantes excluyentes,https://doe.juntaex.es/pdfs/doe/2026/1700o/26050101.pdf,2026-09-01
+Polic\xEDa Local,Extremadura - Tribunal \xDAnico 35 plazas 2026,Suspensi\xF3n M,fuerza,mantener posici\xF3n en barra,pendiente_estimacion_fundada,2,no_consta_citacion_validada,s\xED; H dominadas; M suspensi\xF3n; variantes excluyentes,https://doe.juntaex.es/pdfs/doe/2026/1700o/26050101.pdf,2026-09-01
+Polic\xEDa Local,Extremadura - Tribunal \xDAnico 35 plazas 2026,Carrera resistencia,resistencia,1000 m,pendiente_estimacion_fundada,3,no_consta_citacion_validada,no; misma modalidad; solo baremos distintos,https://doe.juntaex.es/pdfs/doe/2026/1700o/26050101.pdf,2026-09-01
+Polic\xEDa Local,Castilla-La Mancha - Toledo 1 plaza; muestra municipal,Carrera velocidad,velocidad,60 m,pendiente_estimacion_fundada,1,si_citacion_08oct2026,no; misma modalidad; solo baremos distintos,https://www.toledo.es/wp-content/uploads/2026/07/anuncio_2026-3027.pdf,2026-06-29
+Polic\xEDa Local,Castilla-La Mancha - Toledo 1 plaza; muestra municipal,Carrera resistencia,resistencia,1000 m,pendiente_estimacion_fundada,2,si_citacion_08oct2026,no; misma modalidad; solo baremos distintos,https://www.toledo.es/wp-content/uploads/2026/07/anuncio_2026-3027.pdf,2026-06-29
+Polic\xEDa Local,Castilla-La Mancha - Toledo 1 plaza; muestra municipal,Salto longitud parado,salto,pies juntos,pendiente_estimacion_fundada,3,si_citacion_08oct2026,no; misma modalidad; solo baremos distintos,https://www.toledo.es/wp-content/uploads/2026/07/anuncio_2026-3027.pdf,2026-06-29
+Polic\xEDa Local,Castilla-La Mancha - Toledo 1 plaza; muestra municipal,Bal\xF3n medicinal,fuerza,H4 kg; M3 kg,pendiente_estimacion_fundada,4,si_citacion_08oct2026,s\xED; carga distinta; misma modalidad,https://www.toledo.es/wp-content/uploads/2026/07/anuncio_2026-3027.pdf,2026-06-29
+Polic\xEDa Local,Canarias - III convocatoria unificada 2025; pruebas 2026,Salto horizontal,salto,pies juntos,pendiente_estimacion_fundada,1,bases_permiten_varias_sesiones_o_dias,no; misma modalidad; solo baremos distintos,https://www.gobiernodecanarias.org/cmsgob2/export/sites/formacion/seguridad/descargas/convocatoria-unificada/boc-a-2025-215-3702.pdf,2025-10-20
+Polic\xEDa Local,Canarias - III convocatoria unificada 2025; pruebas 2026,Flexiones brazos en barra H,fuerza,dominadas; no flexiones en suelo,pendiente_estimacion_fundada,2,bases_permiten_varias_sesiones_o_dias,s\xED; H flexiones en barra; M suspensi\xF3n; variantes excluyentes,https://www.gobiernodecanarias.org/cmsgob2/export/sites/formacion/seguridad/descargas/convocatoria-unificada/boc-a-2025-215-3702.pdf,2025-10-20
+Polic\xEDa Local,Canarias - III convocatoria unificada 2025; pruebas 2026,Flexi\xF3n brazos mantenida M,fuerza,mantener posici\xF3n en barra,pendiente_estimacion_fundada,2,bases_permiten_varias_sesiones_o_dias,s\xED; H flexiones en barra; M suspensi\xF3n; variantes excluyentes,https://www.gobiernodecanarias.org/cmsgob2/export/sites/formacion/seguridad/descargas/convocatoria-unificada/boc-a-2025-215-3702.pdf,2025-10-20
+Polic\xEDa Local,Canarias - III convocatoria unificada 2025; pruebas 2026,Test Cooper,resistencia,m\xE1xima distancia en 12 min,12_ventana_oficial,3,bases_permiten_varias_sesiones_o_dias,no; misma modalidad; solo baremos distintos,https://www.gobiernodecanarias.org/cmsgob2/export/sites/formacion/seguridad/descargas/convocatoria-unificada/boc-a-2025-215-3702.pdf,2025-10-20
+Polic\xEDa Local,Canarias - III convocatoria unificada 2025; pruebas 2026,Adaptaci\xF3n medio acu\xE1tico,natacion,50 m libre,pendiente_estimacion_fundada,4,bases_permiten_varias_sesiones_o_dias,no; misma modalidad; solo baremos distintos,https://www.gobiernodecanarias.org/cmsgob2/export/sites/formacion/seguridad/descargas/convocatoria-unificada/boc-a-2025-215-3702.pdf,2025-10-20
+Polic\xEDa Local,Illes Balears - VII proceso unificado 2026; 98 plazas tras correcci\xF3n,Circuito agilidad y flexibilidad,agilidad,circuito anexo 3 Decreto 40/2019,pendiente_estimacion_fundada,1,si_expreso_bases,no; misma modalidad; solo baremos distintos,https://www.caib.es/seucaib/ca/arxiuServlet?id=6477436,2026-03-06
+Polic\xEDa Local,Illes Balears - VII proceso unificado 2026; 98 plazas tras correcci\xF3n,Fuerza flexora H,fuerza,dominadas en barra; sin l\xEDmite tiempo,pendiente_estimacion_fundada,2,si_expreso_bases,s\xED; H flexiones en barra; M suspensi\xF3n; variantes excluyentes,https://www.caib.es/seucaib/ca/arxiuServlet?id=6477436,2026-03-06
+Polic\xEDa Local,Illes Balears - VII proceso unificado 2026; 98 plazas tras correcci\xF3n,Fuerza flexora M,fuerza,suspensi\xF3n en barra,pendiente_estimacion_fundada,2,si_expreso_bases,s\xED; H flexiones en barra; M suspensi\xF3n; variantes excluyentes,https://www.caib.es/seucaib/ca/arxiuServlet?id=6477436,2026-03-06
+Polic\xEDa Local,Illes Balears - VII proceso unificado 2026; 98 plazas tras correcci\xF3n,Carrera resistencia,resistencia,1000 m,pendiente_estimacion_fundada,3,si_expreso_bases,no; misma modalidad; solo baremos distintos,https://www.caib.es/seucaib/ca/arxiuServlet?id=6477436,2026-03-06
+Polic\xEDa Local,Illes Balears - VII proceso unificado 2026; 98 plazas tras correcci\xF3n,Aptitud medio acu\xE1tico,natacion,50 m libre,pendiente_estimacion_fundada,4,si_expreso_bases,no; misma modalidad; solo baremos distintos,https://www.caib.es/seucaib/ca/arxiuServlet?id=6477436,2026-03-06
+Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Potencia tren inferior,salto,salto de longitud desde parado,pendiente_estimacion_fundada,tribunal,no_pista15a17sep_natacion23sep2026,no; misma modalidad,"https://www.tramitacastillayleon.jcyl.es/web/jcyl/binarios/924/641/MAV_482_2026yCorreccion,0.pdf?blobheader=application%2Fpdf%3Bcharset%3DUTF-8&blobheadername1=Cache-Control&blobheadername2=Expires&blobheadername3=Site&blobheadervalue1=no-store%2Cno-cache%2Cmust-revalidate&blobheadervalue2=0&blobheadervalue3=Portal_Informador&blobnocache=true",2026-05-26
+Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Carrera velocidad,velocidad,60 m,pendiente_estimacion_fundada,tribunal,no_pista15a17sep_natacion23sep2026,no; misma modalidad,"https://www.tramitacastillayleon.jcyl.es/web/jcyl/binarios/924/641/MAV_482_2026yCorreccion,0.pdf?blobheader=application%2Fpdf%3Bcharset%3DUTF-8&blobheadername1=Cache-Control&blobheadername2=Expires&blobheadername3=Site&blobheadervalue1=no-store%2Cno-cache%2Cmust-revalidate&blobheadervalue2=0&blobheadervalue3=Portal_Informador&blobnocache=true",2026-05-26
+Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Carrera resistencia,resistencia,1000 m,pendiente_estimacion_fundada,tribunal,no_pista15a17sep_natacion23sep2026,no; misma modalidad,"https://www.tramitacastillayleon.jcyl.es/web/jcyl/binarios/924/641/MAV_482_2026yCorreccion,0.pdf?blobheader=application%2Fpdf%3Bcharset%3DUTF-8&blobheadername1=Cache-Control&blobheadername2=Expires&blobheadername3=Site&blobheadervalue1=no-store%2Cno-cache%2Cmust-revalidate&blobheadervalue2=0&blobheadervalue3=Portal_Informador&blobnocache=true",2026-05-26
+Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Nataci\xF3n libre,natacion,25 m,pendiente_estimacion_fundada,tribunal,no_pista15a17sep_natacion23sep2026,no; misma modalidad,"https://www.tramitacastillayleon.jcyl.es/web/jcyl/binarios/924/641/MAV_482_2026yCorreccion,0.pdf?blobheader=application%2Fpdf%3Bcharset%3DUTF-8&blobheadername1=Cache-Control&blobheadername2=Expires&blobheadername3=Site&blobheadervalue1=no-store%2Cno-cache%2Cmust-revalidate&blobheadervalue2=0&blobheadervalue3=Portal_Informador&blobnocache=true",2026-05-26
+Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento bal\xF3n medicinal,fuerza,H5/M3 kg; 3 intentos; sin carrera,pendiente_estimacion_fundada,tribunal,no_pista15a17sep_natacion23sep2026,s\xED; carga H5/M3 kg,"https://www.tramitacastillayleon.jcyl.es/web/jcyl/binarios/924/641/MAV_482_2026yCorreccion,0.pdf?blobheader=application%2Fpdf%3Bcharset%3DUTF-8&blobheadername1=Cache-Control&blobheadername2=Expires&blobheadername3=Site&blobheadervalue1=no-store%2Cno-cache%2Cmust-revalidate&blobheadervalue2=0&blobheadervalue3=Portal_Informador&blobnocache=true",2026-05-26
+`;
+
+  // src/motor/oposiciones-pruebas.ts
+  var TIPOS_PRUEBA_OPOSICION = ["fuerza", "resistencia", "natacion", "agilidad", "velocidad", "salto", "otra"];
+  var DOMINIOS_OFICIALES_OPOSICION = [
+    "ajuntament.barcelona.cat",
+    "boc.cantabria.es",
+    "bon.navarra.es",
+    "doe.juntaex.es",
+    "dogc.gencat.cat",
+    "ias1.larioja.org",
+    "miprincipado.asturias.es",
+    "sede.madrid.es",
+    "sedeelectronica.pamplona.es",
+    "www.boa.aragon.es",
+    "www.bocm.es",
+    "www.boe.es",
+    "www.borm.es",
+    "www.caib.es",
+    "www.euskadi.eus",
+    "www.gobiernodecanarias.org",
+    "www.juntadeandalucia.es",
+    "www.sevilla.org",
+    "www.toledo.es",
+    "www.valencia.es",
+    "www.xunta.gal",
+    "www.tramitacastillayleon.jcyl.es"
+  ];
+  var COLUMNAS7 = ["cuerpo", "ambito", "prueba", "tipo", "distancia_o_repeticiones", "duracion_aprox_min", "orden", "mismo_dia", "diferencia_por_sexo", "fuente_url", "fecha_convocatoria"];
+  function sexoDePrueba(nombre) {
+    const m = /[(\-–]\s*(hombres|mujeres)\s*\)?\s*$/i.exec(nombre);
+    return m ? m[1].toLowerCase() === "hombres" ? "hombre" : "mujer" : void 0;
+  }
+  function idCuerpoOposicion(cuerpo, ambito) {
+    return `${cuerpo} ${ambito}`.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  }
+  var numeroOrden = (orden) => {
+    const m = /^(\d+)(?:_|$)/.exec(orden);
+    return m ? Number(m[1]) : void 0;
+  };
+  var clave2 = (f2) => `${f2.cuerpo}\0${f2.ambito}`;
+  function comprobarTablaOposiciones(texto3) {
+    const errores = [];
+    const cab = texto3.split("\n", 1)[0].replace(/\r/g, "").split(",");
+    if (cab.join(",") !== COLUMNAS7.join(",")) return [`Columnas distintas de las esperadas: ${COLUMNAS7.join(",")}`];
+    const filas = registros(texto3);
+    if (!filas.length) return ["La tabla est\xE1 vac\xEDa."];
+    const vistas = /* @__PURE__ */ new Set();
+    const grupos = /* @__PURE__ */ new Map();
+    filas.forEach((r, i) => {
+      const n = `fila ${i + 2} (${r.cuerpo} \xB7 ${r.prueba})`;
+      for (const c2 of ["cuerpo", "ambito", "prueba", "tipo", "fuente_url"]) if (!r[c2]) errores.push(`${n}: falta \xAB${c2}\xBB.`);
+      if (r.tipo && !TIPOS_PRUEBA_OPOSICION.includes(r.tipo)) errores.push(`${n}: tipo \xAB${r.tipo}\xBB no est\xE1 en la lista.`);
+      let host = "";
+      try {
+        const u = new URL(r.fuente_url);
+        if (u.protocol !== "https:") errores.push(`${n}: la fuente no es https.`);
+        host = u.hostname;
+      } catch {
+        errores.push(`${n}: la fuente no es una URL.`);
+      }
+      if (host && !DOMINIOS_OFICIALES_OPOSICION.includes(host)) errores.push(`${n}: la fuente (${host}) no es de un dominio oficial de la lista.`);
+      const dup = `${r.cuerpo}\0${r.ambito}\0${r.prueba}\0${r.distancia_o_repeticiones}`;
+      if (vistas.has(dup)) errores.push(`${n}: prueba repetida.`);
+      vistas.add(dup);
+      const sexo = sexoDePrueba(r.prueba);
+      if (sexo) {
+        const g = `${r.cuerpo}\0${r.ambito}\0${r.orden}`;
+        const cuenta = grupos.get(g) ?? { hombre: 0, mujer: 0 };
+        cuenta[sexo]++;
+        grupos.set(g, cuenta);
+      }
+    });
+    for (const [g, c2] of grupos) {
+      const [cuerpo, ambito, orden] = g.split("\0");
+      if (c2.hombre !== 1 || c2.mujer !== 1) errores.push(`${cuerpo} \xB7 ${ambito}, orden \xAB${orden}\xBB: las variantes por sexo tienen que ser una de hombres y una de mujeres (hay ${c2.hombre} y ${c2.mujer}).`);
+    }
+    return errores;
+  }
+  function filasPruebasOposicion(texto3) {
+    return registros(texto3).map((r) => ({
+      cuerpo: r.cuerpo,
+      ambito: r.ambito,
+      prueba: r.prueba,
+      tipo: r.tipo,
+      distancia: r.distancia_o_repeticiones,
+      duracionTabla: r.duracion_aprox_min,
+      orden: r.orden,
+      fuente: r.fuente_url,
+      fecha: r.fecha_convocatoria
+    }));
+  }
+  var MIN_POR_KM = 5;
+  var MIN_POR_50M_NADO = 1;
+  var MIN_PRUEBA_CORTA = 2;
+  var MIN_OTRA = 5;
+  var MIN_COURSE_NAVETTE = 10;
+  var esCourseNavette = (d) => /\b20 m\b/.test(d) && /(idas y vueltas|trayectos|tramos)/i.test(d);
+  var metrosCarrera = (d) => {
+    const m = /^(\d{3,5}) m\b/.exec(d.trim());
+    return m ? Number(m[1]) : void 0;
+  };
+  function duracionPruebaOposicion(f2) {
+    const nums = (f2.duracionTabla.match(/\d+(?:\.\d+)?/g) ?? []).map(Number);
+    if (nums.length) return { min: Math.max(1, Math.ceil(Math.max(...nums))), estimada: false };
+    const d = f2.distancia;
+    const minutos = () => {
+      const enMin = /en (\d+) min/.exec(d);
+      switch (f2.tipo) {
+        case "resistencia":
+        case "otra": {
+          if (enMin) return Number(enMin[1]);
+          if (esCourseNavette(d)) return MIN_COURSE_NAVETTE;
+          const m = metrosCarrera(d);
+          if (m !== void 0) return Math.max(1, Math.round(m / 1e3 * MIN_POR_KM));
+          return MIN_OTRA;
+        }
+        case "natacion": {
+          const metros = d.includes("+") ? (d.match(/(\d+) m\b/g) ?? []).reduce((s, x) => s + parseInt(x, 10), 0) : parseInt((/(\d+) m\b/.exec(d) ?? ["", "50"])[1], 10);
+          return Math.max(1, Math.ceil(metros / 50 * MIN_POR_50M_NADO));
+        }
+        default:
+          return MIN_PRUEBA_CORTA;
+      }
+    };
+    return { min: minutos(), estimada: true };
+  }
+  function cuerposDeTabla(filas) {
+    const vistos = /* @__PURE__ */ new Map();
+    for (const f2 of filas) {
+      if (vistos.has(clave2(f2))) continue;
+      vistos.set(clave2(f2), {
+        id: idCuerpoOposicion(f2.cuerpo, f2.ambito),
+        cuerpo: f2.cuerpo,
+        ambito: f2.ambito,
+        nombre: f2.ambito === "Espa\xF1a" ? f2.cuerpo : `${f2.cuerpo} \u2014 ${f2.ambito}`,
+        fuente: f2.fuente,
+        fecha: f2.fecha
+      });
+    }
+    return [...vistos.values()];
+  }
+  function pruebasDeCuerpo(filas, idCuerpo, sexo) {
+    const delCuerpo = filas.filter((f2) => idCuerpoOposicion(f2.cuerpo, f2.ambito) === idCuerpo);
+    const usadas = /* @__PURE__ */ new Set();
+    const elegidas = delCuerpo.filter((f2) => {
+      const s = sexoDePrueba(f2.prueba);
+      if (!s) return true;
+      const par = `${f2.orden}`;
+      if (sexo ? s !== sexo : usadas.has(par)) return false;
+      usadas.add(par);
+      return true;
+    });
+    const conNumero = elegidas.every((f2) => numeroOrden(f2.orden) !== void 0);
+    const ordenadas = conNumero ? [...elegidas].sort((a2, b) => numeroOrden(a2.orden) - numeroOrden(b.orden)) : elegidas;
+    const repetido = (n) => ordenadas.filter((f2) => f2.prueba === n).length > 1;
+    return ordenadas.map((f2) => {
+      const d = duracionPruebaOposicion(f2);
+      return { nombre: repetido(f2.prueba) && f2.distancia ? `${f2.prueba} (${f2.distancia})` : f2.prueba, tipo: f2.tipo, duracionMin: d.min, estimada: d.estimada };
+    });
+  }
+
   // src/motor/oposicion.ts
   var TIPOS_OPOSICION = ["escrito", "fisicas", "ambas"];
   var NOMBRE_TIPO_OPOSICION = {
@@ -11505,15 +11824,21 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     fisicas: "Solo pruebas f\xEDsicas",
     ambas: "Examen escrito y pruebas f\xEDsicas"
   };
+  var FILAS_PRUEBAS = filasPruebasOposicion(OPOSICIONES_PRUEBAS_CSV);
   var CUERPOS_OPOSICION = [
-    { id: "policia_nacional", nombre: "Polic\xEDa Nacional" },
-    { id: "guardia_civil", nombre: "Guardia Civil" },
-    { id: "policia_local", nombre: "Polic\xEDa Local" },
-    { id: "policia_autonomica", nombre: "Polic\xEDa auton\xF3mica (Mossos, Ertzaintza, Polic\xEDa Foral\u2026)" },
-    { id: "bomberos", nombre: "Bomberos" },
-    { id: "fuerzas_armadas", nombre: "Fuerzas Armadas" },
+    ...cuerposDeTabla(FILAS_PRUEBAS).map((c2) => ({ id: c2.id, nombre: c2.nombre })).sort((a2, b) => a2.nombre.localeCompare(b.nombre, "es")),
     { id: "otro", nombre: "Otro" }
   ];
+  var CUERPOS_ANTIGUOS = {
+    policia_nacional: idCuerpoOposicion("Polic\xEDa Nacional - Escala B\xE1sica", "Espa\xF1a"),
+    guardia_civil: idCuerpoOposicion("Guardia Civil - Cabos y Guardias", "Espa\xF1a"),
+    policia_local: void 0,
+    policia_autonomica: void 0,
+    bomberos: void 0,
+    fuerzas_armadas: void 0
+  };
+  var MAX_PRUEBAS_FISICAS = 15;
+  var CITACION_PROPUESTA = "08:00";
   function validarOposicion(d) {
     const tipo = (d.tipo ?? "").trim();
     if (!TIPOS_OPOSICION.includes(tipo)) return { ok: false, error: "Elige qu\xE9 pruebas tiene tu oposici\xF3n: solo el escrito, solo las f\xEDsicas o las dos." };
@@ -11533,19 +11858,58 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
         if (orden === "fisicas_despues" && fechaFisicas < fechaEscrito) return { ok: false, error: "Has dicho que las f\xEDsicas van despu\xE9s del escrito, pero su fecha es anterior. Revisa las fechas o el orden." };
       }
     }
-    const cuerpo = (d.cuerpo ?? "").trim();
+    let cuerpo = (d.cuerpo ?? "").trim();
+    if (cuerpo in CUERPOS_ANTIGUOS) cuerpo = CUERPOS_ANTIGUOS[cuerpo] ?? "";
     if (cuerpo && !CUERPOS_OPOSICION.some((c2) => c2.id === cuerpo)) return { ok: false, error: "Elige tu cuerpo de la lista (o \xABOtro\xBB)." };
+    const jornada = conFisicas ? validarJornada(d) : { ok: true, jornada: {} };
+    if (!jornada.ok) return jornada;
     return {
       ok: true,
-      oposicion: { tipo, ...orden ? { orden } : {}, ...fechaFisicas ? { fechaFisicas } : {}, ...fechaEscrito ? { fechaEscrito } : {}, ...cuerpo ? { cuerpo } : {} }
+      oposicion: {
+        tipo,
+        ...orden ? { orden } : {},
+        ...fechaFisicas ? { fechaFisicas } : {},
+        ...fechaEscrito ? { fechaEscrito } : {},
+        ...cuerpo ? { cuerpo } : {},
+        ...jornada.jornada
+      }
+    };
+  }
+  function validarJornada(d) {
+    const citacion = (d.citacion ?? "").trim();
+    const finJornada = (d.finJornada ?? "").trim();
+    if (citacion && !esHoraValida(citacion)) return { ok: false, error: "La hora de citaci\xF3n no es v\xE1lida." };
+    if (finJornada && !esHoraValida(finJornada)) return { ok: false, error: "La hora de final de la jornada no es v\xE1lida." };
+    if (citacion && finJornada && finJornada <= citacion) return { ok: false, error: "El final de la jornada tiene que ser despu\xE9s de la hora de citaci\xF3n." };
+    const lista5 = Array.isArray(d.pruebasFisicas) ? d.pruebasFisicas : [];
+    if (lista5.length > MAX_PRUEBAS_FISICAS) return { ok: false, error: `Como mucho ${MAX_PRUEBAS_FISICAS} pruebas f\xEDsicas.` };
+    const pruebas = [];
+    for (const [i, x] of lista5.entries()) {
+      const o = x && typeof x === "object" ? x : {};
+      const nombre = typeof o.nombre === "string" ? o.nombre.trim().slice(0, 80) : "";
+      const hora3 = typeof o.hora === "string" ? o.hora.trim() : "";
+      const duracionMin = Number(o.duracionMin);
+      const cual = nombre ? `\xAB${nombre}\xBB` : `la prueba ${i + 1}`;
+      if (!nombre) return { ok: false, error: `Ponle nombre a la prueba ${i + 1}.` };
+      if (!esHoraValida(hora3)) return { ok: false, error: `Pon la hora de ${cual}.` };
+      if (!Number.isInteger(duracionMin) || duracionMin < 1 || duracionMin > 240) return { ok: false, error: `La duraci\xF3n de ${cual} tiene que ser de 1 a 240 minutos.` };
+      if (citacion && hora3 < citacion) return { ok: false, error: `${cual[0].toUpperCase()}${cual.slice(1)} empieza antes de la hora de citaci\xF3n.` };
+      pruebas.push({ nombre, hora: hora3, duracionMin, ...o.estimada === true ? { estimada: true } : {} });
+    }
+    return {
+      ok: true,
+      jornada: { ...pruebas.length ? { pruebasFisicas: pruebas } : {}, ...citacion ? { citacion } : {}, ...finJornada ? { finJornada } : {}, ...d.cafeina === "si" ? { cafeina: "si" } : {} }
     };
   }
   function oposicionDesdeJson(valor) {
     if (!valor || typeof valor !== "object") return void 0;
     const x = valor;
     const texto3 = (v) => typeof v === "string" ? v : void 0;
-    const r = validarOposicion({ tipo: texto3(x.tipo), orden: texto3(x.orden), fechaFisicas: texto3(x.fechaFisicas), fechaEscrito: texto3(x.fechaEscrito), cuerpo: texto3(x.cuerpo) });
-    return r.ok ? r.oposicion : void 0;
+    const datos = { tipo: texto3(x.tipo), orden: texto3(x.orden), fechaFisicas: texto3(x.fechaFisicas), fechaEscrito: texto3(x.fechaEscrito), cuerpo: texto3(x.cuerpo), citacion: texto3(x.citacion), finJornada: texto3(x.finJornada), cafeina: texto3(x.cafeina) };
+    const r = validarOposicion({ ...datos, pruebasFisicas: x.pruebasFisicas });
+    if (r.ok) return r.oposicion;
+    const sin = validarOposicion({ ...datos, citacion: void 0, finJornada: void 0 });
+    return sin.ok ? sin.oposicion : void 0;
   }
   var DIAS_SIN_RECORTE_FISICAS = 21;
   var MS_DIA4 = 864e5;
@@ -11605,6 +11969,67 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (estado.sinRecorte && fase !== "final_fisicas" && fase !== "dia_fisicas") frases.push("Son las 3 \xFAltimas semanas antes de las f\xEDsicas: no se recortan kcal, para que llegues fuerte.");
     if (objetivoCambiado) frases.push("Por eso estos d\xEDas el plan es para mantener tu peso; perder grasa se retoma despu\xE9s de las pruebas.");
     return frases;
+  }
+  var ID_COMPETICION_OPOSICION = "oposicion-fisicas";
+  var HUECO_PROPUESTO_MIN = 30;
+  var HUECO_MINIMO_MIN = 10;
+  function pruebasPropuestas(cuerpo, sexo, citacion = CITACION_PROPUESTA, finJornada) {
+    if (!cuerpo) return [];
+    const lista5 = pruebasDeCuerpo(FILAS_PRUEBAS, cuerpo, sexo);
+    if (!lista5.length) return [];
+    const inicio = aMinutos2(esHoraValida(citacion) ? citacion : CITACION_PROPUESTA) + 30;
+    const total = lista5.reduce((s, p) => s + p.duracionMin, 0);
+    let hueco = HUECO_PROPUESTO_MIN;
+    if (finJornada && esHoraValida(finJornada) && lista5.length > 1) {
+      hueco = Math.max(HUECO_MINIMO_MIN, Math.floor((aMinutos2(finJornada) - inicio - total) / (lista5.length - 1) / 5) * 5);
+    }
+    let t2 = inicio;
+    return lista5.map((p) => {
+      const hora3 = aHoraTexto(Math.min(t2, 23 * 60 + 59));
+      t2 += p.duracionMin + hueco;
+      return { nombre: p.nombre, hora: hora3, duracionMin: p.duracionMin, ...p.estimada ? { estimada: true } : {} };
+    });
+  }
+  function competicionDeOposicion(op) {
+    if (op.tipo === "escrito" || !op.fechaFisicas || !op.pruebasFisicas?.length) return void 0;
+    const pruebas = [...op.pruebasFisicas].sort((a2, b) => a2.hora.localeCompare(b.hora));
+    return {
+      id: ID_COMPETICION_OPOSICION,
+      nombre: "Pruebas f\xEDsicas",
+      fecha: op.fechaFisicas,
+      hora: pruebas[0].hora,
+      tipo: "otra",
+      pruebas: pruebas.map((p) => ({ hora: p.hora, duracionMin: p.duracionMin })),
+      usaGeles: "no",
+      ...op.cafeina ? { cafeina: "si" } : {}
+    };
+  }
+  function planDiaFisicas(op, fecha, peso, opciones = {}) {
+    const c2 = competicionDeOposicion(op);
+    if (!c2 || c2.fecha !== fecha) return void 0;
+    const p = planDiaCompeticion(c2, fecha, peso, { calor: false, ...opciones.edad !== void 0 ? { edad: opciones.edad } : {} });
+    if (!p) return void 0;
+    const ordenadas = [...op.pruebasFisicas].sort((a2, b) => a2.hora.localeCompare(b.hora));
+    let n = 0;
+    const finPruebas = p.pruebas[p.pruebas.length - 1].fin;
+    const finJornada = op.finJornada ? Math.max(aMinutos2(op.finJornada), finPruebas) : finPruebas;
+    const linea = p.linea.map((e) => {
+      if (e.tipo === "durante") {
+        const pr = ordenadas[n++];
+        return { ...e, titulo: `${pr.nombre} (${pr.estimada ? "unos " : ""}${pr.duracionMin} min)`, detalle: "Esfuerzo corto: no hace falta tomar nada durante la prueba." };
+      }
+      if (e.tipo === "entre") return { ...e, detalle: `${e.detalle} Unos sorbos de agua y algo peque\xF1o que ya conozcas: un pl\xE1tano, una barrita de cereales o pan con membrillo.` };
+      if (e.tipo === "recuperacion" && finJornada > finPruebas) return { ...e, minuto: finJornada + 30 };
+      if (e.tipo === "previa") return { ...e, titulo: "Desayuno (2-3 h antes de la primera prueba)", detalle: "El de siempre: hidratos, poca grasa y poca fibra, nada nuevo.", hidratoG: [Math.round(peso * 1), Math.round(peso * 2)] };
+      return e;
+    }).sort((a2, b) => a2.minuto - b.minuto);
+    const avisos = [
+      ...p.avisos,
+      "Desayuno de los que ya conoces, con poca fibra y poca grasa, y nada nuevo ese d\xEDa.",
+      "Lleva agua y algo peque\xF1o con hidratos para las esperas entre pruebas."
+    ];
+    if (op.citacion) avisos.push(`Te citan a las ${op.citacion}${op.finJornada ? ` y la jornada acaba hacia las ${op.finJornada}` : ""}: si cambian las horas de las pruebas, c\xE1mbialas en tu perfil y el plan se mueve con ellas.`);
+    return { c: c2, p: { ...p, nombre: "Pruebas f\xEDsicas", linea, avisos }, finJornada };
   }
 
   // src/motor/dos-pasos.ts

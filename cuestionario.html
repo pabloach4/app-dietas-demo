@@ -1157,6 +1157,17 @@
           <div class="campo"><label for="op-tipo">¿Qué pruebas tiene tu oposición?</label><select id="op-tipo"></select></div>
           <div class="campo" id="campo-op-orden" hidden><label for="op-orden">¿Las físicas van antes o después del escrito?</label><select id="op-orden"><option value="">Elige</option><option value="fisicas_antes">Las físicas, antes del escrito</option><option value="fisicas_despues">Las físicas, después del escrito</option></select></div>
           <div class="campo" id="campo-op-fisicas" hidden><label for="op-fecha-fisicas">Fecha de las pruebas físicas</label><input id="op-fecha-fisicas" type="date"></div>
+          <!-- #331 parte 2: la jornada de las físicas. Las pruebas salen solas según el cuerpo (tabla de #330); la persona las cambia. -->
+          <div id="op-jornada" class="op-jornada" hidden style="margin:0 0 0.6rem">
+            <div class="campo"><label for="op-citacion">Hora de citación</label><input id="op-citacion" type="time"></div>
+            <div class="campo"><label for="op-fin">Final de la jornada (aproximado)</label><input id="op-fin" type="time"></div>
+            <p style="margin:0.4rem 0 0.2rem;font-weight:600;font-size:0.9rem">Tus pruebas físicas</p>
+            <div id="op-pruebas"></div>
+            <button type="button" class="btn-secundario" id="op-poner-cuerpo">Poner las pruebas de mi cuerpo</button>
+            <button type="button" class="btn-texto" id="op-anadir-prueba">+ Añadir prueba</button>
+            <label class="check"><input type="checkbox" id="op-cafeina"> Uso cafeína antes de las pruebas (la he probado en entrenos)</label>
+            <small class="ayuda">Salen solas según tu cuerpo, de su convocatoria oficial. Las duraciones con «aprox.» las estima la app. Cambia lo que no cuadre con tu citación: la hora de citación y el final de la jornada son lo que más mueve las comidas.</small>
+          </div>
           <div class="campo" id="campo-op-escrito" hidden><label for="op-fecha-escrito">Fecha del examen escrito</label><input id="op-fecha-escrito" type="date"></div>
           <div class="campo"><label for="op-cuerpo">Cuerpo</label><select id="op-cuerpo"></select></div>
           <small class="ayuda">Si aún no sabes una fecha, déjala en blanco. La app no da planes de entreno: apunta abajo las sesiones que hagas, combinadas como quieras, y se amolda a ellas.</small>
@@ -1682,12 +1693,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=affbc4d"></script>
-<script src="fuentes.js?v=affbc4d"></script>
-<script src="motor.bundle.js?v=affbc4d"></script>
-<script src="cuestionario.js?v=affbc4d"></script>
-<script src="nube.js?v=affbc4d"></script>
-<script src="pwa.js?v=affbc4d"></script>
+<script src="novedades.js?v=86eadd0"></script>
+<script src="fuentes.js?v=86eadd0"></script>
+<script src="motor.bundle.js?v=86eadd0"></script>
+<script src="cuestionario.js?v=86eadd0"></script>
+<script src="nube.js?v=86eadd0"></script>
+<script src="pwa.js?v=86eadd0"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

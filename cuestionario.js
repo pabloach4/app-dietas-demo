@@ -529,13 +529,70 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const tipo = document.getElementById('op-tipo').value;
     document.getElementById('campo-op-orden').hidden = tipo !== 'ambas';
     document.getElementById('campo-op-fisicas').hidden = !tipo || tipo === 'escrito';
+    document.getElementById('op-jornada').hidden = !tipo || tipo === 'escrito';
     document.getElementById('campo-op-escrito').hidden = !tipo || tipo === 'fisicas';
   }
-  document.getElementById('op-tipo').addEventListener('change', verOposicion);
+  document.getElementById('op-tipo').addEventListener('change', () => { verOposicion(); if (!leerPruebasOpo().length) ponerPruebasDelCuerpo(); });
+  // #331 parte 2: las pruebas físicas de la jornada, una fila por prueba (nombre, hora y minutos). «aprox.»: la duración la estimó la app
+  // y se quita en cuanto la persona la cambia.
+  const pruebasOpoDiv = document.getElementById('op-pruebas');
+  function filaPruebaOpo(pr = {}) {
+    const f = document.createElement('div');
+    f.className = 'op-prueba';
+    f.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;margin:0 0 0.35rem';
+    if (pr.estimada) f.dataset.estimada = '1';
+    f.innerHTML = `<input class="op-p-nombre" type="text" maxlength="80" aria-label="Nombre de la prueba" placeholder="Prueba" style="flex:1 1 10rem;min-width:0;font-size:16px">`
+      + `<input class="op-p-hora" type="time" aria-label="Hora de la prueba" style="font-size:16px">`
+      + `<input class="op-p-dur" type="number" inputmode="numeric" min="1" max="240" aria-label="Minutos que dura" style="width:4.2rem;font-size:16px"><small>min</small>`
+      + `<small class="op-p-aprox" style="color:var(--gris)"${pr.estimada ? '' : ' hidden'}>aprox.</small>`
+      + `<button type="button" class="btn-texto op-p-quitar" aria-label="Quitar esta prueba">✕</button>`;
+    f.querySelector('.op-p-nombre').value = pr.nombre ?? '';
+    f.querySelector('.op-p-hora').value = pr.hora ?? '';
+    f.querySelector('.op-p-dur').value = pr.duracionMin ?? '';
+    return f;
+  }
+  function pintarPruebasOpo(lista) {
+    pruebasOpoDiv.innerHTML = '';
+    (Array.isArray(lista) ? lista : []).forEach((pr) => pruebasOpoDiv.appendChild(filaPruebaOpo(pr)));
+  }
+  function leerPruebasOpo() {
+    return [...pruebasOpoDiv.querySelectorAll('.op-prueba')].map((f) => ({
+      nombre: f.querySelector('.op-p-nombre').value, hora: f.querySelector('.op-p-hora').value,
+      duracionMin: Number(f.querySelector('.op-p-dur').value), ...(f.dataset.estimada ? { estimada: true } : {}),
+    }));
+  }
+  function ponerPruebasDelCuerpo() {
+    const sexo = document.getElementById('sexo').value;
+    const lista = Motor.pruebasPropuestas(document.getElementById('op-cuerpo').value, ['hombre', 'mujer'].includes(sexo) ? sexo : undefined,
+      document.getElementById('op-citacion').value || undefined, document.getElementById('op-fin').value || undefined);
+    if (lista.length) pintarPruebasOpo(lista);
+    return lista.length;
+  }
+  pruebasOpoDiv.addEventListener('input', (ev) => {
+    if (!ev.target.classList.contains('op-p-dur')) return;
+    const f = ev.target.closest('.op-prueba');
+    delete f.dataset.estimada;
+    f.querySelector('.op-p-aprox').hidden = true;
+  });
+  pruebasOpoDiv.addEventListener('click', (ev) => { const b = ev.target.closest('.op-p-quitar'); if (b) b.closest('.op-prueba').remove(); });
+  document.getElementById('op-anadir-prueba').addEventListener('click', () => {
+    const previas = leerPruebasOpo();
+    const ultima = previas[previas.length - 1];
+    const hora = ultima && /^\d\d:\d\d$/.test(ultima.hora) ? Motor.aHoraTexto(Motor.aMinutos(ultima.hora) + (ultima.duracionMin || 5) + 30) : (document.getElementById('op-citacion').value || Motor.CITACION_PROPUESTA);
+    const f = filaPruebaOpo({ hora, duracionMin: 5 });
+    pruebasOpoDiv.appendChild(f);
+    f.querySelector('.op-p-nombre').focus();
+  });
+  document.getElementById('op-poner-cuerpo').addEventListener('click', () => {
+    if (!ponerPruebasDelCuerpo()) window.alert('Para tu cuerpo no tenemos las pruebas de la convocatoria: añádelas a mano.');
+  });
+  document.getElementById('op-cuerpo').addEventListener('change', () => { if (!leerPruebasOpo().length) ponerPruebasDelCuerpo(); });
   const leerOposicion = () => ({
     tipo: document.getElementById('op-tipo').value, orden: document.getElementById('op-orden').value,
     fechaFisicas: document.getElementById('op-fecha-fisicas').value, fechaEscrito: document.getElementById('op-fecha-escrito').value,
     cuerpo: document.getElementById('op-cuerpo').value,
+    pruebasFisicas: leerPruebasOpo(), citacion: document.getElementById('op-citacion').value, finJornada: document.getElementById('op-fin').value,
+    ...(document.getElementById('op-cafeina').checked ? { cafeina: 'si' } : {}),
   });
   function rellenarOposicion(op) {
     const o = op && typeof op === 'object' ? op : {};
@@ -545,6 +602,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     poner('op-fecha-fisicas', o.fechaFisicas);
     poner('op-fecha-escrito', o.fechaEscrito);
     poner('op-cuerpo', o.cuerpo, Motor.CUERPOS_OPOSICION.map((c) => c.id));
+    poner('op-citacion', o.citacion);
+    poner('op-fin', o.finJornada);
+    document.getElementById('op-cafeina').checked = o.cafeina === 'si';
+    pintarPruebasOpo(o.pruebasFisicas);
     verOposicion();
   }
   /** La fase de oposición de hoy, o null si no es opositor o lo que ha puesto no vale. */
@@ -2355,7 +2416,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     return calInicio ? Motor.competicionesDelDia(competiciones, calInicio, dia) : [];
   }
   function competicionDelDia(dia) {
-    if (!calInicio || !planActual || !respuestasActuales) return null;
+    if (!planActual || !respuestasActuales) return null;
+    if (!calInicio) return fisicasDelDia(dia);
     const fecha = Motor.fechaDelDia(calInicio, dia);
     const f = new Date(new Date(`${fecha}T00:00:00Z`).getTime() + 86400000);
     const manana = `${f.getUTCFullYear()}-${String(f.getUTCMonth() + 1).padStart(2, '0')}-${String(f.getUTCDate()).padStart(2, '0')}`;
@@ -2364,7 +2426,17 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const p = Motor.planDiaCompeticion(c, fecha, respuestasActuales.peso, { compiteAlDiaSiguiente, edad: respuestasActuales.edad });
       if (p) return { c, p, fecha };
     }
-    return null;
+    return fisicasDelDia(dia);
+  }
+  // #331 parte 2: el día de las pruebas físicas del opositor, solo con planDiaCompeticion (sin la semana de competición ni la víspera
+  // de carga). Sin fecha de inicio del plan, cuenta la próxima fecha de ese día de la semana.
+  function fisicasDelDia(dia) {
+    if (deporteElegido !== 'opositor' || !respuestasActuales) return null;
+    const v = Motor.validarOposicion(leerOposicion());
+    if (!v.ok) return null;
+    const fecha = calInicio ? Motor.fechaDelDia(calInicio, dia) : fechaProximaDe(dia);
+    const x = Motor.planDiaFisicas(v.oposicion, fecha, respuestasActuales.peso, { edad: respuestasActuales.edad });
+    return x ? { ...x, fecha, fisicas: true } : null;
   }
   function tomasHabituales() {
     return (franjasActuales ?? []).filter((f) => f.hora !== undefined)
@@ -2374,7 +2446,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   const ROL_TOMA_TXT = { previa: 'comida previa', ligera: 'toma ligera', recuperacion: 'recuperación', despues: 'después de la prueba', opcional: 'opcional', normal: '' };
   function horarioCompeticion(x) {
     const pr = x.p.pruebas;
-    const r = Motor.reorganizarDia(tomasHabituales(), pr[0].inicio, pr[pr.length - 1].fin);
+    const r = Motor.reorganizarDia(tomasHabituales(), pr[0].inicio, x.finJornada ?? pr[pr.length - 1].fin); // #331 p2: el opositor, al acabar la jornada
     // El horario por día guarda una sola hora por comida: manda la toma de más peso (previa > recuperación > …).
     const porFranja = new Map();
     for (const t of r.tomas) {
@@ -2435,11 +2507,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const cambios = r.cambios.map((c) => `<li>${NOMBRE_TOMA[c.franja] ?? c.franja}: ${c.de !== undefined ? `${hm(c.de)} → ` : ''}<strong>${hm(c.a)}</strong> — ${escaparHtml(c.motivo)}</li>`).join('');
     return `
       <div class="tarjeta comp-dia" style="margin-top:1rem">
-        <h3 style="margin-top:0">Día de competición · ${escaparHtml(x.c.nombre)}</h3>
+        <h3 style="margin-top:0">${x.fisicas ? 'Día de las pruebas físicas' : `Día de competición · ${escaparHtml(x.c.nombre)}`}</h3>
         <p class="subt" style="font-size:0.8rem;margin:0 0 0.5rem">${escaparHtml(Motor.NOTA_PAUTA)} Las tomas de antes, entre pruebas y después cuentan dentro del total del día.</p>
+        ${x.fisicas ? x.p.avisos.map((a) => `<p class="subt op-aviso" style="font-size:0.82rem;margin:0 0 0.3rem">${escaparHtml(a)}</p>`).join('') : ''}
         <ul class="dia-resumen-lista">${lineaCompeticionHtml(x)}</ul>
         ${comidaLibreHtml(dia, x, r)}
-        <details class="plegable"><summary>Combustible de carrera (aparte del total del día)</summary><ul class="dia-resumen-lista">${combustibleHtml(x)}</ul></details>
+        ${x.fisicas ? '' : `<details class="plegable"><summary>Combustible de carrera (aparte del total del día)</summary><ul class="dia-resumen-lista">${combustibleHtml(x)}</ul></details>`}
         <details class="plegable"><summary>Líquido de recuperación (si te pesas antes y después)</summary>
           <p class="una-linea">No hace falta pesarse. Si lo haces, escribe cuántos kg has perdido en la prueba y te decimos cuánto beber.</p>
           <div class="campo"><label for="liq-kg">Kg perdidos en la prueba</label><input id="liq-kg" type="number" inputmode="decimal" min="0" max="5" step="0.1" style="font-size:16px;width:7rem"></div>
