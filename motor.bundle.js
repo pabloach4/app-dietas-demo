@@ -45,6 +45,7 @@ var Motor = (() => {
     EJEMPLO_DESAYUNO_CARRERA: () => EJEMPLO_DESAYUNO_CARRERA,
     ELABORACIONES_EJEMPLO: () => ELABORACIONES_EJEMPLO,
     ENCIMAS_PAN: () => ENCIMAS_PAN,
+    ENSAYO: () => ENSAYO,
     ETIQUETA_FASE: () => ETIQUETA_FASE,
     FACTOR_LEGUMBRE_COCIDA: () => FACTOR_LEGUMBRE_COCIDA,
     FILTROS_PERSONAS: () => FILTROS_PERSONAS,
@@ -258,6 +259,7 @@ var Motor = (() => {
     elaboracionEjemplo: () => elaboracionEjemplo,
     encimasDe: () => encimasDe,
     enlaceCorreoPablo: () => enlaceCorreoPablo,
+    ensayoCarrera: () => ensayoCarrera,
     entrenoNocheAntesDeCena: () => entrenoNocheAntesDeCena,
     esBaseDeCarga: () => esBaseDeCarga,
     esDesayunoDePan: () => esDesayunoDePan,
@@ -11677,6 +11679,38 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     };
   }
 
+  // src/motor/ensayo-carrera.ts
+  var ENSAYO = { semanas: 6, inicioGHora: 40, minPrueba: 90, minSesion: 90 };
+  var MS_DIA5 = 864e5;
+  var diasEntre2 = (a2, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a2}T00:00:00Z`)) / MS_DIA5);
+  var a5 = (x) => Math.round(x / 5) * 5;
+  function duracionCompeticion(c2) {
+    return c2.pruebas?.length ? Math.max(...c2.pruebas.map((p) => p.duracionMin)) : DURACION_PROPUESTA_MIN[c2.tipo ?? "otra"];
+  }
+  function productosDe(c2) {
+    if (c2.usaGeles === "si") return `los geles de ${GRAMOS_GEL} g que vas a llevar`;
+    if (c2.usaGeles === "no") return "el isot\xF3nico, la fruta o las gominolas que vas a llevar";
+    return "los geles, el isot\xF3nico o lo que vayas a llevar";
+  }
+  function ensayoCarrera(fecha, competiciones) {
+    let mejor;
+    for (const c2 of competiciones) {
+      if (c2.tipo === "categoria_peso") continue;
+      const dias = diasEntre2(fecha, c2.fecha);
+      if (!(dias >= 1 && dias <= ENSAYO.semanas * 7)) continue;
+      const dur = duracionCompeticion(c2);
+      if (!(dur > ENSAYO.minPrueba)) continue;
+      if (!mejor || dias < mejor.dias) mejor = { c: c2, dias, dur };
+    }
+    if (!mejor) return void 0;
+    const tasa = tasaDuranteGH(mejor.dur).tasa;
+    if (!tasa) return void 0;
+    const gHoraPrueba = tasa[1];
+    const semana = ENSAYO.semanas - Math.floor((mejor.dias - 1) / 7);
+    const gHora = a5(ENSAYO.inicioGHora + (gHoraPrueba - ENSAYO.inicioGHora) * (semana - 1) / (ENSAYO.semanas - 1));
+    return { competicion: mejor.c.nombre, semana, semanas: ENSAYO.semanas, gHora, gHoraPrueba, productos: productosDe(mejor.c) };
+  }
+
   // src/motor/durante-entreno.ts
   var DEPORTE_POR_ACTIVIDAD = [
     [/^(bici|spinning)/, "ciclismo"],
@@ -11709,7 +11743,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   var r12 = (x) => Math.round(x * 10) / 10;
   var medio = (r) => r0((r[0] + r[1]) / 2);
   var segunIntensidad = (r, i) => i === "suave" ? r[0] : i === "intensa" ? r[1] : medio(r);
-  function duranteEntreno(sesion, deportePrincipal2) {
+  function duranteEntreno(sesion, deportePrincipal2, ensayo) {
     const min = Math.max(0, sesion.minutos);
     const deporte = deporteDeSesion(sesion.actividad, deportePrincipal2);
     const intensidad = intensidadDeSesion(sesion);
@@ -11784,6 +11818,14 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       default:
         comun();
     }
+    const tipoAct = ACTIVIDADES[sesion.actividad]?.tipo;
+    const conEnsayo = ensayo && (deporte === "running" || deporte === "ciclismo") && min >= ENSAYO.minSesion && (tipoAct === "resistencia" || tipoAct === "intermitente") ? { ...ensayo, gHora: Math.max(ensayo.gHora, opcional ? 0 : objetivo ?? 0) } : void 0;
+    if (conEnsayo) {
+      ghHora = [conEnsayo.gHora, conEnsayo.gHora];
+      objetivo = conEnsayo.gHora;
+      opcional = false;
+      notas.splice(0, notas.length, `As\xED entrenas el est\xF3mago: de una semana a otra subes hasta los ${conEnsayo.gHoraPrueba} g por hora de la prueba. Si algo te sienta mal, qu\xE9date en la cantidad de la semana anterior y com\xE9ntalo con Pablo.`);
+    }
     if (ghHora && !opcional) notas.push("Empieza a los 30-45 minutos y luego toma poco cada vez, cada 20-30 minutos.");
     const bebe = min >= 45;
     const bebidaLHora = bebe ? [0.4, 0.8] : void 0;
@@ -11803,12 +11845,13 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       pauta.bebidaLHora = bebidaLHora;
       pauta.bebidaObjetivoLHora = bebidaObjetivoLHora;
     }
+    if (conEnsayo) pauta.ensayo = conEnsayo;
     return pauta;
   }
   var bebidaTotalL = (p) => p.bebidaLHora ? [r12(p.bebidaLHora[0] * p.minutos / 60), r12(p.bebidaLHora[1] * p.minutos / 60)] : void 0;
   var FRANJAS_SUSTITUIBLES = ["media_manana", "merienda"];
-  function tomaDuranteDia(sesiones, franjas, deportePrincipal2) {
-    const pautas = sesiones.map((s) => duranteEntreno(s, deportePrincipal2));
+  function tomaDuranteDia(sesiones, franjas, deportePrincipal2, ensayo) {
+    const pautas = sesiones.map((s) => duranteEntreno(s, deportePrincipal2, ensayo));
     const cuentan = sesiones.map((s, i) => ({ s, p: pautas[i] })).filter(({ p }) => !p.opcional && (p.objetivoTotalG ?? 0) > 0);
     const hidratoG = cuentan.reduce((t2, { p }) => t2 + (p.objetivoTotalG ?? 0), 0);
     const toma = { pautas, hidratoG, kcal: 4 * hidratoG };
@@ -11862,7 +11905,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (!p.ghHora || p.objetivoGHora === void 0) return void 0;
     const total = p.objetivoTotalG !== void 0 ? `, unos ${p.objetivoTotalG} g en total` : "";
     const cuenta = p.opcional ? "opcional" : `tu plan cuenta ${p.objetivoGHora} g por hora${total}`;
-    const partes = [`Durante la sesi\xF3n: ${rango(p.ghHora, "g")} de hidratos por hora (${cuenta}).`, `Ejemplos: ${ejemplosDurante(p).join("; ")}.`];
+    const partes = p.ensayo ? [`Ensayo de carrera (semana ${p.ensayo.semana} de ${p.ensayo.semanas}): ${p.ensayo.gHora} g/h, con lo mismo que vas a tomar el d\xEDa de la prueba (${p.ensayo.productos}; ${p.ensayo.competicion})${total ? ` \xB7 ${total.slice(2)}` : ""}.`] : [`Durante la sesi\xF3n: ${rango(p.ghHora, "g")} de hidratos por hora (${cuenta}).`, `Ejemplos: ${ejemplosDurante(p).join("; ")}.`];
     const litros = bebidaTotalL(p);
     if (p.bebidaLHora) partes.push(`Bebe ${rango(p.bebidaLHora, "L")} por hora${litros ? ` (${rango(litros, "L")} en total)` : ""}, seg\xFAn el calor y lo que sudes; con sales si pasa de 2 h o si hace calor.`);
     if (p.nota) partes.push(p.nota);

@@ -3312,8 +3312,12 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       ...(Number.isFinite(s.horaInicio) ? { horaInicio: s.horaInicio } : {}),
     }));
     if (!ses.length) return sinQuitadas(dia, reparto);
-    const toma = Motor.tomaDuranteDia(ses, excepcionesHorario.get(dia) ?? franjasActuales ?? [], deporteElegido);
+    const toma = Motor.tomaDuranteDia(ses, excepcionesHorario.get(dia) ?? franjasActuales ?? [], deporteElegido, ensayoDelDia(dia));
     return sinQuitadas(dia, { ...reparto, franjas: Motor.repartoConTomaDurante(reparto.franjas, toma), tomaDurante: toma });
+  }
+  // #319 parte 5: ensayo de carrera en las 6 semanas antes de una prueba de más de 90 min (hace falta la fecha de inicio del plan).
+  function ensayoDelDia(dia) {
+    return calInicio ? Motor.ensayoCarrera(Motor.fechaDelDia(calInicio, dia), competiciones) : undefined;
   }
   // #321 parte 1: el día de la prueba, la toma de arranque (15-30 min antes de salir) cuenta dentro del día: sus hidratos se restan de
   // las comidas como la toma durante el entreno (#313), sin sustituir ninguna.
@@ -4664,7 +4668,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             ${(() => { // #313 parte 3: qué tomar durante la sesión (solo si lleva hidratos; el día de la prueba manda su propio combustible)
               if (pruebaHoy.length || !Motor.ACTIVIDADES[s.actividad]) return '';
               const u = ultimasSesiones[s.i] ?? {};
-              const t = Motor.textoDuranteEntreno(Motor.duranteEntreno({ actividad: s.actividad, minutos: s.minutos, ...(u.dura || s.dura ? { dura: true } : {}), ...(u.nota || u.deporte ? { nombre: u.nota || u.deporte } : {}) }, deporteElegido));
+              const t = Motor.textoDuranteEntreno(Motor.duranteEntreno({ actividad: s.actividad, minutos: s.minutos, ...(u.dura || s.dura ? { dura: true } : {}), ...(u.nota || u.deporte ? { nombre: u.nota || u.deporte } : {}) }, deporteElegido, ensayoDelDia(d.dia)));
               return t ? `<p class="subt durante-sesion" data-dia="${d.dia}">🍌 ${escaparHtml(t)}</p>` : '';
             })()}
           `).join('')}
