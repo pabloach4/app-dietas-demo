@@ -4482,40 +4482,48 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
         continue;
       }
       const ap = opciones.alergiasPreferencias;
-      const compat = ap ? evaluarCompatibilidad(receta, ap) : { compatible: true };
-      if (!compat.compatible) {
-        estadosFijadas.push({ ...base, ok: false, causa: `choca con tu perfil (${compat.motivo?.detalle ?? "alergia o lista negra"}): no se sirve`, arreglo: "Quita la fijaci\xF3n o elige una receta parecida." });
+      const probar = (receta2, racion) => {
+        const compat = ap ? evaluarCompatibilidad(receta2, ap) : { compatible: true };
+        if (!compat.compatible) return { causa: `choca con tu perfil (${compat.motivo?.detalle ?? "alergia o lista negra"}): no se sirve`, arreglo: "Quita la fijaci\xF3n o elige una receta parecida." };
+        if (fibraExcede(slot, receta2)) return { causa: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y esta receta no lo cumple: ese d\xEDa elige la app` : slot.antesSesionIntensa ? "va antes de una sesi\xF3n intensa y esta receta lleva demasiada fibra: ese d\xEDa elige la app" : slot.sinFibraAlta ? "es v\xEDspera de competici\xF3n y esta receta lleva fibra alta: ese d\xEDa elige la app" : "es un d\xEDa de competici\xF3n con poca fibra y esta receta lleva demasiada: ese d\xEDa elige la app", arreglo: "Se propone otra receta solo para este d\xEDa." };
+        if (!receta2.franjas.includes(slot.franja)) return { causa: "esta receta no vale para esta comida", arreglo: "La app ha puesto otra receta compatible en su lugar; puedes elegir otra de las opciones o quitar la fijaci\xF3n." };
+        const calculada = racionParaObjetivo(receta2, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta, piso: 0.5 });
+        const racionPablo = racion !== void 0 && Number.isFinite(racion) && racion >= 0.5 && racion <= 2 && !incumplimientosRacion(slot.franja, receta2, racion, { cargaAlta: slot.cargaAlta }).incumplimientos.length ? racion : void 0;
+        const factorRedondeado2 = racionPablo ?? calculada.factorRedondeado;
+        const kcalResultante2 = racionPablo !== void 0 ? kcalConRacion(receta2, racionPablo) : calculada.kcalResultante;
+        const rotos = racionPablo !== void 0 ? [] : [
+          ...validarPlatoGenerado(slot.franja, receta2.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos,
+          ...incumplimientosRacion(slot.franja, receta2, factorRedondeado2, { cargaAlta: slot.cargaAlta }).incumplimientos
+        ];
+        if (rotos.length) return { causa: `no pasa el validador de platos (${rotos[0]}): esa comida la elige la app`, arreglo: "Cambia a una receta parecida o quita la fijaci\xF3n." };
+        return { receta: receta2, factor: factorRedondeado2, kcalResultante: kcalResultante2, desviacion: Math.abs(kcalResultante2 - slot.kcalObjetivo) };
+      };
+      let intento = probar(receta, p.racion);
+      let sinPostre;
+      const ult = receta.partes?.[receta.partes.length - 1];
+      if (!("receta" in intento) && ult && receta.partes.length >= 2 && ult.receta.tipoPlato === "postre") {
+        const platos = receta.partes.slice(0, -1).map((x) => x.receta);
+        const candidata = platos.length === 1 ? platos[0] : componerComida(platos);
+        const otro = probar(candidata, void 0);
+        if ("receta" in otro) {
+          intento = otro;
+          sinPostre = ult.receta;
+        }
+      }
+      if (!("receta" in intento)) {
+        estadosFijadas.push({ ...base, ok: false, ...intento });
         continue;
       }
-      if (fibraExcede(slot, receta)) {
-        estadosFijadas.push({ ...base, ok: false, causa: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y esta receta no lo cumple: ese d\xEDa elige la app` : slot.antesSesionIntensa ? "va antes de una sesi\xF3n intensa y esta receta lleva demasiada fibra: ese d\xEDa elige la app" : slot.sinFibraAlta ? "es v\xEDspera de competici\xF3n y esta receta lleva fibra alta: ese d\xEDa elige la app" : "es un d\xEDa de competici\xF3n con poca fibra y esta receta lleva demasiada: ese d\xEDa elige la app", arreglo: "Se propone otra receta solo para este d\xEDa." });
-        continue;
-      }
-      if (!receta.franjas.includes(slot.franja)) {
-        estadosFijadas.push({ ...base, ok: false, causa: "esta receta no vale para esta comida", arreglo: "La app ha puesto otra receta compatible en su lugar; puedes elegir otra de las opciones o quitar la fijaci\xF3n." });
-        continue;
-      }
-      const calculada = racionParaObjetivo(receta, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta, piso: 0.5 });
-      const racionPablo = p.racion !== void 0 && Number.isFinite(p.racion) && p.racion >= 0.5 && p.racion <= 2 && !incumplimientosRacion(slot.franja, receta, p.racion, { cargaAlta: slot.cargaAlta }).incumplimientos.length ? p.racion : void 0;
-      const factorRedondeado = racionPablo ?? calculada.factorRedondeado;
-      const kcalResultante = racionPablo !== void 0 ? kcalConRacion(receta, racionPablo) : calculada.kcalResultante;
-      const desviacion = Math.abs(kcalResultante - slot.kcalObjetivo);
-      const rotos = racionPablo !== void 0 ? [] : [
-        ...validarPlatoGenerado(slot.franja, receta.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos,
-        ...incumplimientosRacion(slot.franja, receta, factorRedondeado, { cargaAlta: slot.cargaAlta }).incumplimientos
-      ];
-      if (rotos.length) {
-        estadosFijadas.push({ ...base, ok: false, causa: `no pasa el validador de platos (${rotos[0]}): esa comida la elige la app`, arreglo: "Cambia a una receta parecida o quita la fijaci\xF3n." });
-        continue;
-      }
-      fijadasPorSlot.set(claveSlotSiOSi(slot), { receta, factor: factorRedondeado, kcalResultante, desviacion });
+      fijadasPorSlot.set(claveSlotSiOSi(slot), intento);
+      const { factor: factorRedondeado, kcalResultante, desviacion } = intento;
       const falta = kcalResultante - slot.kcalObjetivo;
       estadosFijadas.push({
         ...base,
         ok: true,
+        ...sinPostre ? { aviso: `Sin el postre (${sinPostre.nombre}): ese d\xEDa no vale; el resto de la comida se queda.` } : {},
         ...desviacion > slot.kcalObjetivo * 0.1 ? { causa: `con la raci\xF3n al ${Math.round(factorRedondeado * 100)} % ${falta < 0 ? "faltan" : "sobran"} ${desviacion} kcal del objetivo`, arreglo: falta < 0 ? "A\xF1ade un postre (fruta o yogur) o una guarnici\xF3n para cubrir lo que falta." : "Reduce la raci\xF3n o cambia a una receta m\xE1s ligera." } : {}
       });
-      for (const id of receta.platos ?? [receta.id]) vecesFijadas.set(id, (vecesFijadas.get(id) ?? 0) + 1);
+      for (const id of intento.receta.platos ?? [intento.receta.id]) vecesFijadas.set(id, (vecesFijadas.get(id) ?? 0) + 1);
     }
     for (const e of estadosFijadas) {
       if (!e.ok || e.franja !== "comida" && e.franja !== "cena") continue;
