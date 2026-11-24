@@ -986,9 +986,9 @@
     <p><strong>Qué no hace esta app:</strong> no es un servicio médico, no diagnostica ni trata ninguna enfermedad y no sustituye el consejo de tu médico o dietista-nutricionista. Si indicas un problema de salud (molestias intestinales, diabetes, peso muy bajo...), una alergia o una intolerancia, la app no te dará una dieta clínica: te propondrá hablar conmigo, que soy quien lleva esos casos. Si tienes una enfermedad, estás embarazada, eres menor de 18 años o tomas medicación que afecte a tu alimentación, consulta primero con tu médico.</p>
     <p><strong>Tu consentimiento:</strong> los datos de salud están especialmente protegidos. Solo los trataré si me das tu consentimiento expreso (art. 9.2.a RGPD). Es voluntario: si no lo das, no puedo generarte un plan personalizado, pero no pasa nada más.</p>
     <p><strong>Tus derechos:</strong> puedes retirar el consentimiento cuando quieras (desde ajustes o escribiendo a nutriciondeportiva7777@gmail.com) y pedir que borre tus datos; también acceder, corregir, limitar su uso o llevártelos. Si crees que no los trato bien, puedes reclamar ante la AEPD (www.aepd.es).</p>
-    <p><strong>Responsable:</strong> Pablo Aragón Chaves, técnico superior en nutrición deportiva y dietética. Contacto de privacidad: nutriciondeportiva7777@gmail.com. Más información en la política de privacidad.</p>
+    <p><strong>Responsable:</strong> Pablo Aragón Chaves, Técnico superior en Dietética y Nutrición Deportiva. Contacto de privacidad: nutriciondeportiva7777@gmail.com. Más información en la política de privacidad.</p>
     </details>
-    <label class="check"><input type="checkbox" id="consentimiento-acepto"> Leo y acepto que Pablo Aragón Chaves trate mis datos de salud (peso, altura, % grasa, actividad, alergias e intolerancias, molestias digestivas y mis respuestas sobre energía, forma de comer, regla y lesiones) para generar mi plan de alimentación.</label>
+    <label class="check"><input type="checkbox" id="consentimiento-acepto"> Leo y acepto que Pablo trate mis datos de salud (peso, altura, % grasa, actividad, alergias e intolerancias, molestias digestivas y mis respuestas sobre energía, forma de comer, regla y lesiones) para generar mi plan de alimentación.</label>
     <button type="button" class="btn-principal" id="consentimiento-continuar" disabled style="margin-top:0.8rem">Continuar</button>
   </div>
 </section>
@@ -1140,6 +1140,14 @@
             <option value="5000-7500">5.000-7.500</option>
             <option value="7500-10000">7.500-10.000</option>
             <option value=">10000">Más de 10.000</option>
+          </select>
+        </div>
+        <!-- #332 parte 3: «Según la estación» hace lo de siempre (frío de noviembre a marzo, calor de junio a septiembre); las otras dos mandan todo el año, solo en comida y cena. -->
+        <div class="campo"><label for="apetece">¿Qué te apetece más?</label>
+          <select id="apetece">
+            <option value="estacion" selected>Según la estación</option>
+            <option value="caliente">Más caliente (guisos, cremas, sopas)</option>
+            <option value="frio">Más frío (ensaladas, platos fríos)</option>
           </select>
         </div>
         <!-- #326 parte 3: la creatina la activa la persona (sin marcar por defecto); no se ofrece a menores de 18. -->
@@ -1720,12 +1728,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=1f93ee6"></script>
-<script src="fuentes.js?v=1f93ee6"></script>
-<script src="motor.bundle.js?v=1f93ee6"></script>
-<script src="cuestionario.js?v=1f93ee6"></script>
-<script src="nube.js?v=1f93ee6"></script>
-<script src="pwa.js?v=1f93ee6"></script>
+<script src="novedades.js?v=34c1279"></script>
+<script src="fuentes.js?v=34c1279"></script>
+<script src="motor.bundle.js?v=34c1279"></script>
+<script src="cuestionario.js?v=34c1279"></script>
+<script src="nube.js?v=34c1279"></script>
+<script src="pwa.js?v=34c1279"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

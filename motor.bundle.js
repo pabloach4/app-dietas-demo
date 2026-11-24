@@ -101,6 +101,7 @@ var Motor = (() => {
     NOMBRE_TIPO_OPOSICION: () => NOMBRE_TIPO_OPOSICION,
     NOTA_PAUTA: () => NOTA_PAUTA,
     NOTA_PAUTA_ORIENTATIVA: () => NOTA_PAUTA_ORIENTATIVA,
+    OPCIONES_APETECE: () => OPCIONES_APETECE,
     OPCIONES_GELES: () => OPCIONES_GELES,
     OPOSICIONES_PRUEBAS_CSV: () => OPOSICIONES_PRUEBAS_CSV,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
@@ -423,6 +424,7 @@ var Motor = (() => {
     nivelesConAjustes: () => nivelesConAjustes,
     noSeReescala: () => noSeReescala,
     noValeDesayunoCarrera: () => noValeDesayunoCarrera,
+    normalizarApetece: () => normalizarApetece,
     normalizarBusqueda: () => normalizarBusqueda,
     normalizarSobras: () => normalizarSobras,
     normalizarTexto: () => normalizarTexto2,
@@ -501,6 +503,7 @@ var Motor = (() => {
     temporadaPorRegla: () => temporadaPorRegla,
     tentempieAQuitar: () => tentempieAQuitar,
     textoAccion: () => textoAccion,
+    textoApetece: () => textoApetece,
     textoCita: () => textoCita,
     textoDiabetes: () => textoDiabetes,
     textoDuranteEntreno: () => textoDuranteEntreno,
@@ -4003,7 +4006,22 @@ R348,todo,El mel\xF3n va de acompa\xF1amiento: el bocadillo de pavo vale todo el
       return !!p && p.tipoPlato !== "postre" && temporadaDeReceta(p) === pref;
     });
   }
-  function preferenciaTemporada(fecha) {
+  var OPCIONES_APETECE = [
+    { valor: "estacion", texto: "Seg\xFAn la estaci\xF3n" },
+    { valor: "caliente", texto: "M\xE1s caliente (guisos, cremas, sopas)" },
+    { valor: "frio", texto: "M\xE1s fr\xEDo (ensaladas, platos fr\xEDos)" }
+  ];
+  function normalizarApetece(v) {
+    return v === "caliente" || v === "frio" ? v : "estacion";
+  }
+  function textoApetece(v) {
+    const a2 = normalizarApetece(v);
+    return OPCIONES_APETECE.find((o) => o.valor === a2).texto;
+  }
+  function preferenciaTemporada(fecha, eleccion) {
+    const a2 = normalizarApetece(eleccion);
+    if (a2 === "caliente") return "caliente";
+    if (a2 === "frio") return "fresco";
     const m = fecha ? /^\d{4}-(\d{2})-\d{2}$/.exec(fecha) : null;
     if (!m) return void 0;
     const mes = Number(m[1]);
@@ -5003,11 +5021,13 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
     if (!pendientes.length && !manuales.length) {
       return [...cabecera, "", "No hay nada pendiente: todo est\xE1 marcado como ya en casa (o no hay ingredientes)."].join("\n");
     }
+    const condicionFuente = (i) => i.grupo === "congelado" ? ` [CONGELADO; producto de referencia. Consultar su etiqueta]${i.fuenteConservacion ? ` Fuente: ${i.fuenteConservacion}` : ""}` : "";
     const lineas = [...cabecera];
     if (entrada.semanas && entrada.semanas > 1 && pendientes.some((i) => i.grupo)) {
       const n = entrada.semanas;
       const grupos = [
         ["despensa", `LO QUE NO SE VA A PONER MALO (para las ${n} semanas)`, (i) => `${i.comprar} \u2014 ${i.ingrediente}`],
+        ["congelado", "CONGELADOS (cantidad de esta semana; conservaci\xF3n de la fuente)", (i) => `${i.comprar} \u2014 ${i.ingrediente}${condicionFuente(i)}`],
         ["fresco", "FRESCO (esta semana; entre par\xE9ntesis, para todo el periodo)", (i) => `${i.comprar} \u2014 ${i.ingrediente}${i.comprarPeriodo ? ` (${n} semanas: ${i.comprarPeriodo})` : ""}`]
       ];
       for (const [g, titulo, linea] of grupos) {
@@ -5027,7 +5047,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
       const delSec = pendientes.filter((i) => i.seccion === sec);
       if (!delSec.length) continue;
       lineas.push("", TITULO_SECCION[sec].toUpperCase());
-      for (const i of delSec) lineas.push(`- ${i.comprar} \u2014 ${i.ingrediente}`);
+      for (const i of delSec) lineas.push(`- ${i.comprar} \u2014 ${i.ingrediente}${condicionFuente(i)}`);
     }
     if (manuales.length) {
       lineas.push("", "A\xD1ADIDOS A MANO");
@@ -6312,10 +6332,11 @@ R521,horno;cocido,pasta,caliente,no
     const tabla2 = /* @__PURE__ */ new Map();
     for (const r of registros(texto3)) {
       const lugar = r.lugar ?? r.tipo ?? "";
-      const tipo = lugar === "despensa" ? "despensa" : lugar === "nevera" || lugar === "fresco" ? "fresco" : void 0;
+      const tipo = lugar === "despensa" ? "despensa" : lugar === "nevera" || lugar === "fresco" ? "fresco" : lugar === "congelador" ? "congelado" : void 0;
       if (!r.ingrediente || !tipo) continue;
       const congelable = tipo === "despensa" ? false : r.congelable === "si" ? true : r.congelable === "no" ? false : void 0;
-      tabla2.set(r.ingrediente, congelable === void 0 ? { tipo } : { tipo, congelable });
+      const origen = tipo === "congelado" ? { nota: r.nota ?? "", fuente: r.fuente_url ?? "" } : {};
+      tabla2.set(r.ingrediente, congelable === void 0 ? { tipo, ...origen } : { tipo, congelable, ...origen });
     }
     return tabla2;
   }
@@ -6331,7 +6352,7 @@ R521,horno;cocido,pasta,caliente,no
       }
       if (vistos.has(n)) fallos.push(`${n}: fila duplicada`);
       vistos.add(n);
-      if (r.lugar !== "despensa" && r.lugar !== "nevera") fallos.push(`${n}: lugar \xAB${r.lugar}\xBB no permitido (despensa o nevera)`);
+      if (r.lugar !== "despensa" && r.lugar !== "nevera" && r.lugar !== "congelador") fallos.push(`${n}: lugar \xAB${r.lugar}\xBB no permitido (despensa, nevera o congelador)`);
       if (r.congelable !== "si" && r.congelable !== "no" && r.congelable !== "") fallos.push(`${n}: congelable \xAB${r.congelable}\xBB no permitido (si, no o vac\xEDo)`);
       if (!/^https?:\/\//.test(r.fuente_url ?? "")) fallos.push(`${n}: sin fuente_url`);
     }
@@ -6347,6 +6368,12 @@ R521,horno;cocido,pasta,caliente,no
     const periodo = semanas > 1 ? new Map(generarListaCompra(asignaciones, recetas, { ...base, semanas }).map((i) => [i.ingrediente, i])) : void 0;
     return unaSemana.map((item) => {
       const c2 = conservacion.get(item.ingrediente);
+      if (c2?.tipo === "congelado") return {
+        ...item,
+        grupo: "congelado",
+        notaConservacion: c2.nota,
+        fuenteConservacion: c2.fuente
+      };
       if (c2?.tipo === "despensa" && periodo) {
         const p = periodo.get(item.ingrediente);
         return { ...p, grupo: "despensa", congelable: false };
@@ -6510,8 +6537,8 @@ contramuslo de pollo sin piel,nevera,si,"Carne cruda; nevera y separada de alime
 fiambre de pechuga de pavo,nevera,si,"Producto refrigerado; respetar cadena de frio y etiqueta tras abrir. Congelar en porciones antes de caducidad si el fabricante lo permite y no fue descongelado; la calidad puede cambiar. Instruccion del producto de referencia, transcrita del comercio: Mant\xE9ngase entre 0C y 5C / Consumir preferentemente antes del/lote: Ver lateral",https://tienda.mercadona.es/product/86786/pechuga-pavo-bajo-sal-hacendado-finas-lonchas-pack-2;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
 jam\xF3n cocido,nevera,si,"Producto refrigerado; respetar cadena de frio y etiqueta tras abrir. Congelar en porciones antes de caducidad si el fabricante lo permite y no fue descongelado; la calidad puede cambiar. Instruccion del producto de referencia, transcrita del comercio: Mantener entre 0C y 5C. Consumir preferentemente antes del/lote: Ver lateral",https://tienda.mercadona.es/product/60329/jamon-cocido-extra-hacendado-finas-lonchas-paquete;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
 salm\xF3n ahumado,nevera,si,"Producto refrigerado; respetar cadena de frio y etiqueta tras abrir. Congelar en porciones antes de caducidad si el fabricante lo permite y no fue descongelado; la calidad puede cambiar. Instruccion del producto de referencia, transcrita del comercio: Conservar entre 0 y 4C. Una vez abierto, mantener en refrigeraci\xF3n y consumir antes de pasadas 48 horas.",https://tienda.mercadona.es/product/53444/salmon-ahumado-hacendado-paquete;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
-gambas peladas,nevera,si,"Instinct propone \xABcongelador\xBB (se compra ultracongelado); la app no tiene ese lugar: va como fresco que se puede congelar. Referencia comercial ultracongelada: mantener congelada segun etiqueta, no tratar como marisco fresco refrigerado. Descongelar en nevera, no recongelar crudo. Para producto fresco distinto, mantener refrigerado y seguir etiqueta. Instruccion del producto de referencia, transcrita del comercio: Conservar a -18\xB0C.",https://tienda.mercadona.es/product/24181/gamba-pelada-cruda-tamano-mediano-hacendado-ultracongelada-paquete;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
-langostinos pelados,nevera,si,"Instinct propone \xABcongelador\xBB (se compra ultracongelado); la app no tiene ese lugar: va como fresco que se puede congelar. Referencia comercial ultracongelada: mantener congelada segun etiqueta, no tratar como marisco fresco refrigerado. Descongelar en nevera, no recongelar crudo. Para producto fresco distinto, mantener refrigerado y seguir etiqueta. Instruccion del producto de referencia, transcrita del comercio: En el frigor\xEDfico 1 d\xEDa. En el congelador a -18C. Ver fecha de consumo preferente. Para no alterar la calidad de este producto recomendamos no volver a congelar una vez descongelado",https://tienda.mercadona.es/product/24486/langostino-crudo-pelado-hacendado-ultracongelado-bandeja;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
+gambas peladas,congelador,si,"Referencia comercial ultracongelada: mantener congelada segun etiqueta, no tratar como marisco fresco refrigerado. Descongelar en nevera, no recongelar crudo. Para producto fresco distinto, mantener refrigerado y seguir etiqueta. Instruccion del producto de referencia, transcrita del comercio: Conservar a -18\xB0C.",https://tienda.mercadona.es/product/24181/gamba-pelada-cruda-tamano-mediano-hacendado-ultracongelada-paquete;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
+langostinos pelados,congelador,si,"Referencia comercial ultracongelada: mantener congelada segun etiqueta, no tratar como marisco fresco refrigerado. Descongelar en nevera, no recongelar crudo. Para producto fresco distinto, mantener refrigerado y seguir etiqueta. Instruccion del producto de referencia, transcrita del comercio: En el frigor\xEDfico 1 d\xEDa. En el congelador a -18C. Ver fecha de consumo preferente. Para no alterar la calidad de este producto recomendamos no volver a congelar una vez descongelado",https://tienda.mercadona.es/product/24486/langostino-crudo-pelado-hacendado-ultracongelado-bandeja;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
 pulpo cocido,nevera,si,"Producto refrigerado; respetar cadena de frio y etiqueta tras abrir. Congelar en porciones antes de caducidad si el fabricante lo permite y no fue descongelado; la calidad puede cambiar. Instruccion del producto de referencia, transcrita del comercio: Conservar entre 0C y 4C. Una vez abierto, consumir en 24 h. Apto para congelar.",https://tienda.mercadona.es/product/87775/patas-pulpo-cocido-bandeja;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts,no
 queso parmesano,nevera,,PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Queso duro en nevera segun etiqueta. No se propone congelacion por defecto sin instrucciones especificas del producto; puede cambiar textura. Sin plazo universal.,https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
 queso feta,nevera,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. No se propone congelacion domestica como opcion por defecto: puede alterar textura/emulsion. Seguir envase. Producto refrigerado o estable cerrado segun presentacion; despues de abrir, nevera segun etiqueta. Instruccion del producto de referencia, transcrita del comercio: Conservar entre +2 Grados Celsius y +6 Grados Celsius, hasta la fecha de caducidad. Una vez abierto, mantener refrigerado y consumir en 5 d\xEDas. En cubos. Con un pr\xE1ctico escurridor.",https://tienda.mercadona.es/product/51197/queso-feta-mezcla-hacendado-dados-tarrina;https://www.aesan.gob.es/dam/jcr:38a8f1b3-25dc-40b6-a831-90a04ae3d03f/congelar_descongelar.pdf;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no

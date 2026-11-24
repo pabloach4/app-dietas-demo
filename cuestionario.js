@@ -890,6 +890,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('vida-trabajo').value = ej.vidaTrabajo ?? 'sentado';
     document.getElementById('vida-pasos').value = ej.vidaPasos ?? '';
     document.getElementById('toma-creatina').checked = !!ej.creatina; // #326 parte 3
+    document.getElementById('apetece').value = Motor.normalizarApetece(ej.apetece); // #332 parte 3: lo raro o vacío, «Según la estación»
     verCampoCreatina();
     document.querySelectorAll('.salud').forEach((c) => { c.checked = false; });
     document.getElementById('salud-otra').value = '';
@@ -3113,6 +3114,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       vidaTrabajo: document.getElementById('vida-trabajo').value,
       vidaPasos: document.getElementById('vida-pasos').value || undefined,
       ...(document.getElementById('toma-creatina').checked ? { creatina: true } : {}), // #326 parte 3
+      ...(Motor.normalizarApetece(document.getElementById('apetece').value) !== 'estacion' ? { apetece: Motor.normalizarApetece(document.getElementById('apetece').value) } : {}), // #332 parte 3
       deportePrincipal: deporteElegido,
       ...(deporteElegido === 'opositor' ? { oposicion: leerOposicion() } : {}), // #331 parte 1
       sesiones: leerSesiones().map(({ dia, deporte, minutos, horaInicio, actividad, nota, dura, tipo }) => ({ dia, deporte, minutos, horaInicio, actividad, nota, ...(dura ? { dura } : {}), ...(tipo ? { tipo } : {}) })),
@@ -3625,14 +3627,14 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             <li class="item-compra${aRevisar.has(item.ingrediente) ? ' a-revisar' : ''}">
               <label>
                 <input type="checkbox" class="marca-en-casa" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}" ${item.yaEnCasa ? 'checked' : ''} aria-label="Comprado o ya en casa: ${escaparHtml(item.ingrediente)}">
-                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${avisoGlutenHtml(item.ingrediente)}${temporadaTxt(item)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · si quieres, se puede congelar' : ''}</small>` : ''}</span>
+                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${avisoGlutenHtml(item.ingrediente)}${temporadaTxt(item)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.grupo === 'congelado' ? `<br><small class="dieta-dato" style="white-space:normal">Congelado · producto de referencia. Consulta su etiqueta.${/^https?:\/\//.test((item.fuenteConservacion || '').split(';')[0]) ? ` <a href="${escaparHtml(item.fuenteConservacion.split(';')[0])}" target="_blank" rel="noopener noreferrer">Fuente del producto</a>` : ''}</small>` : ''}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · si quieres, se puede congelar' : ''}</small>` : ''}</span>
               </label>
               ${aRevisar.has(item.ingrediente) ? `<div class="aviso-cantidad" role="status">Lo marcaste cuando hacían falta ${gramosTxt(aRevisar.get(item.ingrediente).marcado)} y ahora hacen falta ${gramosTxt(aRevisar.get(item.ingrediente).ahora)}: no se da por cubierto.
                 <button type="button" class="btn-texto marca-confirmar" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}">Sigue cubierto</button></div>` : ''}
             </li>`;
       const cabeceraSec = (t) => `<h3 style="font-size:0.85rem;text-transform:uppercase;color:var(--gris);margin:1rem 0 0.4rem">${t}</h3>`;
       if (agrupado) {
-        const grupos = [['despensa', `🥫 Lo que no se va a poner malo · para las ${periodoDieta.semanas} semanas`], ['fresco', '🥬 Fresco']];
+        const grupos = [['despensa', `🥫 Lo que no se va a poner malo · para las ${periodoDieta.semanas} semanas`], ['congelado', '🧊 Congelados · cantidad de esta semana'], ['fresco', '🥬 Fresco']];
         cuerpo = grupos.map(([g, titulo]) => {
           const delGrupo = lista.filter((i) => i.grupo === g).sort((a, b) => a.seccion.localeCompare(b.seccion) || a.ingrediente.localeCompare(b.ingrediente));
           return delGrupo.length ? `${cabeceraSec(titulo)}<ul class="resumen-lista">${delGrupo.map(itemLi).join('')}</ul>` : '';
@@ -4462,7 +4464,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const hoyTemporada = typeof window.__FECHA_TEMPORADA_PRUEBA === 'string' ? window.__FECHA_TEMPORADA_PRUEBA : Motor.fechaLocalISO(new Date());
     // #331 parte 6: modo barato del opositor; en comida y cena se prefieren huevos, legumbres, atún y pollo (solo desempata).
     const baratoOpo = (() => { if (deporteElegido !== 'opositor') return {}; const v = Motor.validarOposicion(leerOposicion()); return v.ok && v.oposicion.barato ? { barato: true } : {}; })();
-    const temporadaDia = (dia) => { const fecha = calInicio && Motor.esLunes(calInicio) ? Motor.fechaDelDia(calInicio, dia) : hoyTemporada; const t = Motor.preferenciaTemporada(fecha); const mes = Motor.mesDeFecha(fecha); return { ...(t ? { temporada: t } : {}), ...(mes ? { mesFruta: mes } : {}) /* #332 p2: la fruta de temporada del mes */ }; };
+    const apetece = Motor.normalizarApetece(document.getElementById('apetece')?.value); // #332 parte 3: «Más caliente» / «Más frío» mandan sobre el mes
+    const temporadaDia = (dia) => { const fecha = calInicio && Motor.esLunes(calInicio) ? Motor.fechaDelDia(calInicio, dia) : hoyTemporada; const t = Motor.preferenciaTemporada(fecha, apetece); const mes = Motor.mesDeFecha(fecha); return { ...(t ? { temporada: t } : {}), ...(mes ? { mesFruta: mes } : {}) /* #332 p2: la fruta de temporada del mes */ }; };
     const filasCSV = []; // issue #31: una fila por día y franja, para el CSV descargable
 
     // Issue #35: primera pasada solo para tener el reparto de kcal/macros de cada día y la semana

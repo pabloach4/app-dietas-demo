@@ -401,6 +401,7 @@
           <tr><th>% graso</th><td>${f.grasa !== undefined && f.grasa !== null ? `${esc(f.grasa)} % (${esc(f.grasaMetodo || 'método sin indicar')})` : 'no lo sabe'}</td></tr>
           <tr><th>Objetivo</th><td>${esc(f.objetivo || '—')}</td></tr>
           <tr><th>Vida diaria</th><td>${esc(f.vidaTrabajo || '—')}${f.vidaPasos ? ` · ${esc(f.vidaPasos)} pasos` : ''}</td></tr>
+          <tr><th>Le apetece más</th><td id="cc-apetece">${esc(Motor.textoApetece(f.apetece))}</td></tr>
           <tr><th>Sesiones</th><td>${(f.sesiones || []).map((s) => `${esc(s.dia)} ${esc(s.deporte)} ${esc(s.minutos)} min`).join(' · ') || '—'}</td></tr>
           <tr><th>Dieta</th><td>${periodo.inicio ? `desde ${esc(periodo.inicio)}, ${esc(periodo.semanas || 1)} semana(s)` : 'sin fechas'}</td></tr>
           <tr><th>Comidas hechas esta semana</th><td id="cc-adherencia">${adh ? `${adh.hechas} de ${adh.total} (${adh.pct} %) <span class="subt">desde el ${esc(adh.desde.split('-').reverse().slice(0, 2).join('/'))}; de hoy, solo las ya hechas</span>` : 'sin registro'}</td></tr>
