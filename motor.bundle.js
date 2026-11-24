@@ -4961,6 +4961,14 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
     };
   }
 
+  // src/motor/nombre-visible.ts
+  var NOMBRES_VISIBLES = {
+    "yogur griego": "yogur griego 0 % o skyr natural"
+  };
+  function nombreVisible(ingrediente) {
+    return NOMBRES_VISIBLES[ingrediente] ?? ingrediente;
+  }
+
   // src/motor/lista-compra.ts
   function normalizar5(s) {
     return Array.from(s.normalize("NFD")).filter((c2) => c2.codePointAt(0) < 768 || c2.codePointAt(0) > 879).join("").toLowerCase();
@@ -5157,9 +5165,9 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
     if (entrada.semanas && entrada.semanas > 1 && pendientes.some((i) => i.grupo)) {
       const n = entrada.semanas;
       const grupos = [
-        ["despensa", `LO QUE NO SE VA A PONER MALO (para las ${n} semanas)`, (i) => `${i.comprar} \u2014 ${i.ingrediente}`],
-        ["congelado", "CONGELADOS (cantidad de esta semana; conservaci\xF3n de la fuente)", (i) => `${i.comprar} \u2014 ${i.ingrediente}${condicionFuente(i)}`],
-        ["fresco", "FRESCO (esta semana; entre par\xE9ntesis, para todo el periodo)", (i) => `${i.comprar} \u2014 ${i.ingrediente}${i.comprarPeriodo ? ` (${n} semanas: ${i.comprarPeriodo})` : ""}`]
+        ["despensa", `LO QUE NO SE VA A PONER MALO (para las ${n} semanas)`, (i) => `${i.comprar} \u2014 ${nombreVisible(i.ingrediente)}`],
+        ["congelado", "CONGELADOS (cantidad de esta semana; conservaci\xF3n de la fuente)", (i) => `${i.comprar} \u2014 ${nombreVisible(i.ingrediente)}${condicionFuente(i)}`],
+        ["fresco", "FRESCO (esta semana; entre par\xE9ntesis, para todo el periodo)", (i) => `${i.comprar} \u2014 ${nombreVisible(i.ingrediente)}${i.comprarPeriodo ? ` (${n} semanas: ${i.comprarPeriodo})` : ""}`]
       ];
       for (const [g, titulo, linea] of grupos) {
         const delGrupo = pendientes.filter((i) => i.grupo === g);
@@ -5178,7 +5186,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
       const delSec = pendientes.filter((i) => i.seccion === sec);
       if (!delSec.length) continue;
       lineas.push("", TITULO_SECCION[sec].toUpperCase());
-      for (const i of delSec) lineas.push(`- ${i.comprar} \u2014 ${i.ingrediente}${condicionFuente(i)}`);
+      for (const i of delSec) lineas.push(`- ${i.comprar} \u2014 ${nombreVisible(i.ingrediente)}${condicionFuente(i)}`);
     }
     if (manuales.length) {
       lineas.push("", "A\xD1ADIDOS A MANO");
@@ -5500,7 +5508,7 @@ tomate triturado,kg,1.25,"Hacendado, bote 800 g",Mercadona: https://tienda.merca
 tortilla de trigo,kg,3.19,"tortillas de trigo Hacendado (wraps), paquete",Mercadona: https://tienda.mercadona.es/product/80859/tortillas-trigo-hacendado-paquete,2026-10-20
 tortita de ma\xEDz,kg,9.17,"tortitas de ma\xEDz Hacendado, paquete",Mercadona: https://tienda.mercadona.es/product/14158/tortitas-maiz-hacendado-paquete,2026-10-20
 yogur de soja,kg,3.00,"postre de soja natural Hacendado, pack",Mercadona: https://tienda.mercadona.es/product/20200/postre-soja-hacendado-natural-pack-4,2026-10-20
-yogur griego,kg,,"sin precio: la app cuenta un griego 0 % (USDA 170894: 59 kcal y 10,2 g de prote\xEDna por 100 g); el precio de un 0 % o skyr natural est\xE1 pendiente (#348).",Mercadona: https://tienda.mercadona.es/,2026-11-24
+yogur griego,kg,2.80,"Postre l\xE1cteo natural +Prote\xEDnas 10 g 0 % MG Hacendado, bote 500 g (casa con las cifras del griego 0 %)",Mercadona: https://tienda.mercadona.es/product/21256/postre-lacteo-natural-proteinas-hacendado-0-mg-10-g-proteinas-bote,2026-11-24
 yogur natural,kg,1.33,"natural Hacendado, pack 6",Mercadona: https://tienda.mercadona.es/product/22313/yogur-natural-hacendado-pack-6,2026-10-20
 zanahoria,kg,1.00,paquete 1 kg,Mercadona: https://tienda.mercadona.es/product/69586/zanahorias-paquete,2026-10-20
 gazpacho,l,1.60,"tradicional Hacendado, botella 1 l; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/15604/gazpacho-tradicional-hacendado-botella,2026-10-26
@@ -14035,14 +14043,6 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
       for (const t2 of e.tomas) items.push({ recetaId: t2.receta, veces: 1, racion: 1 });
     }
     return { items, recetas: [...recetas.values()] };
-  }
-
-  // src/motor/nombre-visible.ts
-  var NOMBRES_VISIBLES = {
-    "yogur griego": "yogur griego 0 % o skyr natural"
-  };
-  function nombreVisible(ingrediente) {
-    return NOMBRES_VISIBLES[ingrediente] ?? ingrediente;
   }
   return __toCommonJS(motor_exports);
 })();
