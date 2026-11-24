@@ -3702,7 +3702,6 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
     const aviso = cuadrado ? void 0 : objetivo > servido ? `${dia2}: faltan ${Math.round(objetivo - servido)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.` : `${dia2}: sobran ${Math.round(servido - objetivo)} kcal del d\xEDa con cantidades normales. Si quieres, cambia alg\xFAn plato por otro m\xE1s ligero.`;
     return { dia: dia2, objetivo: Math.round(objetivo), servidoAntes: Math.round(antes), servido: Math.round(servido), cuadrado, ...aviso ? { aviso } : {} };
   }
-  var RACIONES_POSTRE = [1, 1.25, 1.5];
   function cerrarDiaConPostre(dia2, mias, delDia, salida, porId, recetas, opciones, objetivo, margen) {
     const sumar = () => mias.reduce((s, a2) => s + a2.kcalResultante, 0);
     if (objetivo - sumar() <= margen * 0.5) return;
@@ -3903,7 +3902,9 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       proteina: r13(r.proteina + mas.proteina),
       kcal: Math.round(r.kcal + mas.kcal - 9 * menosGrasa),
       grasa: r13(Math.max(0, r.grasa + mas.grasa - menosGrasa)),
-      ingredientes: r.ingredientes.map((i) => creceEnCarga(i.nombre) ? { ...i, gramos: gramosNuevos(i) } : fa < 1 && esGrasa(i.nombre) ? { ...i, gramos: Math.round(i.gramos * fa * 10) / 10 } : i)
+      ingredientes: r.ingredientes.map((i) => creceEnCarga(i.nombre) ? { ...i, gramos: gramosNuevos(i) } : fa < 1 && esGrasa(i.nombre) ? { ...i, gramos: Math.round(i.gramos * fa * 10) / 10 } : i),
+      // #343: en una comida compuesta, la carga va a cada plato, para que sus kcal sigan siendo la suma de cada uno a su ración.
+      ...r.partes ? { partes: r.partes.map((p) => ({ receta: recetaConCarga(p.receta, k, fa), k: p.k })) } : {}
     };
   }
   function recetaDeIdConCarga(porId, id) {
@@ -4233,11 +4234,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
     const { fMin, fMax, hayPalancas } = limitesDeFactor(franja ?? "comida", receta.ingredientes, !!opciones.cargaAlta);
     const palancas = receta.ingredientes.filter((i) => esPalanca(i.nombre));
-    const hay = (rol) => palancas.some((i) => rolIngrediente(i.nombre) === rol);
-    const kcalPalancas = Math.min(
-      receta.kcal,
-      (hay("base") ? 4 * receta.hidrato : 0) + (hay("proteina") ? 4 * receta.proteina : 0) + 9 * palancas.filter((i) => rolIngrediente(i.nombre) === "grasa").reduce((s, i) => s + i.gramos, 0)
-    );
+    const kcalPalancas = kcalPalancasDe(receta);
     const factorIdeal = hayPalancas && kcalPalancas > 0 ? 1 + (kcalObjetivo - receta.kcal) / kcalPalancas : 1;
     const suelo = Math.min(1, Math.max(opciones.piso ?? 1 - AJUSTE_MAX, fMin));
     const techo = Math.max(suelo, Math.min(RACION_MAX_SUBIDA, fMax));
@@ -4314,7 +4311,8 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
       ...platos.every((p) => typeof p.fibraG === "number") ? { fibraG: platos.reduce((s, p) => s + p.fibraG, 0) } : {},
       ...platos.every((p) => p.preparacion) ? { preparacion: platos.map((p) => p.preparacion).join(" ") } : {},
       tipoPlato: "compuesta",
-      platos: platos.map((p) => p.id)
+      platos: platos.map((p) => p.id),
+      partes: platos.map((p) => ({ receta: p, k: 1 }))
     };
   }
   function combinanBien(primero, segundo) {
@@ -4338,7 +4336,15 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
       ingredientes: postre.ingredientes.map((i, n) => ({ ...i, gramos: gramos[n].gramos }))
     };
     const comp = componerComida([...platos, escalado]);
-    return { ...comp, id: `${comp.id}${SUFIJO_POSTRE}${k}` };
+    return { ...comp, id: `${comp.id}${SUFIJO_POSTRE}${k}`, partes: [...platos.map((p) => ({ receta: p, k: 1 })), { receta: postre, k }] };
+  }
+  var RACIONES_POSTRE = [1, 1.25, 1.5];
+  function postreASuRacion(r, f2) {
+    const ult = r.partes?.[r.partes.length - 1];
+    if (!ult || r.partes.length < 2 || ult.receta.tipoPlato !== "postre" || ult.k !== 1 || f2 <= 1) return r;
+    const rp = Math.max(...RACIONES_POSTRE.filter((x) => x <= f2 + 1e-9));
+    if (Math.abs(rp - f2) < 1e-9) return r;
+    return componerConPostre(r.partes.slice(0, -1).map((p) => p.receta), ult.receta, Math.round(rp / f2 * 1e4) / 1e4);
   }
   function recetaDeId(porId, id) {
     const directa = porId.get(id);
@@ -4612,8 +4618,12 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
         }
         let mejor;
         const descartadas = [];
-        for (const r of validas) {
-          const { factor, kcalResultante, desviacion, factorRedondeado: factorRedondeado2 } = racionParaObjetivo(r, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta });
+        for (const r02 of validas) {
+          const rr = racionParaObjetivo(r02, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta });
+          const { factor, factorRedondeado: factorRedondeado2 } = rr;
+          const r = postreASuRacion(r02, factorRedondeado2);
+          const kcalResultante = r === r02 ? rr.kcalResultante : kcalConRacion(r, factorRedondeado2);
+          const desviacion = Math.abs(kcalResultante - slot.kcalObjetivo);
           const { incumplimientos: rotos } = incumplimientosRacion(slot.franja, r, factorRedondeado2, { cargaAlta: slot.cargaAlta });
           if (rotos.length) {
             descartadas.push(`"${r.nombre}" al ${Math.round(factorRedondeado2 * 100)} %: ${rotos.join("; ")}`);
@@ -4862,17 +4872,21 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
   }
   var LEGUMBRE2 = /\b(lentejas?|garbanzos?|alubias?)\b/i;
   function proteinaServida(r, factor) {
+    if (r.partes) return r.partes.reduce((t2, p) => t2 + proteinaServida(p.receta, factor * p.k), 0);
     const crece = r.ingredientes.some((i) => esPalanca(i.nombre) && (rolIngrediente(i.nombre) === "proteina" || LEGUMBRE2.test(i.nombre)));
     return r.proteina * (crece ? factor : 1);
   }
   function kcalConRacion(receta, factor) {
+    return Math.round(receta.kcal + kcalPalancasDe(receta) * (factor - 1));
+  }
+  function kcalPalancasDe(receta) {
+    if (receta.partes) return receta.partes.reduce((t2, p) => t2 + kcalPalancasDe(p.receta) * p.k, 0);
     const palancas = receta.ingredientes.filter((i) => esPalanca(i.nombre));
     const hay = (rol) => palancas.some((i) => rolIngrediente(i.nombre) === rol);
-    const kcalPalancas = Math.min(
+    return Math.min(
       receta.kcal,
       (hay("base") ? 4 * receta.hidrato : 0) + (hay("proteina") ? 4 * receta.proteina : 0) + 9 * palancas.filter((i) => rolIngrediente(i.nombre) === "grasa").reduce((t2, i) => t2 + i.gramos, 0)
     );
-    return Math.round(receta.kcal + kcalPalancas * (factor - 1));
   }
   function macrosConRacion(receta, factor) {
     const palancas = receta.ingredientes.filter((i) => esPalanca(i.nombre));
@@ -4880,6 +4894,10 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
     const grasaPalanca = palancas.filter((i) => rolIngrediente(i.nombre) === "grasa").reduce((t2, i) => t2 + i.gramos, 0);
     const r13 = (n) => Math.round(n * 10) / 10;
     if (factor === 1) return { proteina: receta.proteina, grasa: receta.grasa, hidrato: receta.hidrato };
+    if (receta.partes) {
+      const ms = receta.partes.map((p) => macrosConRacion(p.receta, factor * p.k));
+      return { proteina: r13(ms.reduce((t2, m) => t2 + m.proteina, 0)), grasa: r13(ms.reduce((t2, m) => t2 + m.grasa, 0)), hidrato: r13(ms.reduce((t2, m) => t2 + m.hidrato, 0)) };
+    }
     return {
       proteina: r13(receta.proteina * (hay("proteina") ? factor : 1)),
       grasa: r13(receta.grasa + grasaPalanca * (factor - 1)),
