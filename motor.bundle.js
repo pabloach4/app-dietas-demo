@@ -231,6 +231,7 @@ var Motor = (() => {
     calcular: () => calcular,
     calcularNiveles: () => calcularNiveles,
     cambiarHoraSesion: () => cambiarHoraSesion,
+    cambiosAppPlanPablo: () => cambiosAppPlanPablo,
     camposEditables: () => camposEditables,
     cargaDeHidratos: () => cargaDeHidratos,
     categoriasDeTexto: () => categoriasDeTexto,
@@ -468,6 +469,7 @@ var Motor = (() => {
     planDiaExamen: () => planDiaExamen,
     planDiaFisicas: () => planDiaFisicas,
     planPabloAplicable: () => planPabloAplicable,
+    platoNormalizado: () => platoNormalizado,
     plegarLineaIcs: () => plegarLineaIcs,
     preferenciaDesayunoValida: () => preferenciaDesayunoValida,
     preferenciaTemporada: () => preferenciaTemporada,
@@ -524,6 +526,7 @@ var Motor = (() => {
     tentempieAQuitar: () => tentempieAQuitar,
     textoAccion: () => textoAccion,
     textoApetece: () => textoApetece,
+    textoCambiosAppPlanPablo: () => textoCambiosAppPlanPablo,
     textoCita: () => textoCita,
     textoDiabetes: () => textoDiabetes,
     textoDuranteEntreno: () => textoDuranteEntreno,
@@ -4474,8 +4477,12 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
         estadosFijadas.push({ ...base, ok: false, causa: "esta receta no vale para esta comida", arreglo: "La app ha puesto otra receta compatible en su lugar; puedes elegir otra de las opciones o quitar la fijaci\xF3n." });
         continue;
       }
-      const { factorRedondeado, kcalResultante, desviacion } = racionParaObjetivo(receta, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta, piso: 0.5 });
-      const rotos = [
+      const calculada = racionParaObjetivo(receta, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta, piso: 0.5 });
+      const racionPablo = p.racion !== void 0 && Number.isFinite(p.racion) && p.racion >= 0.5 && p.racion <= 2 && !incumplimientosRacion(slot.franja, receta, p.racion, { cargaAlta: slot.cargaAlta }).incumplimientos.length ? p.racion : void 0;
+      const factorRedondeado = racionPablo ?? calculada.factorRedondeado;
+      const kcalResultante = racionPablo !== void 0 ? kcalConRacion(receta, racionPablo) : calculada.kcalResultante;
+      const desviacion = Math.abs(kcalResultante - slot.kcalObjetivo);
+      const rotos = racionPablo !== void 0 ? [] : [
         ...validarPlatoGenerado(slot.franja, receta.ingredientes, { cargaAlta: slot.cargaAlta }).incumplimientos,
         ...incumplimientosRacion(slot.franja, receta, factorRedondeado, { cargaAlta: slot.cargaAlta }).incumplimientos
       ];
@@ -11812,17 +11819,37 @@ fruta; verdura,variedad de grupo y suficiencia global,consultar con Pablo,"Cubri
     return !guardado || String(recibido.creado) > String(guardado.creado);
   }
   function revisarPlanPablo(asignaciones, catalogo, ap) {
-    return revisarSiguienteGuardada(asignaciones.map((a2) => ({ dia: a2.dia, franja: a2.franja, receta: a2.receta })), catalogo, ap);
+    const racionDe = new Map(asignaciones.map((a2) => [`${a2.dia}|${a2.franja}`, a2.racionAjustada]));
+    const rev = revisarSiguienteGuardada(asignaciones.map((a2) => ({ dia: a2.dia, franja: a2.franja, receta: a2.receta })), catalogo, ap);
+    return {
+      validas: rev.validas.map((v) => {
+        const r = racionDe.get(`${v.dia}|${v.franja}`);
+        return Number.isFinite(r) ? { ...v, racion: r } : v;
+      }),
+      quitadas: rev.quitadas
+    };
   }
-  function etiquetaPlanPablo(enUso, deP) {
-    const clave3 = (x) => `${x.dia}|${x.franja}|${x.receta}`;
-    const uso = new Set(enUso.map(clave3));
-    return deP.every((x) => uso.has(clave3(x))) && enUso.length === deP.length ? "pablo" : "pablo_con_cambios";
+  var platoNormalizado = (id) => sinCarga(id).replace(/~postre[\d.]+/g, "~postre");
+  function etiquetaPlanPablo(enUso, deP, o = {}) {
+    const uso = new Map(enUso.map((x) => [`${x.dia}|${x.franja}`, platoNormalizado(x.receta)]));
+    const distintas = deP.filter((x) => uso.get(`${x.dia}|${x.franja}`) !== platoNormalizado(x.receta));
+    const tocada = o.tocadaPorPersona ?? (() => true);
+    if (distintas.some((x) => tocada(x.dia, x.franja))) return "pablo_con_cambios";
+    return distintas.length || (o.quitadas ?? 0) > 0 ? "pablo_app" : "pablo";
+  }
+  function cambiosAppPlanPablo(enUso, deP, o = {}) {
+    const uso = new Map(enUso.map((x) => [`${x.dia}|${x.franja}`, platoNormalizado(x.receta)]));
+    const tocada = o.tocadaPorPersona ?? (() => false);
+    return deP.filter((x) => uso.get(`${x.dia}|${x.franja}`) !== platoNormalizado(x.receta) && !tocada(x.dia, x.franja)).length + (o.quitadas ?? 0);
   }
   var TEXTO_PLAN_PABLO = {
     pablo: "Revisado por Pablo",
-    pablo_con_cambios: "Revisado por Pablo, con cambios tuyos"
+    pablo_con_cambios: "Revisado por Pablo, con cambios tuyos",
+    pablo_app: "Revisado por Pablo; la app ha cambiado alg\xFAn plato que ya no te val\xEDa"
   };
+  function textoCambiosAppPlanPablo(n) {
+    return n === 1 ? "Revisado por Pablo; la app ha cambiado 1 plato que ya no te val\xEDa" : `Revisado por Pablo; la app ha cambiado ${n} platos que ya no te val\xEDan`;
+  }
 
   // src/motor/contacto-pablo.ts
   var CORREO_PABLO = "nutriciondeportiva7777@gmail.com";

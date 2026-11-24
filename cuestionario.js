@@ -4632,12 +4632,15 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // Issue #145: lo que no cabe en una comida con cantidades normales se reparte entre las otras comidas del día (sin inflar nada).
     const recetasCuadre = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(aplicadas.resultado.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
     const enCompeticion = (dia) => Boolean(compPorDia.get(dia) && compPorDia.get(dia).fase === 'competicion');
-    let cuadrado = Motor.cuadrarDias(aplicadas.resultado.asignaciones, slotsSemana, recetasCuadre, { noMover: enCompeticion, admite: admitePostre }); // #259.11: y si hace falta, postre
+    // #346 (Instinct, 24/11): lo que revisó Pablo no lo toca el cuadre (ni la ración ni el postre); solo se recalculan las cuentas.
+    const slotsDePablo = new Set((fijadasDePablo ?? []).map((f) => `${f.dia}|${f.franja}`));
+    const noMoverCuadre = (dia, franja) => enCompeticion(dia) || slotsDePablo.has(`${dia}|${franja}`);
+    let cuadrado = Motor.cuadrarDias(aplicadas.resultado.asignaciones, slotsSemana, recetasCuadre, { noMover: noMoverCuadre, admite: admitePostre }); // #259.11: y si hace falta, postre
     // #315: cierre de proteína del día: los días por debajo del 90 % cambian comidas por alternativas válidas con más proteína (sin inflar
     // nada). No toca la competición, lo fijado (también el plan de Pablo), lo pedido ni lo cambiado a mano; en carga, no baja los hidratos.
     const proteinaDia = Object.fromEntries(repartosPorDia.map((r) => [r.dia.dia, r.dia.proteinaG]));
     const hidratoDia = Object.fromEntries(repartosPorDia.map((r) => [r.dia.dia, r.dia.hidratoG]));
-    const noMoverProteina = (dia, franja) => enCompeticion(dia) || Object.prototype.hasOwnProperty.call(sustituciones, `${dia}|${franja}`);
+    const noMoverProteina = (dia, franja) => noMoverCuadre(dia, franja) || Object.prototype.hasOwnProperty.call(sustituciones, `${dia}|${franja}`);
     // #326 parte 1: gimnasio («ganar músculo», «recomposición» o fuerza como deporte principal): proteína repartida, unos 0,4 g/kg en
     // cada principal y 4 tomas con 0,25 g/kg o 20 g, cambiando recetas como el cierre (sin inflar nada).
     const esGimnasio = Motor.usaRepartoProteinaGimnasio(semana.perfil.objetivo, deporteElegido, sesionesConActividad); // #331 parte 3: el opositor, si hay fuerza o CrossFit
@@ -4650,7 +4653,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     };
     cuadrado = cerrarProteina(cuadrado, recetasCuadre);
     // #339 (coordinación, 24/11): el cierre de proteína puede quitar un postre de cierre; el cierre con postre vuelve a pasar (solo añade).
-    { const cp = Motor.cerrarConPostreTrasProteina(cuadrado, slotsSemana, recetasCuadre, { noMover: enCompeticion, admite: admitePostre }); recetasCuadre.push(...cp.recetasNuevas); cuadrado = cp; }
+    { const cp = Motor.cerrarConPostreTrasProteina(cuadrado, slotsSemana, recetasCuadre, { noMover: noMoverCuadre, admite: admitePostre }); recetasCuadre.push(...cp.recetasNuevas); cuadrado = cp; }
     // «He comido fuera» (Pablo, 08/10): «igual que si come otra cosa en su casa y cambia, si sale fuera debería regularse también».
     // Hoy esa comida cuenta con las kcal apuntadas y una segunda pasada del mismo cuadre regula las comidas que van DESPUÉS de ella
     // (las anteriores ya han pasado y no se tocan), con los mismos topes de cantidades normales. Al día siguiente deja de aplicarse.
@@ -4703,9 +4706,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     {
       const caja = document.getElementById('r-pablo');
       if (pabloHoy) {
-        const etq = Motor.etiquetaPlanPablo(cuadrado.asignaciones, fijadasDePablo);
+        // #346: «con cambios tuyos» solo si la persona ha cambiado un plato; lo que cambia la app se dice como cambio de la app.
+        const tocadaPorPersona = (dia, franja) => Object.prototype.hasOwnProperty.call(sustituciones, `${dia}|${franja}`);
+        const opcEtq = { quitadas: quitadasPablo.length, tocadaPorPersona };
+        const etq = Motor.etiquetaPlanPablo(cuadrado.asignaciones, fijadasDePablo, opcEtq);
+        const textoEtq = etq === 'pablo_app' ? Motor.textoCambiosAppPlanPablo(Motor.cambiosAppPlanPablo(cuadrado.asignaciones, fijadasDePablo, opcEtq)) : Motor.TEXTO_PLAN_PABLO[etq];
         const quita = quitadasPablo.length ? ` Se han quitado ${quitadasPablo.length} plato${quitadasPablo.length === 1 ? '' : 's'} que ya no valen con tus restricciones (${[...new Set(quitadasPablo.map((q) => q.nombre))].slice(0, 3).map(escaparHtml).join(', ')}).` : '';
-        avisoPabloHoy = `<strong>${Motor.TEXTO_PLAN_PABLO[etq]}.</strong>${quita}`;
+        avisoPabloHoy = `<strong>${escaparHtml(textoEtq)}.</strong>${quita}`;
       } else avisoPabloHoy = '';
       if (caja) { caja.hidden = !avisoPabloHoy; caja.innerHTML = avisoPabloHoy; }
     }
