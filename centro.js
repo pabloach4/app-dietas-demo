@@ -424,7 +424,7 @@
   let edicion = null; // { u, base, casillas, ap, sinRestricciones, estado }
   const FRANJAS = ['desayuno', 'media_manana', 'comida', 'merienda', 'cena'];
   const catalogo = (() => { try { return Motor.parsearRecetas(Motor.RECETAS_CATALOGO_CSV, Motor.RECETAS_CATALOGO_INGREDIENTES_CSV); } catch { return []; } })();
-  const nombreCompleto = (id) => String(id).split('+').map(nombreReceta).join(' + ');
+  const nombreCompleto = (id) => String(id).split('~')[0].split('+').map(nombreReceta).join(' + ');
   const textoReceta = (id) => (id ? nombreCompleto(id) + ' (' + id + ')' : '');
   const idDeTexto = (t) => { const m = /\(([^()]+)\)\s*$/.exec(t.trim()); if (m) return m[1]; const r = catalogo.find((x) => x.nombre.toLowerCase() === t.trim().toLowerCase()); return r ? r.id : t.trim(); };
 

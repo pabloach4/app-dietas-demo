@@ -2116,7 +2116,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       // como al recalcular por el peso (#259.27). Con cuatro elecciones casi todo sube un poco, y sin ese margen cambiaba media semana.
       recalcularConGustos([]);
       const g = Motor.gustosPorReceta(RECETAS_EJEMPLO, historialGustos, ATRIBUTOS_RECETAS);
-      const gustoDe = (id) => { const xs = String(id).split('+'); return xs.reduce((t, x) => t + (g.get(x) ?? 0), 0) / xs.length; };
+      const gustoDe = (id) => { const xs = String(id).split('~')[0].split('+'); return xs.reduce((t, x) => t + (g.get(x) ?? 0), 0) / xs.length; };
       const conGustos = new Map(asignacionSemanaActual.asignaciones.map((a) => [`${a.dia}|${a.franja}`, a.receta]));
       recalcularConGustos([...antes].map(([k, receta]) => {
         const [dia, franja] = k.split('|');
@@ -4575,6 +4575,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       return { ...cuad, asignaciones: cp.asignaciones, dias, proteinaDias: cp.dias };
     };
     cuadrado = cerrarProteina(cuadrado, recetasCuadre);
+    // #339 (coordinación, 24/11): el cierre de proteína puede quitar un postre de cierre; el cierre con postre vuelve a pasar (solo añade).
+    { const cp = Motor.cerrarConPostreTrasProteina(cuadrado, slotsSemana, recetasCuadre, { noMover: enCompeticion, admite: admitePostre }); recetasCuadre.push(...cp.recetasNuevas); cuadrado = cp; }
     // «He comido fuera» (Pablo, 08/10): «igual que si come otra cosa en su casa y cambia, si sale fuera debería regularse también».
     // Hoy esa comida cuenta con las kcal apuntadas y una segunda pasada del mismo cuadre regula las comidas que van DESPUÉS de ella
     // (las anteriores ya han pasado y no se tocan), con los mismos topes de cantidades normales. Al día siguiente deja de aplicarse.
@@ -4674,7 +4676,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const evitar = [...new Set(asignacionSemana.asignaciones.flatMap((a) => { const r = Motor.recetaDeId(porId, a.receta); return r ? (r.platos ?? [r.id]) : [a.receta]; }))];
       const base = Motor.asignarRecetas(slotsSinCompensar, RECETAS_EJEMPLO, { ...opcionesAsignador, preferir: undefined, fijadas: fijasPropias, evitar });
       const rc = RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(base.asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
-      return { ...base, asignaciones: cerrarProteina(Motor.cuadrarDias(base.asignaciones, slotsSinCompensar, rc, { noMover: enCompeticion, admite: admitePostre }), rc).asignaciones }; // #315: con su cierre de proteína
+      const opc = { noMover: enCompeticion, admite: admitePostre };
+      return { ...base, asignaciones: Motor.cerrarConPostreTrasProteina(cerrarProteina(Motor.cuadrarDias(base.asignaciones, slotsSinCompensar, rc, opc), rc), slotsSinCompensar, rc, opc).asignaciones }; // #315: con su cierre de proteína (#339: y el postre otra vez)
     };
     proxima.dieta = null; // el plan se ha recalculado: la dieta siguiente preparada antes ya no vale
     if (proxima.resultado) proxima.obsoleta = true; // #192: la lista ya preparada se rehace con las restricciones de ahora al pintar la compra

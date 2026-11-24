@@ -225,6 +225,7 @@ var Motor = (() => {
     camposEditables: () => camposEditables,
     cargaDeHidratos: () => cargaDeHidratos,
     categoriasDeTexto: () => categoriasDeTexto,
+    cerrarConPostreTrasProteina: () => cerrarConPostreTrasProteina,
     choquesHorario: () => choquesHorario,
     claseGluten: () => claseGluten,
     clasificarAlerta: () => clasificarAlerta,
@@ -3688,44 +3689,77 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
           resto = objetivo - sumar();
         }
       }
-      if (opciones.admite && objetivo - sumar() > margen * 0.5) {
-        const postres = recetas.filter((x) => x.tipoPlato === "postre" && opciones.admite(x));
-        for (const fr of ["comida", "cena"]) {
-          const falta = objetivo - sumar();
-          if (falta <= margen * 0.5) break;
-          const a2 = mias.find((x) => x.franja === fr);
-          if (!a2 || opciones.noMover?.(dia2, fr)) continue;
-          const base = recetaDeId(porId, a2.receta);
-          const slot = delDia.find((x) => x.franja === fr);
-          if (!base || !slot) continue;
-          const platos = base.platos ? base.platos.map((id) => porId.get(id)).filter((x) => !!x) : [base];
-          if (platos.some((x) => x.tipoPlato === "postre")) continue;
-          let mejor;
-          const usos = (id) => salida.filter((x) => (x.franja === "comida" || x.franja === "cena") && (recetaDeId(porId, x.receta)?.platos ?? [x.receta]).includes(id)).length;
-          for (const po of postres.filter((x) => x.franjas.includes(fr) && usos(x.id) < 2)) {
-            const comp = componerComida([...platos, po]);
-            const kcal = kcalConRacion(comp, a2.racionAjustada);
-            const delta = kcal - a2.kcalResultante;
-            if (delta <= 0 || delta > falta + margen) continue;
-            if (incumplimientosRacion(fr, comp, a2.racionAjustada, { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
-            if (validarPlatoGenerado(fr, gramosEscalados(comp, a2.racionAjustada), { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
-            if (!mejor || Math.abs(falta - delta) < Math.abs(falta - mejor.delta)) mejor = { comp, kcal, delta };
-          }
-          if (!mejor) continue;
-          porId.set(mejor.comp.id, mejor.comp);
-          a2.receta = mejor.comp.id;
-          a2.kcalResultante = mejor.kcal;
-          const postre = recetaDeId(porId, mejor.comp.platos[mejor.comp.platos.length - 1]);
-          a2.ajusteDia = { kcal: (a2.ajusteDia?.kcal ?? 0) + mejor.delta, motivo: `Hoy esta comida lleva de postre ${postre ? postre.nombre.toLowerCase() : "un postre"} (${mejor.delta} kcal) para llegar a las kcal del d\xEDa con cantidades normales.` };
-        }
-      }
+      if (opciones.admite) cerrarDiaConPostre(dia2, mias, delDia, salida, porId, recetas, { noMover: opciones.noMover, admite: opciones.admite }, objetivo, margen);
       const servido = sumar();
-      const cuadrado = Math.abs(objetivo - servido) <= margen || objetivo === 0;
-      const aviso = cuadrado ? void 0 : objetivo > servido ? `${dia2}: faltan ${Math.round(objetivo - servido)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.` : `${dia2}: sobran ${Math.round(servido - objetivo)} kcal del d\xEDa con cantidades normales. Si quieres, cambia alg\xFAn plato por otro m\xE1s ligero.`;
-      if (aviso) avisos.push(aviso);
-      dias.push({ dia: dia2, objetivo: Math.round(objetivo), servidoAntes: Math.round(antes), servido: Math.round(servido), cuadrado, ...aviso ? { aviso } : {} });
+      const d = estadoDia(dia2, objetivo, antes, servido);
+      if (d.aviso) avisos.push(d.aviso);
+      dias.push(d);
     }
     return { asignaciones: salida, dias, avisos };
+  }
+  function estadoDia(dia2, objetivo, antes, servido) {
+    const cuadrado = Math.abs(objetivo - servido) <= TOLERANCIA_DIA * objetivo || objetivo === 0;
+    const aviso = cuadrado ? void 0 : objetivo > servido ? `${dia2}: faltan ${Math.round(objetivo - servido)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.` : `${dia2}: sobran ${Math.round(servido - objetivo)} kcal del d\xEDa con cantidades normales. Si quieres, cambia alg\xFAn plato por otro m\xE1s ligero.`;
+    return { dia: dia2, objetivo: Math.round(objetivo), servidoAntes: Math.round(antes), servido: Math.round(servido), cuadrado, ...aviso ? { aviso } : {} };
+  }
+  var RACIONES_POSTRE = [1, 1.25, 1.5];
+  function cerrarDiaConPostre(dia2, mias, delDia, salida, porId, recetas, opciones, objetivo, margen) {
+    const sumar = () => mias.reduce((s, a2) => s + a2.kcalResultante, 0);
+    if (objetivo - sumar() <= margen * 0.5) return;
+    const postres = recetas.filter((x) => x.tipoPlato === "postre" && !x.platos && opciones.admite(x));
+    for (const fr of ["comida", "cena"]) {
+      const falta = objetivo - sumar();
+      if (falta <= margen * 0.5) break;
+      const a2 = mias.find((x) => x.franja === fr);
+      if (!a2 || opciones.noMover?.(dia2, fr)) continue;
+      const base = recetaDeId(porId, a2.receta);
+      const slot = delDia.find((x) => x.franja === fr);
+      if (!base || !slot) continue;
+      const platos = base.platos ? base.platos.map((id) => porId.get(id)).filter((x) => !!x) : [base];
+      if (platos.length !== (base.platos?.length ?? 1) || platos.some((x) => x.tipoPlato === "postre")) continue;
+      const f2 = a2.racionAjustada;
+      const raciones = f2 < 1 ? [f2] : RACIONES_POSTRE.filter((r) => r <= f2);
+      let mejor;
+      const usos = (id) => salida.filter((x) => (x.franja === "comida" || x.franja === "cena") && (recetaDeId(porId, x.receta)?.platos ?? [x.receta]).includes(id)).length;
+      for (const po of postres.filter((x) => x.franjas.includes(fr) && usos(x.id) < 2)) {
+        for (const rp of raciones) {
+          const comp = componerConPostre(platos, po, Math.round(rp / f2 * 1e4) / 1e4);
+          const kcal = kcalConRacion(comp, f2);
+          const delta = kcal - a2.kcalResultante;
+          if (delta <= 0 || delta > falta + margen) continue;
+          if (incumplimientosRacion(fr, comp, f2, { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+          if (validarPlatoGenerado(fr, gramosEscalados(comp, f2), { cargaAlta: slot.cargaAlta }).incumplimientos.length) continue;
+          if (!mejor || Math.abs(falta - delta) < Math.abs(falta - mejor.delta)) mejor = { comp, kcal, delta };
+        }
+      }
+      if (!mejor) continue;
+      porId.set(mejor.comp.id, mejor.comp);
+      a2.receta = mejor.comp.id;
+      a2.kcalResultante = mejor.kcal;
+      const postre = porId.get(mejor.comp.platos[mejor.comp.platos.length - 1]);
+      a2.ajusteDia = { kcal: (a2.ajusteDia?.kcal ?? 0) + mejor.delta, motivo: `Hoy esta comida lleva de postre ${postre ? postre.nombre.toLowerCase() : "un postre"} (${mejor.delta} kcal) para llegar a las kcal del d\xEDa con cantidades normales.` };
+    }
+  }
+  function cerrarConPostreTrasProteina(cuad, slots, recetas, opciones) {
+    if (!opciones.admite) return { ...cuad, recetasNuevas: [] };
+    const porId = new Map(recetas.map((r) => [r.id, r]));
+    const salida = cuad.asignaciones.map((a2) => ({ ...a2 }));
+    const nuevas = [];
+    const dias = cuad.dias.map((d0) => {
+      const delDia = slots.filter((s) => s.dia === d0.dia);
+      const objetivo = delDia.reduce((s, x) => s + x.kcalObjetivo, 0);
+      const mias = salida.filter((a2) => a2.dia === d0.dia);
+      const antes = mias.map((a2) => a2.receta);
+      cerrarDiaConPostre(d0.dia, mias, delDia, salida, porId, recetas, { noMover: opciones.noMover, admite: opciones.admite }, objetivo, TOLERANCIA_DIA * objetivo);
+      mias.forEach((a2, i) => {
+        if (a2.receta !== antes[i]) nuevas.push(porId.get(a2.receta));
+      });
+      if (mias.every((a2, i) => a2.receta === antes[i])) return d0;
+      return estadoDia(d0.dia, objetivo, d0.servidoAntes, mias.reduce((s, a2) => s + a2.kcalResultante, 0));
+    });
+    const tocados = new Set(dias.filter((d, i) => d !== cuad.dias[i]).map((d) => d.dia));
+    const avisos = cuad.avisos.filter((x) => ![...tocados].some((d) => x.startsWith(`${d}: faltan `) || x.startsWith(`${d}: sobran `))).concat(dias.filter((d) => tocados.has(d.dia) && d.aviso).map((d) => d.aviso));
+    return { ...cuad, asignaciones: salida, dias, avisos, recetasNuevas: nuevas };
   }
   function cuadrarConComidaFuera(primera, slots, recetas, o) {
     if (!o.fuera.size) return primera;
@@ -4290,9 +4324,32 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
     const ps = nombres(segundo, "proteina");
     return !pp.some((a2) => ps.some((b) => coincideAlimento(a2, b)));
   }
+  var SUFIJO_POSTRE = "~postre";
+  function componerConPostre(platos, postre, k) {
+    if (k === 1) return componerComida([...platos, postre]);
+    const m = macrosConRacion(postre, k);
+    const gramos = gramosEscalados(postre, k);
+    const escalado = {
+      ...postre,
+      kcal: kcalConRacion(postre, k),
+      proteina: m.proteina,
+      grasa: m.grasa,
+      hidrato: m.hidrato,
+      ingredientes: postre.ingredientes.map((i, n) => ({ ...i, gramos: gramos[n].gramos }))
+    };
+    const comp = componerComida([...platos, escalado]);
+    return { ...comp, id: `${comp.id}${SUFIJO_POSTRE}${k}` };
+  }
   function recetaDeId(porId, id) {
     const directa = porId.get(id);
     if (!directa && id.includes(SUFIJO_CARGA)) return recetaDeIdConCarga(porId, id);
+    if (!directa && id.includes(SUFIJO_POSTRE)) {
+      const i = id.lastIndexOf(SUFIJO_POSTRE);
+      const k = Number(id.slice(i + SUFIJO_POSTRE.length));
+      const ps = id.slice(0, i).split("+").map((x) => porId.get(x));
+      if (!(k > 0) || ps.length < 2 || !ps.every(Boolean)) return void 0;
+      return componerConPostre(ps.slice(0, -1), ps[ps.length - 1], k);
+    }
     if (directa || !id.includes("+")) return directa;
     const platos = id.split("+").map((x) => porId.get(x));
     return platos.every(Boolean) ? componerComida(platos) : void 0;
@@ -5532,7 +5589,6 @@ R97,crudo,fruta,frio,no
 R98,horno,bocadillo_tostada,frio,no
 R99,crudo,bocadillo_tostada,frio,no
 R100,crudo,batido,frio,no
-R101,cocido,snack,frio,no
 R102,crudo,fruta,frio,no
 R103,crudo,bol_desayuno,cuchara_fria,no
 R104,crudo,fruta,frio,no
@@ -5567,10 +5623,6 @@ R132,cocido,bol_desayuno,cuchara_caliente,no
 R133,cocido,bol_desayuno,cuchara_caliente,no
 R134,cocido,bol_desayuno,cuchara_caliente,no
 R135,cocido,bol_desayuno,cuchara_caliente,no
-R136,cocido;sarten,huevo_plato,caliente,no
-R137,cocido;sarten,arroz_plato,caliente,no
-R138,cocido;sarten,arroz_plato,caliente,no
-R139,cocido;sarten,arroz_plato,caliente,no
 R140,cocido;sarten,arroz_plato,caliente,no
 R141,cocido;horno;sarten,arroz_plato,caliente,no
 R142,cocido;sarten,huevo_plato,caliente,no
@@ -5590,8 +5642,6 @@ R155,crudo,yogur_fruta,cuchara_fria,no
 R156,crudo,yogur_fruta,cuchara_fria,no
 R157,crudo,yogur_fruta,cuchara_fria,no
 R158,crudo,yogur_fruta,cuchara_fria,no
-R159,cocido,snack,frio,no
-R160,cocido,snack,frio,no
 R161,cocido,bol_desayuno,cuchara_caliente,no
 R162,cocido,bol_desayuno,cuchara_caliente,no
 R163,cocido,bol_desayuno,cuchara_caliente,no
@@ -5614,7 +5664,6 @@ R179,crudo,yogur_fruta,cuchara_fria,no
 R180,crudo,yogur_fruta,cuchara_fria,no
 R181,crudo,yogur_fruta,cuchara_fria,no
 R182,crudo,bocadillo_tostada,frio,no
-R183,crudo,bocadillo_tostada,frio,no
 R184,crudo,fruta,frio,no
 R300,cocido,bol_desayuno,cuchara_caliente,no
 R301,cocido,bol_desayuno,cuchara_caliente,no
@@ -7841,7 +7890,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     const usos = {};
     for (const a2 of asignaciones) {
       if (!esFranjaConLimiteVariedad(a2.franja) || claveSlot(a2.dia, a2.franja) === excluirClave) continue;
-      for (const id of a2.receta.split("+")) usos[id] = (usos[id] ?? 0) + 1;
+      for (const id of a2.receta.split("~")[0].split("+")) usos[id] = (usos[id] ?? 0) + 1;
     }
     return usos;
   }
@@ -7885,7 +7934,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
     }
     if (opciones.actual?.includes("+")) {
       const porId = new Map(recetas.map((r) => [r.id, r]));
-      const actuales = opciones.actual.split("+").map((id) => porId.get(id));
+      const actuales = opciones.actual.split("~")[0].split("+").map((id) => porId.get(id));
       if (actuales.every(Boolean)) {
         const platos = actuales;
         platos.forEach((plato, i) => {
@@ -8782,7 +8831,7 @@ R07,"Ensalada templada de garbanzos, at\xFAn y tomate",comida,677,44.8,19.8,84.6
 R08,Lentejas con arroz y verduras,comida,655,25.1,13.7,111.0,EJEMPLO | fibraAlta | doble_base | carga,unico,14.4,,cereal;legumbre,,si,si,si,pendiente_ficha,no,45,recetario42,"Pochar cebolla, ajo y zanahoria; a\xF1adir lentejas y agua. Cocer arroz por separado; combinar y ali\xF1ar.",carga
 R09,"Bol de yogur, avena, pl\xE1tano y almendras",desayuno;merienda,621,22.8,22.7,87.4,EJEMPLO,unico,12.2,,avena,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,5,recetario42,Mezclar yogur y copos de avena; a\xF1adir pl\xE1tano troceado y almendras picadas.,normal
 R10,Salm\xF3n con patata y espinacas,comida;cena,653,40.3,32.9,50.9,EJEMPLO,unico,8.8,salm\xF3n,patata,pescado,no,no,si,pendiente_ficha,no,30,recetario42,Asar salm\xF3n; cocer patata y saltear espinacas con el aceite pesado.,normal
-R11,"Tostadas integrales de huevo, tomate y fruta",desayuno,531,27.5,18.4,65.7,EJEMPLO | fibraAlta,unico,11.0,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,15,recetario42,Tostar el pan; cocinar huevo completamente con el aceite; acompa\xF1ar de tomate y naranja pelada.,normal
+R11,"Tostadas integrales con tomate y huevo; de postre, una naranja",desayuno,531,27.5,18.4,65.7,EJEMPLO | fibraAlta,unico,11.0,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,15,recetario42,"Tuesta el pan. Cocina el huevo con el aceite, bien cuajado, y s\xEDrvelo sobre las tostadas con el tomate. De postre, la naranja pelada.",normal
 R12,Arroz con ternera magra y verduras,comida,733,38.1,25.6,86.5,EJEMPLO,unico,6.0,ternera picada,cereal,,no,no,si,pendiente_ficha,si,30,recetario42,"Cocer arroz, saltear ternera y verduras con el aceite medido y mezclar.",normal
 R13,Marmitako ligero de at\xFAn y patata,comida,482,47.6,11.4,47.3,EJEMPLO,unico,7.4,at\xFAn fresco,patata,pescado,no,no,si,pendiente_ficha,no,40,recetario42,"Pochar cebolla, pimiento y tomate; a\xF1adir la patata chascada y agua y cocer. Incorporar el at\xFAn en dados los \xFAltimos 3-4 minutos.",normal
 R14,Fabada ligera de alubias con verduras,comida,433,20.4,11.1,67.1,EJEMPLO | fibraAlta,unico,17.2,,legumbre,,si,si,si,pendiente_ficha,no,45,recetario42,Pochar las verduras; a\xF1adir la alubia ya cocida con parte de su agua y cocer a fuego suave. Aceite al final.,normal
@@ -8793,7 +8842,7 @@ R18,Tumbet con huevo,comida;cena,414,15.2,16.7,54.9,EJEMPLO,unico,12.2,huevo,pat
 R19,Papas con pescado blanco y mojo ligero,comida,440,34.1,13.4,46.0,EJEMPLO,unico,6.1,bacalao fresco,patata,pescado,no,no,si,pendiente_ficha,no,35,recetario42,Cocer la patata; cocinar el pescado a la plancha o al vapor; ali\xF1ar con el aceite y el pimiento picado.,normal
 R20,Zarangollo con patata,cena,458,22.3,22.4,44.2,EJEMPLO,unico,7.3,huevo,patata,huevo,si,no,si,pendiente_ficha,no,30,recetario42,Pochar calabac\xEDn y cebolla; a\xF1adir el huevo batido y cuajar; servir con la patata cocida.,normal
 R21,"Gazpacho con at\xFAn, huevo y pan integral",comida,545,38.1,25.2,44.5,EJEMPLO | fibraAlta,unico,8.9,at\xFAn en lata,pan,gluten;huevo;pescado,no,no,pendiente_ficha,no,no,15,recetario42,"Triturar tomate, pimiento y cebolla con el aceite; acompa\xF1ar con el at\xFAn, el huevo duro y el pan.",normal
-R22,Migas de pan integral con verduras y huevo,comida,534,21.6,21.3,66.9,EJEMPLO | fibraAlta,unico,11.7,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,25,recetario42,Humedecer el pan y dorarlo con el aceite y las verduras; cuajar el huevo; acompa\xF1ar de la naranja.,normal
+R22,Migas de pan integral con verduras y huevo,comida,534,21.6,21.3,66.9,EJEMPLO | fibraAlta,unico,11.7,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,25,recetario42,"Humedece el pan y d\xF3ralo con el aceite y las verduras; cuaja el huevo. La naranja, de postre (las migas se acompa\xF1an de fruta).",normal
 R23,Alubias estofadas con pavo y verduras,comida,575,52.9,13.4,62.3,EJEMPLO | fibraAlta,unico,15.8,pechuga de pavo asada,legumbre,,no,no,si,pendiente_ficha,no,35,recetario42,"Pochar las verduras, a\xF1adir la alubia cocida y cocer a fuego suave; incorporar el pavo al final.",normal
 R24,Cocido monta\xF1\xE9s ligero de alubias rojas,comida,597,44.8,13.0,78.4,EJEMPLO | fibraAlta | doble_base | carga,unico,21.8,pechuga de pavo asada,legumbre;patata,,no,no,si,pendiente_ficha,no,45,recetario42,Cocer las verduras y la patata; a\xF1adir la alubia cocida y el pavo; cocer a fuego suave y ali\xF1ar.,carga
 R25,"Porridge de avena con yogur, manzana y nueces",desayuno,558,18.3,23.7,73.4,EJEMPLO,unico,11.0,,avena,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,10,recetario42,"Cocer la avena con agua; a\xF1adir el yogur, la manzana en dados y las nueces picadas.",normal
@@ -8864,7 +8913,7 @@ R89,"Wrap de pollo, pimiento y aguacate (d\xEDa de carga)",comida;cena,650,56.7,
 R90,"Tostada integral con aguacate, tomate y huevo",desayuno,367,17.9,17.1,37.4,EJEMPLO | fibraAlta,unico,8.8,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,10,nuevo,"Tostar el pan, aguacate machacado, huevo cocinado y tomate.",normal
 R91,"Mollete con tomate, aceite y at\xFAn",desayuno;merienda,363,16.6,11.6,48.4,EJEMPLO,unico,3.6,at\xFAn en lata,pan,gluten;pescado,no,no,pendiente_ficha,no,si,10,nuevo,"Pan abierto con tomate rallado, at\xFAn y aceite.",normal
 R92,Gachas de avena con leche y pl\xE1tano,desayuno,404,15.9,8.5,68.7,EJEMPLO,unico,7.7,,avena,gluten;l\xE1cteos,si,no,no,no,no,10,nuevo,Calentar la avena con la leche y a\xF1adir el pl\xE1tano.,normal
-R93,Tortilla francesa con pan y naranja,desayuno,444,20.2,17.0,52.9,EJEMPLO,unico,5.5,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,si,10,nuevo,"Tortilla de 2 huevos, pan y naranja.",normal
+R93,"Tortilla francesa con pan; de postre, una naranja",desayuno,444,20.2,17.0,52.9,EJEMPLO,unico,5.5,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,si,10,nuevo,"Haz una tortilla francesa de 2 huevos con el aceite, bien cuajada, y s\xEDrvela con el pan. De postre, la naranja.",normal
 R94,Tostada con crema de cacahuete y pl\xE1tano,desayuno;merienda,360,13.0,12.7,52.9,EJEMPLO | fibraAlta,unico,7.2,,pan,cacahuete;gluten,si,pendiente_ficha,pendiente_ficha,no,no,5,nuevo,Pan tostado con la crema y el pl\xE1tano en rodajas.,normal
 R95,Yogur con nueces y manzana,media_manana;merienda,226,6.9,14.0,21.7,EJEMPLO,unico,3.4,,,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Mezclar.,normal
 R96,Hummus con zanahoria,media_manana;merienda,183,5.6,10.9,18.6,EJEMPLO | fibraAlta,unico,6.1,,legumbre,s\xE9samo,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,no,5,nuevo,Bastones de zanahoria con el hummus.,normal
@@ -8872,7 +8921,6 @@ R97,Pl\xE1tano con almendras,media_manana;merienda,205,5.3,10.3,27.1,EJEMPLO,uni
 R98,Bocadillo peque\xF1o de pavo y tomate,media_manana;merienda,226,17.7,2.9,31.2,EJEMPLO,unico,2.1,pechuga de pavo asada,pan,gluten,no,no,pendiente_ficha,no,si,5,nuevo,Pan con pavo asado y tomate.,normal
 R99,Tostada de at\xFAn y tomate,media_manana;merienda,176,12.6,2.1,26.7,EJEMPLO,unico,2.0,at\xFAn en lata,pan,gluten;pescado,no,no,pendiente_ficha,no,si,5,nuevo,Pan tostado con at\xFAn escurrido y tomate.,normal
 R100,Batido de yogur griego y fresas,media_manana;merienda,170,19.3,2.9,17.9,EJEMPLO,unico,2.0,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Triturar.,normal
-R101,Huevo cocido con pera,media_manana;merienda,178,8.1,6.6,23.5,EJEMPLO,unico,4.7,huevo cocido,,huevo,si,no,si,pendiente_ficha,si,10,nuevo,Huevo cocido y pera.,normal
 R102,Frutos secos y mandarina,media_manana;merienda,264,6.7,17.7,25.3,EJEMPLO,unico,5.6,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,2,nuevo,Pu\xF1ado de frutos secos y fruta.,normal
 R103,Yogur con avena y miel,media_manana;merienda,176,7.0,5.4,26.0,EJEMPLO,unico,2.0,,avena,gluten;l\xE1cteos,si,no,no,no,si,5,nuevo,Mezclar.,normal
 R104,Manzana con crema de cacahuete,media_manana;merienda,168,3.7,8.0,24.1,EJEMPLO,unico,4.3,,,cacahuete,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,si,3,nuevo,Manzana en gajos con la crema.,normal
@@ -8903,20 +8951,16 @@ R128,Arroz con tortilla y calabac\xEDn,comida;cena,548,21.7,20.2,67.3,EJEMPLO | 
 R129,Arroz con salm\xF3n y calabaza,comida;cena,674,37.3,25.8,70.5,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.54,salm\xF3n,cereal,pescado,no,no,si,pendiente_ficha,si,20,nuevo,Pesar arroz seco y salm\xF3n/calabaza crudos. Cocer arroz y hornear salm\xF3n y calabaza con aceite.,normal
 R130,Arroz con ternera y champi\xF1\xF3n,comida;cena,592,32.2,20.8,66.6,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.84,ternera picada,cereal,,no,no,si,pendiente_ficha,si,20,nuevo,Pesar arroz seco y ternera/champi\xF1\xF3n crudos. Cocer arroz; saltear ternera y champi\xF1\xF3n con aceite.,normal
 R131,Arroz con at\xFAn y calabac\xEDn,comida;cena,480,26.1,11.7,66.4,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.84,at\xFAn en lata,cereal,pescado,no,no,pendiente_ficha,pendiente_ficha,si,20,nuevo,"Pesar arroz seco, at\xFAn escurrido y calabac\xEDn crudo. Cocer arroz y cocinar calabac\xEDn con aceite; a\xF1adir at\xFAn al final.",normal
-R132,"Avena con pl\xE1tano, huevo y almendra",desayuno;media_manana;merienda,384,16.0,13.6,52.5,EJEMPLO | fibraAlta,unico,7.89,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,Cocer la avena en agua. Cocinar el huevo por completo aparte; servir con fruta lavada y frutos secos. Pesar avena seca y huevo crudo; fruta en porci\xF3n comestible.,normal
-R133,"Avena con manzana, huevo y nueces",desayuno;media_manana;merienda,355,14.6,15.0,42.7,EJEMPLO | fibraAlta,unico,7.11,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,Cocer la avena en agua. Cocinar el huevo por completo aparte; servir con fruta lavada y frutos secos. Pesar avena seca y huevo crudo; fruta en porci\xF3n comestible.,normal
-R134,"Avena con pera, huevo y almendra",desayuno;media_manana;merienda,352,15.3,13.4,44.9,EJEMPLO | fibraAlta,unico,8.39,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,Cocer la avena en agua. Cocinar el huevo por completo aparte; servir con fruta lavada y frutos secos. Pesar avena seca y huevo crudo; fruta en porci\xF3n comestible.,normal
-R135,"Avena con fresas, huevo y nueces",desayuno;media_manana;merienda,335,15.0,15.1,36.6,EJEMPLO | fibraAlta,unico,6.71,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,Cocer la avena en agua. Cocinar el huevo por completo aparte; servir con fruta lavada y frutos secos. Pesar avena seca y huevo crudo; fruta en porci\xF3n comestible.,normal
-R136,"Tortilla con arroz, naranja y almendra",desayuno;media_manana;merienda,337,13.4,11.1,46.3,EJEMPLO | fibraAlta,unico,4.17,huevo,cereal,frutos de c\xE1scara;huevo,si,no,si,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en agua. Cuajar bien el huevo en sart\xE9n antiadherente; servir con fruta y frutos secos. Huevo pesado crudo y fruta en porci\xF3n comestible.,normal
-R137,"Arroz con huevo, pi\xF1a y nueces",desayuno;media_manana;merienda,347,12.5,12.6,46.9,EJEMPLO | fibra base \u22643g,unico,2.59,huevo,cereal,frutos de c\xE1scara;huevo,si,no,si,pendiente_ficha,si,15,nuevo,Cocer arroz pesado seco en agua. Cuajar bien el huevo en sart\xE9n antiadherente; servir con fruta y frutos secos. Huevo pesado crudo y fruta en porci\xF3n comestible.,normal
-R138,"Arroz con huevo, kiwi y almendra",desayuno;media_manana;merienda,351,13.6,11.5,49.2,EJEMPLO | fibraAlta,unico,4.77,huevo,cereal,frutos de c\xE1scara;huevo,si,no,si,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en agua. Cuajar bien el huevo en sart\xE9n antiadherente; servir con fruta y frutos secos. Huevo pesado crudo y fruta en porci\xF3n comestible.,normal
-R139,"Arroz con huevo, mandarina y nueces",desayuno;media_manana;merienda,350,12.7,12.8,47.1,EJEMPLO | fibra base \u22643g,unico,2.99,huevo,cereal,frutos de c\xE1scara;huevo,si,no,si,pendiente_ficha,si,15,nuevo,Cocer arroz pesado seco en agua. Cuajar bien el huevo en sart\xE9n antiadherente; servir con fruta y frutos secos. Huevo pesado crudo y fruta en porci\xF3n comestible.,normal
-R140,Arroz con huevo y pimientos,comida;cena,524,21.1,20.2,62.9,EJEMPLO | fibraAlta,unico,3.01,huevo,cereal,huevo,si,no,si,pendiente_ficha,no,30,nuevo,Cocer arroz seco; cocinar completamente huevo y pimientos crudos con aceite.,normal
-R141,"Arroz con claras, huevo y calabaza",comida;cena,523,26.8,16.5,65.1,EJEMPLO | fibra base \u22643g,unico,1.51,huevo,cereal,huevo,si,no,si,pendiente_ficha,si,30,nuevo,"Cocer arroz seco. Asar calabaza y cuajar huevo y claras por completo con aceite; pesar huevo, claras y calabaza crudos.",normal
-R142,Patata con tortilla y calabac\xEDn,comida;cena,473,21.6,22.0,48.3,EJEMPLO | fibraAlta,unico,6.45,huevo,patata,huevo,si,no,si,pendiente_ficha,no,30,nuevo,Lavar y cocer patata con piel (ficha con piel). Cocinar huevo y calabac\xEDn con aceite; pesos crudos.,normal
-R143,Boniato con huevo y espinacas,comida;cena,481,21.5,21.9,50.8,EJEMPLO | fibraAlta,unico,9.10,huevo,patata,huevo,si,no,si,pendiente_ficha,no,30,nuevo,Cocer boniato y espinacas; cocinar completamente huevo con aceite. Pesar ingredientes crudos seg\xFAn ficha.,normal
-R144,Lentejas con huevo y zanahoria,comida;cena,463,28.6,22.2,38.6,EJEMPLO | fibraAlta,unico,13.86,huevo,legumbre,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Pesar lentejas ya cocidas, huevo y zanahoria crudos. Cocinar zanahoria y huevo completamente, a\xF1adir lentejas y aceite.",normal
-R145,Garbanzos con huevo y calabac\xEDn,comida;cena,544,29.7,24.5,53.2,EJEMPLO | fibraAlta,unico,14.68,huevo,legumbre,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Pesar garbanzos ya cocidos, huevo y calabac\xEDn crudos. Saltear calabac\xEDn, cocinar huevo por completo y a\xF1adir garbanzos y aceite.",normal
+R132,Tortitas de avena y pl\xE1tano con almendras,desayuno;media_manana;merienda,384,16.0,13.6,52.5,EJEMPLO | fibraAlta,unico,7.89,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,"Chafa medio pl\xE1tano y b\xE1telo con el huevo y la avena; si queda espesa, a\xF1ade un chorrito de agua. Haz 3 o 4 tortitas en sart\xE9n antiadherente, unos 2 min por lado, hasta que est\xE9n hechas por dentro. S\xEDrvelas con el resto del pl\xE1tano en rodajas y las almendras picadas por encima.",normal
+R133,Tortitas de avena y manzana con nueces,desayuno;media_manana;merienda,355,14.6,15.0,42.7,EJEMPLO | fibraAlta,unico,7.11,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,"Bate el huevo con la avena, un chorrito de agua y canela. Ralla la mitad de la manzana y m\xE9zclala con la masa. Haz 3 o 4 tortitas en sart\xE9n antiadherente, unos 2 min por lado. S\xEDrvelas con el resto de la manzana en l\xE1minas y las nueces picadas.",normal
+R134,Tortitas de avena y pera con almendras,desayuno;media_manana;merienda,352,15.3,13.4,44.9,EJEMPLO | fibraAlta,unico,8.39,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,"Bate el huevo con la avena, un chorrito de agua y canela. Ralla la mitad de la pera y m\xE9zclala con la masa. Haz 3 o 4 tortitas en sart\xE9n antiadherente, unos 2 min por lado. S\xEDrvelas con el resto de la pera en l\xE1minas y las almendras picadas.",normal
+R135,Tortitas de avena con fresas y nueces,desayuno;media_manana;merienda,335,15.0,15.1,36.6,EJEMPLO | fibraAlta,unico,6.71,huevo,cereal,frutos de c\xE1scara;gluten;huevo,si,no,si,no,no,15,nuevo,"Bate el huevo con la avena y un chorrito de agua. Haz 3 o 4 tortitas en sart\xE9n antiadherente, unos 2 min por lado. S\xEDrvelas con las fresas troceadas y las nueces picadas por encima.",normal
+R140,Arroz salteado con huevo revuelto y pimiento,comida;cena,524,21.1,20.2,62.9,EJEMPLO | fibraAlta,unico,3.01,huevo,cereal,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Cuece el arroz. En una sart\xE9n con el aceite, saltea el pimiento en tiras 5 min. A\xF1ade el huevo batido y remueve hasta que cuaje del todo. Mezcla con el arroz y sirve caliente.",normal
+R141,Arroz con calabaza asada y revuelto de huevo,comida;cena,523,26.8,16.5,65.1,EJEMPLO | fibra base \u22643g,unico,1.51,huevo,cereal,huevo,si,no,si,pendiente_ficha,si,30,nuevo,"Cuece el arroz. Asa la calabaza en dados (horno a 200 \xB0C 20 min, o sart\xE9n con la mitad del aceite). Cuaja el huevo y las claras en revuelto con el resto del aceite. Sirve el arroz con la calabaza y el revuelto por encima.",normal
+R142,Tortilla de patata y calabac\xEDn,comida;cena,473,21.6,22.0,48.3,EJEMPLO | fibraAlta,unico,6.45,huevo,patata,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Cuece la patata con piel y c\xF3rtala en rodajas. Saltea el calabac\xEDn en l\xE1minas con el aceite. Bate los huevos, m\xE9zclalos con la patata y el calabac\xEDn, y cuaja la tortilla por los dos lados.",normal
+R143,Boniato asado con huevos y espinacas salteadas,comida;cena,481,21.5,21.9,50.8,EJEMPLO | fibraAlta,unico,9.10,huevo,patata,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Asa el boniato en trozos (horno a 200 \xB0C 25-30 min, o microondas 8 min). Saltea las espinacas con la mitad del aceite. Haz los huevos a la plancha con el resto, con la yema bien cuajada. S\xEDrvelo todo en el mismo plato.",normal
+R144,Lentejas estofadas con zanahoria y huevo duro,comida;cena,463,28.6,22.2,38.6,EJEMPLO | fibraAlta,unico,13.86,huevo,legumbre,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Cuece los huevos 10 min y p\xE9lalos. Rehoga la zanahoria en rodajas con el aceite 5 min. A\xF1ade las lentejas cocidas, un poco de agua y piment\xF3n, y deja 10 min a fuego suave. S\xEDrvelas con el huevo duro picado por encima.",normal
+R145,Garbanzos salteados con calabac\xEDn y huevo revuelto,comida;cena,544,29.7,24.5,53.2,EJEMPLO | fibraAlta,unico,14.68,huevo,legumbre,huevo,si,no,si,pendiente_ficha,no,30,nuevo,"Saltea el calabac\xEDn en dados con el aceite 5 min. A\xF1ade los garbanzos cocidos y escurridos, 3 min m\xE1s. Despu\xE9s echa el huevo batido y remueve hasta que cuaje del todo.",normal
 R146,Manzana con almendra,media_manana;merienda,136,2.5,5.2,22.9,EJEMPLO | fibraAlta,unico,4.85,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Lavar la manzana, cortarla en trozos y servir con las almendras. Listo en 2 min.",normal
 R147,Pera con nueces,media_manana;merienda,145,2.0,6.7,22.7,EJEMPLO | fibraAlta,unico,5.01,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Lavar la pera, cortarla en trozos y servir con las nueces. Listo en 2 min.",normal
 R148,Naranja con nueces,media_manana;merienda,136,2.9,6.7,19.0,EJEMPLO | fibraAlta,unico,4.27,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Pelar la naranja, cortarla en rodajas y servir con las nueces. Listo en 2 min.",normal
@@ -8930,20 +8974,18 @@ R155,Yogur natural con unas fresas,media_manana;merienda,108,5.0,4.4,13.5,EJEMPL
 R156,Yogur natural con kiwi,media_manana;merienda,125,5.2,4.5,17.6,EJEMPLO | fibra base \u22643g,unico,2.40,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,"Pelar el kiwi, cortarlo y servir sobre el yogur. Listo en 2 min.",normal
 R157,Yogur natural con manzana,media_manana;merienda,128,4.6,4.2,19.6,EJEMPLO | fibra base \u22643g,unico,2.40,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,"Lavar la manzana, cortarla en dados y servir sobre el yogur. Listo en 2 min.",normal
 R158,Yogur natural con pi\xF1a,media_manana;merienda,126,4.9,4.2,18.9,EJEMPLO | fibra base \u22643g,unico,1.40,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Cortar la pi\xF1a en dados y servir sobre el yogur. Listo en 2 min.,normal
-R159,Huevo cocido con naranja,media_manana;merienda,124,7.2,5.4,12.3,EJEMPLO | fibra base \u22643g,unico,2.40,huevo cocido,,huevo,si,no,si,pendiente_ficha,si,5,nuevo,"Pelar el huevo cocido (pesado ya cocido y sin c\xE1scara), partirlo y servir con la naranja pelada en rodajas. Listo en 2 min.",normal
-R160,Huevo cocido con fresas,media_manana;merienda,110,7.0,5.6,8.2,EJEMPLO | fibra base \u22643g,unico,2.00,huevo cocido,,huevo,si,no,si,pendiente_ficha,si,5,nuevo,"Pelar el huevo cocido (pesado ya cocido y sin c\xE1scara), partirlo y servir con las fresas lavadas. Listo en 2 min.",normal
-R161,"Bol grande de avena, yogur, pl\xE1tano y nueces",desayuno;merienda,727,23.5,25.9,107.3,EJEMPLO | fibraAlta,unico,14.33,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"Cocer avena en agua o hidratarla; servir yogur, fruta y nueces. Pesar avena seca; fruta en porci\xF3n comestible.",normal
-R162,"Bol grande de avena, yogur, manzana y nueces",desayuno;merienda,672,22.2,25.7,93.7,EJEMPLO | fibraAlta,unico,14.03,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"Cocer avena en agua o hidratarla; servir yogur, fruta y nueces. Pesar avena seca; fruta en porci\xF3n comestible.",normal
-R163,"Bol grande de avena, yogur, pera y nueces",desayuno;merienda,679,22.4,25.6,95.8,EJEMPLO | fibraAlta,unico,15.08,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"Cocer avena en agua o hidratarla; servir yogur, fruta y nueces. Pesar avena seca; fruta en porci\xF3n comestible.",normal
-R164,"Bol grande de avena, yogur, pi\xF1a y nueces",desayuno;merienda,669,22.6,25.6,92.7,EJEMPLO | fibraAlta,unico,12.53,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"Cocer avena en agua o hidratarla; servir yogur, fruta y nueces. Pesar avena seca; fruta en porci\xF3n comestible.",normal
-R165,"Tostadas grandes con huevo, pl\xE1tano y almendra",desayuno;merienda,694,34.8,23.6,89.6,EJEMPLO | fibraAlta,unico,12.97,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,Tostar pan y cocinar bien el huevo en sart\xE9n antiadherente; servir fruta y almendra. Huevo pesado crudo.,normal
-R166,"Tostadas grandes con huevo, manzana y almendra",desayuno;merienda,639,33.6,23.4,76.1,EJEMPLO | fibraAlta,unico,12.68,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,Tostar pan y cocinar bien el huevo en sart\xE9n antiadherente; servir fruta y almendra. Huevo pesado crudo.,normal
-R167,"Tostadas grandes con huevo, pera y almendra",desayuno;merienda,646,33.7,23.3,78.2,EJEMPLO | fibraAlta,unico,13.73,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,Tostar pan y cocinar bien el huevo en sart\xE9n antiadherente; servir fruta y almendra. Huevo pesado crudo.,normal
-R168,"Tostadas grandes con huevo, naranja y almendra",desayuno;merienda,631,34.6,23.3,73.0,EJEMPLO | fibraAlta,unico,12.68,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,Tostar pan y cocinar bien el huevo en sart\xE9n antiadherente; servir fruta y almendra. Huevo pesado crudo.,normal
-R169,"Arroz con leche, pl\xE1tano y nueces (raci\xF3n grande)",desayuno;merienda,754,20.1,19.1,129.0,EJEMPLO | fibraAlta,unico,6.54,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en leche y agua hasta quedar hecho; servir fruta y nueces aparte. No a\xF1adir az\xFAcar fuera de la ficha.,normal
-R170,"Arroz con leche, pera y nueces (raci\xF3n grande)",desayuno;merienda,706,19.0,18.9,117.5,EJEMPLO | fibraAlta,unico,7.29,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en leche y agua hasta quedar hecho; servir fruta y nueces aparte. No a\xF1adir az\xFAcar fuera de la ficha.,normal
-R171,"Arroz con leche, pi\xF1a y nueces (raci\xF3n grande)",desayuno;merienda,696,19.2,18.8,114.4,EJEMPLO | fibraAlta,unico,4.74,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en leche y agua hasta quedar hecho; servir fruta y nueces aparte. No a\xF1adir az\xFAcar fuera de la ficha.,normal
-R172,"Arroz con leche, mandarina y nueces (raci\xF3n grande)",desayuno;merienda,700,19.6,19.1,114.7,EJEMPLO | fibraAlta,unico,5.34,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,Cocer arroz pesado seco en leche y agua hasta quedar hecho; servir fruta y nueces aparte. No a\xF1adir az\xFAcar fuera de la ficha.,normal
+R161,"Bol de avena con yogur, pl\xE1tano y nueces",desayuno;merienda,727,23.5,25.9,107.3,EJEMPLO | fibraAlta,unico,14.33,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"La noche antes, mezcla la avena con el yogur (un chorrito de agua si queda espesa) y d\xE9jalo en la nevera. Otra opci\xF3n: cuece la avena en agua 5 min y m\xE9zclala con el yogur. Por encima, el pl\xE1tano troceada y las nueces.",normal
+R162,"Bol de avena con yogur, manzana y nueces",desayuno;merienda,672,22.2,25.7,93.7,EJEMPLO | fibraAlta,unico,14.03,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"La noche antes, mezcla la avena con el yogur (un chorrito de agua si queda espesa) y d\xE9jalo en la nevera. Otra opci\xF3n: cuece la avena en agua 5 min y m\xE9zclala con el yogur. Por encima, la manzana troceada y las nueces.",normal
+R163,"Bol de avena con yogur, pera y nueces",desayuno;merienda,679,22.4,25.6,95.8,EJEMPLO | fibraAlta,unico,15.08,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"La noche antes, mezcla la avena con el yogur (un chorrito de agua si queda espesa) y d\xE9jalo en la nevera. Otra opci\xF3n: cuece la avena en agua 5 min y m\xE9zclala con el yogur. Por encima, la pera troceada y las nueces.",normal
+R164,"Bol de avena con yogur, pi\xF1a y nueces",desayuno;merienda,669,22.6,25.6,92.7,EJEMPLO | fibraAlta,unico,12.53,,cereal,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,15,nuevo,"La noche antes, mezcla la avena con el yogur (un chorrito de agua si queda espesa) y d\xE9jalo en la nevera. Otra opci\xF3n: cuece la avena en agua 5 min y m\xE9zclala con el yogur. Por encima, la pi\xF1a troceada y las nueces.",normal
+R165,"Tostadas con huevo revuelto, y pl\xE1tano con almendras",desayuno;merienda,694,34.8,23.6,89.6,EJEMPLO | fibraAlta,unico,12.97,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,"Tuesta el pan. Haz el huevo revuelto o a la plancha, bien cuajado, y ponlo sobre las tostadas. Aparte, de postre, el pl\xE1tano y las almendras.",normal
+R166,"Tostadas con huevo revuelto, y manzana con almendras",desayuno;merienda,639,33.6,23.4,76.1,EJEMPLO | fibraAlta,unico,12.68,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,"Tuesta el pan. Haz el huevo revuelto o a la plancha, bien cuajado, y ponlo sobre las tostadas. Aparte, de postre, la manzana y las almendras.",normal
+R167,"Tostadas con huevo revuelto, y pera con almendras",desayuno;merienda,646,33.7,23.3,78.2,EJEMPLO | fibraAlta,unico,13.73,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,"Tuesta el pan. Haz el huevo revuelto o a la plancha, bien cuajado, y ponlo sobre las tostadas. Aparte, de postre, la pera y las almendras.",normal
+R168,"Tostadas con huevo revuelto, y naranja con almendras",desayuno;merienda,631,34.6,23.3,73.0,EJEMPLO | fibraAlta,unico,12.68,huevo,pan,frutos de c\xE1scara;gluten;huevo,si,no,pendiente_ficha,no,no,15,nuevo,"Tuesta el pan. Haz el huevo revuelto o a la plancha, bien cuajado, y ponlo sobre las tostadas. Aparte, de postre, la naranja y las almendras.",normal
+R169,Arroz con leche con pl\xE1tano y nueces (raci\xF3n grande),desayuno;merienda,754,20.1,19.1,129.0,EJEMPLO | fibraAlta,unico,6.54,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,"Cuece el arroz en la leche con un vaso de agua y una rama de canela, a fuego suave y removiendo, 30-35 min, hasta que quede cremoso. S\xEDrvelo templado o fr\xEDo, con el pl\xE1tano troceado y las nueces por encima.",normal
+R170,Arroz con leche con pera y nueces (raci\xF3n grande),desayuno;merienda,706,19.0,18.9,117.5,EJEMPLO | fibraAlta,unico,7.29,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,"Cuece el arroz en la leche con un vaso de agua y una rama de canela, a fuego suave y removiendo, 30-35 min, hasta que quede cremoso. S\xEDrvelo templado o fr\xEDo, con la pera troceada y las nueces por encima.",normal
+R171,"Arroz con leche y nueces; de postre, pi\xF1a",desayuno;merienda,696,19.2,18.8,114.4,EJEMPLO | fibraAlta,unico,4.74,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,"Cuece el arroz en la leche con un vaso de agua y una rama de canela, a fuego suave y removiendo, 30-35 min, hasta que quede cremoso. S\xEDrvelo templado o fr\xEDo, con las nueces por encima. Aparte, de postre, la pi\xF1a.",normal
+R172,"Arroz con leche y nueces; de postre, mandarina",desayuno;merienda,700,19.6,19.1,114.7,EJEMPLO | fibraAlta,unico,5.34,,cereal,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,no,15,nuevo,"Cuece el arroz en la leche con un vaso de agua y una rama de canela, a fuego suave y removiendo, 30-35 min, hasta que quede cremoso. S\xEDrvelo templado o fr\xEDo, con las nueces por encima. Aparte, de postre, la mandarina.",normal
 R173,Manzana con nueces (acompa\xF1amiento),comida;cena,128,1.8,6.7,17.9,EJEMPLO | fibraAlta,postre,3.55,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Lavar la manzana, cortarla y servir con las nueces. Listo en 2 min.",normal
 R174,Pera con almendra (acompa\xF1amiento),comida;cena,126,2.5,5.2,20.4,EJEMPLO | fibraAlta,postre,4.97,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,5,nuevo,"Lavar la pera, cortarla y servir con las almendras. Listo en 2 min.",normal
 R175,Pi\xF1a con yogur (acompa\xF1amiento),comida;cena,126,4.9,4.2,18.9,EJEMPLO | fibra base \u22643g,postre,1.40,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Cortar la pi\xF1a en dados y servir sobre el yogur. Listo en 2 min.,normal
@@ -8953,9 +8995,8 @@ R178,Mel\xF3n con yogur (acompa\xF1amiento),comida;cena,127,5.6,4.3,18.1,EJEMPLO
 R179,Mandarina con yogur (acompa\xF1amiento),comida;cena,129,5.1,4.4,19.2,EJEMPLO | fibra base \u22643g,postre,1.80,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,"Pelar la mandarina, separar los segmentos y servir sobre el yogur. Listo en 2 min.",normal
 R180,Yogur con cacao puro (acompa\xF1amiento),comida;cena,88,5.3,4.7,8.7,EJEMPLO | fibra base \u22643g,postre,1.85,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Mezclar el yogur con el cacao puro hasta integrarlo. Listo en 2 min.,normal
 R181,Yogur con miel (acompa\xF1amiento),comida;cena,107,4.4,4.1,14.1,EJEMPLO | fibra base \u22643g,postre,0.02,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Servir el yogur con la miel por encima. Listo en 2 min.,normal
-R182,Tostada blanca con aceite (acompa\xF1amiento),comida;cena,151,3.5,6.3,19.8,EJEMPLO | fibra base \u22643g,postre,1.08,,pan,gluten,si,pendiente_ficha,pendiente_ficha,no,si,5,nuevo,Tostar el pan (2-3 min) y repartir el aceite por encima.,normal
-R183,Tostada integral con tomate y aceite (acompa\xF1amiento),comida;cena,156,5.5,6.5,19.4,EJEMPLO | fibraAlta,postre,3.12,,pan,gluten,si,pendiente_ficha,pendiente_ficha,no,no,5,nuevo,Servir ingredientes pesados tal cual o fruta en porci\xF3n comestible. Tostar pan si corresponde; repartir tomate lavado y aceite sin a\xF1adir otros ingredientes.,normal
-R184,Almendras y nueces (acompa\xF1amiento),comida;cena,123,3.6,11.5,3.5,EJEMPLO | fibra base \u22643g,postre,1.92,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,5,nuevo,Servir las almendras y las nueces pesadas tal cual. Sin preparaci\xF3n.,normal
+R182,Tostada con aceite de oliva,desayuno;media_manana;merienda,151,3.5,6.3,19.8,EJEMPLO | fibra base \u22643g,unico,1.08,,pan,gluten,si,pendiente_ficha,pendiente_ficha,no,si,5,nuevo,Tuesta el pan (2-3 min) y riega con el aceite por encima.,normal
+R184,Un pu\xF1ado de almendras y nueces,media_manana;merienda,123,3.6,11.5,3.5,EJEMPLO | fibra base \u22643g,unico,1.92,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,5,nuevo,Sirve las almendras y las nueces tal cual. Sin preparaci\xF3n.,normal
 R300,Avena cocida en bebida de soja con pl\xE1tano y canela,desayuno;media_manana;merienda,354,13.0,6.5,64.1,EJEMPLO,unico,8.90,copos de avena,avena,gluten;soja,si,si,si,no,no,10,nuevo,Cocer la avena en la bebida de soja. Servir con el pl\xE1tano en rodajas y la canela. Pesar la avena seca y la fruta en porci\xF3n comestible.,normal
 R301,"Avena con manzana, nueces y bebida de soja",desayuno;media_manana;merienda,410,14.3,16.1,55.5,EJEMPLO,unico,8.64,copos de avena,avena,frutos de c\xE1scara;gluten;soja,si,si,si,no,no,10,nuevo,Cocer la avena en la bebida de soja y servir con la manzana y las nueces. Pesar la avena seca y la fruta en porci\xF3n comestible.,normal
 R302,Tostada integral de hummus y tomate con yogur de soja,desayuno;media_manana;merienda,394,16.3,15.2,50.6,EJEMPLO,unico,8.60,hummus,pan,gluten;soja;s\xE9samo,si,si,si,no,no,10,nuevo,"Tostar el pan, untar el hummus y cubrir con el tomate rallado. Servir con el yogur de soja.",normal
@@ -8991,7 +9032,7 @@ R332,Yogur de soja con nueces y manzana,media_manana;merienda,282,7.8,13.5,35.2,
 R333,Hummus con zanahoria y pepino,media_manana;merienda,198,6.2,11.0,22.2,EJEMPLO | fibraAlta,unico,6.60,hummus,legumbre,s\xE9samo,si,si,si,pendiente_ficha,no,5,nuevo,Bastones de zanahoria y pepino con el hummus.,normal
 R334,Media tostada integral con crema de cacahuete y pl\xE1tano,media_manana;merienda,287,10.4,9.7,43.0,EJEMPLO,unico,5.83,crema de cacahuete,pan,cacahuete;gluten,si,si,si,no,si,5,nuevo,Untar el pan con la crema de cacahuete y cubrir con el pl\xE1tano en rodajas.,normal
 R335,Yogur de soja con fresas y almendra,media_manana;merienda,222,8.1,8.8,29.2,EJEMPLO,unico,4.05,yogur de soja,,frutos de c\xE1scara;soja,si,si,si,pendiente_ficha,si,5,nuevo,Servir el yogur con las fresas y la almendra picada.,normal
-R336,Tostada integral con tomate y aceite,media_manana;merienda,188,7.1,7.0,25.2,EJEMPLO,unico,4.20,pan integral,pan,gluten,si,si,si,no,si,5,nuevo,Tostar el pan y cubrir con el tomate rallado y el aceite.,normal
+R336,Tostada integral con tomate y aceite,desayuno;media_manana;merienda,188,7.1,7.0,25.2,EJEMPLO,unico,4.20,pan integral,pan,gluten,si,si,si,no,si,5,nuevo,Tostar el pan y cubrir con el tomate rallado y el aceite.,normal
 R337,Pera con nueces y yogur de soja,media_manana;merienda,287,7.9,13.4,36.7,EJEMPLO,unico,4.91,yogur de soja,,frutos de c\xE1scara;soja,si,si,si,pendiente_ficha,si,5,nuevo,Servir el yogur con la pera en dados y las nueces.,normal
 R340,Tostada integral con tomate y aceite y una naranja,desayuno;media_manana;merienda,296,8.2,12.1,41.3,EJEMPLO | fibraAlta,unico,7.32,aceite de oliva,pan,gluten,si,pendiente_ficha,si,no,no,10,nuevo,"Tostar el pan, untar el tomate y a\xF1adir el aceite. La naranja entera, pelada. Pesar el pan tal cual y la fruta en porci\xF3n comestible.",normal
 R341,Bocadillo integral de pavo con tomate y un pl\xE1tano,desayuno;media_manana;merienda,465,33.4,5.5,72.2,EJEMPLO | fibraAlta,unico,9.92,pechuga de pavo asada,pan,gluten,no,no,si,no,no,10,nuevo,"Abrir el pan, poner el pavo y el tomate en rodajas. El pl\xE1tano de postre. Pesar el pan tal cual y la fruta en porci\xF3n comestible.",normal
@@ -9633,8 +9674,6 @@ R99,tomate,50,verdura,170457,crudo,
 R100,yogur griego,150,fruta_lacteo,170894,crudo,
 R100,fresas,100,fruta_lacteo,167762,crudo,
 R100,leche semidesnatada,100,fruta_lacteo,171267,crudo,
-R101,huevo cocido,60,proteina,173424,crudo,
-R101,pera,150,fruta_lacteo,169118,crudo,
 R102,nueces,15,grasa,170187,crudo,
 R102,almendra,15,grasa,170567,crudo,
 R102,mandarina,150,fruta_lacteo,169105,crudo,
@@ -9743,22 +9782,6 @@ R135,copos de avena,40,base,173904,peso seco,
 R135,huevo,60,proteina,171287,crudo,
 R135,fresas,100,fruta_lacteo,167762,peso comestible,
 R135,nueces,10,grasa,170187,tal cual,
-R136,arroz,40,base,169756,peso seco,
-R136,huevo,60,proteina,171287,crudo,
-R136,naranja,100,fruta_lacteo,169097,peso comestible,
-R136,almendra,10,grasa,170567,tal cual,
-R137,arroz,40,base,169756,peso seco,
-R137,huevo,60,proteina,171287,crudo,
-R137,pi\xF1a,100,fruta_lacteo,169124,peso comestible,
-R137,nueces,10,grasa,170187,tal cual,
-R138,arroz,40,base,169756,peso seco,
-R138,huevo,60,proteina,171287,crudo,
-R138,kiwi,100,fruta_lacteo,168153,peso comestible,
-R138,almendra,10,grasa,170567,tal cual,
-R139,arroz,40,base,169756,peso seco,
-R139,huevo,60,proteina,171287,crudo,
-R139,mandarina,100,fruta_lacteo,169105,peso comestible,
-R139,nueces,10,grasa,170187,tal cual,
 R140,arroz,70,base,169756,peso seco,
 R140,huevo,120,proteina,171287,crudo,
 R140,pimiento rojo,100,verdura,170108,crudo,
@@ -9810,10 +9833,6 @@ R157,yogur natural,125,fruta_lacteo,171284,tal cual,
 R157,manzana,100,fruta_lacteo,171688,peso comestible,
 R158,yogur natural,125,fruta_lacteo,171284,tal cual,
 R158,pi\xF1a,100,fruta_lacteo,169124,peso comestible,
-R159,huevo cocido,50,proteina,173424,cocido,
-R159,naranja,100,fruta_lacteo,169097,peso comestible,
-R160,huevo cocido,50,proteina,173424,cocido,
-R160,fresas,100,fruta_lacteo,167762,peso comestible,
 R161,copos de avena,90,base,173904,peso seco,
 R161,yogur natural,200,fruta_lacteo,171284,tal cual,
 R161,pl\xE1tano,150,fruta_lacteo,173944,peso comestible,
@@ -9882,9 +9901,6 @@ R181,yogur natural,125,fruta_lacteo,171284,tal cual,
 R181,miel,10,condimento,169640,peso a\xF1adido,
 R182,pan blanco,40,base,174924,tal cual,
 R182,aceite de oliva,5,grasa,171413,peso a\xF1adido,
-R183,pan integral,40,base,172688,tal cual,
-R183,tomate,60,verdura,170457,crudo,
-R183,aceite de oliva,5,grasa,171413,peso a\xF1adido,
 R184,almendra,10,grasa,170567,tal cual,
 R184,nueces,10,grasa,170187,tal cual,
 R300,copos de avena,40,base,173904,peso seco,
