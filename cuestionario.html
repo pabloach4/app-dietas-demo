@@ -1008,7 +1008,7 @@
   /* #255: campo que falta al pulsar «Siguiente». */
   [aria-invalid="true"] { border-color: var(--peligro) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--peligro) 25%, transparent); }
   #panel-perfil[data-vista="datos"] > [data-sub="datos"], #panel-perfil[data-vista="alergias"] > [data-sub="alergias"], #panel-perfil[data-vista="competiciones"] > [data-sub="competiciones"],
-  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"], #panel-perfil[data-vista="medallas"] > [data-sub="medallas"], #panel-perfil[data-vista="instalar"] > [data-sub="instalar"], #panel-perfil[data-vista="hablar"] > [data-sub="hablar"], #panel-perfil[data-vista="gustos"] > [data-sub="gustos"] { display: block; }
+  #panel-perfil[data-vista="alertas"] > [data-sub="alertas"], #panel-perfil[data-vista="nube"] > [data-sub="nube"], #panel-perfil[data-vista="medallas"] > [data-sub="medallas"], #panel-perfil[data-vista="instalar"] > [data-sub="instalar"], #panel-perfil[data-vista="hablar"] > [data-sub="hablar"], #panel-perfil[data-vista="gustos"] > [data-sub="gustos"], #panel-perfil[data-vista="navidad"] > [data-sub="navidad"] { display: block; }
   /* #261 C: «Mis gustos», dos platos lado a lado (uno encima del otro en pantallas estrechas). */
   .duelo-avance { margin: 0 0 0.5rem; color: var(--gris); font-size: 0.9rem; }
   .duelo-par { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.6rem; }
@@ -1399,6 +1399,7 @@
       <p id="r-pablo" class="subt" style="margin-bottom:0.6rem" role="status" hidden></p>
       <div id="r-fija" style="margin-bottom:0.6rem"></div>
       <div id="r-competicion" class="subt" style="font-size:0.9rem" aria-live="polite"></div>
+      <p id="r-navidad" class="una-linea aviso-navidad" hidden></p>
       <div id="r-creatina" class="subt" style="font-size:0.9rem" hidden></div>
       <div id="r-oposicion" class="subt" style="font-size:0.9rem" hidden></div>
       <div id="r-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
@@ -1513,6 +1514,7 @@
         <button type="button" class="perfil-fila" data-ir="datos"><span>Mis datos y recetas</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="alergias"><span>Alergias y lista negra</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="gustos"><span>Mis gustos</span><span aria-hidden="true">›</span></button>
+        <button type="button" class="perfil-fila" data-ir="navidad"><span>Navidad: comidas familiares</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="competiciones"><span>Mis competiciones</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="alertas" hidden><span>Alertas para Pablo</span><span aria-hidden="true">›</span></button>
         <button type="button" class="perfil-fila" data-ir="nube" hidden><span>Que Pablo vea mis datos</span><span aria-hidden="true">›</span></button>
@@ -1574,6 +1576,17 @@
       <p class="subt" id="ln-rehecho" role="status" hidden></p>
       <p class="subt" id="ln-vacio">Todavía no has añadido ninguno. ¡Aquí no se juzga a nadie!</p>
       <div id="perfil-pedidos" class="subt" style="font-size:0.85rem" aria-live="polite"></div>
+    </div>
+    <div class="tarjeta" id="tarjeta-navidad" data-sub="navidad">
+      <h2>Navidad: comidas familiares</h2>
+      <p class="una-linea">Esas comidas salen como «Comida familiar», sin receta, y el resto del día se ajusta con raciones normales.</p>
+      <details class="saber-mas"><summary>Saber más</summary><p>Cuentan unas kcal aproximadas: las de esa comida en tu plan × 1,5, o lo que escribas que vas a comer. No se quita ninguna comida ni se compensa otro día: el día siguiente, vuelta a lo normal. Se guarda en este navegador.</p></details>
+      <label class="check"><input type="checkbox" id="nav-activa" checked> Usar comidas familiares en Navidad</label>
+      <fieldset id="nav-comidas" style="border:0;padding:0;margin:0.4rem 0"><legend class="subt">Estas comidas</legend></fieldset>
+      <div id="nav-anadidas"></div>
+      <div class="campo"><label for="nav-fecha">Añadir otra (del 24 de diciembre al 6 de enero)</label><input id="nav-fecha" type="date" style="font-size:16px"> <select id="nav-franja" aria-label="Comida o cena" style="font-size:16px"><option value="comida">Comida</option><option value="cena">Cena</option></select></div>
+      <button type="button" class="btn-secundario" id="nav-anadir">Añadir otra</button>
+      <p class="error-inline" id="nav-error" role="alert" hidden></p>
     </div>
     <div class="tarjeta" id="tarjeta-gustos" data-sub="gustos">
       <h2>Mis gustos</h2>
@@ -1728,12 +1741,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=99a0251"></script>
-<script src="fuentes.js?v=99a0251"></script>
-<script src="motor.bundle.js?v=99a0251"></script>
-<script src="cuestionario.js?v=99a0251"></script>
-<script src="nube.js?v=99a0251"></script>
-<script src="pwa.js?v=99a0251"></script>
+<script src="novedades.js?v=f7ba485"></script>
+<script src="fuentes.js?v=f7ba485"></script>
+<script src="motor.bundle.js?v=f7ba485"></script>
+<script src="cuestionario.js?v=f7ba485"></script>
+<script src="nube.js?v=f7ba485"></script>
+<script src="pwa.js?v=f7ba485"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

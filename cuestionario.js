@@ -105,6 +105,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // #323 parte 2b: lo que la app pone para compensar un grupo quitado (30 g de nueces en la merienda…) también se compra.
   let compensacionSemana = null;
   function pedidoCompra(asignaciones) {
+    asignaciones = Motor.quitarComidasFamiliares(asignaciones, familiaresCompra()); // #332 p4: la comida familiar no suma ingredientes
     const items = asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada }));
     const catalogo = catalogoPlan(asignaciones);
     const dias = new Set(asignaciones.map((a) => a.dia));
@@ -1204,6 +1205,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const panel = document.getElementById('panel-perfil');
     if (!panel) return;
     panel.dataset.vista = vista;
+    if (vista === 'navidad') pintarAjustesNavidad(); // #332 p4
     document.querySelectorAll('#perfil-menu [data-ir]').forEach((b) => {
       const tarjeta = panel.querySelector(`:scope > [data-sub="${b.dataset.ir}"]`) || document.getElementById(b.dataset.ir === 'nube' ? 'tarjeta-nube' : 'tarjeta-' + b.dataset.ir);
       b.hidden = Boolean(tarjeta && tarjeta.hidden) || (b.dataset.ir === 'nube' && !tarjeta);
@@ -1489,7 +1491,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // Las casillas son cifras del PLAN de hoy (lo que toca), nunca lo comido: la app no registra ingesta.
     const dHoy = hoyReal ? hoyReal.dia : planActual.dias.find((x) => x.dia === dia);
     const casilla = (n, l) => `<div class="casilla"><span class="n">${n}</span><span class="l">${l}</span></div>`;
-    const fueraHoy = comidasFuera.filter((x) => x.fecha === iso && comidas.some((c) => c.f.franja === x.franja));
+    const fueraHoy = fueraTodas().filter((x) => x.fecha === iso && comidas.some((c) => c.f.franja === x.franja));
     const previstas = (franja) => comidas.find((c) => c.f.franja === franja).f.kcalAprox;
     const cuadreHoy = vistaSemana.cuadreDias && vistaSemana.cuadreDias.get(dia);
     const desvioHoy = cuadreHoy ? Math.round((cuadreHoy.servido - cuadreHoy.objetivo) / 10) * 10 : 0;
@@ -1979,9 +1981,73 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const g = JSON.parse(localStorage.getItem(CLAVE_FUERA) || 'null');
     if (Array.isArray(g)) {
       comidasFuera = g.filter((x) => x && typeof x.fecha === 'string' && typeof x.franja === 'string' && typeof x.texto === 'string')
-        .map((x) => ({ fecha: x.fecha, franja: x.franja, texto: x.texto.slice(0, 80), ...(Number.isFinite(x.kcal) ? { kcal: Math.round(x.kcal) } : {}), ...(x.prevista === true ? { prevista: true } : {}), ...(x.libre === true ? { libre: true } : {}), ...(x.noSe === true && !Number.isFinite(x.kcal) ? { noSe: true } : {}) })).slice(-30);
+        .map((x) => ({ fecha: x.fecha, franja: x.franja, texto: x.texto.slice(0, 80), ...(Number.isFinite(x.kcal) ? { kcal: Math.round(x.kcal) } : {}), ...(x.prevista === true ? { prevista: true } : {}), ...(x.libre === true ? { libre: true } : {}), ...(x.familiar === true ? { familiar: true } : {}), ...(x.noSe === true && !Number.isFinite(x.kcal) ? { noSe: true } : {}) })).slice(-30);
     }
   } catch { /* sin almacenamiento o dato corrupto: ninguna */ }
+  // #332 p4 (coordinación, 24/11): Navidad. Las comidas familiares (cena del 24 y del 31/12; comida del 25/12, del 1/1 y del 6/1) salen
+  // como «Comida familiar», sin receta: son comidas fuera previstas que no se guardan (las calcula cada plan, `familiaresActuales`) y el
+  // resto del día se cuadra igual que con «Voy a comer fuera». Lo que la persona anote en esa comida sí se guarda, con `familiar`.
+  const CLAVE_NAVIDAD = 'app-dietas-navidad';
+  let ajustesNavidad = Motor.normalizarAjustesNavidad(null);
+  try { ajustesNavidad = Motor.normalizarAjustesNavidad(JSON.parse(localStorage.getItem(CLAVE_NAVIDAD) || 'null')); } catch { /* sin almacenamiento: las de siempre */ }
+  // La prueba de navegador fija `__SIN_NAVIDAD_PRUEBA` para que sus planes no cambien en diciembre (solo la prueba de Navidad la quita).
+  const navidadEnPrueba = () => !(typeof window.__SIN_NAVIDAD_PRUEBA === 'boolean' && window.__SIN_NAVIDAD_PRUEBA);
+  let familiaresActuales = []; // [{ fecha, franja, dia, texto: 'Comida familiar', kcal, prevista: true, familiar: true }]
+  /** Las comidas fuera de verdad y las familiares de este plan; donde hay una anotada (también la comida libre), queda solo esa. */
+  const fueraTodas = () => comidasFuera.concat(familiaresActuales.filter((v) => !comidasFuera.some((x) => x.fecha === v.fecha && x.franja === v.franja)));
+  const esFamiliarDelPlan = (iso, franja) => familiaresActuales.some((v) => v.fecha === iso && v.franja === franja);
+  /** Lo que la lista de la compra no suma: las comidas familiares de la semana del plan. */
+  const familiaresCompra = () => fueraTodas().filter((x) => x.familiar).map((x) => ({ dia: DIAS.find((d) => fechaProximaDe(d) === x.fecha), franja: x.franja })).filter((x) => x.dia);
+  function guardarNavidad() {
+    try { localStorage.setItem(CLAVE_NAVIDAD, JSON.stringify(ajustesNavidad)); localStorage.setItem(CLAVE_FUERA, JSON.stringify(comidasFuera)); } catch { falloAlmacenamiento(); }
+    pintarAjustesNavidad();
+    if (vistaSemana && planActual) mostrarResultado(semanaActual, planActual, respuestasActuales, franjasActuales);
+  }
+  const NOMBRE_FAMILIAR = { '12-24|cena': 'Cena de Nochebuena (24/12)', '12-25|comida': 'Comida de Navidad (25/12)', '12-31|cena': 'Cena de Nochevieja (31/12)', '01-01|comida': 'Comida de Año Nuevo (1/1)', '01-06|comida': 'Comida de Reyes (6/1)' };
+  function pintarAjustesNavidad() {
+    const activa = document.getElementById('nav-activa');
+    if (!activa) return;
+    activa.checked = ajustesNavidad.activa;
+    const caja = document.getElementById('nav-comidas');
+    caja.disabled = !ajustesNavidad.activa;
+    caja.innerHTML = '<legend class="subt">Estas comidas</legend>' + Motor.COMIDAS_FAMILIARES_POR_DEFECTO.map((c) => {
+      const quitada = ajustesNavidad.quitadas.some((q) => q.fecha === c.md && q.franja === c.franja);
+      return `<label class="check"><input type="checkbox" class="nav-comida" data-md="${c.md}" data-franja="${c.franja}"${quitada ? '' : ' checked'}> ${escaparHtml(NOMBRE_FAMILIAR[`${c.md}|${c.franja}`] || c.md)}</label>`;
+    }).join('');
+    document.getElementById('nav-anadidas').innerHTML = ajustesNavidad.añadidas.length ? `<ul class="resumen-lista">${ajustesNavidad.añadidas.map((a, i) => `<li>${a.franja === 'cena' ? 'Cena' : 'Comida'} del ${Number(a.fecha.slice(-2))}/${Number(a.fecha.slice(-5, -3))} <button type="button" class="btn-texto nav-quitar-anadida" data-i="${i}">Quitar</button></li>`).join('')}</ul>` : '';
+  }
+  document.addEventListener('change', (ev) => {
+    const t = ev.target;
+    if (t && t.id === 'nav-activa') { ajustesNavidad = { ...ajustesNavidad, activa: t.checked }; guardarNavidad(); return; }
+    if (t && t.classList && t.classList.contains('nav-comida')) {
+      const q = ajustesNavidad.quitadas.filter((x) => !(x.fecha === t.dataset.md && x.franja === t.dataset.franja));
+      ajustesNavidad = { ...ajustesNavidad, quitadas: t.checked ? q : q.concat({ fecha: t.dataset.md, franja: t.dataset.franja }) };
+      guardarNavidad();
+    }
+  });
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest && ev.target.closest('#nav-anadir, .nav-quitar-anadida, .familiar-que, .familiar-quitar');
+    if (!b) return;
+    if (b.id === 'nav-anadir') {
+      const fecha = document.getElementById('nav-fecha').value;
+      const franja = document.getElementById('nav-franja').value;
+      const error = document.getElementById('nav-error');
+      if (!Motor.enNavidad(fecha)) { error.textContent = 'Elige un día entre el 24 de diciembre y el 6 de enero.'; error.hidden = false; return; }
+      error.hidden = true;
+      if (!ajustesNavidad.añadidas.some((a) => a.fecha === fecha && a.franja === franja)) ajustesNavidad = Motor.normalizarAjustesNavidad({ ...ajustesNavidad, añadidas: ajustesNavidad.añadidas.concat({ fecha, franja }) });
+      guardarNavidad();
+    } else if (b.classList.contains('nav-quitar-anadida')) {
+      ajustesNavidad = { ...ajustesNavidad, añadidas: ajustesNavidad.añadidas.filter((_, i) => i !== Number(b.dataset.i)) };
+      guardarNavidad();
+    } else if (b.classList.contains('familiar-que')) {
+      abrirComidaFuera(b.dataset.dia, b.dataset.franja, true);
+    } else { // «No es comida familiar»: solo ese día de este año; vuelve la receta
+      const iso = fechaProximaDe(b.dataset.dia);
+      ajustesNavidad = { ...ajustesNavidad, quitadas: ajustesNavidad.quitadas.concat({ fecha: iso, franja: b.dataset.franja }) };
+      comidasFuera = comidasFuera.filter((x) => !(x.fecha === iso && x.franja === b.dataset.franja && x.familiar));
+      guardarNavidad();
+    }
+  });
   // #265 I (Pablo, 20/10: «Solo sugerencia… si no marca se entiende que no se la ha comido»): los días en que la persona marcó
   // «Me la he tomado» (la toma ligera antes de entrenar en ayunas). Solo cuenta la de hoy; se guardan las 30 últimas, en este navegador.
   const CLAVE_AYUNAS = 'app-dietas-toma-ayunas';
@@ -2429,8 +2495,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const conflicto = reparto.conflictos.filter((c) => c.franja === f.franja).map((c) => `<span class="error-inline">⚠️ ${escaparHtml(textoConflicto(c))}</span>`).join('');
       const asignada = vistaSemana.recetaPorSlot.get(`${dia}|${f.franja}`);
       // #258 (punto 13): hoy, una comida apuntada como «He comido fuera» sale como tal en el resumen, no como lo previsto.
-      const fuera = comidasFuera.find((x) => x.fecha === fechaProximaDe(dia) && x.franja === f.franja); // #265 H: también la prevista otro día
-      if (fuera) return `<li class="fila fila-fuera"><span class="fila-icono ic-comida" aria-hidden="true"></span><div class="fila-texto"><strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong><span class="fila-sub">${horaFranja(f.franja)}${fuera.kcal !== undefined ? `~${fuera.kcal} kcal` : 'kcal sin apuntar'}</span><span class="fila-sub">${fuera.prevista ? 'Vas a comer fuera' : 'Comida fuera'}: ${escaparHtml(fuera.texto)}</span></div></li>`;
+      const fuera = fueraTodas().find((x) => x.fecha === fechaProximaDe(dia) && x.franja === f.franja); // #265 H; #332 p4: también la familiar: también la prevista otro día
+      if (fuera) return `<li class="fila fila-fuera"><span class="fila-icono ic-comida" aria-hidden="true"></span><div class="fila-texto"><strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong><span class="fila-sub">${horaFranja(f.franja)}${fuera.kcal !== undefined ? `~${fuera.kcal} kcal` : 'kcal sin apuntar'}</span><span class="fila-sub">${fuera.familiar ? (fuera.texto === 'Comida familiar' ? 'Comida familiar' : `Comida familiar: ${escaparHtml(fuera.texto)}`) : `${fuera.prevista ? 'Vas a comer fuera' : 'Comida fuera'}: ${escaparHtml(fuera.texto)}`}</span></div></li>`;
       // #257 (punto 10): las kcal de lo que se come (las del plato), no las del objetivo de la comida.
       const cabecera = `<strong>${NOMBRE_FRANJA_RESUMEN[f.franja] ?? f.franja}</strong><span class="fila-sub">${horaFranja(f.franja)}~${asignada ? asignada.kcalResultante : f.kcalAprox} kcal</span>`;
       return asignada
@@ -4183,7 +4249,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const f = reparto.franjas.find((x) => x.franja === franja);
     if (!f) return;
     const previa = comidasFuera.find((x) => x.fecha === iso && x.franja === franja);
-    document.getElementById('dc-titulo').textContent = libre ? 'Comida libre después de la prueba' : prevista ? 'Voy a comer fuera' : `Comida fuera · ${nombreSlot(`${dia}|${franja}`)}`;
+    const esFam = prevista && !libre && (esFamiliarDelPlan(iso, franja) || Boolean(previa && previa.familiar)); // #332 p4
+    document.getElementById('dc-titulo').textContent = libre ? 'Comida libre después de la prueba' : esFam ? 'Comida familiar' : prevista ? 'Voy a comer fuera' : `Comida fuera · ${nombreSlot(`${dia}|${franja}`)}`;
     const diasElegibles = vistaSemana.repartosPorDia.map((r) => r.dia.dia).map((d) => ({ d, iso: fechaProximaDe(d) })).sort((a, b) => a.iso.localeCompare(b.iso));
     const bloqueAntes = libre ? `<p class="una-linea" id="fuera-libre-nota">Va en lugar de tu ${escaparHtml((NOMBRE_FRANJA_CAMBIO[franja] ?? franja).toLowerCase())} de ese día. Escribe qué vas a tomar y se calculan sus kcal aproximadas (sin receta).</p>` : prevista ? `
       <div class="campo"><label for="fuera-dia">Día</label><select id="fuera-dia" style="font-size:16px">${diasElegibles.map((x, i) => `<option value="${x.d}"${x.d === dia ? ' selected' : ''}>${i === 0 && x.iso === Motor.fechaLocalISO(new Date()) ? 'Hoy' : NOMBRE_DIA_LARGO[x.d]} ${Number(x.iso.slice(8))}</option>`).join('')}</select></div>
@@ -4304,8 +4371,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       }
       if (campoKcal.value.trim() === '' && items.length && sinReconocer.length) { avisar('Falta una parte por encontrar: usa lo que sí he encontrado como mínimo o escribe las kcal del total.', campoKcal); return; } // #285 punto 4
       if (kcal !== undefined && !(Number.isFinite(kcal) && kcal >= 0 && kcal <= 5000)) { avisar('Las calorías tienen que ser un número entre 0 y 5000; si no las sabes, déjalo vacío.', campoKcal); return; }
+      // #332 p4: en la comida familiar, sin kcal que salgan de lo escrito, cuentan las de la comida del plan × 1,5.
+      const kcalGuardar = kcal !== undefined ? Math.round(kcal) : esFam ? Motor.kcalComidaFamiliar(f.kcalAprox) : undefined;
       comidasFuera = comidasFuera.filter((x) => !(x.fecha === iso && x.franja === franja))
-        .concat({ fecha: iso, franja, texto, ...(kcal !== undefined ? { kcal: Math.round(kcal) } : {}), ...(prevista ? { prevista: true } : {}), ...(libre ? { libre: true } : {}) }).slice(-30);
+        .concat({ fecha: iso, franja, texto, ...(kcalGuardar !== undefined ? { kcal: kcalGuardar } : {}), ...(prevista ? { prevista: true } : {}), ...(libre ? { libre: true } : {}), ...(esFam ? { familiar: true } : {}) }).slice(-30);
       if (!prevista) { // lo previsto aún no se ha comido
         const hechas = hechasDe(iso);
         if (!hechas.includes(franja)) hechas.push(franja);
@@ -4580,13 +4649,26 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // «He comido fuera» (Pablo, 08/10): «igual que si come otra cosa en su casa y cambia, si sale fuera debería regularse también».
     // Hoy esa comida cuenta con las kcal apuntadas y una segunda pasada del mismo cuadre regula las comidas que van DESPUÉS de ella
     // (las anteriores ya han pasado y no se tocan), con los mismos topes de cantidades normales. Al día siguiente deja de aplicarse.
+    // #332 p4: las comidas familiares de las fechas de este plan (las de «Voy a comer fuera»: hoy y los 6 días siguientes). PRE, POST y
+    // las tomas del entreno o de la prueba nunca lo son (`familiaresDelDia`). Kcal: las de esa comida × 1,5, redondeadas a 10.
+    {
+      const fam = navidadEnPrueba() ? Motor.comidasFamiliares([...new Set(slotsSemana.map((s) => s.dia))].map(fechaProximaDe), ajustesNavidad) : [];
+      familiaresActuales = [];
+      for (const { dia: dd, reparto: rp } of repartosPorDia) {
+        const iso = fechaProximaDe(dd.dia);
+        for (const franja of Motor.familiaresDelDia(fam, iso, rp.franjas)) {
+          const s = slotsSemana.find((x) => x.dia === dd.dia && x.franja === franja);
+          if (s) familiaresActuales.push({ fecha: iso, franja, dia: dd.dia, texto: 'Comida familiar', kcal: Motor.kcalComidaFamiliar(s.kcalObjetivo), prevista: true, familiar: true });
+        }
+      }
+    }
     const hoyIso = Motor.fechaLocalISO(new Date());
     const diaHoy = LETRA_DIA_JS[new Date().getDay()];
     // #265 H: «Voy a comer fuera» otro día de la semana: ese día se cuadra entero (aún no ha pasado nada), con los mismos topes.
     for (const d of [...new Set(slotsSemana.map((s) => s.dia))]) {
       const isoD = fechaProximaDe(d);
-      const fueraD = new Map(comidasFuera.filter((x) => x.fecha === isoD && x.kcal !== undefined && slotsSemana.some((s) => s.dia === d && s.franja === x.franja)).map((x) => [x.franja, x.kcal]));
-      for (const [franja, kcal] of Motor.fueraFijaDelDia(d, efectoAj)) if (!fueraD.has(franja) && !comidasFuera.some((x) => x.fecha === isoD && x.franja === franja) && slotsSemana.some((s) => s.dia === d && s.franja === franja)) fueraD.set(franja, kcal); // #322 p3
+      const fueraD = new Map(fueraTodas().filter((x) => x.fecha === isoD && x.kcal !== undefined && slotsSemana.some((s) => s.dia === d && s.franja === x.franja)).map((x) => [x.franja, x.kcal]));
+      for (const [franja, kcal] of Motor.fueraFijaDelDia(d, efectoAj)) if (!fueraD.has(franja) && !fueraTodas().some((x) => x.fecha === isoD && x.franja === franja) && slotsSemana.some((s) => s.dia === d && s.franja === franja)) fueraD.set(franja, kcal); // #322 p3
       if (!fueraD.size) continue; // #173: la segunda pasada vive ahora en el motor, con tests
       const horaDe = (franja) => { const h = franjasDelDia(d).find((x) => x.franja === franja); return h && h.hora !== undefined ? h.hora : undefined; };
       cuadrado = Motor.cuadrarConComidaFuera(cuadrado, slotsSemana, recetasCuadre, { diaHoy: d, fuera: fueraD, horaDe, noMoverDia: enCompeticion, todoElDia: isoD !== hoyIso });
@@ -4651,7 +4733,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const kcalFueraHtml = (d) => {
       const isoD = fechaProximaDe(d);
       const c = cuadrado.dias.find((x) => x.dia === d);
-      if (!c || !comidasFuera.some((x) => x.fecha === isoD && x.kcal !== undefined && slotsSemana.some((s) => s.dia === d && s.franja === x.franja))) return '';
+      if (!c || !fueraTodas().some((x) => x.fecha === isoD && x.kcal !== undefined && slotsSemana.some((s) => s.dia === d && s.franja === x.franja))) return '';
       const desvio = Math.round((c.servido - c.objetivo) / 10) * 10;
       const cuanto = !c.cuadrado && desvio ? `, unas ${Math.abs(desvio)} ${desvio > 0 ? 'por encima' : 'por debajo'}` : '';
       return `<div class="dia-kcal-fuera">${isoD === hoyIso ? 'hoy' : 'ese día'} ~${Math.round(c.servido / 10) * 10} kcal con la comida fuera${cuanto}</div>`;
@@ -4711,6 +4793,17 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         partes.push(`<details class="plegable" open><summary>Qué cambia esta semana por tu competición</summary><ul class="resumen-lista">${filas}</ul><p class="subt" style="font-size:0.8rem">${escaparHtml(Motor.NOTA_PAUTA_ORIENTATIVA)}</p></details>`);
       }
       cajaComp.innerHTML = partes.join('');
+    }
+    { // #332 p4: del 24/12 al 6/1, solo información y una línea (con alergias o intolerancias, una más)
+      const caja = document.getElementById('r-navidad');
+      if (caja) {
+        const fechaN = [...new Set(DIAS.map(fechaProximaDe))].sort().find((x) => Motor.enNavidad(x));
+        const al = respuestas.alergias || {};
+        const conAlergias = Boolean(al.celiaquia || al.lactosa || (al.otros && String(al.otros).trim()));
+        const t = navidadEnPrueba() && ajustesNavidad.activa && fechaN ? Motor.avisoNavidad(fechaN, conAlergias) : null;
+        caja.hidden = !t;
+        caja.textContent = t ? `🎄 ${t}` : '';
+      }
     }
     // #326 parte 3: pauta de creatina si la persona la ha marcado (y es mayor de edad). Con una competición anotada, el sello antidopaje.
     {
@@ -4778,8 +4871,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
           <div class="receta-franja hueco">⚠️ ${escaparHtml(textoConflicto(c))}
             <button type="button" class="hor-ir" data-dia="${d.dia}">Editar horario de este día</button></div>`).join('');
         // #285 punto 5: lo anotado como comida fuera manda sobre la receta, igual que en el resumen del día.
-        const fueraFranja = comidasFuera.find((x) => x.fecha === fechaProximaDe(d.dia) && x.franja === f.franja);
-        const recetaHtml = fueraFranja
+        const fueraFranja = fueraTodas().find((x) => x.fecha === fechaProximaDe(d.dia) && x.franja === f.franja); // #332 p4: también la familiar
+        const recetaHtml = fueraFranja && fueraFranja.familiar
+          ? `<div class="receta-franja fuera-marca familiar-marca" data-slot="${d.dia}|${f.franja}">🎄 <strong>Comida familiar</strong>${fueraFranja.texto !== 'Comida familiar' ? `: ${escaparHtml(fueraFranja.texto)}` : ''}<div class="receta-dato">~${fueraFranja.kcal} kcal aproximadas, sin receta${fueraFranja.texto === 'Comida familiar' ? ' (tu comida × 1,5)' : ''}</div><button type="button" class="btn-texto familiar-que" data-dia="${d.dia}" data-franja="${f.franja}">Escribir qué vas a comer</button> <button type="button" class="btn-texto familiar-quitar" data-dia="${d.dia}" data-franja="${f.franja}">No es comida familiar</button></div>`
+          : fueraFranja
           ? `<div class="receta-franja fuera-marca">🍴 <strong>${fueraFranja.prevista ? 'Vas a comer fuera' : 'Comida fuera'}</strong>${fueraFranja.noSe ? ': todavía sin decidir' : `: ${escaparHtml(fueraFranja.texto)}`}<div class="receta-dato">${fueraFranja.kcal !== undefined ? `~${fueraFranja.kcal} kcal` : fueraFranja.noSe ? `cuenta como ~${f.kcalAprox} kcal de tu plan` : 'kcal sin apuntar'}</div></div>`
           : asignada
           ? `<div class="receta-franja">🍽️ <strong>${escaparHtml(asignada.receta.nombre)}</strong>${asignada.pedidoPorUsuario ? ' <span class="etq-pedido">⭐ lo pediste tú</span>' : ''}${asignada.fijada ? ' <span class="etq-pedido">📌 fijada</span>' : ''}<div class="receta-dato">ración ${Math.round(asignada.racionAjustada * 100)} % · ~${asignada.kcalResultante} kcal</div>${(() => { const n = Motor.notaTomaCorta(f.kcalAprox, asignada, cuadrado.dias.find((x) => x.dia === d.dia)); return n ? `<p class="subt nota-toma-corta" data-slot="${d.dia}|${f.franja}">⚖️ ${escaparHtml(n)}</p>` : ''; })()}${extrasDeSlot(d.dia, f.franja).map((e) => `<div class="receta-dato compensacion-extra" data-slot="${d.dia}|${f.franja}">➕ ${escaparHtml(Motor.textoExtra(e))} · ~${e.kcal} kcal</div>`).join('')}<button type="button" class="btn-texto fijar-btn" data-dia="${d.dia}" data-franja="${f.franja}">${semanaFija.has(`${d.dia}|${f.franja}`) ? '📌 Quitar fijación' : '📌 Fijar'}</button></div>`
