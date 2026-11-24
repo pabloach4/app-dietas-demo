@@ -196,6 +196,7 @@ var Motor = (() => {
     alertaHambre: () => alertaHambre,
     alertaNotaGusto: () => alertaNotaGusto,
     alertaParaPablo: () => alertaParaPablo,
+    alertaPlanPablo: () => alertaPlanPablo,
     alertaSuelo: () => alertaSuelo,
     alertasNuevas: () => alertasNuevas,
     alertasPorSubir: () => alertasPorSubir,
@@ -292,6 +293,7 @@ var Motor = (() => {
     descontarTomaPrevia: () => descontarTomaPrevia,
     describirPeculiaridades: () => describirPeculiaridades,
     deshacer: () => deshacer,
+    detalleCambiosAppPlanPablo: () => detalleCambiosAppPlanPablo,
     diaConDeficit: () => diaConDeficit,
     diaDeLaFecha: () => diaDeLaFecha,
     diabetesValida: () => diabetesValida,
@@ -2332,6 +2334,8 @@ vinagre de arroz,sin_gluten_natural,si,"Vinagre de arroz: FACE p2, generico; no 
     if (marcas.has("toma_ligera_PRE")) return { rol: "toma_ligera_PRE", factor: f2.toma_ligera_PRE };
     return { rol: "normal", factor: 1 };
   }
+  var MAX_RESTO_REDONDEO_POR_COMIDA = 4;
+  var MAX_DESCUADRE_DIA = 5;
   function repartirComidas(e) {
     if (!e.franjas.length) throw new Error("Hace falta al menos una comida activa para repartir el d\xEDa.");
     const p = cargarParametros();
@@ -2656,6 +2660,20 @@ vinagre de arroz,sin_gluten_natural,si,"Vinagre de arroz: FACE p2, generico; no 
       avisos.push(
         `${NOMBRE_FRANJA[c2.franja] ?? c2.franja} (${hhmm(c2.hora)}) cae dentro de una sesi\xF3n de ${hhmm(c2.inicio)} a ${hhmm(c2.fin)}: revisa el horario. No se ha movido nada ni se da este horario por viable.`
       );
+    }
+    {
+      const tomas = (tomaLigera ? tomaLigera.kcalAprox : 0) + recuperacionRapida.reduce((t2, x) => t2 + (x.toma ? x.kcal : 0), 0);
+      let resto = Math.round(e.kcal) - tomas - salida.reduce((t2, s) => t2 + s.kcalAprox, 0);
+      const deMacros = 4 * e.proteina + 4 * e.hidrato + 9 * e.grasa;
+      if (resto !== 0 && Math.abs(e.kcal - deMacros) <= MAX_DESCUADRE_DIA && Math.abs(resto) <= MAX_RESTO_REDONDEO_POR_COMIDA * salida.length) {
+        const principales2 = salida.filter((x) => PRINCIPALES.includes(x.franja));
+        const orden = (principales2.length ? principales2 : [...salida]).sort((a2, b) => b.kcalAprox - a2.kcalAprox);
+        for (let i = 0; resto !== 0; i = (i + 1) % orden.length) {
+          const d = Math.sign(resto);
+          orden[i].kcalAprox += d;
+          resto -= d;
+        }
+      }
     }
     const tomaSugerida = primeraHoraSug && !tomaLigera ? { inicio: primeraHoraSug.inicio, kcal: TOMA_AYUNAS.kcal } : void 0;
     return { franjas: salida, avisos, conflictos, ...tomaLigera ? { tomaLigera } : {}, ...cenaTrasEntreno ? { cenaTrasEntreno } : {}, ...tomaSugerida ? { tomaSugerida } : {}, ...recuperacionRapida.length ? { recuperacionRapida } : {} };
@@ -11847,6 +11865,43 @@ fruta; verdura,variedad de grupo y suficiencia global,consultar con Pablo,"Cubri
     pablo_con_cambios: "Revisado por Pablo, con cambios tuyos",
     pablo_app: "Revisado por Pablo; la app ha cambiado alg\xFAn plato que ya no te val\xEDa"
   };
+  function detalleCambiosAppPlanPablo(enUso, deP, o = {}) {
+    const uso = new Map(enUso.map((x) => [`${x.dia}|${x.franja}`, x.receta]));
+    const tocada = o.tocadaPorPersona ?? (() => false);
+    return deP.flatMap((x) => {
+      const ahora = uso.get(`${x.dia}|${x.franja}`);
+      if (ahora !== void 0 && platoNormalizado(ahora) === platoNormalizado(x.receta) || tocada(x.dia, x.franja)) return [];
+      return [{ dia: x.dia, franja: x.franja, antes: x.receta, ...ahora !== void 0 ? { despues: ahora } : {} }];
+    });
+  }
+  var DIA_LARGO = { L: "lunes", M: "martes", X: "mi\xE9rcoles", J: "jueves", V: "viernes", S: "s\xE1bado", D: "domingo" };
+  var FRANJA_LLANA = { desayuno: "desayuno", media_manana: "media ma\xF1ana", comida: "comida", merienda: "merienda", cena: "cena", recena: "recena" };
+  var ORDEN_DIA = "LMXJVSD";
+  var MAX_CAMBIOS_EN_ALERTA = 6;
+  function alertaPlanPablo(cambios, inicioPlan, fechaISO, existentes = []) {
+    if (!cambios.length) return void 0;
+    const orden = [...cambios].sort((a2, b) => ORDEN_DIA.indexOf(a2.dia) - ORDEN_DIA.indexOf(b.dia) || a2.franja.localeCompare(b.franja));
+    const texto3 = orden.map((c2) => `${c2.dia}|${c2.franja}|${c2.antes}|${c2.despues ?? ""}`).join(";");
+    let h = 5381;
+    for (let i = 0; i < texto3.length; i++) h = (h * 33 ^ texto3.charCodeAt(i)) >>> 0;
+    const firma = `PP|${inicioPlan}|${h.toString(36)}`;
+    if (existentes.some((a2) => a2.firma === firma)) return void 0;
+    const linea = (c2) => `${DIA_LARGO[c2.dia] ?? c2.dia}, ${FRANJA_LLANA[c2.franja] ?? c2.franja}: ${c2.antes} \u2192 ${c2.despues ?? "quitado, sin sustituto"}${c2.motivo ? ` (${c2.motivo})` : ""}`;
+    const semana = /^\d{4}-\d{2}-\d{2}$/.test(inicioPlan) ? ` (semana del ${inicioPlan.slice(8, 10)}/${inicioPlan.slice(5, 7)})` : "";
+    const n = orden.length;
+    const lista6 = orden.slice(0, MAX_CAMBIOS_EN_ALERTA).map(linea).join("; ") + (n > MAX_CAMBIOS_EN_ALERTA ? `; y ${n - MAX_CAMBIOS_EN_ALERTA} m\xE1s` : "");
+    const se\u00F1al = `La app ha cambiado ${n === 1 ? "1 plato" : `${n} platos`} del plan que revisaste${semana} porque ya no le val\xEDan: ${lista6}. A la persona le dice que es un cambio de la app, no suyo.`;
+    return {
+      fecha: fechaISO,
+      prioritaria: false,
+      tipo: "plan_pablo",
+      planPablo: true,
+      disparadores: [{ pregunta: 0, etiqueta: "plan_pablo", se\u00F1al }],
+      contexto: [],
+      sinInterpretar: [],
+      firma
+    };
+  }
   function textoCambiosAppPlanPablo(n) {
     return n === 1 ? "Revisado por Pablo; la app ha cambiado 1 plato que ya no te val\xEDa" : `Revisado por Pablo; la app ha cambiado ${n} platos que ya no te val\xEDan`;
   }
@@ -11909,7 +11964,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     return `${String(d.getFullYear()).padStart(4, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
   function lineasAlertasPersona(alertas, nubeActiva) {
-    return alertas.filter((a2) => a2.tipo !== "cita" && a2.tipo !== "hambre").map((a2) => ({
+    return alertas.filter((a2) => a2.tipo !== "cita" && a2.tipo !== "hambre" && a2.tipo !== "plan_pablo").map((a2) => ({
       fecha: fechaLocal(a2.fecha),
       texto: `${TEXTO_ALERTA_PERSONA} ${textoLlegaAPablo(nubeActiva)}`
     }));
@@ -12077,7 +12132,8 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     derivacion: "Derivaci\xF3n (salud o edad)",
     cita: "Pide cita",
     hambre: "Hambre repetida",
-    gusto: "Cambio de gustos"
+    gusto: "Cambio de gustos",
+    plan_pablo: "Tu plan, cambiado por la app"
   };
   var datosDe = (a2) => a2.datos && typeof a2.datos === "object" ? a2.datos : {};
   function clasificarAlerta(a2) {
@@ -12085,6 +12141,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (a2.tipo === "cita" || d.cita === true) return "cita";
     if (a2.tipo === "hambre" || d.hambre === true) return "hambre";
     if (a2.tipo === "gusto" || d.gusto === true) return "gusto";
+    if (a2.tipo === "plan_pablo" || d.planPablo === true) return "plan_pablo";
     if (d.freno === true) return "freno";
     if (d.suelo === true) return "suelo";
     if (d.celiaquia === true) return "celiaquia";

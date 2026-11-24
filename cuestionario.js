@@ -4711,6 +4711,16 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         const opcEtq = { quitadas: quitadasPablo.length, tocadaPorPersona };
         const etq = Motor.etiquetaPlanPablo(cuadrado.asignaciones, fijadasDePablo, opcEtq);
         const textoEtq = etq === 'pablo_app' ? Motor.textoCambiosAppPlanPablo(Motor.cambiosAppPlanPablo(cuadrado.asignaciones, fijadasDePablo, opcEtq)) : Motor.TEXTO_PLAN_PABLO[etq];
+        // #346 parte 2: con la nube activa, lo que cambia la app en el plan de Pablo le llega al centro como aviso (con el plato de antes y el
+        // de ahora). Lo sube web/nube.js con las demás alertas; una por conjunto de cambios, aunque se reabra otro día.
+        if (etq === 'pablo_app' && nubeActiva() === true) {
+          const porIdP = new Map(RECETAS_EJEMPLO.map((r) => [r.id, r]));
+          const nombreP = (id) => (Motor.recetaDeId(porIdP, id) || { nombre: id }).nombre;
+          const cambiosP = Motor.detalleCambiosAppPlanPablo(cuadrado.asignaciones, fijadasDePablo, { tocadaPorPersona }).map((c) => ({ ...c, antes: nombreP(c.antes), ...(c.despues ? { despues: nombreP(c.despues) } : {}) }))
+            .concat(quitadasPablo.map((q) => ({ dia: q.dia, franja: q.franja, antes: q.nombre, motivo: q.motivo })));
+          const alertaP = Motor.alertaPlanPablo(cambiosP, pabloHoy.inicio, new Date().toISOString(), leerAlertas());
+          if (alertaP) guardarAlertas(Motor.anadirAlerta(leerAlertas(), alertaP));
+        }
         const quita = quitadasPablo.length ? ` Se han quitado ${quitadasPablo.length} plato${quitadasPablo.length === 1 ? '' : 's'} que ya no valen con tus restricciones (${[...new Set(quitadasPablo.map((q) => q.nombre))].slice(0, 3).map(escaparHtml).join(', ')}).` : '';
         avisoPabloHoy = `<strong>${escaparHtml(textoEtq)}.</strong>${quita}`;
       } else avisoPabloHoy = '';
