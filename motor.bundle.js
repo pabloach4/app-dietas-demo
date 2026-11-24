@@ -59,12 +59,15 @@ var Motor = (() => {
     ETIQUETA_FASE: () => ETIQUETA_FASE,
     EXAMEN_LARGO_MIN: () => EXAMEN_LARGO_MIN,
     FACTOR_LEGUMBRE_COCIDA: () => FACTOR_LEGUMBRE_COCIDA,
+    FALTA_MAXIMA_VISPERA: () => FALTA_MAXIMA_VISPERA,
+    FIBRA_MAX_TOMA_VISPERA_G: () => FIBRA_MAX_TOMA_VISPERA_G,
     FILTROS_PERSONAS: () => FILTROS_PERSONAS,
     FRACCION_CENA_LIGERA: () => FRACCION_CENA_LIGERA,
     FRANJAS_CITA: () => FRANJAS_CITA,
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
     FRANJAS_EDITABLES: () => FRANJAS_EDITABLES,
     GLUTEN_CSV: () => GLUTEN_CSV,
+    GRASA_MAX_TOMA_VISPERA_G: () => GRASA_MAX_TOMA_VISPERA_G,
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
     HORA_ENTRENO_NOCHE: () => HORA_ENTRENO_NOCHE,
     ID_COMPETICION_OPOSICION: () => ID_COMPETICION_OPOSICION,
@@ -84,6 +87,7 @@ var Motor = (() => {
     MAX_MOTIVO_CITA: () => MAX_MOTIVO_CITA,
     MAX_PRUEBAS_FISICAS: () => MAX_PRUEBAS_FISICAS,
     MAX_SUBIDA_COMIDA: () => MAX_SUBIDA_COMIDA,
+    MAX_TOMAS_VISPERA: () => MAX_TOMAS_VISPERA,
     MEDIDAS_CASERAS_CSV: () => MEDIDAS_CASERAS_CSV,
     MENSAJE_CATEGORIA_PESO: () => MENSAJE_CATEGORIA_PESO,
     MENSAJE_CELIAQUIA_HOY: () => MENSAJE_CELIAQUIA_HOY,
@@ -97,6 +101,7 @@ var Motor = (() => {
     MIN_DUELOS: () => MIN_DUELOS,
     MIN_DURACION_ESCRITO: () => MIN_DURACION_ESCRITO,
     MIN_GRASA_PLATO_CARGA: () => MIN_GRASA_PLATO_CARGA,
+    MOTIVO_VISPERA: () => MOTIVO_VISPERA,
     NOMBRE_FRANJA_CENTRO: () => NOMBRE_FRANJA_CENTRO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
     NOMBRE_TIPO_OPOSICION: () => NOMBRE_TIPO_OPOSICION,
@@ -108,6 +113,7 @@ var Motor = (() => {
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
     PARTE_MINIMA_HIDRATOS_CARGA: () => PARTE_MINIMA_HIDRATOS_CARGA,
+    PARTE_MINIMA_TOMA: () => PARTE_MINIMA_TOMA,
     PARTIDO: () => PARTIDO,
     PASO_KCAL: () => PASO_KCAL,
     PASO_SUPERAVIT: () => PASO_SUPERAVIT,
@@ -149,6 +155,7 @@ var Motor = (() => {
     TIPOS_PRUEBA_OPOSICION: () => TIPOS_PRUEBA_OPOSICION,
     TIPOS_SOLUCIONABLES: () => TIPOS_SOLUCIONABLES,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
+    TOMAS_VISPERA: () => TOMAS_VISPERA,
     TOMA_AYUNAS: () => TOMA_AYUNAS,
     TOMA_PRIMERA_HORA_NATACION: () => TOMA_PRIMERA_HORA_NATACION,
     TOMA_RAPIDA_EJEMPLO: () => TOMA_RAPIDA_EJEMPLO,
@@ -336,6 +343,7 @@ var Motor = (() => {
     extraDelDia: () => extraDelDia,
     extrasCarga: () => extrasCarga,
     extrasDe: () => extrasDe,
+    extrasVispera: () => extrasVispera,
     factorCocido: () => factorCocido,
     faltaVisibleCompeticion: () => faltaVisibleCompeticion,
     familiaresDelDia: () => familiaresDelDia,
@@ -475,6 +483,7 @@ var Motor = (() => {
     rasgosDeReceta: () => rasgosDeReceta,
     recetaConCarga: () => recetaConCarga,
     recetaDeId: () => recetaDeId,
+    recetaDeTomaVispera: () => recetaDeTomaVispera,
     recetaSugeridaProteina: () => recetaSugeridaProteina,
     recetasCompuestas: () => recetasCompuestas,
     recetasParaDerivado: () => recetasParaDerivado,
@@ -518,6 +527,7 @@ var Motor = (() => {
     textoDuranteEntreno: () => textoDuranteEntreno,
     textoExtra: () => textoExtra,
     textoExtrasCarga: () => textoExtrasCarga,
+    textoExtrasVispera: () => textoExtrasVispera,
     textoFaseOposicion: () => textoFaseOposicion,
     textoLlegaAPablo: () => textoLlegaAPablo,
     textoNotificacion: () => textoNotificacion,
@@ -13822,6 +13832,41 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
   function avisoNavidad(fecha, conAlergias = false) {
     if (!enNavidad(fecha)) return null;
     return `Disfruta de las comidas familiares. El d\xEDa siguiente, vuelta a lo normal, sin compensar.${conAlergias ? " Pregunta qu\xE9 lleva cada plato por tus alergias." : ""}`;
+  }
+
+  // src/motor/extras-vispera.ts
+  var FALTA_MAXIMA_VISPERA = 0.03;
+  var MAX_TOMAS_VISPERA = 2;
+  var FIBRA_MAX_TOMA_VISPERA_G = 3;
+  var GRASA_MAX_TOMA_VISPERA_G = 2;
+  var TOMAS_VISPERA = [
+    { id: "platano", nombre: "un pl\xE1tano maduro", kcal: 98, hidratoG: 25, proteinaG: 1.2, grasaG: 0.4, fibraG: 2.9, ingredientes: [{ nombre: "pl\xE1tano", gramos: 110 }] },
+    { id: "zumo", nombre: "un zumo de naranja (200 ml)", kcal: 90, hidratoG: 21, proteinaG: 1.4, grasaG: 0.4, fibraG: 0.4, ingredientes: [{ nombre: "zumo de naranja", gramos: 200 }] },
+    { id: "tostada", nombre: "una tostada de pan blanco (40 g) con mermelada o miel (15 g)", kcal: 148, hidratoG: 30, proteinaG: 3.6, grasaG: 1.3, fibraG: 1.3, ingredientes: [{ nombre: "pan blanco", gramos: 40 }, { nombre: "mermelada", gramos: 15 }] },
+    { id: "isotonica", nombre: "un vaso de bebida isot\xF3nica (250 ml)", kcal: 60, hidratoG: 15, proteinaG: 0, grasaG: 0, fibraG: 0, ingredientes: [{ nombre: "bebida isot\xF3nica", gramos: 250 }] }
+  ];
+  function recetaDeTomaVispera(t2) {
+    return { id: `vispera|${t2.id}`, nombre: t2.nombre, franjas: ["media_manana", "merienda"], kcal: t2.kcal, proteina: t2.proteinaG, grasa: t2.grasaG, hidrato: t2.hidratoG, notas: "", ingredientes: t2.ingredientes };
+  }
+  function extrasVispera(dia2, d, tomaCorta, o = {}) {
+    if (!d || !tomaCorta || !(d.objetivo > 0) || !Number.isFinite(d.servido)) return null;
+    const falta = d.objetivo - d.servido;
+    if (falta <= d.objetivo * FALTA_MAXIMA_VISPERA) return null;
+    const tope = d.objetivo * (1 + TOLERANCIA_DIA) - d.servido;
+    const opciones = TOMAS_VISPERA.filter((t2) => (t2.id !== "isotonica" || o.usaIsotonica) && t2.fibraG <= FIBRA_MAX_TOMA_VISPERA_G && t2.grasaG <= GRASA_MAX_TOMA_VISPERA_G && (!o.admite || o.admite(recetaDeTomaVispera(t2))));
+    const combos = [...opciones.map((t2) => [t2]), ...opciones.flatMap((a2, i) => opciones.slice(i + 1).map((b) => [a2, b]))];
+    const kcalDe = (c2) => c2.reduce((s, t2) => s + t2.kcal, 0);
+    const caben = combos.filter((c2) => c2.length <= MAX_TOMAS_VISPERA && kcalDe(c2) <= tope);
+    if (!caben.length) return null;
+    const elegida = caben.find((c2) => falta - kcalDe(c2) <= d.objetivo * FALTA_MAXIMA_VISPERA) ?? caben.reduce((m, c2) => kcalDe(c2) > kcalDe(m) ? c2 : m);
+    const kcalExtra = kcalDe(elegida);
+    const servidoCon = d.servido + kcalExtra;
+    return { dia: dia2, tomas: elegida, kcalExtra, servidoCon, objetivo: d.objetivo, dentro: d.objetivo - servidoCon <= d.objetivo * FALTA_MAXIMA_VISPERA };
+  }
+  var MOTIVO_VISPERA = "La v\xEDspera de la prueba conviene llegar con los dep\xF3sitos llenos.";
+  function textoExtrasVispera(e) {
+    const lista6 = e.tomas.map((t2) => `${t2.nombre} (unos ${Math.round(t2.hidratoG)} g de hidratos)`);
+    return `Hoy, adem\xE1s: ${lista6.join(" y ")}, entre horas. ${MOTIVO_VISPERA}`;
   }
   return __toCommonJS(motor_exports);
 })();

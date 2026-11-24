@@ -1511,7 +1511,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const numeros = `${dHoy ? `<p class="hoy-tipo">Tipo de día: <span class="dia-tipo" data-tipo="${escaparHtml(dHoy.tipo)}">${escaparHtml(nombreTipoDia(dHoy, hayEntrenoEl(dHoy.dia)))}</span></p>
       <div class="casillas" role="group" aria-label="Cifras del plan de hoy">${casilla(dHoy.kcal, 'kcal')}${casilla(`${dHoy.proteinaG} g`, 'proteína')}${casilla(`${dHoy.hidratoG} g`, 'hidratos')}${casilla(`${dHoy.grasaG} g`, 'grasas')}</div>` : ''}
       ${dHoy && fueraHoy.some((x) => x.kcal !== undefined) && cuadreHoy ? `<p class="hoy-nota" id="hoy-numeros-fuera">Con lo que has comido fuera, hoy suma ~${Math.round((cuadreHoy.servido + kcalTomaHoy) / 10) * 10} kcal (el plan preveía ${dHoy.kcal}).</p>` : ''}
-      <p class="hoy-nota">${escaparHtml(nota)}</p>`; // #258 (punto 13): las cifras de arriba son las del plan; esta línea, lo de hoy con lo comido fuera
+      <p class="hoy-nota">${escaparHtml(nota)}</p>${(() => { const ev = vistaSemana.extrasVispera && vistaSemana.extrasVispera.get(dia); return ev ? `<p class="hoy-nota extras-vispera" id="hoy-extras-vispera">🍌 ${escaparHtml(Motor.textoExtrasVispera(ev))}</p>` : ''; })() /* #344 */}`; // #258 (punto 13): las cifras de arriba son las del plan; esta línea, lo de hoy con lo comido fuera
     const avisoAlergiaHtml = avisosAlergiasHoy.length ? `<div class="hoy-bloque" id="aviso-alergia-hoy" role="status"><p style="margin:0">${avisosAlergiasHoy[0]}${avisosAlergiasHoy.length > 1 ? ` (y ${avisosAlergiasHoy.length - 1} más en los avisos del plan)` : ''}</p></div>` : '';
     const avisoPabloHtml = (avisoPabloHoy ? `<div class="hoy-bloque" id="aviso-plan-pablo" role="status"><p style="margin:0">${avisoPabloHoy}</p></div>` : '')
       + (Motor.hayEfecto(efectoAj) ? `<div class="hoy-bloque" id="aviso-ajustes" role="status">${Motor.lineasAjustesPersona(efectoAj).map((l) => `<p style="margin:0">${escaparHtml(l)}</p>`).join('')}</div>` : ''); // #322 p3: nunca «alerta»
@@ -4724,6 +4724,24 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       plan.dias.filter((d) => (compPorDia.get(d.dia)?.hidratoMinGKg ?? 0) >= 10 && compPorDia.get(d.dia)?.fase !== 'competicion').map((d) => ({ dia: d.dia, hidratoObjetivoG: d.hidratoG })),
       cuadrado.asignaciones, recetasCuadre, cuadrado.dias, admitePostre,
     ).map((e) => [e.dia, e]));
+    // #344 (coordinación, 24/11; Pablo: «Sí, hazlo»): la víspera de la prueba, si el desayuno o la merienda se quedan cortos con cantidades
+    // normales y al día le faltan más del 3 %, una o dos tomas de hidratos fáciles (plátano, zumo, tostada con mermelada; isotónica solo si
+    // ya la usa por la carga). Las alergias mandan (`admitePostre`). Lo servido del día las cuenta: si entra en el 3 %, el día cuadra.
+    const extrasVisperaPorDia = new Map();
+    for (const x of cuadrado.dias) {
+      if (compPorDia.get(x.dia)?.fase !== 'vispera') continue;
+      const corta = slotsSemana.some((s) => s.dia === x.dia && (s.franja === 'desayuno' || s.franja === 'merienda')
+        && cuadrado.asignaciones.some((a) => a.dia === x.dia && a.franja === s.franja && a.kcalResultante < s.kcalObjetivo * Motor.PARTE_MINIMA_TOMA && (a.ajusteDia?.kcal ?? 0) >= 0));
+      const ex = Motor.extrasVispera(x.dia, x, corta, { admite: admitePostre, usaIsotonica: extrasCargaPorDia.size > 0 });
+      if (ex) extrasVisperaPorDia.set(x.dia, ex);
+    }
+    if (extrasVisperaPorDia.size) {
+      cuadrado = {
+        ...cuadrado,
+        dias: cuadrado.dias.map((x) => { const ex = extrasVisperaPorDia.get(x.dia); if (!ex) return x; const { aviso, ...resto } = x; return ex.dentro ? { ...resto, servido: ex.servidoCon, cuadrado: true } : { ...x, servido: ex.servidoCon }; }),
+        avisos: cuadrado.avisos.filter((a) => !extrasVisperaPorDia.get(a.slice(0, a.indexOf(':')))?.dentro || !a.includes(': faltan')),
+      };
+    }
     if (compensacionSemana && compensacionSemana.extras.length) { // #323 parte 2b: lo servido del día incluye lo que la app pone para compensar
       const extraDia = (d) => compensacionSemana.extras.filter((e) => e.dia === d).reduce((t, e) => t + e.kcal, 0);
       cuadrado = { ...cuadrado, dias: cuadrado.dias.map((x) => ({ ...x, servido: x.servido + extraDia(x.dia), objetivo: x.objetivo + extraDia(x.dia) })) };
@@ -4781,6 +4799,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       if (compSem && compSem.activa) {
         const kcalPorDia = new Map();
         for (const a of asignacionSemana.asignaciones) kcalPorDia.set(a.dia, (kcalPorDia.get(a.dia) ?? 0) + a.kcalResultante);
+        for (const [dx, ev] of extrasVisperaPorDia) kcalPorDia.set(dx, (kcalPorDia.get(dx) ?? 0) + ev.kcalExtra); // #344: la toma extra de la víspera cuenta
         const filas = compSem.dias.filter((x) => x.fase).map((x) => {
           const falta = x.hidratoMinGKg && plan.dias.find((p) => p.dia === x.dia) ? plan.dias.find((p) => p.dia === x.dia).kcal - (kcalPorDia.get(x.dia) ?? 0) : 0;
           const faltaTxt = Motor.faltaVisibleCompeticion(falta, x.kcalDespues)
@@ -5023,7 +5042,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             const sug = enCompeticion(d.dia) ? null : Motor.sugerenciaProteinaDia(pd, recetasCuadre, alergiasPreferencias);
             return `<p class="subt proteina-dia${pd.corta ? ' corta' : ''}" data-dia="${d.dia}">💪 ${escaparHtml(Motor.textoProteinaDia(pd))}</p>${sug ? `<p class="subt sugerencia-proteina" data-dia="${d.dia}">${escaparHtml(sug)}</p>` : ''}`;
           })()}
-          ${(() => { const cd = compPorDia.get(d.dia); if (!cd?.hidratoMinGKg || cd.fase === 'competicion') return ''; const ex = extrasCargaPorDia.get(d.dia); if (ex) return `<p class="subt extras-carga" data-dia="${d.dia}">🥤 ${escaparHtml(Motor.textoExtrasCarga(ex))}</p>${ex.aviso ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(ex.aviso)}</p>` : ''}` /* #301 parte 2 */; const n = Motor.notaHidratosCarga(d.hidratoG, Motor.hidratosServidosDia(cuadrado.asignaciones, recetasCuadre, d.dia)); return n ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(n)}</p>` : ''; })() /* #285 punto 11 */}
+          ${(() => { const cd = compPorDia.get(d.dia); if (!cd?.hidratoMinGKg || cd.fase === 'competicion') return ''; const ex = extrasCargaPorDia.get(d.dia); if (ex) return `<p class="subt extras-carga" data-dia="${d.dia}">🥤 ${escaparHtml(Motor.textoExtrasCarga(ex))}</p>${ex.aviso ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(ex.aviso)}</p>` : ''}` /* #301 parte 2 */; const n = Motor.notaHidratosCarga(d.hidratoG, Motor.hidratosServidosDia(cuadrado.asignaciones, recetasCuadre, d.dia)); return n ? `<p class="subt aviso-hidratos" data-dia="${d.dia}">🍚 ${escaparHtml(n)}</p>` : ''; })() /* #285 punto 11 */}${(() => { const ev = extrasVisperaPorDia.get(d.dia); return ev ? `<p class="subt extras-vispera" data-dia="${d.dia}" data-kcal="${ev.kcalExtra}">🍌 ${escaparHtml(Motor.textoExtrasVispera(ev))}</p>` : ''; })() /* #344 */}
           ${avisoCuadrePorDia.has(d.dia) ? `<p class="subt aviso-cuadre" data-dia="${d.dia}">⚠️ ${escaparHtml(avisoCuadrePorDia.get(d.dia).replace(/^[^:]+: /, ''))}</p>` : ''}
           ${diasRacionesCarga.has(d.dia) ? `<p class="subt nota-carga" data-dia="${d.dia}">🍝 ${escaparHtml(Motor.TEXTO_RACIONES_CARGA)}</p>` : ''}
           ${diasMenosGrasa.has(d.dia) ? `<p class="subt nota-menos-grasa" data-dia="${d.dia}">🫒 ${escaparHtml(Motor.TEXTO_MENOS_GRASA_CARGA)}</p>` : ''}
@@ -5156,7 +5175,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         vistaHoyReal = { dia: dB, reparto: repB, recetaPorSlot: new Map(conRecB.map((a) => [`${a.dia}|${a.franja}`, a])) };
       }
     }
-    vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana, asignaciones: asignacionSemana.asignaciones, compPorDia, cuadreDias: new Map(cuadrado.dias.map((x) => [x.dia, x])), kcalFueraHtml };
+    vistaSemana = { repartosPorDia, recetaPorSlot, huecoPorSlot, franjas: franjasBloque7, slots: slotsSemana, asignaciones: asignacionSemana.asignaciones, compPorDia, cuadreDias: new Map(cuadrado.dias.map((x) => [x.dia, x])), extrasVispera: extrasVisperaPorDia, kcalFueraHtml };
     pintarFija(); // ya con la vista y la asignación de esta semana (issue #142: opciones para las fijaciones que no valen)
     pintarZonaSustituciones();
     pintarResumenDia();
