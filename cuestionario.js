@@ -104,6 +104,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   const catalogoPlan = (asignaciones) => RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
   // #323 parte 2b: lo que la app pone para compensar un grupo quitado (30 g de nueces en la merienda…) también se compra.
   let compensacionSemana = null;
+  let extrasTomasSemana = { vispera: [], carga: [] }; // #345: las tomas extra de la víspera (#344) y de la carga (#301 p2) también se compran
   function pedidoCompra(asignaciones) {
     asignaciones = Motor.quitarComidasFamiliares(asignaciones, familiaresCompra()); // #332 p4: la comida familiar no suma ingredientes
     const items = asignaciones.map((a) => ({ recetaId: a.receta, veces: 1, racion: a.racionAjustada }));
@@ -114,6 +115,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       if (!catalogo.some((r) => r.id === id)) catalogo.push({ id, nombre: e.alimento, franjas: [e.franja], kcal: e.kcal, proteina: e.proteina ?? 0, grasa: e.grasa ?? 0, hidrato: e.hidrato ?? 0, notas: '', ingredientes: [{ nombre: e.alimento, gramos: e.gramos }] });
       items.push({ recetaId: id, veces: 1, racion: 1 });
     }
+    // #345 (la prueba de navegador compara con window.__SIN_EXTRAS_COMPRA_PRUEBA: la misma semana sin las tomas)
+    const ex = window.__SIN_EXTRAS_COMPRA_PRUEBA ? { items: [], recetas: [] } : Motor.extrasParaCompra(dias, extrasTomasSemana.vispera, extrasTomasSemana.carga);
+    for (const r of ex.recetas) if (!catalogo.some((x) => x.id === r.id)) catalogo.push(r);
+    items.push(...ex.items);
     return { items, catalogo };
   }
 
@@ -4735,6 +4740,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const ex = Motor.extrasVispera(x.dia, x, corta, { admite: admitePostre, usaIsotonica: extrasCargaPorDia.size > 0 });
       if (ex) extrasVisperaPorDia.set(x.dia, ex);
     }
+    extrasTomasSemana = { vispera: [...extrasVisperaPorDia.values()], carga: [...extrasCargaPorDia.values()] }; // #345
     if (extrasVisperaPorDia.size) {
       cuadrado = {
         ...cuadrado,

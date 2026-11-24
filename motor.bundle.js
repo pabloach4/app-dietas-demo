@@ -343,6 +343,7 @@ var Motor = (() => {
     extraDelDia: () => extraDelDia,
     extrasCarga: () => extrasCarga,
     extrasDe: () => extrasDe,
+    extrasParaCompra: () => extrasParaCompra,
     extrasVispera: () => extrasVispera,
     factorCocido: () => factorCocido,
     faltaVisibleCompeticion: () => faltaVisibleCompeticion,
@@ -484,6 +485,7 @@ var Motor = (() => {
     recetaConCarga: () => recetaConCarga,
     recetaDeId: () => recetaDeId,
     recetaDeTomaVispera: () => recetaDeTomaVispera,
+    recetaIsotonica: () => recetaIsotonica,
     recetaSugeridaProteina: () => recetaSugeridaProteina,
     recetasCompuestas: () => recetasCompuestas,
     recetasParaDerivado: () => recetasParaDerivado,
@@ -13867,6 +13869,42 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
   function textoExtrasVispera(e) {
     const lista6 = e.tomas.map((t2) => `${t2.nombre} (unos ${Math.round(t2.hidratoG)} g de hidratos)`);
     return `Hoy, adem\xE1s: ${lista6.join(" y ")}, entre horas. ${MOTIVO_VISPERA}`;
+  }
+
+  // src/motor/extras-compra.ts
+  function recetaIsotonica(iso) {
+    return {
+      id: `carga|isotonica|${iso.ml}`,
+      nombre: `Bebida isot\xF3nica (${iso.ml} ml)`,
+      franjas: ["media_manana", "merienda"],
+      kcal: iso.kcal,
+      proteina: 0,
+      grasa: 0,
+      hidrato: iso.hidratoG,
+      notas: "",
+      ingredientes: [{ nombre: "bebida isot\xF3nica", gramos: iso.ml }]
+    };
+  }
+  function extrasParaCompra(dias, vispera = [], carga = []) {
+    const enCompra = new Set(dias);
+    const items = [];
+    const recetas = /* @__PURE__ */ new Map();
+    for (const e of vispera) {
+      if (!enCompra.has(e.dia)) continue;
+      for (const t2 of e.tomas) {
+        const r = recetaDeTomaVispera(t2);
+        recetas.set(r.id, r);
+        items.push({ recetaId: r.id, veces: 1, racion: 1 });
+      }
+    }
+    for (const e of carga) {
+      if (!enCompra.has(e.dia)) continue;
+      const iso = recetaIsotonica(e.isotonica);
+      recetas.set(iso.id, iso);
+      items.push({ recetaId: iso.id, veces: 1, racion: 1 });
+      for (const t2 of e.tomas) items.push({ recetaId: t2.receta, veces: 1, racion: 1 });
+    }
+    return { items, recetas: [...recetas.values()] };
   }
   return __toCommonJS(motor_exports);
 })();
