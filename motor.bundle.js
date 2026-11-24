@@ -102,6 +102,7 @@ var Motor = (() => {
     MIN_DURACION_ESCRITO: () => MIN_DURACION_ESCRITO,
     MIN_GRASA_PLATO_CARGA: () => MIN_GRASA_PLATO_CARGA,
     MOTIVO_VISPERA: () => MOTIVO_VISPERA,
+    NOMBRES_VISIBLES: () => NOMBRES_VISIBLES,
     NOMBRE_FRANJA_CENTRO: () => NOMBRE_FRANJA_CENTRO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
     NOMBRE_TIPO_OPOSICION: () => NOMBRE_TIPO_OPOSICION,
@@ -443,6 +444,7 @@ var Motor = (() => {
     nivelesConAjustes: () => nivelesConAjustes,
     noSeReescala: () => noSeReescala,
     noValeDesayunoCarrera: () => noValeDesayunoCarrera,
+    nombreVisible: () => nombreVisible,
     normalizarAjustesNavidad: () => normalizarAjustesNavidad,
     normalizarApetece: () => normalizarApetece,
     normalizarBusqueda: () => normalizarBusqueda,
@@ -1421,6 +1423,7 @@ mostaza,riesgo,si,"Mostaza preparada amarilla: FACE p5, convencional; no confund
 ketchup,riesgo,si,"Ketchup preparado: FACE p5, convencional; comprobar etiqueta. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 vinagre de vino,sin_gluten_natural,si,"Vinagre de vino: FACE p2, generico; no confundir con cremas balsamicas. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 vinagre de arroz,sin_gluten_natural,si,"Vinagre de arroz: FACE p2, generico; no extender a salsas mezcladas. Clasificacion generica, no garantia ni certificacion del producto; comprobar siempre etiqueta y avisos de trazas.",https://celiacos.org/wp-content/uploads/2026/09/Clasificacion-de-alimentos-2026.pdf;https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
+edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa), sin gluten por naturaleza (FACE: gen\xE9rico)",https://celiacos.org/tratamiento/clasificacion-de-los-alimentos/
 `;
 
   // src/motor/gluten.ts
@@ -5497,7 +5500,7 @@ tomate triturado,kg,1.25,"Hacendado, bote 800 g",Mercadona: https://tienda.merca
 tortilla de trigo,kg,3.19,"tortillas de trigo Hacendado (wraps), paquete",Mercadona: https://tienda.mercadona.es/product/80859/tortillas-trigo-hacendado-paquete,2026-10-20
 tortita de ma\xEDz,kg,9.17,"tortitas de ma\xEDz Hacendado, paquete",Mercadona: https://tienda.mercadona.es/product/14158/tortitas-maiz-hacendado-paquete,2026-10-20
 yogur de soja,kg,3.00,"postre de soja natural Hacendado, pack",Mercadona: https://tienda.mercadona.es/product/20200/postre-soja-hacendado-natural-pack-4,2026-10-20
-yogur griego,kg,1.93,"griego natural Hacendado, pack 6",Mercadona: https://tienda.mercadona.es/product/20559/yogur-griego-natural-hacendado-pack-6,2026-10-20
+yogur griego,kg,,"sin precio: la app cuenta un griego 0 % (USDA 170894: 59 kcal y 10,2 g de prote\xEDna por 100 g); el precio de un 0 % o skyr natural est\xE1 pendiente (#348).",Mercadona: https://tienda.mercadona.es/,2026-11-24
 yogur natural,kg,1.33,"natural Hacendado, pack 6",Mercadona: https://tienda.mercadona.es/product/22313/yogur-natural-hacendado-pack-6,2026-10-20
 zanahoria,kg,1.00,paquete 1 kg,Mercadona: https://tienda.mercadona.es/product/69586/zanahorias-paquete,2026-10-20
 gazpacho,l,1.60,"tradicional Hacendado, botella 1 l; a\xF1adido por el bucle (#265 J, revisi\xF3n)",Mercadona: https://tienda.mercadona.es/product/15604/gazpacho-tradicional-hacendado-botella,2026-10-26
@@ -5556,6 +5559,7 @@ mostaza,kg,3.222,"Mostaza cl\xE1sica Hacendado; formato comercial 0.388 kg; prec
 ketchup,kg,1.750,"Ketchup Hacendado; formato comercial 0.6 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/23579/ketchup-hacendado-bote,2026-11-18
 vinagre de vino,l,,"sin precio: Solo vinagre de vino blanco, no tinto de la ficha; no equivalencia impuesta.",Mercadona: https://tienda.mercadona.es/,2026-11-18
 vinagre de arroz,l,,sin precio: No encontrado vinagre de arroz en el catalogo consultado.,Mercadona: https://tienda.mercadona.es/,2026-11-18
+edamame,kg,,"sin precio: pendiente de un producto desgranado congelado (#347).",Mercadona: https://tienda.mercadona.es/,2026-11-24
 `;
 
   // src/motor/atributos-datos.ts
@@ -5970,6 +5974,13 @@ R518,horno;sarten,plato_combinado,caliente,no
 R519,sarten,huevo_plato,caliente,no
 R520,horno,huevo_plato,caliente,no
 R521,horno;cocido,pasta,caliente,no
+R522,crudo,yogur_fruta,cuchara_fria,no
+R523,crudo,yogur_fruta,cuchara_fria,no
+R524,cocido,bocadillo_tostada,frio,no
+R525,sarten,huevo_plato,caliente,no
+R526,plancha,plato_combinado,caliente,no
+R527,cocido,verduras_plato,caliente,no
+R528,crudo,plato_combinado,frio,no
 `;
 
   // src/motor/atributos-recetas.ts
@@ -6684,6 +6695,7 @@ mostaza,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congela
 ketchup,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Presentacion comercial estable cerrada: despensa fresca/seca segun etiqueta; tras abrir, seguir instrucciones del fabricante, con nevera cuando lo indique. No se propone congelacion ni conversion ml a g. Instruccion del producto de referencia, transcrita del comercio: Una vez abierto conservar en el frigor\xEDfico. Se recomienda consumirlo antes de 1 mes.",https://tienda.mercadona.es/product/23579/ketchup-hacendado-bote;https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
 vinagre de vino,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Presentacion comercial estable cerrada: despensa fresca/seca segun etiqueta; tras abrir, seguir instrucciones del fabricante, con nevera cuando lo indique. No se propone congelacion ni conversion ml a g.",https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
 vinagre de arroz,despensa,,"PENDIENTE_CONGELACION: no se afirma que sea imposible congelar; falta pauta especifica para esta presentacion. Presentacion comercial estable cerrada: despensa fresca/seca segun etiqueta; tras abrir, seguir instrucciones del fabricante, con nevera cuando lo indique. No se propone congelacion ni conversion ml a g.",https://www.aesan.gob.es/actualidad/actualidad-noticias/fechas,no
+edamame,congelador,si,"#347: se compra congelado (desgranado o en vaina); se cuece desde congelado siguiendo el envase. No romper la cadena de fr\xEDo.",https://www.aesan.gob.es/AECOSAN/docs/documentos/publicaciones/seguridad_alimentaria/congelar_descongelar.pdf,no
 `;
 
   // src/motor/limites-ingredientes-datos.ts
@@ -6844,6 +6856,7 @@ mostaza,3,15,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos
 ketchup,5,20,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
 vinagre de vino,3,20,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos (ajo, especias, sal, vinagre...)\xBB (20 g). Sulfitos: el vinagre de vino suele declararlos. | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
 vinagre de arroz,3,20,condimento,"datos/limites-por-alimento.csv, familia \xABCondimentos (ajo, especias, sal, vinagre...)\xBB (20 g). | #333 tanda 1: banda de los alimentos nuevos, propuesta.",estimacion
+edamame,75,200,proteina_vegetal,"Grano cocido sin vaina. #347: banda por analog\xEDa con tofu firme (75-200 g), sin fuente propia de raci\xF3n de edamame; 150 g es la raci\xF3n del tentempi\xE9 de Instinct (#328). | Propuesta, no activar sin validaci\xF3n de contexto.",estimacion
 `;
 
   // src/motor/limites-ingredientes.ts
@@ -8927,7 +8940,7 @@ R32,Tostadas de pan blanco con pavo y tomate y un yogur,desayuno,510,39.4,16.8,4
 R33,"Bol de arroz, at\xFAn y claras",comida,551,44.0,10.0,68.7,EJEMPLO,unico,2.3,claras de huevo,cereal,huevo;pescado,no,no,si,pendiente_ficha,si,20,recetario42,"Cuajar las claras; mezclar con el arroz, el at\xFAn y el pimiento; ali\xF1ar.",normal
 R34,Merluza al horno con patata y jud\xEDas verdes,comida;cena,453,35.6,11.3,54.2,EJEMPLO | pescado/carne con equivalente USDA aproximado,unico,9.3,merluza,patata,pescado,no,no,si,pendiente_ficha,no,25,recetario42,Hornear el pescado y la patata; cocer las jud\xEDas; ali\xF1ar.,normal
 R35,Pasta con pavo y tomate (d\xEDa de carga),comida,681,51.2,14.4,84.2,EJEMPLO,unico,5.2,pechuga de pavo asada,cereal,gluten,no,no,si,no,si,20,recetario42,"Cocer la pasta; mezclar con el tomate pochado, el pavo y el aceite.",carga
-R36,"Bol r\xE1pido de yogur griego, avena y pl\xE1tano",merienda;media_manana,580,37.0,15.1,79.1,EJEMPLO,unico,10.2,,avena,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,5,recetario42,Mezclar todo en un bol.,normal
+R36,"Bol r\xE1pido de yogur griego 0 %, avena y pl\xE1tano",merienda;media_manana,580,37.0,15.1,79.1,EJEMPLO,unico,10.2,,avena,frutos de c\xE1scara;gluten;l\xE1cteos,si,no,no,no,no,5,recetario42,Mezclar todo en un bol.,normal
 R37,Tortilla de calabac\xEDn con tomate y pan integral,cena,462,25.1,24.0,38.3,EJEMPLO | fibraAlta,unico,7.3,huevo,pan,gluten;huevo,si,no,pendiente_ficha,no,no,20,recetario42,Pochar el calabac\xEDn y la cebolla y cuajar el huevo; servir con el tomate y el pan.,normal
 R38,Crema de calabaza con pollo y pan integral,cena,557,45.4,14.0,65.4,EJEMPLO | fibraAlta | doble_base | carga,unico,7.4,pechuga de pollo asada,pan;patata,gluten,no,no,pendiente_ficha,no,no,30,recetario42,"Cocer la calabaza, el puerro y la patata; triturar; servir con el pollo y el pan.",carga
 R39,Pavo a la plancha con boniato y br\xF3coli,cena,548,48.4,13.2,60.5,EJEMPLO,unico,11.4,pechuga de pavo,patata,,no,no,si,pendiente_ficha,no,25,recetario42,Asar el boniato; cocer el br\xF3coli; hacer el pavo a la plancha con el aceite.,normal
@@ -8991,12 +9004,12 @@ R96,Hummus con zanahoria,media_manana;merienda,183,5.6,10.9,18.6,EJEMPLO | fibra
 R97,Pl\xE1tano con almendras,media_manana;merienda,205,5.3,10.3,27.1,EJEMPLO,unico,5.1,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,2,nuevo,Tomar junto.,normal
 R98,Bocadillo peque\xF1o de pavo y tomate,media_manana;merienda,226,17.7,2.9,31.2,EJEMPLO,unico,2.1,pechuga de pavo asada,pan,gluten,no,no,pendiente_ficha,no,si,5,nuevo,Pan con pavo asado y tomate.,normal
 R99,Tostada de at\xFAn y tomate,media_manana;merienda,176,12.6,2.1,26.7,EJEMPLO,unico,2.0,at\xFAn en lata,pan,gluten;pescado,no,no,pendiente_ficha,no,si,5,nuevo,Pan tostado con at\xFAn escurrido y tomate.,normal
-R100,Batido de yogur griego y fresas,media_manana;merienda,170,19.3,2.9,17.9,EJEMPLO,unico,2.0,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Triturar.,normal
+R100,Batido de yogur griego 0 % y fresas,media_manana;merienda,170,19.3,2.9,17.9,EJEMPLO,unico,2.0,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Triturar.,normal
 R102,Frutos secos y mandarina,media_manana;merienda,264,6.7,17.7,25.3,EJEMPLO,unico,5.6,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,si,2,nuevo,Pu\xF1ado de frutos secos y fruta.,normal
 R103,Yogur con avena y miel,media_manana;merienda,176,7.0,5.4,26.0,EJEMPLO,unico,2.0,,avena,gluten;l\xE1cteos,si,no,no,no,si,5,nuevo,Mezclar.,normal
 R104,Manzana con crema de cacahuete,media_manana;merienda,168,3.7,8.0,24.1,EJEMPLO,unico,4.3,,,cacahuete,si,pendiente_ficha,pendiente_ficha,pendiente_ficha,si,3,nuevo,Manzana en gajos con la crema.,normal
 R105,Yogur natural con fresas,comida;cena,108,5.0,4.4,13.5,EJEMPLO,postre,2.0,,,l\xE1cteos,si,no,no,pendiente_ficha,si,3,nuevo,Mezclar.,normal
-R106,Yogur griego con miel y nueces,comida;cena,163,14.3,7.0,12.5,EJEMPLO,postre,0.7,,,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,si,3,nuevo,Mezclar.,normal
+R106,Yogur griego 0 % con miel y nueces,comida;cena,163,14.3,7.0,12.5,EJEMPLO,postre,0.7,,,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,si,3,nuevo,Mezclar.,normal
 R107,Manzana asada con canela,comida;cena,111,0.5,0.3,29.8,EJEMPLO,postre,4.9,,,,si,no,si,pendiente_ficha,si,25,nuevo,Hornear la manzana con canela y un toque de miel.,normal
 R108,Macedonia de frutas,comida;cena,162,2.7,0.8,40.4,EJEMPLO,postre,7.2,,,,si,si,si,pendiente_ficha,no,10,nuevo,Trocear y mezclar.,normal
 R109,Pl\xE1tano con yogur y cacao,comida;cena,177,6.4,5.1,31.6,EJEMPLO,postre,4.5,,,l\xE1cteos,si,no,no,pendiente_ficha,si,5,nuevo,Pl\xE1tano troceado con yogur y cacao.,normal
@@ -9004,7 +9017,7 @@ R110,Pera cocida con canela,comida;cena,116,0.8,0.3,31.3,EJEMPLO,postre,6.7,,,,s
 R111,Mel\xF3n,comida;cena,85,2.1,0.5,20.4,EJEMPLO,postre,2.2,,,,si,si,si,pendiente_ficha,si,2,nuevo,Servir fr\xEDo.,normal
 R112,Sand\xEDa,comida;cena,90,1.8,0.5,22.6,EJEMPLO,postre,1.2,,,,si,si,si,pendiente_ficha,si,2,nuevo,Servir fr\xEDa.,normal
 R113,Naranja con almendras,comida;cena,181,5.1,7.7,26.7,EJEMPLO,postre,6.7,,,frutos de c\xE1scara,si,si,si,pendiente_ficha,no,3,nuevo,Naranja pelada con almendras.,normal
-R114,Kiwi con yogur griego,comida;cena,147,14.1,1.1,22.1,EJEMPLO,postre,3.6,,,l\xE1cteos,si,no,no,pendiente_ficha,si,3,nuevo,Kiwi troceado con el yogur.,normal
+R114,Kiwi con yogur griego 0 %,comida;cena,147,14.1,1.1,22.1,EJEMPLO,postre,3.6,,,l\xE1cteos,si,no,no,pendiente_ficha,si,3,nuevo,Kiwi troceado con el yogur.,normal
 R115,Compota de manzana sin az\xFAcar,comida;cena,106,0.6,0.4,28.4,EJEMPLO,postre,5.3,,,,si,si,si,pendiente_ficha,si,20,nuevo,Cocer la manzana pelada con canela y triturar.,normal
 R116,Tostada blanca con huevo y yogur,desayuno;media_manana;merienda,322,16.3,14.4,31.0,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,1.35,huevo,pan,gluten;huevo;l\xE1cteos,si,no,no,no,si,10,nuevo,Tostar el pan; cocinar bien el huevo con el aceite. Servir el yogur aparte.,normal
 R117,Arroz con leche y canela,desayuno;media_manana;merienda,278,9.5,4.2,50.2,EJEMPLO | bajo fibra base \u22643g; no garantiza raci\xF3n escalada,unico,0.81,,cereal,l\xE1cteos,si,no,no,pendiente_ficha,si,10,nuevo,Pesar arroz seco y cocerlo en leche a fuego suave hasta que est\xE9 hecho; a\xF1adir miel y canela.,normal
@@ -9171,7 +9184,7 @@ R422,Huevos revueltos con salm\xF3n y pan sin gluten,desayuno,432,28.6,26.0,19.0
 R423,"Huevo cocido con tortitas de ma\xEDz, aguacate y pavo",desayuno,448,40.2,18.9,28.5,EJEMPLO | fibraAlta,unico,4.12,huevo cocido,tortita de ma\xEDz,huevo,no,no,pendiente_ficha,si,si,15,nuevo,"Cocer el huevo 10 minutos. Machacar el aguacate con el tomate y servir con las tortitas, el huevo en rodajas y el pavo.",normal
 R424,Revuelto de claras con pavo y pan sin gluten,desayuno,433,43.0,15.1,28.6,EJEMPLO,unico,2.58,claras de huevo,pan,huevo,no,no,pendiente_ficha,si,si,10,nuevo,Cuajar las claras con el aceite y a\xF1adir el pavo en dados. Servir con el pan sin gluten.,normal
 R425,"Pan sin gluten con tortilla francesa, salm\xF3n y tomate",desayuno,446,29.3,26.2,22.1,EJEMPLO,unico,2.68,huevo,pan,huevo;pescado,no,no,pendiente_ficha,si,si,10,nuevo,"Hacer la tortilla francesa con el aceite. Servir con el salm\xF3n, el pan sin gluten tostado y el tomate rallado.",normal
-R426,"Yogur griego con copos de avena sin gluten, fresas y miel",desayuno,332,26.3,3.7,50.2,EJEMPLO,unico,6.06,yogur griego,copos de avena sin gluten,l\xE1cteos,si,no,no,si,no,5,nuevo,Mezclar el yogur con los copos de avena sin gluten y las fresas en trozos; terminar con la miel.,normal
+R426,"Yogur griego 0 % con copos de avena sin gluten, fresas y miel",desayuno,332,26.3,3.7,50.2,EJEMPLO,unico,6.06,yogur griego,copos de avena sin gluten,l\xE1cteos,si,no,no,si,no,5,nuevo,Mezclar el yogur con los copos de avena sin gluten y las fresas en trozos; terminar con la miel.,normal
 R427,"Gachas de copos de avena sin gluten con leche, manzana y canela",desayuno,344,13.5,7.4,58.1,EJEMPLO,unico,7.98,leche semidesnatada,copos de avena sin gluten,l\xE1cteos,si,no,no,si,no,10,nuevo,Cocer los copos con la leche 5 minutos removiendo; servir con la manzana en dados y la canela.,normal
 R428,"Pan sin gluten con reques\xF3n y miel, y una naranja",desayuno,303,12.5,6.2,51.5,EJEMPLO,unico,5.77,reques\xF3n,pan,l\xE1cteos,si,no,no,si,no,5,nuevo,Untar el pan sin gluten con el reques\xF3n y la miel. Servir con la naranja.,normal
 R429,"Yogur natural con copos de avena sin gluten, kiwi y almendras",desayuno,421,16.5,17.1,54.3,EJEMPLO,unico,8.91,yogur natural,copos de avena sin gluten,l\xE1cteos;frutos de c\xE1scara,si,no,no,si,no,5,nuevo,"Mezclar el yogur con los copos de avena sin gluten, el kiwi en trozos y las almendras picadas.",normal
@@ -9180,7 +9193,7 @@ R431,At\xFAn con tortitas de ma\xEDz,media_manana;merienda,145,13.9,1.2,20.3,EJE
 R432,Salm\xF3n con tortitas de ma\xEDz y tomate,media_manana;merienda,237,16.6,10.0,19.8,EJEMPLO | fibraAlta,unico,1.34,salm\xF3n,tortita de ma\xEDz,pescado,no,no,pendiente_ficha,si,si,5,nuevo,Servir el salm\xF3n en lonchas finas sobre las tortitas con el tomate rallado.,normal
 R433,Yogur natural con pl\xE1tano y copos de avena sin gluten,media_manana;merienda,223,7.8,5.6,37.6,EJEMPLO,unico,4.10,yogur natural,copos de avena sin gluten,l\xE1cteos,si,no,no,si,si,5,nuevo,Mezclar el yogur con el pl\xE1tano en rodajas y los copos de avena sin gluten.,normal
 R434,Pan sin gluten con reques\xF3n y tomate,media_manana;merienda,144,8.5,4.3,18.1,EJEMPLO | fibraAlta,unico,2.01,reques\xF3n,pan,l\xE1cteos,si,no,no,si,si,5,nuevo,Untar el pan sin gluten con el reques\xF3n y cubrir con el tomate en rodajas.,normal
-R435,Mandarina con yogur griego y almendras,media_manana;merienda,196,13.5,5.8,25.8,EJEMPLO,unico,3.95,yogur griego,fruta,l\xE1cteos;frutos de c\xE1scara,si,no,no,si,si,5,nuevo,Servir el yogur con la mandarina en gajos y las almendras picadas.,normal
+R435,Mandarina con yogur griego 0 % y almendras,media_manana;merienda,196,13.5,5.8,25.8,EJEMPLO,unico,3.95,yogur griego,fruta,l\xE1cteos;frutos de c\xE1scara,si,no,no,si,si,5,nuevo,Servir el yogur con la mandarina en gajos y las almendras picadas.,normal
 R436,Arroz con pollo y verduras,comida,549,34.2,14.2,69.9,EJEMPLO,unico,5.51,pechuga de pollo,arroz,,no,no,pendiente_ficha,si,no,35,nuevo,"Sofre\xEDr la cebolla y el pimiento, dorar el pollo en dados, a\xF1adir el tomate y el arroz con el doble de agua; cocer 18 minutos. Pesar el arroz en seco.",normal
 R437,Merluza a la plancha con patata cocida y jud\xEDas verdes,comida,400,31.3,11.2,45.4,EJEMPLO,unico,8.25,merluza,patata,pescado,no,no,si,si,no,30,nuevo,Cocer la patata y las jud\xEDas; hacer la merluza a la plancha. Ali\xF1ar con el aceite. Pesar la patata en crudo.,normal
 R438,Ternera magra con boniato asado y br\xF3coli,comida,487,35.9,16.7,50.2,EJEMPLO,unico,9.90,ternera magra (solomillo de aguja),boniato,,no,no,si,si,no,40,nuevo,Asar el boniato 35 minutos; cocer el br\xF3coli al vapor y hacer la ternera a la plancha. Ali\xF1ar con el aceite.,normal
@@ -9233,7 +9246,7 @@ R492,Bizcocho de taza de pl\xE1tano y avena al horno,desayuno,376,16.6,12.1,53.2
 R493,"Bol de pollo glaseado con arroz, aguacate y mango",comida;cena,556,36.4,15.2,68.3,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P4-4): cifras USDA SR Legacy sin validar",unico,4.86,pechuga de pollo,cereal,gluten;mostaza;soja,no,no,si,no,no,25,dietfarma-combinacion,"Cocer el arroz y dejarlo templar. Trocear el pollo, sazonarlo con el ajo en polvo, pimienta y la mitad del aceite, y dorarlo en una sart\xE9n muy caliente; reservar. En la misma sart\xE9n, a fuego bajo, reducir dos minutos la salsa de soja con la mostaza, la miel y el zumo de lim\xF3n. Volver a echar el pollo y cocinarlo en la salsa unos 5 minutos, hasta que est\xE9 bien hecho. Servir el arroz con el pollo, el aguacate y el mango en dados, regando con la salsa.",normal
 R494,Hamburguesitas de at\xFAn y zanahoria con r\xFAcula y parmesano,comida;cena,337,29,15.2,21.5,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P4-5): cifras USDA SR Legacy sin validar; adaptaciones: copos de avena 15\u219220 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,4.19,at\xFAn en lata,avena,gluten;huevo;l\xE1cteos;pescado;sulfitos,no,no,no,no,no,20,dietfarma-combinacion,"Escurrir el at\xFAn, rallar la zanahoria y picar la cebolla y el perejil. Moler los copos de avena. Mezclarlo todo con el huevo, sal y pimienta y formar dos hamburguesas. Hacerlas en la sart\xE9n con parte del aceite, unos 4 minutos por cada lado, hasta que est\xE9n hechas por dentro. Acompa\xF1ar con la r\xFAcula ali\xF1ada con el vinagre, el resto del aceite y el parmesano.",normal
 R495,Alb\xF3ndigas de pollo y queso cottage en salsa de tomate,comida;cena,439,39.3,22.6,20,"EJEMPLO | cottage_en_elaboracion | dietfarma-combinacion (#333 tanda 1, P4-9): cifras USDA SR Legacy sin validar; adaptaciones: huevo 15\u219250 g para llegar a la raci\xF3n m\xEDnima de comida o cena; queso cottage 45\u219260 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,3.57,carne picada de pollo,pan,gluten;huevo;l\xE1cteos,no,no,no,no,no,30,dietfarma-combinacion,"Las cantidades son para una raci\xF3n; para tres d\xEDas, multiplicar por tres. Mezclar el pollo picado con el queso cottage, el huevo, el pan rallado, el or\xE9gano, el ajo en polvo, sal y pimienta, sin amasar demasiado. Formar las alb\xF3ndigas con las manos mojadas y dorarlas en la sart\xE9n con el aceite. A\xF1adir el tomate triturado, tapar y dejar unos 15 minutos a fuego bajo, hasta que est\xE9n hechas por dentro. Servir con el parmesano rallado por encima.",normal
-R496,Tarta de yogur griego y pl\xE1tano con ar\xE1ndanos,merienda,115,11.2,2.8,11.9,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P4-11): cifras USDA SR Legacy sin validar",postre,1.14,,fruta,huevo;l\xE1cteos,si,no,no,pendiente_ficha,si,60,dietfarma-combinacion,"Los gramos son de una raci\xF3n (un cuarto de la tarta); para la tarta entera, por cuatro. Triturar el pl\xE1tano con el yogur y el huevo y a\xF1adir los ar\xE1ndanos con cuidado. Verter en un molde de unos 18 cm con papel de horno y hornear a 180 \xB0C 45-50 minutos, hasta que los bordes est\xE9n firmes y el centro cuajado. Dejar enfriar del todo antes de desmoldar. Aguanta 3-4 d\xEDas en la nevera.",normal
+R496,Tarta de yogur griego 0 % y pl\xE1tano con ar\xE1ndanos,merienda,115,11.2,2.8,11.9,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P4-11): cifras USDA SR Legacy sin validar",postre,1.14,,fruta,huevo;l\xE1cteos,si,no,no,pendiente_ficha,si,60,dietfarma-combinacion,"Los gramos son de una raci\xF3n (un cuarto de la tarta); para la tarta entera, por cuatro. Triturar el pl\xE1tano con el yogur y el huevo y a\xF1adir los ar\xE1ndanos con cuidado. Verter en un molde de unos 18 cm con papel de horno y hornear a 180 \xB0C 45-50 minutos, hasta que los bordes est\xE9n firmes y el centro cuajado. Dejar enfriar del todo antes de desmoldar. Aguanta 3-4 d\xEDas en la nevera.",normal
 R497,"S\xE1ndwich de huevo, mozzarella y tomate en air fryer",desayuno;cena,283,19.1,10.2,28.8,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, P4-12a): cifras USDA SR Legacy sin validar; adaptaciones: queso light en lonchas: Sin ficha de \xABlonchas light\xBB; se adapta con mozzarella light (170847, semidesnatada), que funde igual en el s\xE1ndwich.; tomate 30\u219240 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,4.51,huevo,pan,gluten;huevo;l\xE1cteos,si,no,no,no,no,15,dietfarma-combinacion,"Hacer un agujero en el centro de una rebanada. Sobre la otra, poner la mozzarella y el tomate en rodajas y cubrir con la rebanada del agujero. Cascar el huevo en el hueco con or\xE9gano y sal. Air fryer a 180 \xB0C 8-10 minutos, hasta que el huevo est\xE9 cuajado.",normal
 R498,Tortitas de pl\xE1tano y avena en air fryer,desayuno;merienda,316,12.7,7.7,51.6,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P4-12b): cifras USDA SR Legacy sin validar",unico,7.18,huevo,avena,gluten;huevo,si,no,si,no,no,15,dietfarma-combinacion,"Chafar el pl\xE1tano y mezclarlo con la avena, el huevo, la levadura y la canela. Repartir la masa en moldecitos aptos para air fryer y cocinar a 175 \xB0C 8-12 minutos, d\xE1ndoles la vuelta a mitad.",normal
 R499,Pizza de masa de avena y yogur con at\xFAn y champi\xF1ones,comida;cena,467,45.7,12,45.7,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, P5-1): cifras USDA SR Legacy sin validar; adaptaciones: r\xFAcula 10\u219220 g para llegar a la raci\xF3n m\xEDnima de comida o cena",unico,7.42,at\xFAn en lata,avena,gluten;l\xE1cteos;pescado,no,no,no,no,no,25,dietfarma-combinacion,"Moler la avena y mezclarla con el yogur y una pizca de sal hasta tener una masa (si se pega, un poco m\xE1s de avena). Extenderla fina sobre papel de horno y hornearla sola 5 minutos a 200 \xB0C. Cubrir con el tomate triturado, la mozzarella, el at\xFAn y los champi\xF1ones en l\xE1minas, y hornear 5-10 minutos m\xE1s. A\xF1adir la r\xFAcula al sacarla.",normal
@@ -9258,7 +9271,14 @@ R517,Pollo glaseado al estilo coreano con arroz,comida;cena,505,42.3,8.7,61.2,"E
 R518,Lomo de bacalao al horno con pisto y mayonesa gratinada,comida;cena,336,34.1,17.9,9.2,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, 9nov-bacalao): cifras USDA SR Legacy sin validar; adaptaciones: pisto en conserva: Sin ficha del pisto de bote; se adapta con un pisto casero de verduras de la app (190 g en lugar de 150).",unico,3.09,bacalao fresco,,huevo;mostaza;pescado,no,no,si,pendiente_ficha,no,35,dietfarma-combinacion,"Si el bacalao es congelado, descongelarlo en la nevera desde la v\xEDspera. Pochar el calabac\xEDn, el pimiento y la cebolla en trozos con el aceite y a\xF1adir el tomate triturado hasta tener un pisto. Extenderlo en una fuente de horno y poner encima el bacalao. Cubrir la parte de arriba del pescado con una capa fina de mayonesa y hornear a 200 \xB0C unos 20 minutos, hasta que se dore y el bacalao se separe en lascas.",normal
 R519,Tortilla fina de patata doblada con mozzarella y pavo,comida;cena,537,39.4,26.3,35.2,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, 9nov-tortilla-fina): cifras USDA SR Legacy sin validar",unico,4.03,huevo,patata,huevo;l\xE1cteos,no,no,no,pendiente_ficha,no,25,dietfarma-combinacion,"Cortar la patata pelada en l\xE1minas muy finas. En una sart\xE9n antiadherente con el aceite, colocarlas solapadas cubriendo el fondo, tapar y dejar unos 5 minutos a fuego medio, hasta que est\xE9n tiernas. Echar por encima el huevo batido con sal para que ligue la base. Repartir la mozzarella y poner el pavo en una mitad. Cuando la base se despegue, doblar como una empanadilla y dejar un par de minutos m\xE1s, hasta que se dore y la mozzarella funda.",normal
 R520,"Cestita de tortilla integral con huevo, jam\xF3n cocido y mozzarella en air fryer",desayuno;cena,491,37.1,27.8,22.3,"EJEMPLO | fibraAlta | dietfarma-combinacion (#333 tanda 1, 9nov-tortilla-harina): cifras USDA SR Legacy sin validar",unico,4.61,huevo,pan,gluten;huevo;l\xE1cteos,no,no,no,no,no,25,dietfarma-combinacion,"Forrar la cesta de la air fryer con papel y encajar la tortilla de trigo con los bordes hacia arriba. Cascar dentro los huevos y batirlos ah\xED con sal y la pimienta. Cubrir con el jam\xF3n cocido, el tomate en rodajas y la mozzarella. Air fryer a 170 \xB0C unos 20-25 minutos, hasta que el huevo cuaje y la mozzarella se dore; reposar un par de minutos y cortar.",normal
-R521,Pasta con salm\xF3n y feta al horno con tomate y espinacas,comida,692,41.8,30.2,62.8,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, 9nov-pasta-salmon): cifras USDA SR Legacy sin validar",unico,5.53,salm\xF3n,cereal,gluten;l\xE1cteos;pescado,no,no,no,no,no,35,dietfarma-combinacion,"Poner en una fuente de horno el salm\xF3n sin piel y el feta, uno junto al otro, con los tomates (partidos si son grandes), las espinacas y el ajo picado alrededor. Regar con el aceite y a\xF1adir or\xE9gano, sal y pimienta. Hornear a 200 \xB0C 20-25 minutos, hasta que el salm\xF3n est\xE9 hecho. Mientras, cocer la pasta y guardar un poco del agua. Desmenuzar el salm\xF3n y mezclarlo con el feta y las verduras hasta tener una salsa, aclar\xE1ndola con el agua de la pasta si hace falta. A\xF1adir la pasta, remover y servir.",normal`;
+R521,Pasta con salm\xF3n y feta al horno con tomate y espinacas,comida,692,41.8,30.2,62.8,"EJEMPLO | dietfarma-combinacion (#333 tanda 1, 9nov-pasta-salmon): cifras USDA SR Legacy sin validar",unico,5.53,salm\xF3n,cereal,gluten;l\xE1cteos;pescado,no,no,no,no,no,35,dietfarma-combinacion,"Poner en una fuente de horno el salm\xF3n sin piel y el feta, uno junto al otro, con los tomates (partidos si son grandes), las espinacas y el ajo picado alrededor. Regar con el aceite y a\xF1adir or\xE9gano, sal y pimienta. Hornear a 200 \xB0C 20-25 minutos, hasta que el salm\xF3n est\xE9 hecho. Mientras, cocer la pasta y guardar un poco del agua. Desmenuzar el salm\xF3n y mezclarlo con el feta y las verduras hasta tener una salsa, aclar\xE1ndola con el agua de la pasta si hace falta. A\xF1adir la pasta, remover y servir.",normal
+R522,Yogur griego 0 % con fresas y nueces,media_manana;merienda,215,22.6,7.6,16.3,"EJEMPLO | instinct-328 (#347, receta R486 de Instinct): cifras USDA SR Legacy sin validar",unico,2.67,yogur griego,,frutos de c\xE1scara;l\xE1cteos,si,no,no,pendiente_ficha,si,5,instinct-328,"Lava y trocea las fresas. S\xEDrvelas sobre el yogur con las nueces por encima. Yogur griego 0 % o skyr natural, sin az\xFAcar.",normal
+R523,Yogur griego 0 % con pl\xE1tano,media_manana;merienda,172,18.2,0.9,24.4,"EJEMPLO | instinct-328 (#347, receta R487 de Instinct): cifras USDA SR Legacy sin validar",unico,2.08,yogur griego,,l\xE1cteos,si,no,no,pendiente_ficha,si,3,instinct-328,"Corta el pl\xE1tano en rodajas y s\xEDrvelo sobre el yogur. Yogur griego 0 % o skyr natural, sin az\xFAcar.",normal
+R524,Dos huevos cocidos con tostada integral peque\xF1a,media_manana;merienda,218,15.7,11.5,11.8,"EJEMPLO | fibraAlta | instinct-328 (#347, receta R489 de Instinct): cifras USDA SR Legacy sin validar",unico,1.5,huevo cocido,pan,gluten;huevo,si,no,si,no,si,12,instinct-328,"Cuece los huevos 10 minutos, enfr\xEDalos y p\xE9lalos. S\xEDrvelos con el pan tostado.",normal
+R525,Tortilla de huevo y claras con tostada integral,media_manana;merienda,213,20.3,8.8,11.8,"EJEMPLO | fibraAlta | instinct-328 (#347, receta R490 de Instinct): cifras USDA SR Legacy sin validar; adaptaciones: aceite de oliva 2\u21923 g, la raci\xF3n m\xEDnima de la app",unico,1.5,huevo,pan,gluten;huevo,si,no,si,no,si,8,instinct-328,Bate el huevo con las claras y cu\xE1jalos en una sart\xE9n antiadherente con el aceite. S\xEDrvela con el pan tostado.,normal
+R526,Tofu a la plancha con pepino,media_manana;merienda,211,21.2,13.6,6.2,"EJEMPLO | instinct-328 (#347, receta R491 de Instinct): cifras USDA SR Legacy sin validar",unico,3.16,tofu firme,,soja,si,si,si,pendiente_ficha,no,10,instinct-328,"Corta el tofu en dados y d\xF3ralos en la sart\xE9n con el aceite, 3-4 minutos por cada lado. S\xEDrvelos con el pepino en rodajas.",normal
+R527,Edamame desgranado cocido,media_manana;merienda,182,17.9,7.8,13.4,"EJEMPLO | instinct-328 (#347, receta R492 de Instinct): cifras USDA SR Legacy sin validar",unico,7.8,edamame,,soja,si,si,si,pendiente_ficha,no,10,instinct-328,"Cuece el edamame desgranado (congelado) como diga el envase, esc\xFArrelo y s\xEDrvelo templado.",normal
+R528,"Pavo asado con pepino; de postre, una manzana",media_manana;merienda,182,24.9,1.9,16.7,"EJEMPLO | instinct-328 (#347, receta R493 de Instinct): cifras USDA SR Legacy sin validar; adaptaciones: pechuga de pavo asada 70\u219280 g, la raci\xF3n m\xEDnima de la app",unico,2.8,pechuga de pavo asada,,,no,no,si,pendiente_ficha,si,5,instinct-328,"Corta el pavo asado y el pepino en bastones. De postre, la manzana.",normal`;
   var RECETAS_CATALOGO_INGREDIENTES_CSV = `receta_id,ingrediente,gramos,rol,fdc_id,estado_peso,equivalente_aprox
 R01,garbanzo cocido,140,base,173757,peso cocido,
 R01,pechuga de pollo asada,110,proteina,171477,peso cocinado,
@@ -10877,7 +10897,25 @@ R521,tomate,120,verdura,170457,crudo,
 R521,espinacas,60,verdura,168462,crudo,
 R521,ajo,5,condimento,169230,crudo,
 R521,aceite de oliva,5,grasa,171413,tal cual,
-R521,or\xE9gano,1,condimento,171328,tal cual,`;
+R521,or\xE9gano,1,condimento,171328,tal cual,
+R522,yogur griego,200,fruta_lacteo,170894,tal cual,
+R522,fresas,100,fruta_lacteo,167762,peso comestible,
+R522,nueces,10,grasa,170187,sin c\xE1scara,
+R523,yogur griego,170,fruta_lacteo,170894,tal cual,
+R523,pl\xE1tano,80,fruta_lacteo,173944,sin piel,
+R524,huevo cocido,100,proteina,173424,cocido y sin c\xE1scara,
+R524,pan integral,25,base,172688,tal cual,
+R525,huevo,50,proteina,171287,crudo sin c\xE1scara,
+R525,claras de huevo,100,proteina,172183,crudo,
+R525,pan integral,25,base,172688,tal cual,
+R525,aceite de oliva,3,grasa,171413,peso a\xF1adido,
+R526,tofu firme,120,proteina,172475,tal cual,
+R526,pepino,80,verdura,168409,peso comestible con piel,
+R526,aceite de oliva,3,grasa,171413,peso a\xF1adido,
+R527,edamame,150,proteina,168411,preparado cocido; solo grano sin vaina,
+R528,pechuga de pavo asada,80,proteina,171496,cocido asado sin piel,
+R528,manzana,100,fruta_lacteo,171688,peso comestible con piel,
+R528,pepino,80,verdura,168409,peso comestible con piel,`;
 
   // src/motor/coherencia-nutricional.ts
   var TOLERANCIA_RELATIVA = 0.1;
@@ -13997,6 +14035,14 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
       for (const t2 of e.tomas) items.push({ recetaId: t2.receta, veces: 1, racion: 1 });
     }
     return { items, recetas: [...recetas.values()] };
+  }
+
+  // src/motor/nombre-visible.ts
+  var NOMBRES_VISIBLES = {
+    "yogur griego": "yogur griego 0 % o skyr natural"
+  };
+  function nombreVisible(ingrediente) {
+    return NOMBRES_VISIBLES[ingrediente] ?? ingrediente;
   }
   return __toCommonJS(motor_exports);
 })();

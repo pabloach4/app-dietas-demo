@@ -2389,7 +2389,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const NOMBRE = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
     const pasos = Motor.elaboracionEjemplo(r.id, r);
     const ings = Motor.ingredientesDeLaRacion(r, 1, Motor.noSeReescala).map((i) => `
-      <li class="dc-ing"><span class="dc-ing-nombre">${escaparHtml(i.nombre)}</span>
+      <li class="dc-ing"><span class="dc-ing-nombre" data-ingrediente="${escaparHtml(i.nombre)}">${escaparHtml(Motor.nombreVisible(i.nombre))}</span>
         <span class="dc-ing-dato"><span class="dc-ing-etq">Ración base</span> <strong>${String(i.gramosBase).replace('.', ',')} g</strong></span></li>`).join('');
     document.getElementById('dc-titulo').textContent = r.nombre;
     document.getElementById('dc-cuerpo').innerHTML = `
@@ -3675,15 +3675,15 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             <div class="campo" style="margin:0"><label for="prox-g">Gramos</label><input id="prox-g" type="number" inputmode="decimal" min="1" max="5000" step="1" style="font-size:16px;width:6rem"></div>
             <button type="button" class="btn-texto" id="prox-add">+ Añadir</button>
           </div>
-          ${proxima.sobras.length ? `<ul class="resumen-lista">${proxima.sobras.map((s, i) => `<li class="item-compra"><span><strong>${gramosCorto(s.gramos)} g</strong> — ${escaparHtml(s.ingrediente)}</span><button type="button" class="quitar-manual prox-quitar" data-i="${i}" aria-label="Quitar ${escaparHtml(s.ingrediente)}">✕</button></li>`).join('')}</ul>` : '<p class="una-linea">Nada apuntado todavía.</p>'}
+          ${proxima.sobras.length ? `<ul class="resumen-lista">${proxima.sobras.map((s, i) => `<li class="item-compra"><span><strong>${gramosCorto(s.gramos)} g</strong> — ${escaparHtml(Motor.nombreVisible(s.ingrediente))}</span><button type="button" class="quitar-manual prox-quitar" data-i="${i}" aria-label="Quitar ${escaparHtml(s.ingrediente)}">✕</button></li>`).join('')}</ul>` : '<p class="una-linea">Nada apuntado todavía.</p>'}
           <div class="campo" style="margin:0.6rem 0"><label for="prox-sem">La próxima dieta la haré</label><select id="prox-sem" style="font-size:16px">${[1, 2, 3, 4].map((n) => `<option value="${n}"${n === proxima.semanas ? ' selected' : ''}>${n} semana${n === 1 ? '' : 's'}</option>`).join('')}</select></div>
           <p class="una-linea">La próxima dieta procura no repetir los platos de esta. Todavía no se guarda ni sustituye a la actual: es para preparar la compra.</p>
           <div style="display:flex;gap:0.5rem;flex-wrap:wrap"><button type="button" class="btn-secundario" id="prox-generar">Preparar la lista</button><button type="button" class="btn-texto" id="prox-cerrar">Cerrar</button></div>
           ${r ? `<h3 style="margin:1rem 0 0.2rem" id="prox-titulo">Próxima lista de la compra · ${r.semanas} semana${r.semanas === 1 ? '' : 's'}</h3>
             ${r.cubiertos.length ? `<p class="una-linea">Con tus sobras ya tienes de sobra: ${r.cubiertos.map(escaparHtml).join(', ')}.</p>` : ''}
-            ${r.sinUso.length ? `<p class="una-linea">Esta dieta no usa: ${r.sinUso.map((s) => escaparHtml(s.ingrediente)).join(', ')}.</p>` : ''}
+            ${r.sinUso.length ? `<p class="una-linea">Esta dieta no usa: ${r.sinUso.map((s) => escaparHtml(Motor.nombreVisible(s.ingrediente))).join(', ')}.</p>` : ''}
             <details class="plegable"><summary>Platos de la próxima dieta</summary><ul class="resumen-lista" id="prox-platos">${r.platos.map(([d, n]) => `<li><strong>${d}</strong> · ${n.map(escaparHtml).join(' · ')}</li>`).join('')}</ul>${r.huecos ? `<p class="una-linea">${r.huecos} comida${r.huecos === 1 ? '' : 's'} sin plato que encaje.</p>` : ''}</details>
-            <ul class="resumen-lista" id="prox-lista">${r.lista.map((i) => `<li class="item-compra"><span><strong>${i.comprar}</strong> — ${escaparHtml(i.ingrediente)}${i.sobra ? ` <small class="dieta-dato">(tienes ${gramosCorto(i.sobra)} g)</small>` : ''}</span></li>`).join('')}</ul>` : ''}
+            <ul class="resumen-lista" id="prox-lista">${r.lista.map((i) => `<li class="item-compra"><span><strong>${i.comprar}</strong> — ${escaparHtml(Motor.nombreVisible(i.ingrediente))}${i.sobra ? ` <small class="dieta-dato">(tienes ${gramosCorto(i.sobra)} g)</small>` : ''}</span></li>`).join('')}</ul>` : ''}
           ${r ? (siguiente ? `<p class="una-linea" id="prox-guardada">Guardada: tu próxima dieta empieza el ${fechaLegible(siguiente.inicio)}${estadoSiguienteHoy() === 'activa' ? ' (ya está en marcha)' : ''}. Hasta entonces sigues viendo la actual. <button type="button" class="btn-texto" id="prox-quitar-guardada">Quitar</button></p>${(siguiente.quitadas ?? []).length ? `<p class="una-linea" id="prox-quitadas" role="status">⚠️ Desde que la guardaste han cambiado tus restricciones: se han quitado ${siguiente.quitadas.length} plato${siguiente.quitadas.length === 1 ? '' : 's'} que ya no valen (${[...new Set(siguiente.quitadas.map((q) => escaparHtml(q.nombre)))].slice(0, 4).join(', ')}). Al empezar esa dieta se elegirán otros.</p>` : ''}`
             : periodoDieta.inicio ? `<button type="button" class="btn-secundario" id="prox-guardar" style="margin-top:0.6rem">Guardar como mi próxima dieta</button><p class="una-linea">Empezará el ${fechaLegible(Motor.inicioDeLaSiguiente(periodoDieta.inicio, periodoDieta.semanas))}, el día después de acabar la actual.</p>`
             : '<p class="una-linea">Para guardarla, di arriba en «Empiezo el» cuándo empieza tu dieta actual: la próxima empezará el día después de acabar.</p>') : ''}
@@ -3698,7 +3698,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             <li class="item-compra${aRevisar.has(item.ingrediente) ? ' a-revisar' : ''}">
               <label>
                 <input type="checkbox" class="marca-en-casa" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}" ${item.yaEnCasa ? 'checked' : ''} aria-label="Comprado o ya en casa: ${escaparHtml(item.ingrediente)}">
-                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(item.ingrediente)}${avisoGlutenHtml(item.ingrediente)}${temporadaTxt(item)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.grupo === 'congelado' ? `<br><small class="dieta-dato" style="white-space:normal">Congelado · producto de referencia. Consulta su etiqueta.${/^https?:\/\//.test((item.fuenteConservacion || '').split(';')[0]) ? ` <a href="${escaparHtml(item.fuenteConservacion.split(';')[0])}" target="_blank" rel="noopener noreferrer">Fuente del producto</a>` : ''}</small>` : ''}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · si quieres, se puede congelar' : ''}</small>` : ''}</span>
+                <span class="${item.yaEnCasa ? 'tachado' : ''}"><strong>${item.comprar}</strong> — ${escaparHtml(Motor.nombreVisible(item.ingrediente))}${avisoGlutenHtml(item.ingrediente)}${temporadaTxt(item)}${agrupado && item.grupo === 'fresco' ? ' <small class="dieta-dato">esta semana</small>' : ''}${dietaTxt(item)}${item.grupo === 'congelado' ? `<br><small class="dieta-dato" style="white-space:normal">Congelado · producto de referencia. Consulta su etiqueta.${/^https?:\/\//.test((item.fuenteConservacion || '').split(';')[0]) ? ` <a href="${escaparHtml(item.fuenteConservacion.split(';')[0])}" target="_blank" rel="noopener noreferrer">Fuente del producto</a>` : ''}</small>` : ''}${item.comprarPeriodo ? `<br><small class="dieta-dato">para las ${periodoDieta.semanas} semanas: ${item.comprarPeriodo}${item.congelable ? ' · si quieres, se puede congelar' : ''}</small>` : ''}</span>
               </label>
               ${aRevisar.has(item.ingrediente) ? `<div class="aviso-cantidad" role="status">Lo marcaste cuando hacían falta ${gramosTxt(aRevisar.get(item.ingrediente).marcado)} y ahora hacen falta ${gramosTxt(aRevisar.get(item.ingrediente).ahora)}: no se da por cubierto.
                 <button type="button" class="btn-texto marca-confirmar" data-ingrediente="${escaparHtml(item.ingrediente)}" data-gramos="${item.gramosTotales}">Sigue cubierto</button></div>` : ''}
@@ -3731,7 +3731,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         .join('');
       const sinPrecioHtml = estimacion.sinPrecio.length ? `
         <p style="font-size:0.8rem;color:var(--gris);margin:0.5rem 0 0">
-          Sin precio, fuera del total (${estimacion.sinPrecio.length}): ${estimacion.sinPrecio.join(', ')}.
+          Sin precio, fuera del total (${estimacion.sinPrecio.length}): ${estimacion.sinPrecio.map(Motor.nombreVisible).join(', ')}.
         </p>
       ` : '';
       costeHtml = `
@@ -4025,7 +4025,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         const c = verCocido && Motor.pesoCocido(i.nombre, i.gramosRacion);
         return `
         <li class="dc-ing">
-          <span class="dc-ing-nombre">${escaparHtml(i.nombre)}${avisoGlutenHtml(i.nombre)}</span>
+          <span class="dc-ing-nombre" data-ingrediente="${escaparHtml(i.nombre)}">${escaparHtml(Motor.nombreVisible(i.nombre))}${avisoGlutenHtml(i.nombre)}</span>
           <span class="dc-ing-gramos">${String(i.gramosRacion).replace('.', ',')} g${medidaAlLado(i.nombre, i.gramosRacion)}${c ?` <small class="dc-cocido">≈ ${c.gramos} g cocido</small>` : ''}</span>
           <span class="dc-ing-compra">${enCompra ? `en la compra de la semana: ${escaparHtml(comprados.get(i.nombre) ?? '—')}` : 'día fuera de la compra'}</span>
         </li>`;
@@ -4414,7 +4414,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const cambios = [...new Set([...la.keys(), ...ld.keys()])].map((n) => [n, (ld.get(n) ?? 0) - (la.get(n) ?? 0)]).filter(([, d]) => Math.abs(d) > 0.05)
       .map(([n, d]) => `<li>${escaparHtml(n)}: ${d > 0 ? '+' : '−'}${String(Math.abs(Math.round(d * 10) / 10)).replace('.', ',')} g</li>`).join('');
     const ings = Motor.ingredientesDeLaRacion(alt.receta, alt.racionAjustada, Motor.noSeReescala)
-      .map((i) => `<li>${escaparHtml(i.nombre)}: <strong>${String(i.gramosRacion).replace('.', ',')} g</strong>${avisoGlutenHtml(i.nombre)}</li>`).join(''); // #256.6: el sello, también aquí
+      .map((i) => `<li>${escaparHtml(Motor.nombreVisible(i.nombre))}: <strong>${String(i.gramosRacion).replace('.', ',')} g</strong>${avisoGlutenHtml(i.nombre)}</li>`).join(''); // #256.6: el sello, también aquí
     document.getElementById('alt-previa').innerHTML = `
       <div class="cambio-zona" style="margin-top:0.8rem" tabindex="-1" id="alt-previa-caja">
         <strong>Así quedaría: ${escaparHtml(alt.receta.nombre)} (${escaparHtml(Motor.racionEnPalabras(alt.racionAjustada))})</strong>
