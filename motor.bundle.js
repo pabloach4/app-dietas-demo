@@ -29,6 +29,7 @@ var Motor = (() => {
     AVISO_ETIQUETA_GLUTEN: () => AVISO_ETIQUETA_GLUTEN,
     BLOQUES_PROPUESTOS: () => BLOQUES_PROPUESTOS,
     CABECERA_ATRIBUTOS: () => CABECERA_ATRIBUTOS,
+    CABECERA_TIEMPO_TAPER: () => CABECERA_TIEMPO_TAPER,
     CAFEINA_MAX_ADULTO_MG: () => CAFEINA_MAX_ADULTO_MG,
     CAFEINA_MG: () => CAFEINA_MG,
     CAFEINA_ULTIMA_ANTES: () => CAFEINA_ULTIMA_ANTES,
@@ -100,6 +101,7 @@ var Motor = (() => {
     MENSAJE_LLANO_AVISOS: () => MENSAJE_LLANO_AVISOS,
     MENSAJE_SUELO: () => MENSAJE_SUELO,
     MESES_TEMPORADA: () => MESES_TEMPORADA,
+    MINUTOS_RAPIDA: () => MINUTOS_RAPIDA,
     MIN_DUELOS: () => MIN_DUELOS,
     MIN_DURACION_ESCRITO: () => MIN_DURACION_ESCRITO,
     MIN_GRASA_PLATO_CARGA: () => MIN_GRASA_PLATO_CARGA,
@@ -154,6 +156,7 @@ var Motor = (() => {
     TEXTO_NIVEL: () => TEXTO_NIVEL,
     TEXTO_PLAN_PABLO: () => TEXTO_PLAN_PABLO,
     TEXTO_RACIONES_CARGA: () => TEXTO_RACIONES_CARGA,
+    TIEMPO_TAPER_CSV: () => TIEMPO_TAPER_CSV,
     TIPOS_ALERTA: () => TIPOS_ALERTA,
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TIPOS_OPOSICION: () => TIPOS_OPOSICION,
@@ -273,6 +276,7 @@ var Motor = (() => {
     comprobarPrecios: () => comprobarPrecios,
     comprobarTablaOposiciones: () => comprobarTablaOposiciones,
     comprobarTablaTemporada: () => comprobarTablaTemporada,
+    comprobarTiempoTaper: () => comprobarTiempoTaper,
     conLimitesIngredientes: () => conLimitesIngredientes,
     conflictosComidaEntreno: () => conflictosComidaEntreno,
     conservacionDesdeCsv: () => conservacionDesdeCsv,
@@ -333,6 +337,7 @@ var Motor = (() => {
     esLunes: () => esLunes,
     esPartido: () => esPartido,
     esPlanPabloNuevo: () => esPlanPabloNuevo,
+    esRapida: () => esRapida,
     escaparTextoIcs: () => escaparTextoIcs,
     escrituraDeshacer: () => escrituraDeshacer,
     escrituraVale: () => escrituraVale,
@@ -341,6 +346,7 @@ var Motor = (() => {
     estimarCoste: () => estimarCoste,
     etiquetaPlanPablo: () => etiquetaPlanPablo,
     etiquetasContextoDia: () => etiquetasContextoDia,
+    etiquetasTiempoTaper: () => etiquetasTiempoTaper,
     evaluarCompatibilidad: () => evaluarCompatibilidad,
     evaluarCribado: () => evaluarCribado,
     evaluarMarcas: () => evaluarMarcas,
@@ -510,6 +516,7 @@ var Motor = (() => {
     recetasCompuestas: () => recetasCompuestas,
     recetasDelRecetario: () => recetasDelRecetario,
     recetasParaDerivado: () => recetasParaDerivado,
+    recetasSinTiempoTaper: () => recetasSinTiempoTaper,
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
     repartoConTomaDurante: () => repartoConTomaDurante,
@@ -558,6 +565,8 @@ var Motor = (() => {
     textoOtrasAlergias: () => textoOtrasAlergias,
     textoProteinaDia: () => textoProteinaDia,
     textosCompensacion: () => textosCompensacion,
+    tiempoTaperDe: () => tiempoTaperDe,
+    tiempoTaperDesdeCsv: () => tiempoTaperDesdeCsv,
     tipoDeSesion: () => tipoDeSesion,
     tiposDeReceta: () => tiposDeReceta,
     tituloCentro: () => tituloCentro,
@@ -1762,6 +1771,56 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     return `Has indicado ${dicho}: no se han quitado los dem\xE1s moluscos (sepia, calamar, pulpo, mejillones, almejas\u2026). Si tambi\xE9n te sientan mal, m\xE1rcalo en Alergias.`;
   }
 
+  // src/motor/tiempo-taper.ts
+  var CABECERA_TIEMPO_TAPER = "id,tiempo_min,apto_taper,criterio";
+  var MINUTOS_RAPIDA = 15;
+  function filasDatos(csv) {
+    return filasCsv(csv).slice(1).map((f2) => f2.map((x) => x.trim())).filter((f2) => f2.some(Boolean));
+  }
+  function comprobarTiempoTaper(csv, idsReceta) {
+    const [cab = []] = filasCsv(csv);
+    if (cab.map((x) => x.trim()).join(",") !== CABECERA_TIEMPO_TAPER) return [`Cabecera distinta de \xAB${CABECERA_TIEMPO_TAPER}\xBB.`];
+    const fallos = [];
+    const existen = new Set(idsReceta);
+    const vistos = /* @__PURE__ */ new Set();
+    for (const [id = "", tiempo = "", taper = ""] of filasDatos(csv)) {
+      if (vistos.has(id)) fallos.push(`${id} repetida.`);
+      vistos.add(id);
+      if (!existen.has(id)) fallos.push(`${id} no existe en el cat\xE1logo.`);
+      if (!/^\d+$/.test(tiempo) || Number(tiempo) < 1 || Number(tiempo) > 240) fallos.push(`${id}: tiempo_min \xAB${tiempo}\xBB tiene que ser un n\xFAmero entero de 1 a 240.`);
+      if (taper !== "si" && taper !== "no") fallos.push(`${id}: apto_taper \xAB${taper}\xBB tiene que ser \xABsi\xBB o \xABno\xBB.`);
+    }
+    return fallos;
+  }
+  function recetasSinTiempoTaper(csv, idsReceta) {
+    const con = new Set(filasDatos(csv).map((f2) => f2[0]));
+    return idsReceta.filter((id) => !con.has(id));
+  }
+  function tiempoTaperDesdeCsv(csv) {
+    const m = /* @__PURE__ */ new Map();
+    const [cab = []] = filasCsv(csv);
+    if (cab.map((x) => x.trim()).join(",") !== CABECERA_TIEMPO_TAPER) return m;
+    for (const [id = "", tiempo = "", taper = "", criterio = ""] of filasDatos(csv)) {
+      const t2 = Number(tiempo);
+      if (!id || !/^\d+$/.test(tiempo) || t2 < 1 || t2 > 240 || taper !== "si" && taper !== "no") continue;
+      m.set(id, { tiempoMin: t2, aptoTaper: taper === "si", criterio });
+    }
+    return m;
+  }
+  function tiempoTaperDe(r, mapa) {
+    const partes = (r.platos?.length ? r.platos : [r.id]).map((id) => mapa.get(id));
+    if (partes.some((x) => !x)) return void 0;
+    if (partes.length === 1) return partes[0];
+    return { tiempoMin: partes.reduce((s, x) => s + x.tiempoMin, 0), aptoTaper: partes.every((x) => x.aptoTaper), criterio: "" };
+  }
+  function esRapida(t2) {
+    return !!t2 && t2.tiempoMin < MINUTOS_RAPIDA;
+  }
+  function etiquetasTiempoTaper(t2) {
+    if (!t2) return [];
+    return [`\u23F1 ${t2.tiempoMin} min`, ...t2.aptoTaper ? ["\u{1F961} t\xE1per"] : []];
+  }
+
   // src/motor/proteina-grupo.ts
   var GRUPOS = [
     ["pollo", /\bpollo\b/],
@@ -1926,6 +1985,9 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
       const fav = new Set(f2.favoritas ?? []);
       lista6 = lista6.filter((r) => fav.has(r.id));
     }
+    const tt = f2.tiempoTaper ?? /* @__PURE__ */ new Map();
+    if (f2.soloRapidas) lista6 = lista6.filter((r) => esRapida(tt.get(r.id)));
+    if (f2.soloTaper) lista6 = lista6.filter((r) => !!tt.get(r.id)?.aptoTaper);
     return lista6;
   }
   function favoritasValidas(valor, recetas) {
@@ -6194,6 +6256,10 @@ R527,cocido,verduras_plato,caliente,no
 R528,crudo,plato_combinado,frio,no
 `;
 
+  // src/motor/tiempo-taper-datos.ts
+  var TIEMPO_TAPER_CSV = `id,tiempo_min,apto_taper,criterio
+`;
+
   // src/motor/atributos-recetas.ts
   var CABECERA_ATRIBUTOS = "receta_id,metodo_cocinado,estilo,servicio,picante";
   var VOCABULARIO_ATRIBUTOS = {
@@ -6221,7 +6287,7 @@ R528,crudo,plato_combinado,frio,no
     picante: ["no", "suave", "picante"]
   };
   var COLUMNAS4 = ["metodo_cocinado", "estilo", "servicio", "picante"];
-  function filasDatos(csv) {
+  function filasDatos2(csv) {
     return filasCsv(csv).slice(1).map((f2) => f2.map((x) => x.trim()));
   }
   function comprobarAtributos(csv, idsReceta) {
@@ -6230,7 +6296,7 @@ R528,crudo,plato_combinado,frio,no
     const fallos = [];
     const existen = new Set(idsReceta);
     const vistos = /* @__PURE__ */ new Set();
-    for (const f2 of filasDatos(csv)) {
+    for (const f2 of filasDatos2(csv)) {
       const id = f2[0] ?? "";
       if (vistos.has(id)) fallos.push(`${id} repetida.`);
       vistos.add(id);
@@ -6248,7 +6314,7 @@ R528,crudo,plato_combinado,frio,no
   }
   function atributosDesdeCsv(csv) {
     const m = /* @__PURE__ */ new Map();
-    for (const [id = "", met = "", estilo = "", servicio = "", picante = ""] of filasDatos(csv)) {
+    for (const [id = "", met = "", estilo = "", servicio = "", picante = ""] of filasDatos2(csv)) {
       if (!id) continue;
       m.set(id, { metodos: met.split(";").map((x) => x.trim()).filter(Boolean), estilo, servicio, picante });
     }

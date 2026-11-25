@@ -2244,6 +2244,10 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // notarían. El gusto solo desempata en el asignador. Se guardan las respuestas; las afinidades salen de ellas. ---
   const CLAVE_GUSTOS = 'app-dietas-gustos';
   const ATRIBUTOS_RECETAS = Motor.atributosDesdeCsv(Motor.ATRIBUTOS_CSV);
+  // #353 parte 1: minutos de preparación activa y si vale para táper (datos de #355). Sin fila, la receta no enseña etiquetas ni pasa esos
+  // filtros. La prueba de navegador inyecta un CSV propio en `__TIEMPO_TAPER_PRUEBA` mientras no estén los datos.
+  const TIEMPO_TAPER = Motor.tiempoTaperDesdeCsv(typeof window.__TIEMPO_TAPER_PRUEBA === 'string' && window.__TIEMPO_TAPER_PRUEBA ? window.__TIEMPO_TAPER_PRUEBA : Motor.TIEMPO_TAPER_CSV);
+  const etiquetasTiempoTaperHtml = (r) => Motor.etiquetasTiempoTaper(Motor.tiempoTaperDe(r, TIEMPO_TAPER)).map((e) => `<span class="etq-tt">${escaparHtml(e)}</span>`).join(' ');
   const ICONO_ESTILO = { arroz_plato: '🍚', batido: '🥤', bocadillo_tostada: '🥪', bol_desayuno: '🥣', cereal_plato: '🌾', crema: '🥣', dulce_cuchara: '🍮', ensalada: '🥗', fruta: '🍎', guiso: '🍲', huevo_plato: '🍳', pasta: '🍝', plato_combinado: '🍽️', snack: '🥨', sopa: '🍜', verduras_plato: '🥦', yogur_fruta: '🍓' };
   let historialGustos = [];
   try { historialGustos = Motor.historialGustosValido(JSON.parse(localStorage.getItem(CLAVE_GUSTOS) || 'null'), RECETAS_BASE); } catch { /* sin almacenamiento o dato corrupto: sin gustos */ }
@@ -2430,21 +2434,26 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const franja = document.getElementById('rec-franja').value;
     const tipo = document.getElementById('rec-tipo').value;
     const soloFav = document.getElementById('rec-favoritas').checked;
+    document.getElementById('rec-filtros-tt').hidden = !TIEMPO_TAPER.size; // #353 parte 1: sin datos, sin casillas
+    const soloRapidas = TIEMPO_TAPER.size > 0 && document.getElementById('rec-rapidas').checked;
+    const soloTaper = TIEMPO_TAPER.size > 0 && document.getElementById('rec-taper').checked;
     document.getElementById('rec-limpiar').hidden = !consulta;
     // #353 parte 2: solo lo que la persona puede comer, con el mismo filtro que su plan y sin casilla para ver lo demás.
     const aptas = Motor.recetasDelRecetario(RECETAS_EJEMPLO, (r) => !ap || Motor.evaluarCompatibilidad(r, ap).compatible);
-    const visibles = Motor.filtrarCatalogo(aptas, { consulta, franja: franja || undefined, tipo: tipo || undefined, soloFavoritas: soloFav, favoritas: favoritasRecetas });
+    const visibles = Motor.filtrarCatalogo(aptas, { consulta, franja: franja || undefined, tipo: tipo || undefined, soloFavoritas: soloFav, favoritas: favoritasRecetas, soloRapidas, soloTaper, tiempoTaper: TIEMPO_TAPER });
     const NOMBRE = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
     const PAPEL = { primero: 'primer plato', segundo: 'segundo plato', postre: 'postre' };
 
     const estado = document.getElementById('rec-estado');
-    document.getElementById('rec-n-filtros').textContent = [franja, tipo, soloFav].filter(Boolean).length; // #208: contador en los filtros
+    document.getElementById('rec-n-filtros').textContent = [franja, tipo, soloFav, soloRapidas, soloTaper].filter(Boolean).length; // #208: contador en los filtros
     if (!visibles.length) {
       const partes = [];
       if (consulta.trim()) partes.push(`la búsqueda «${consulta.trim()}»`);
       if (franja) partes.push(`la comida «${NOMBRE[franja]}»`);
       if (tipo) partes.push(`el tipo «${Motor.NOMBRE_TIPO_RECETA[tipo].toLowerCase()}»`);
       if (soloFav) partes.push('«solo favoritas»');
+      if (soloRapidas) partes.push('«rápida»');
+      if (soloTaper) partes.push('«para táper»');
       estado.textContent = `Ninguna de tus recetas cumple ${partes.length ? partes.join(' + ') : 'los filtros'}. Tus restricciones no se relajan para encontrar resultados: prueba otra búsqueda o quita algún filtro.`;
     } else {
       estado.textContent = `${visibles.length} receta${visibles.length === 1 ? '' : 's'} que puedes comer${ap ? ' (ya sin las que no encajan con tus restricciones)' : ''}.`;
@@ -2453,11 +2462,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('rec-lista').innerHTML = visibles.map((r) => {
       const fav = favoritasRecetas.includes(r.id);
       const tipos = Motor.tiposDeReceta(r).map((t) => Motor.NOMBRE_TIPO_RECETA[t]);
+      const tt = etiquetasTiempoTaperHtml(r);
       return `
         <li class="rec-card">
           <div class="rec-img" aria-hidden="true"></div>
           <div class="rec-cuerpo">
             <div class="rec-nombre">${escaparHtml(r.nombre)}</div>
+            ${tt ? `<div class="rec-tt">${tt}</div>` : ''}
             <div class="rec-dato">Para: ${r.franjas.map((f) => NOMBRE[f] ?? f).join(', ')}${PAPEL[r.tipoPlato] ? ` · ${PAPEL[r.tipoPlato]}` : ''}</div>
             ${tipos.length ? `<div class="rec-dato rec-tipos">${tipos.join(' · ')}</div>` : ''}
             <div class="rec-dato">Ración base: ${r.kcal} kcal</div>
@@ -2477,6 +2488,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const c = ap ? Motor.evaluarCompatibilidad(r, ap) : { compatible: true };
     const NOMBRE = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
     const pasos = Motor.elaboracionEjemplo(r.id, r);
+    const tt = Motor.tiempoTaperDe(r, TIEMPO_TAPER);
     const ings = Motor.ingredientesDeLaRacion(r, 1, Motor.noSeReescala).map((i) => `
       <li class="dc-ing"><span class="dc-ing-nombre" data-ingrediente="${escaparHtml(i.nombre)}">${escaparHtml(Motor.nombreVisible(i.nombre))}</span>
         <span class="dc-ing-dato"><span class="dc-ing-etq">Ración base</span> <strong>${String(i.gramosBase).replace('.', ',')} g</strong></span></li>`).join('');
@@ -2485,6 +2497,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       <p><span class="rec-etiqueta">EJEMPLO</span> Receta de ejemplo, no de Pablo ni validada para clientes.</p>
       ${c.compatible ? '' : `<p class="error-inline">No encaja con tus restricciones${c.motivo ? `: ${escaparHtml(c.motivo.detalle)}` : ''}. No se propondría en tu plan.</p>`}
       <p class="dc-aviso" style="color:var(--gris)">Esto es solo la ficha. Verla no la añade a tu plan ni a tu compra, ni significa que la hayas tomado. Si es favorita, se prefiere al calcular tu semana cuando encaja igual de bien que otra; para tenerla seguro, «La quiero sí o sí».</p>
+      ${tt ? `<p class="rec-tt">${etiquetasTiempoTaperHtml(r)}</p>` : ''}
       ${bloqueSiOSiHtml(r)}
       <h3>Ingredientes (ración base, pesos de ejemplo pendientes de validar)</h3>
       <ul class="dc-ings">${ings}</ul>
@@ -2494,7 +2507,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       <ul>
         <li>Se puede usar en: ${r.franjas.map((f) => NOMBRE[f] ?? f).join(', ')}.</li>
         <li>Valores declarados (ración base, de ejemplo, no medidos): ${r.kcal} kcal · P ${r.proteina} g · G ${r.grasa} g · H ${r.hidrato} g. No son tu objetivo de comida ni la ración ajustada de tu plan.</li>
-        <li>No disponibles en los datos de ejemplo: tiempo de preparación, saciedad y alérgenos. No se asume ninguno.</li>
+        ${tt ? `<li>Preparación activa: unos ${tt.tiempoMin} min (remojos y reposos aparte). ${tt.aptoTaper ? 'Vale para llevar en táper' : 'Mejor recién hecha, no para táper'}${tt.criterio ? `: ${escaparHtml(tt.criterio)}` : ''}.</li>` : ''}
+        <li>No disponibles en los datos de ejemplo: ${tt ? '' : 'tiempo de preparación, '}saciedad y alérgenos. No se asume ninguno.</li>
       </ul>`;
     const dlg = document.getElementById('detalle-comida');
     if (!dlg.open) { disparadorDetalle = document.activeElement; dlg.showModal(); }
@@ -2511,7 +2525,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('rec-buscar').focus();
   });
   document.getElementById('rec-tipo').insertAdjacentHTML('beforeend', Motor.TIPOS_RECETA.map((t) => `<option value="${t}">${Motor.NOMBRE_TIPO_RECETA[t]}</option>`).join('')); // #353 parte 2
-  ['rec-franja', 'rec-tipo', 'rec-favoritas'].forEach((id) => document.getElementById(id).addEventListener('change', pintarRecetas));
+  ['rec-franja', 'rec-tipo', 'rec-favoritas', 'rec-rapidas', 'rec-taper'].forEach((id) => document.getElementById(id).addEventListener('change', pintarRecetas));
   document.getElementById('rec-lista').addEventListener('click', (ev) => {
     const fav = ev.target.closest('.rec-fav');
     if (fav) {
@@ -4152,7 +4166,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         ${asignada.ajusteDia ? `<p class="dc-nota">⚖️ ${escaparHtml(asignada.ajusteDia.motivo)}</p>` : ''}
         <p class="dc-nota">Las cifras de la receta son aproximadas: sirven para acercarse a las kcal, no para clavar los macros.</p>`;
       receta = `
-        <h3 class="dc-plato">${escaparHtml(asignada.receta.nombre)} <span class="dc-racion">${escaparHtml(Motor.racionEnPalabras(asignada.racionAjustada))}</span></h3>
+        <h3 class="dc-plato">${escaparHtml(asignada.receta.nombre)} <span class="dc-racion">${escaparHtml(Motor.racionEnPalabras(asignada.racionAjustada))}</span>${(() => { const tt = etiquetasTiempoTaperHtml(asignada.receta); return tt ? ` <span class="dc-tt">${tt}</span>` : ''; })()}</h3>
         ${vistas}
         <div class="dc-parte" data-parte="cantidades"${vistaDetalle === 'cantidades' ? '' : ' hidden'}>
         <div class="dc-ings-cab"><span>Ingrediente</span><span>Lo que comes</span><span>Lo que compras</span></div>
