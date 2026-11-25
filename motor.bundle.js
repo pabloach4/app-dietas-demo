@@ -468,6 +468,7 @@ var Motor = (() => {
     peculiaridadesRevision: () => peculiaridadesRevision,
     perfilDesdeCuestionario: () => perfilDesdeCuestionario,
     pesoCocido: () => pesoCocido,
+    pesoPlato: () => pesoPlato,
     pesoServido: () => pesoServido,
     planDiaCompeticion: () => planDiaCompeticion,
     planDiaExamen: () => planDiaExamen,
@@ -3137,15 +3138,20 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     const max = racionRealistaMaxima(nombre);
     return max === void 0 ? void 0 : Math.floor(max * 1.5);
   }
+  function pesoPlato(ingredientes) {
+    const tabla2 = cargarTabla();
+    let peso = 0;
+    for (const ing of ingredientes) if (!esProtegido(tabla2, ing.nombre)) peso += ing.gramos;
+    return peso;
+  }
   function validarPlatoGenerado(franja, ingredientes, opts = {}) {
     const tabla2 = cargarTabla();
     const base = validarPlato(franja, ingredientes, opts.esLiquido === void 0 ? {} : { esLiquido: opts.esLiquido });
     const incumplimientos = base.incumplimientos.filter((i) => !i.startsWith("Peso total del plato"));
     const avisos = base.avisos.filter((a2) => !a2.startsWith("Peso total del plato"));
     const esLiquido = opts.esLiquido ?? ingredientes.some((i) => esLiquidoPorNombre(i.nombre));
-    let peso = 0;
+    const peso = pesoPlato(ingredientes);
     for (const ing of ingredientes) {
-      if (!esProtegido(tabla2, ing.nombre)) peso += ing.gramos;
       const carga = opts.racionesCarga && esBaseDeCarga(ing.nombre);
       const max = carga ? racionCargaMaxima(ing.nombre) : racionRealistaMaxima(ing.nombre);
       if (max !== void 0 && !esLiquido && ing.gramos > max && !incumplimientos.some((i) => i.startsWith(`${ing.nombre}:`))) {
@@ -3764,7 +3770,10 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       const raciones = f2 < 1 ? [f2] : RACIONES_POSTRE.filter((r) => r <= f2);
       let mejor;
       const usos = (id) => salida.filter((x) => (x.franja === "comida" || x.franja === "cena") && (recetaDeId(porId, x.receta)?.platos ?? [x.receta]).includes(id)).length;
-      for (const po of postres.filter((x) => x.franjas.includes(fr) && usos(x.id) < 2)) {
+      for (const po of postres.filter(
+        (x) => x.franjas.includes(fr) && usos(x.id) < 2 && !postreRepiteLacteo(platos, x)
+        /* #350 */
+      )) {
         for (const rp of raciones) {
           const comp = componerConPostre(platos, po, Math.round(rp / f2 * 1e4) / 1e4);
           const kcal = kcalConRacion(comp, f2);
@@ -4367,6 +4376,8 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
     return !pp.some((a2) => ps.some((b) => coincideAlimento(a2, b)));
   }
   var SUFIJO_POSTRE = "~postre";
+  var conYogur = (r) => r.ingredientes.some((i) => /yogur|k[eé]fir/i.test(i.nombre));
+  var postreRepiteLacteo = (platos, postre) => conYogur(postre) && platos.some(conYogur);
   function componerConPostre(platos, postre, k) {
     if (k === 1) return componerComida([...platos, postre]);
     const m = macrosConRacion(postre, k);
@@ -4737,13 +4748,13 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
               const r2 = intentar(parejas, false);
               res = mejorDe(res, r2);
               if (!!slot.bandaPeso || !alcanza(res.elegido)) {
-                const conPostre = parejas.flatMap((c2) => postres.filter((po) => !c2.platos.includes(po.id)).map((po) => componer([...c2.platos.map((id) => catalogoPorId.get(id)), po])));
+                const conPostre = parejas.flatMap((c2) => postres.filter((po) => !c2.platos.includes(po.id) && !postreRepiteLacteo(c2.platos.map((id) => catalogoPorId.get(id)), po)).map((po) => componer([...c2.platos.map((id) => catalogoPorId.get(id)), po])));
                 if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
               }
             }
             const solo = res.elegido?.receta;
             if (solo && !solo.platos && !alcanza(res.elegido)) {
-              const conPostre = postres.filter((po) => po.id !== solo.id && (!limitada || usosDe(po) < maxRep)).map((po) => componer([solo, po])).filter((c2) => !digestivoExcede(slot, c2));
+              const conPostre = postres.filter((po) => po.id !== solo.id && !postreRepiteLacteo([solo], po) && (!limitada || usosDe(po) < maxRep)).map((po) => componer([solo, po])).filter((c2) => !digestivoExcede(slot, c2));
               if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
             }
           }
