@@ -3235,6 +3235,11 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     const l = buscarLimite(cargarTabla(), nombre);
     return !!l && /^(pan|cereal crudo|pasta fresca)/.test(normalizar2(l.categoria));
   }
+  function esBaseCompacta(nombre) {
+    if (rolIngrediente(nombre) !== "base") return false;
+    const l = buscarLimite(cargarTabla(), nombre);
+    return !l || !/^legumbre/.test(normalizar2(l.categoria));
+  }
   function racionCargaMaxima(nombre) {
     const max = racionRealistaMaxima(nombre);
     return max === void 0 ? void 0 : Math.floor(max * 1.5);
@@ -4472,6 +4477,12 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
       partes: platos.map((p) => ({ receta: p, k: 1 }))
     };
   }
+  var MAX_VERDURA_PRIMERO_COMPACTO_100KCAL = 100;
+  function primeroCompacto(r) {
+    if (!r.ingredientes.some((i) => esBaseCompacta(i.nombre))) return false;
+    const verdura = r.ingredientes.filter((i) => rolIngrediente(i.nombre) === "verdura").reduce((s, i) => s + i.gramos, 0);
+    return r.kcal > 0 && verdura / r.kcal * 100 <= MAX_VERDURA_PRIMERO_COMPACTO_100KCAL;
+  }
   function combinanBien(primero, segundo) {
     const nombres = (r, rol) => r.ingredientes.filter((i) => rolIngrediente(i.nombre) === rol).map((i) => i.nombre);
     if (nombres(primero, "base").length && nombres(segundo, "base").length) return false;
@@ -4846,16 +4857,19 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
             const primeros = recetas.filter((r) => r.tipoPlato === "primero" && vale(r) && (!limitada || usosDe(r) < maxRep));
             const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
             const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));
-            const parejas = primeros.flatMap((p) => segundos.filter((s) => combinanBien(p, s)).map((s) => componer([p, s])));
+            const parejasDe = (ps) => ps.flatMap((p) => segundos.filter((s) => combinanBien(p, s)).map((s) => componer([p, s])));
             const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave3(b.elegido.desviacion, b.elegido.dist ?? 0, b.elegido.falta ?? 0) < clave3(a2.elegido.desviacion, a2.elegido.dist ?? 0, a2.elegido.falta ?? 0)) ? b : a2;
-            if (parejas.length) {
-              const r2 = intentar(parejas, false);
-              res = mejorDe(res, r2);
+            const probarParejas = (parejas) => {
+              if (!parejas.length) return;
+              res = mejorDe(res, intentar(parejas, false));
               if (!!slot.bandaPeso || !alcanza(res.elegido)) {
                 const conPostre = parejas.flatMap((c2) => postres.filter((po) => !c2.platos.includes(po.id) && !postreRepiteLacteo(c2.platos.map((id) => catalogoPorId.get(id)), po)).map((po) => componer([...c2.platos.map((id) => catalogoPorId.get(id)), po])));
                 if (conPostre.length) res = mejorDe(res, intentar(conPostre, false));
               }
-            }
+            };
+            const compactas = slot.cargaAlta || slot.racionesCarga ? parejasDe(primeros.filter(primeroCompacto)) : [];
+            if (compactas.length) probarParejas(compactas);
+            if (!compactas.length || !alcanza(res.elegido)) probarParejas(parejasDe(primeros));
             const solo = res.elegido?.receta;
             if (solo && !solo.platos && !alcanza(res.elegido)) {
               const conPostre = postres.filter((po) => po.id !== solo.id && !postreRepiteLacteo([solo], po) && (!limitada || usosDe(po) < maxRep)).map((po) => componer([solo, po])).filter((c2) => !digestivoExcede(slot, c2));
