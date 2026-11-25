@@ -530,7 +530,84 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   }
   // #331 parte 1: perfil «Opositor» (solo con ese deporte principal). Las fechas pueden faltar todavía; sin ellas no hay cuenta atrás.
   document.getElementById('op-tipo').innerHTML = '<option value="">Elige</option>' + Motor.TIPOS_OPOSICION.map((t) => `<option value="${t}">${escaparHtml(Motor.NOMBRE_TIPO_OPOSICION[t])}</option>`).join('');
-  document.getElementById('op-cuerpo').innerHTML = '<option value="">Elige</option>' + Motor.CUERPOS_OPOSICION.map((c) => `<option value="${c.id}">${escaparHtml(c.nombre)}</option>`).join('');
+  // #352 parte 2 (Pablo, 25/11: «pon un botón o un buscador […] recuerda que tenemos que hacer fácil ese trámite»): buscador con
+  // botones rápidos en lugar del desplegable. Busca el motor (sin tildes, formas cortas, grupos con las mismas físicas); lo elegido va
+  // en #op-cuerpo, oculto, con el mismo id de siempre (o el del grupo), así que los perfiles guardados siguen valiendo.
+  const opBuscar = document.getElementById('op-cuerpo-buscar');
+  const opLista = document.getElementById('op-cuerpo-lista');
+  const opCuerpo = document.getElementById('op-cuerpo');
+  const OPO_OTRO = Motor.CUERPOS_OPOSICION.find((c) => c.id === 'otro');
+  const idsCuerpoValidos = () => [...new Set([...Motor.CUERPOS_OPOSICION.map((c) => c.id), ...Motor.idsOpcionOposicion()])];
+  const nombreCuerpo = (id) => (!id ? '' : id === 'otro' ? (OPO_OTRO?.nombre ?? 'Otro') : Motor.nombreOpcionOposicion(id) ?? Motor.CUERPOS_OPOSICION.find((c) => c.id === id)?.nombre ?? '');
+  let opOpciones = [];
+  let opActivo = -1;
+  function marcarRapidoOpo() {
+    const texto = opBuscar.value.trim();
+    document.querySelectorAll('.op-rapido').forEach((b) => b.setAttribute('aria-pressed', String(!!texto && b.textContent === texto)));
+  }
+  function cerrarListaOpo() {
+    opLista.hidden = true;
+    opBuscar.setAttribute('aria-expanded', 'false');
+    opBuscar.removeAttribute('aria-activedescendant');
+    opActivo = -1;
+  }
+  function pintarListaOpo(salen) {
+    opOpciones = [...(salen ?? Motor.buscarOposicion(opBuscar.value)), ...(OPO_OTRO ? [OPO_OTRO] : [])];
+    const sinNada = opOpciones.length === (OPO_OTRO ? 1 : 0) && opBuscar.value.trim();
+    opLista.innerHTML = (sinNada ? '<li class="op-sin" role="presentation">No la encontramos: elige «Otro» y añade tus pruebas a mano.</li>' : '')
+      + opOpciones.map((o, i) => `<li role="option" id="op-opcion-${i}" data-id="${escaparHtml(o.id)}" aria-selected="${i === opActivo}">${escaparHtml(o.nombre)}${o.miembros?.length ? ' <small>· mismas pruebas</small>' : ''}</li>`).join('');
+    opLista.hidden = false;
+    opBuscar.setAttribute('aria-expanded', 'true');
+    if (opActivo >= 0) { opBuscar.setAttribute('aria-activedescendant', `op-opcion-${opActivo}`); document.getElementById(`op-opcion-${opActivo}`)?.scrollIntoView({ block: 'nearest' }); }
+    else opBuscar.removeAttribute('aria-activedescendant');
+  }
+  let opFiltroRapido; // lo que filtra un botón rápido mientras no se escriba otra cosa
+  function elegirOpo(id) {
+    opCuerpo.value = id;
+    opBuscar.value = nombreCuerpo(id);
+    opFiltroRapido = undefined;
+    cerrarListaOpo();
+    marcarRapidoOpo();
+    opCuerpo.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  opBuscar.addEventListener('input', () => {
+    if (opCuerpo.value && opBuscar.value !== nombreCuerpo(opCuerpo.value)) opCuerpo.value = ''; // se está escribiendo otra
+    opFiltroRapido = undefined;
+    opActivo = -1;
+    marcarRapidoOpo();
+    pintarListaOpo();
+  });
+  opBuscar.addEventListener('focus', () => { if (!opCuerpo.value && opLista.hidden) pintarListaOpo(opFiltroRapido); });
+  opBuscar.addEventListener('keydown', (ev) => {
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      if (opLista.hidden) pintarListaOpo(opFiltroRapido);
+      const n = opOpciones.length;
+      if (!n) return;
+      opActivo = ev.key === 'ArrowDown' ? (opActivo + 1) % n : (opActivo <= 0 ? n - 1 : opActivo - 1);
+      pintarListaOpo(opFiltroRapido);
+    } else if (ev.key === 'Enter') {
+      if (opLista.hidden) return;
+      ev.preventDefault();
+      const reales = opOpciones.filter((o) => o.id !== 'otro');
+      const o = opActivo >= 0 ? opOpciones[opActivo] : reales.length === 1 ? reales[0] : undefined;
+      if (o) elegirOpo(o.id);
+    } else if (ev.key === 'Escape') cerrarListaOpo();
+  });
+  opBuscar.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== opBuscar) cerrarListaOpo(); }, 150));
+  opLista.addEventListener('mousedown', (ev) => ev.preventDefault()); // que el campo no pierda el foco antes del clic
+  opLista.addEventListener('click', (ev) => { const li = ev.target.closest('li[data-id]'); if (li) elegirOpo(li.dataset.id); });
+  document.querySelectorAll('.op-rapido').forEach((b) => b.addEventListener('click', () => {
+    const salen = Motor.buscarOposicion(b.dataset.q);
+    if (salen.length === 1) { elegirOpo(salen[0].id); return; } // Policía Nacional, Guardia Civil, Fuerzas Armadas: ya está
+    opBuscar.value = b.textContent;
+    opCuerpo.value = '';
+    opFiltroRapido = salen;
+    opActivo = -1;
+    marcarRapidoOpo();
+    pintarListaOpo(salen);
+    opBuscar.focus();
+  }));
   function verOposicion() {
     document.getElementById('oposicion').hidden = deporteElegido !== 'opositor';
     const tipo = document.getElementById('op-tipo').value;
@@ -653,7 +730,11 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     poner('op-fecha-escrito', o.fechaEscrito);
     poner('op-hora-escrito', o.horaEscrito); // #331 p5
     document.getElementById('op-duracion-escrito').value = Number.isInteger(o.duracionEscritoMin) ? String(o.duracionEscritoMin) : '';
-    poner('op-cuerpo', o.cuerpo, Motor.CUERPOS_OPOSICION.map((c) => c.id));
+    poner('op-cuerpo', o.cuerpo, idsCuerpoValidos());
+    opBuscar.value = nombreCuerpo(opCuerpo.value); // #352 p2
+    opFiltroRapido = undefined;
+    cerrarListaOpo();
+    marcarRapidoOpo();
     poner('op-citacion', o.citacion);
     poner('op-fin', o.finJornada);
     document.getElementById('op-cafeina').checked = o.cafeina === 'si';

@@ -110,6 +110,17 @@
   .dp-pregunta { margin: 0.2rem 0 0.6rem; }
   .dp-botones { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.5rem; margin-bottom: 1rem; }
   .dp-botones .dp-btn { width: 100%; min-height: 3rem; }
+  /* #352 parte 2: buscador de la oposición */
+  .op-rapidos { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 0.45rem; }
+  .op-rapido { font-size: 0.9rem; padding: 0.4rem 0.7rem; min-height: 2.5rem; border: 1px solid var(--borde); border-radius: 999px; background: var(--tarjeta); color: var(--texto); cursor: pointer; }
+  .op-rapido[aria-pressed="true"] { background: var(--verde-suave); border-color: var(--verde); }
+  #op-cuerpo-buscar { width: 100%; font-size: 16px; }
+  #op-cuerpo-lista { list-style: none; margin: 0.25rem 0 0; padding: 0; max-height: 16rem; overflow-y: auto; border: 1px solid var(--borde); border-radius: 10px; background: var(--tarjeta); }
+  #op-cuerpo-lista li { padding: 0.6rem 0.7rem; cursor: pointer; border-top: 1px solid var(--borde); line-height: 1.3; }
+  #op-cuerpo-lista li:first-child { border-top: 0; }
+  #op-cuerpo-lista li[aria-selected="true"], #op-cuerpo-lista li:hover { background: var(--verde-suave); }
+  #op-cuerpo-lista li small { color: var(--gris); }
+  #op-cuerpo-lista li.op-sin { cursor: default; color: var(--gris); background: none; }
   .dp-botones .dp-btn[aria-pressed="true"], .dp-botones .dp-btn[aria-pressed="true"]:hover { background: var(--acento-cta); border-color: var(--acento-cta); color: #fff; }
   #sesiones .dia-sesiones { border-top: 1px solid var(--borde); padding: 0.6rem 0; } /* #220; .dia-sesiones de Semana es otra cosa */
   .dia-sesiones-cab { display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; }
@@ -1200,7 +1211,21 @@
             </div>
             <small class="ayuda">Si una comida cae en un bloque, la app la pasa a cuando acabas o a justo antes de empezar, siempre a una hora normal. La comida de mediodía va sin excesos para que no te entre el bajón, y los tentempiés llevan proteína; acompáñalos de fruta. Lo de la cafeína es solo para informarte de lo que ya tomas.</small>
           </details>
-          <div class="campo"><label for="op-cuerpo">Cuerpo</label><select id="op-cuerpo"></select></div>
+          <!-- #352 parte 2: buscador de la oposición (en lugar del desplegable), con botones rápidos; lo elegido va en #op-cuerpo (oculto). -->
+          <div class="campo op-cuerpo-campo">
+            <label for="op-cuerpo-buscar">Tu oposición</label>
+            <div class="op-rapidos" role="group" aria-label="Las más comunes">
+              <button type="button" class="op-rapido" data-q="policia nacional" aria-pressed="false">Policía Nacional</button>
+              <button type="button" class="op-rapido" data-q="guardia civil" aria-pressed="false">Guardia Civil</button>
+              <button type="button" class="op-rapido" data-q="policia local" aria-pressed="false">Policía Local</button>
+              <button type="button" class="op-rapido" data-q="bomber" aria-pressed="false">Bomberos</button>
+              <button type="button" class="op-rapido" data-q="fuerzas armadas" aria-pressed="false">Fuerzas Armadas</button>
+            </div>
+            <input id="op-cuerpo-buscar" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="op-cuerpo-lista" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="Escribe: guardia civil, policía local Galicia, bombera…">
+            <ul id="op-cuerpo-lista" role="listbox" aria-label="Oposiciones" hidden></ul>
+            <input id="op-cuerpo" type="hidden">
+            <small class="ayuda">Las que tienen las mismas pruebas físicas salen juntas. Si escribes tu ciudad o comunidad, sale la tuya con sus distancias.</small>
+          </div>
           <!-- #331 parte 6: reconocimiento médico (aviso: nada de dietas de choque), modo barato y táper del domingo. -->
           <div class="campo"><label for="op-fecha-reconocimiento">Fecha del reconocimiento médico (si lo tiene)</label><input id="op-fecha-reconocimiento" type="date"></div>
           <label class="check"><input type="checkbox" id="op-barato"> Quiero gastar poco: mejor platos con huevos, legumbres, atún y pollo</label>
@@ -1741,12 +1766,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=8f91bfa"></script>
-<script src="fuentes.js?v=8f91bfa"></script>
-<script src="motor.bundle.js?v=8f91bfa"></script>
-<script src="cuestionario.js?v=8f91bfa"></script>
-<script src="nube.js?v=8f91bfa"></script>
-<script src="pwa.js?v=8f91bfa"></script>
+<script src="novedades.js?v=eb30486"></script>
+<script src="fuentes.js?v=eb30486"></script>
+<script src="motor.bundle.js?v=eb30486"></script>
+<script src="cuestionario.js?v=eb30486"></script>
+<script src="nube.js?v=eb30486"></script>
+<script src="pwa.js?v=eb30486"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>
