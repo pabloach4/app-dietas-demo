@@ -304,6 +304,8 @@ var Motor = (() => {
     duranteEntreno: () => duranteEntreno,
     editarCompeticion: () => editarCompeticion,
     efectoAjustes: () => efectoAjustes,
+    ejemploDesayunoCarrera: () => ejemploDesayunoCarrera,
+    ejemploDesayunoTrasNadar: () => ejemploDesayunoTrasNadar,
     ejemploTomaPrimeraHora: () => ejemploTomaPrimeraHora,
     ejemplosDurante: () => ejemplosDurante,
     elaboracionEjemplo: () => elaboracionEjemplo,
@@ -547,6 +549,7 @@ var Motor = (() => {
     tipoDeSesion: () => tipoDeSesion,
     tituloCentro: () => tituloCentro,
     tomaDuranteDia: () => tomaDuranteDia,
+    tomaRapidaEjemplo: () => tomaRapidaEjemplo,
     totalesPorDia: () => totalesPorDia,
     usaRepartoProteinaGimnasio: () => usaRepartoProteinaGimnasio,
     usosVariedadSemana: () => usosVariedadSemana,
@@ -2226,11 +2229,109 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
   var nivelVolumenCena = (nivelPrincipal, hambre) => hambre === "mucha" ? Math.min(2, nivelPrincipal + 1) : nivelPrincipal;
   var hambreCenaValida = (x) => x === "poca" || x === "normal" || x === "mucha" ? x : void 0;
 
+  // src/motor/consejo-alimento.ts
+  var YOGUR = {
+    id: "__consejo_yogur",
+    nombre: "Yogur natural",
+    franjas: ["media_manana", "merienda"],
+    kcal: 77,
+    proteina: 4.3,
+    grasa: 3.8,
+    hidrato: 6.3,
+    notas: "",
+    tipoPlato: "postre",
+    alergenos: ["l\xE1cteos"],
+    aptitudes: { vegetariano: "si", vegano: "no", sinLactosa: "no", sinGluten: "si" },
+    ingredientes: [{ nombre: "yogur natural", gramos: 125 }]
+  };
+  var YOGUR_SOJA = {
+    id: "__consejo_yogur_soja",
+    nombre: "Yogur de soja",
+    franjas: ["media_manana", "merienda"],
+    kcal: 69,
+    proteina: 4.8,
+    grasa: 2.6,
+    hidrato: 6.3,
+    notas: "",
+    tipoPlato: "postre",
+    alergenos: ["soja"],
+    aptitudes: { vegetariano: "si", vegano: "si", sinLactosa: "si", sinGluten: "pendiente_ficha" },
+    ingredientes: [{ nombre: "yogur de soja", gramos: 125 }]
+  };
+  function yogurAconsejable(admite) {
+    if (!admite || admite(YOGUR)) return "yogur";
+    if (admite(YOGUR_SOJA)) return "yogur de soja";
+    return void 0;
+  }
+  function frutaOYogur(admite) {
+    const y = yogurAconsejable(admite);
+    return y ? `una fruta o un ${y}` : "una fruta";
+  }
+  function postreFrutaOYogur(admite) {
+    const y = yogurAconsejable(admite);
+    return y ? `fruta o ${y}` : "fruta";
+  }
+  var ALIMENTOS_CONSEJO = {
+    platano: { texto: "un pl\xE1tano", ingredientes: ["pl\xE1tano"] },
+    fruta: { texto: "una pieza de fruta", ingredientes: ["manzana"] },
+    frutosSecos: { texto: "un pu\xF1ado de frutos secos", ingredientes: ["nueces"], alergenos: ["frutos de c\xE1scara"] },
+    barrita: { texto: "una barrita de cereales", ingredientes: ["barrita de cereales"], alergenos: ["gluten", "l\xE1cteos"], vegano: "no", sinLactosa: "no", sinGluten: "no" },
+    datiles: { texto: "d\xE1tiles", ingredientes: ["d\xE1tiles"] },
+    bocadillo: { texto: "un bocadillo peque\xF1o", ingredientes: ["pan"], alergenos: ["gluten"], sinGluten: "no" },
+    panMembrillo: { texto: "pan con membrillo", ingredientes: ["pan", "dulce de membrillo"], alergenos: ["gluten"], sinGluten: "no" },
+    panMermelada: { texto: "pan con mermelada", ingredientes: ["pan", "mermelada"], alergenos: ["gluten"], sinGluten: "no" },
+    batidoSoja: { texto: "un batido de fruta con bebida de soja", ingredientes: ["pl\xE1tano", "bebida de soja"], alergenos: ["soja"] },
+    zumoPlatano: { texto: "un zumo de naranja con un pl\xE1tano", ingredientes: ["zumo de naranja", "pl\xE1tano"] },
+    tostadasMermelada: { texto: "tostadas con mermelada y pl\xE1tano", ingredientes: ["pan", "mermelada", "pl\xE1tano"], alergenos: ["gluten"], sinGluten: "no" },
+    arrozLeche: { texto: "arroz con leche", ingredientes: ["arroz", "leche semidesnatada", "az\xFAcar"], alergenos: ["l\xE1cteos"], vegano: "no", sinLactosa: "no" },
+    arrozPlatano: { texto: "arroz blanco con pl\xE1tano", ingredientes: ["arroz", "pl\xE1tano"] },
+    huevos: { texto: "huevos", ingredientes: ["huevo"], alergenos: ["huevo"], vegano: "no" },
+    pavo: { texto: "pavo", ingredientes: ["pechuga de pavo"], vegetariano: "no", vegano: "no" },
+    quesoFresco: { texto: "queso fresco", ingredientes: ["queso fresco"], alergenos: ["l\xE1cteos"], vegano: "no", sinLactosa: "no" },
+    tofu: { texto: "tofu", ingredientes: ["tofu firme"], alergenos: ["soja"] },
+    pan: { texto: "pan", ingredientes: ["pan"], alergenos: ["gluten"], sinGluten: "no" },
+    panSinGluten: { texto: "pan sin gluten", ingredientes: ["pan sin gluten"] }
+  };
+  var recetaDe = (clave3) => {
+    const a2 = ALIMENTOS_CONSEJO[clave3];
+    return {
+      id: `__consejo_${clave3}`,
+      nombre: a2.texto,
+      franjas: ["media_manana", "merienda"],
+      kcal: 100,
+      proteina: 0,
+      grasa: 0,
+      hidrato: 0,
+      notas: "",
+      alergenos: a2.alergenos ?? [],
+      aptitudes: { vegetariano: a2.vegetariano ?? "si", vegano: a2.vegano ?? "si", sinLactosa: a2.sinLactosa ?? "si", sinGluten: a2.sinGluten ?? "si" },
+      ingredientes: a2.ingredientes.map((nombre) => ({ nombre, gramos: 50 }))
+    };
+  };
+  var admiteConsejo = (clave3, admite) => !admite || admite(recetaDe(clave3));
+  function ejemplosConsejo(claves, admite, respaldo = ["platano"]) {
+    const vale = claves.filter((c2) => admiteConsejo(c2, admite));
+    return (vale.length ? vale : respaldo.filter((c2) => admiteConsejo(c2, admite))).map((c2) => ALIMENTOS_CONSEJO[c2].texto);
+  }
+  function unirO(lista6, coma = false) {
+    if (lista6.length <= 1) return lista6[0] ?? "";
+    return `${lista6.slice(0, -1).join(", ")}${coma ? ", o " : " o "}${lista6[lista6.length - 1]}`;
+  }
+  var ejemplosO = (claves, admite, opciones = {}) => unirO(ejemplosConsejo(claves, admite, opciones.respaldo), opciones.coma);
+
   // src/motor/reparto-comidas.ts
   var PRINCIPALES = ["desayuno", "comida", "cena"];
   var SECUNDARIAS = ["media_manana", "merienda"];
   var RECUPERACION = { hueco_h: 8, larga_h: 2, toma_rapida_hueco_h: 2, sin_pausa_h: 0.25, hidrato_g_kg: 1, fraccion_donante: 0.5 };
-  var TOMA_RAPIDA_EJEMPLO = "un batido de fruta con bebida de soja, o pan con mermelada";
+  var tomaRapidaEjemplo = (admite) => ejemplosO(["batidoSoja", "panMermelada"], admite, { respaldo: ["zumoPlatano"], coma: true });
+  var TOMA_RAPIDA_EJEMPLO = tomaRapidaEjemplo();
+  function ejemploDesayunoTrasNadar(admite) {
+    const prot = ejemplosConsejo(["huevos", "pavo", "quesoFresco"], admite, ["tofu"]);
+    const pan = admiteConsejo("pan", admite) ? "pan" : admiteConsejo("panSinGluten", admite) ? "pan sin gluten" : void 0;
+    const yogur = yogurAconsejable(admite);
+    const ej = prot.length ? `${unirO(prot)}${pan ? ` con ${pan}` : ""}` : void 0;
+    return ej ? ` (${ej}${yogur ? `; un ${yogur} solo se queda corto` : ""})` : "";
+  }
   var FUERZA_MIN_H = 0.75;
   var TOMA_AYUNAS = { ejemplo: "un pl\xE1tano", gramos: 118, kcal: Math.round(89 * 118 / 100), fuente: "USDA FoodData Central, FDC 173944 (Bananas, raw): 89 kcal/100 g; 1 mediano = 118 g" };
   var TOMA_PRIMERA_HORA_NATACION = [
@@ -2420,7 +2521,7 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
       const sube = Math.min(pPrincipalCap - pPrincipal, Math.max(0, (pPrincipal - pPrincipalMinAviso) * otras));
       if (sube > 0) principales.forEach((f2) => proteinaPorPrincipal.set(f2, f2 === objetivoProteina ? pPrincipal + sube : pPrincipal - sube / otras));
     }
-    if (desayunoNatacion) avisos.push("Despu\xE9s de nadar: el desayuno, de los grandes y con prote\xEDna de verdad (huevos, pavo o queso fresco con pan; un yogur solo se queda corto), porque el agua fr\xEDa da m\xE1s hambre.");
+    if (desayunoNatacion) avisos.push(`Despu\xE9s de nadar: el desayuno, de los grandes y con prote\xEDna de verdad${ejemploDesayunoTrasNadar(e.admite)}, porque el agua fr\xEDa da m\xE1s hambre.`);
     const pesoBase = (f2) => p.pesoBase[f2] ?? 0;
     const sumaPesoContextual = franjas.reduce((s, f2) => s + pesoBase(f2) * rolYFactorPorFranja.get(f2).factor, 0);
     const sumaPesoBase = franjas.reduce((s, f2) => s + pesoBase(f2), 0);
@@ -2648,7 +2749,7 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
         } else {
           const g = redondear(quitarDeOtras(objetivo, usadas));
           if (g <= 0) continue;
-          const texto3 = `Recuperaci\xF3n r\xE1pida: ${porque}. Nada m\xE1s acabar el entreno de las ${hhmm(s.fin)}, una toma r\xE1pida: ${TOMA_RAPIDA_EJEMPLO} (unos ${Math.round(g)} g de hidrato, unas ${Math.round(4 * g)} kcal). Cuenta como una comida: se ha restado de las dem\xE1s y el total del d\xEDa no cambia.`;
+          const texto3 = `Recuperaci\xF3n r\xE1pida: ${porque}. Nada m\xE1s acabar el entreno de las ${hhmm(s.fin)}, una toma r\xE1pida: ${tomaRapidaEjemplo(e.admite)} (unos ${Math.round(g)} g de hidrato, unas ${Math.round(4 * g)} kcal). Cuenta como una comida: se ha restado de las dem\xE1s y el total del d\xEDa no cambia.`;
           avisos.push(texto3);
           recuperacionRapida.push({ inicio: s.inicio, fin: s.fin, toma: true, hidrato: g, objetivo, kcal: redondear(4 * g), texto: texto3 });
         }
@@ -3438,49 +3539,6 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     return avisos;
   }
 
-  // src/motor/consejo-alimento.ts
-  var YOGUR = {
-    id: "__consejo_yogur",
-    nombre: "Yogur natural",
-    franjas: ["media_manana", "merienda"],
-    kcal: 77,
-    proteina: 4.3,
-    grasa: 3.8,
-    hidrato: 6.3,
-    notas: "",
-    tipoPlato: "postre",
-    alergenos: ["l\xE1cteos"],
-    aptitudes: { vegetariano: "si", vegano: "no", sinLactosa: "no", sinGluten: "si" },
-    ingredientes: [{ nombre: "yogur natural", gramos: 125 }]
-  };
-  var YOGUR_SOJA = {
-    id: "__consejo_yogur_soja",
-    nombre: "Yogur de soja",
-    franjas: ["media_manana", "merienda"],
-    kcal: 69,
-    proteina: 4.8,
-    grasa: 2.6,
-    hidrato: 6.3,
-    notas: "",
-    tipoPlato: "postre",
-    alergenos: ["soja"],
-    aptitudes: { vegetariano: "si", vegano: "si", sinLactosa: "si", sinGluten: "pendiente_ficha" },
-    ingredientes: [{ nombre: "yogur de soja", gramos: 125 }]
-  };
-  function yogurAconsejable(admite) {
-    if (!admite || admite(YOGUR)) return "yogur";
-    if (admite(YOGUR_SOJA)) return "yogur de soja";
-    return void 0;
-  }
-  function frutaOYogur(admite) {
-    const y = yogurAconsejable(admite);
-    return y ? `una fruta o un ${y}` : "una fruta";
-  }
-  function postreFrutaOYogur(admite) {
-    const y = yogurAconsejable(admite);
-    return y ? `fruta o ${y}` : "fruta";
-  }
-
   // src/motor/medidas-caseras.ts
   var COLUMNAS2 = ["ingrediente", "medida", "gramos", "estado", "fuente_url_o_nota"];
   function comprobarMedidasCsv(texto3) {
@@ -4254,7 +4312,8 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
   var HIDRATO_MIN_DESAYUNO_CARRERA = 0.55;
   var GRASA_MAX_DESAYUNO_CARRERA = 0.25;
   var VERDURA_MAX_DESAYUNO_CARRERA = 0.3;
-  var EJEMPLO_DESAYUNO_CARRERA = "tostadas con mermelada y pl\xE1tano, o arroz con leche";
+  var ejemploDesayunoCarrera = (admite) => ejemplosO(["tostadasMermelada", "arrozLeche"], admite, { respaldo: ["arrozPlatano"], coma: true });
+  var EJEMPLO_DESAYUNO_CARRERA = ejemploDesayunoCarrera();
   var PESCADO = ["pescado", "atun", "salmon", "sardina", "caballa", "bonito", "merluza", "bacalao", "lubina", "dorada", "trucha", "boqueron", "anchoa", "gamba", "langostino", "marisco"];
   var VERDURA = ["tomate", "pepino", "lechuga", "espinaca", "acelga", "rucula", "canonigo", "brocoli", "coliflor", "calabacin", "calabaza", "berenjena", "pimiento", "cebolla", "puerro", "zanahoria", "champinon", "seta", "esparrago", "alcachofa", "judia verde", "remolacha", "apio", "col", "verdura", "brotes"];
   var palabra = (nombre, p) => new RegExp(`(^| )${p}(s|es)?( |$)`).test(normalizar4(nombre).replace(/[^a-z0-9]+/g, " ").trim());
@@ -4299,12 +4358,13 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
   function digestivoExcede(slot, r) {
     return fibraExcede(slot, r) || grasaExcede(slot, r);
   }
-  function motivoFibra(slot) {
-    if (slot.desayunoCarrera) return MOTIVO_DESAYUNO_CARRERA;
+  function motivoFibra(slot, admite) {
+    if (slot.desayunoCarrera) return motivoDesayunoCarrera(admite);
     if (slot.antesSesionIntensa) return slot.maxFibraG !== void 0 ? `antes de una sesi\xF3n intensa la raci\xF3n servida lleva como mucho ${slot.maxFibraG} g de fibra (nada de legumbre ni ensalada grande)` : "antes de una sesi\xF3n intensa se evita la fibra alta (legumbre, integral o verdura cruda)";
     return slot.maxFibraG !== void 0 && !slot.sinFibraAlta ? `antes de la prueba la raci\xF3n servida lleva como mucho ${slot.maxFibraG} g de fibra` : "la v\xEDspera de una competici\xF3n evita la fibra alta (legumbre, integral o verdura cruda)";
   }
-  var MOTIVO_DESAYUNO_CARRERA = `el desayuno de la carrera lleva muchos hidratos, poca grasa y poca fibra, sin huevo, pescado ni mucha verdura (por ejemplo, ${EJEMPLO_DESAYUNO_CARRERA})`;
+  var motivoDesayunoCarrera = (admite) => `el desayuno de la carrera lleva muchos hidratos, poca grasa y poca fibra, sin huevo, pescado ni mucha verdura (por ejemplo, ${ejemploDesayunoCarrera(admite)})`;
+  var MOTIVO_DESAYUNO_CARRERA = motivoDesayunoCarrera();
   function validarPeticionSiOSi(franja, veces) {
     if (!Number.isInteger(veces) || veces < 1) return "las veces por semana deben ser un n\xFAmero entero de 1 en adelante";
     const max = franja === "comida" || franja === "cena" ? 2 : 7;
@@ -4543,7 +4603,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
       const probar = (receta2, racion) => {
         const compat = ap ? evaluarCompatibilidad(receta2, ap) : { compatible: true };
         if (!compat.compatible) return { causa: `choca con tu perfil (${compat.motivo?.detalle ?? "alergia o lista negra"}): no se sirve`, arreglo: "Quita la fijaci\xF3n o elige una receta parecida." };
-        if (fibraExcede(slot, receta2)) return { causa: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y esta receta no lo cumple: ese d\xEDa elige la app` : slot.antesSesionIntensa ? "va antes de una sesi\xF3n intensa y esta receta lleva demasiada fibra: ese d\xEDa elige la app" : slot.sinFibraAlta ? "es v\xEDspera de competici\xF3n y esta receta lleva fibra alta: ese d\xEDa elige la app" : "es un d\xEDa de competici\xF3n con poca fibra y esta receta lleva demasiada: ese d\xEDa elige la app", arreglo: "Se propone otra receta solo para este d\xEDa." };
+        if (fibraExcede(slot, receta2)) return { causa: slot.desayunoCarrera ? `${motivoDesayunoCarrera(admiteAp(ap))}, y esta receta no lo cumple: ese d\xEDa elige la app` : slot.antesSesionIntensa ? "va antes de una sesi\xF3n intensa y esta receta lleva demasiada fibra: ese d\xEDa elige la app" : slot.sinFibraAlta ? "es v\xEDspera de competici\xF3n y esta receta lleva fibra alta: ese d\xEDa elige la app" : "es un d\xEDa de competici\xF3n con poca fibra y esta receta lleva demasiada: ese d\xEDa elige la app", arreglo: "Se propone otra receta solo para este d\xEDa." };
         if (!receta2.franjas.includes(slot.franja)) return { causa: "esta receta no vale para esta comida", arreglo: "La app ha puesto otra receta compatible en su lugar; puedes elegir otra de las opciones o quitar la fijaci\xF3n." };
         const calculada = racionParaObjetivo(receta2, slot.kcalObjetivo, slot.franja, { cargaAlta: slot.cargaAlta, piso: 0.5 });
         const racionPablo = racion !== void 0 && Number.isFinite(racion) && racion >= 0.5 && racion <= 2 && !incumplimientosRacion(slot.franja, receta2, racion, { cargaAlta: slot.cargaAlta }).incumplimientos.length ? racion : void 0;
@@ -4609,7 +4669,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
       const candidatos = [];
       for (const slot of slots.filter((s) => s.franja === p.franja)) {
         if (fibraExcede(slot, receta)) {
-          motivos.add(motivoFibra(slot));
+          motivos.add(motivoFibra(slot, admiteAp(opciones.alergiasPreferencias)));
           continue;
         }
         const ap = opciones.alergiasPreferencias;
@@ -4711,7 +4771,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
       const intentarBase = (lista6, filtrar) => {
         const candidatas = filtrar ? lista6.filter((r) => r.franjas.includes(slot.franja) && diaVale(r) && !digestivoExcede(slot, r)) : lista6;
         if (!candidatas.length) {
-          return { motivo: slot.desayunoCarrera ? `${MOTIVO_DESAYUNO_CARRERA}, y ninguna receta del cat\xE1logo lo cumple` : slot.antesSesionIntensa ? "por la fibra (antes de una sesi\xF3n intensa) no hay receta que valga para esta franja" : slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
+          return { motivo: slot.desayunoCarrera ? `${motivoDesayunoCarrera(admiteAp(opciones.alergiasPreferencias))}, y ninguna receta del cat\xE1logo lo cumple` : slot.antesSesionIntensa ? "por la fibra (antes de una sesi\xF3n intensa) no hay receta que valga para esta franja" : slot.sinFibraAlta || slot.maxFibraG !== void 0 ? "por la fibra (v\xEDspera o antes de la prueba) no hay receta que valga para esta franja" : "ninguna receta del cat\xE1logo declara esta franja" };
         }
         let aptas = candidatas;
         if (ap && filtrar) {
@@ -8043,7 +8103,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
   }
   function evaluar(slot, r, o) {
     if (!r.franjas.includes(slot.franja)) return { receta: r, motivo: "no declara esta franja" };
-    if (fibraExcede(slot, r)) return { receta: r, motivo: motivoFibra(slot) };
+    if (fibraExcede(slot, r)) return { receta: r, motivo: motivoFibra(slot, o.alergiasPreferencias ? (x) => evaluarCompatibilidad(x, o.alergiasPreferencias).compatible : void 0) };
     if (o.alergiasPreferencias) {
       const c2 = evaluarCompatibilidad(r, o.alergiasPreferencias);
       if (!c2.compatible) return { receta: r, motivo: `no encaja con tus alergias/preferencias (${c2.motivo?.detalle ?? "sin detalle"})` };
@@ -13126,7 +13186,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     if (!h) return `${m} min`;
     return `${h} h${m ? ` ${m} min` : ""}`;
   };
-  function planDiaExamen(op, fecha) {
+  function planDiaExamen(op, fecha, admite) {
+    const algoPequeno = ejemplosO(["fruta", "frutosSecos"], admite);
     if (op.tipo === "fisicas" || !op.fechaEscrito || op.fechaEscrito !== fecha) return void 0;
     const dur = op.duracionEscritoMin;
     const inicio = op.horaEscrito ? aMinutos2(op.horaEscrito) : void 0;
@@ -13136,8 +13197,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
       `D\xEDa del examen escrito${op.horaEscrito ? ` (a las ${op.horaEscrito})` : ""}: desayuno de los de siempre y nada nuevo en todo el d\xEDa (ni platos que no hayas probado ni suplementos).`,
       "Lleva una botella de agua y bebe a sorbos."
     ];
-    if (largo) avisos.push(`Es un examen largo (${textoDuracion(dur)}): si lo permiten, lleva algo peque\xF1o para la mitad, como una pieza de fruta o un pu\xF1ado de frutos secos.`);
-    else if (dur === void 0) avisos.push("Si el examen es largo (2 horas o m\xE1s) y lo permiten, lleva algo peque\xF1o: una pieza de fruta o un pu\xF1ado de frutos secos.");
+    if (largo) avisos.push(`Es un examen largo (${textoDuracion(dur)}): si lo permiten, lleva algo peque\xF1o para la mitad, como ${algoPequeno}.`);
+    else if (dur === void 0) avisos.push(`Si el examen es largo (2 horas o m\xE1s) y lo permiten, lleva algo peque\xF1o: ${algoPequeno}.`);
     avisos.push("Si tomas caf\xE9, el de siempre: hoy no es d\xEDa de tomar m\xE1s de lo habitual.");
     return { ...bloque ? { bloque } : {}, largo, avisos };
   }
@@ -13190,7 +13251,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
         const pr = ordenadas[n++];
         return { ...e, titulo: `${pr.nombre} (${pr.estimada ? "unos " : ""}${pr.duracionMin} min)`, detalle: "Esfuerzo corto: no hace falta tomar nada durante la prueba." };
       }
-      if (e.tipo === "entre") return { ...e, detalle: `${e.detalle} Unos sorbos de agua y algo peque\xF1o que ya conozcas: un pl\xE1tano, una barrita de cereales o pan con membrillo.` };
+      if (e.tipo === "entre") return { ...e, detalle: `${e.detalle} Unos sorbos de agua y algo peque\xF1o que ya conozcas: ${ejemplosO(["platano", "barrita", "panMembrillo"], opciones.admite)}.` };
       if (e.tipo === "recuperacion" && finJornada > finPruebas) return { ...e, minuto: finJornada + 30 };
       if (e.tipo === "previa") {
         const primera = p.pruebas[0].inicio;
@@ -13210,7 +13271,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
   var ENSAYO_FISICAS_DIAS = [14, 21];
   var DIAS_AVISO_RECONOCIMIENTO = 28;
   var diasEntre2 = (hoy, f2) => Math.round((utc(f2) - utc(hoy)) / MS_DIA4);
-  function ensayoDiaPruebas(op, hoy) {
+  function ensayoDiaPruebas(op, hoy, admite) {
     if (op.tipo === "escrito" || !op.fechaFisicas) return void 0;
     const d = diasEntre2(hoy, op.fechaFisicas);
     if (d < ENSAYO_FISICAS_DIAS[0] || d > ENSAYO_FISICAS_DIAS[1]) return void 0;
@@ -13218,7 +13279,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     const quedan = d - ENSAYO_FISICAS_DIAS[0];
     const cuando = quedan === 0 ? "hoy es el \xFAltimo d\xEDa bueno para hacer" : `${quedan === 1 ? "hoy o ma\xF1ana" : `en los pr\xF3ximos ${quedan + 1} d\xEDas`}, haz`;
     const hora3 = primera ? ` a la hora de las pruebas (la primera, a las ${primera}), con el mismo desayuno a las ${aHoraTexto(Math.max(0, aMinutos2(primera) - antesDesayunoFisicas(aMinutos2(primera))))}` : " a la hora de las pruebas, con el mismo desayuno 2 h antes";
-    return `Ensayo del d\xEDa de pruebas: ${cuando} un entreno como si fuera el d\xEDa de las f\xEDsicas,${hora3} y, entre prueba y prueba, agua y lo peque\xF1o que vayas a llevar (un pl\xE1tano o una barrita). As\xED sabes qu\xE9 te sienta bien; el d\xEDa de las pruebas, nada nuevo.`;
+    return `Ensayo del d\xEDa de pruebas: ${cuando} un entreno como si fuera el d\xEDa de las f\xEDsicas,${hora3} y, entre prueba y prueba, agua y lo peque\xF1o que vayas a llevar (${ejemplosO(["platano", "barrita"], admite)}). As\xED sabes qu\xE9 te sienta bien; el d\xEDa de las pruebas, nada nuevo.`;
   }
   function avisoReconocimiento(op, hoy) {
     const choque = "nada de dietas de choque ni de dejar de comer o de beber para llegar a un peso; come como siempre";
@@ -13405,7 +13466,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
   var r12 = (x) => Math.round(x * 10) / 10;
   var medio = (r) => r0((r[0] + r[1]) / 2);
   var segunIntensidad = (r, i) => i === "suave" ? r[0] : i === "intensa" ? r[1] : medio(r);
-  function duranteEntreno(sesion, deportePrincipal2, ensayo) {
+  function duranteEntreno(sesion, deportePrincipal2, ensayo, admite) {
     const min = Math.max(0, sesion.minutos);
     const deporte = deporteDeSesion(sesion.actividad, deportePrincipal2);
     const intensidad = intensidadDeSesion(sesion);
@@ -13475,7 +13536,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
         break;
       case "ciclismo":
         comun();
-        if (ghHora) notas.unshift(intensidad === "intensa" ? "En lo intenso, mejor gel o bebida." : "En bici vale lo s\xF3lido: pl\xE1tano, barrita, d\xE1tiles o un bocadillo peque\xF1o.");
+        if (ghHora) notas.unshift(intensidad === "intensa" ? "En lo intenso, mejor gel o bebida." : `En bici vale lo s\xF3lido: ${ejemplosO(["platano", "barrita", "datiles", "bocadillo"], admite)}.`);
         break;
       default:
         comun();
@@ -13513,14 +13574,14 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
   var bebidaTotalL = (p) => p.bebidaLHora ? [r12(p.bebidaLHora[0] * p.minutos / 60), r12(p.bebidaLHora[1] * p.minutos / 60)] : void 0;
   var FRANJAS_SUSTITUIBLES = ["media_manana", "merienda"];
   var cuentaG = (p) => !p.opcional && (p.objetivoTotalG ?? 0) > 0 ? p.objetivoTotalG : 0;
-  function frenarEnsayo(sesiones, pautas, deportePrincipal2, hidratoDiaG) {
+  function frenarEnsayo(sesiones, pautas, deportePrincipal2, hidratoDiaG, admite) {
     if (!(typeof hidratoDiaG === "number" && hidratoDiaG > 0) || !pautas.some((p) => p.ensayo)) return pautas;
     let exceso = pautas.reduce((t2, p) => t2 + cuentaG(p), 0) - ENSAYO.maxFraccionHidratoDia * hidratoDiaG;
     if (!(exceso > 0)) return pautas;
     return pautas.map((p, i) => {
       if (!p.ensayo || !(exceso > 0)) return p;
       const horas = p.minutos / 60;
-      const normal5 = duranteEntreno(sesiones[i], deportePrincipal2);
+      const normal5 = duranteEntreno(sesiones[i], deportePrincipal2, void 0, admite);
       const gNormal = normal5.opcional ? 0 : normal5.objetivoGHora ?? 0;
       const g = Math.max(gNormal, Math.floor((p.ensayo.gHora - exceso / horas) / 5) * 5);
       if (g >= p.ensayo.gHora) return p;
@@ -13538,7 +13599,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
   var BRICK = { huecoMaxMin: 15, fraccionCarrera: 1 / 3 };
   var esBici = (s) => deporteDeSesion(s.actividad) === "ciclismo";
   var esCarrera = (s) => deporteDeSesion(s.actividad) === "running";
-  function juntarBricks(sesiones, pautas, deportePrincipal2) {
+  function juntarBricks(sesiones, pautas, deportePrincipal2, admite) {
     const salida = [...pautas];
     const usadas = /* @__PURE__ */ new Set();
     const orden = sesiones.map((s, i) => i).filter((i) => typeof sesiones[i].horaInicio === "number").sort((a2, b) => sesiones[a2].horaInicio - sesiones[b].horaInicio);
@@ -13557,7 +13618,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
       const sCarr = sesiones[carrera];
       const total = sBici.minutos + sCarr.minutos;
       const dura = intensidadDeSesion(sBici) === "intensa" || intensidadDeSesion(sCarr) === "intensa";
-      const junta = duranteEntreno({ actividad: sBici.actividad, minutos: total, ...dura ? { dura: true } : {}, ...sBici.nombre ? { nombre: sBici.nombre } : {} }, deportePrincipal2);
+      const junta = duranteEntreno({ actividad: sBici.actividad, minutos: total, ...dura ? { dura: true } : {}, ...sBici.nombre ? { nombre: sBici.nombre } : {} }, deportePrincipal2, void 0, admite);
       usadas.add(a2);
       usadas.add(b);
       if (!junta.ghHora || junta.objetivoGHora === void 0) continue;
@@ -13589,8 +13650,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     }
     return salida;
   }
-  function tomaDuranteDia(sesiones, franjas, deportePrincipal2, ensayo, hidratoDiaG) {
-    const pautas = juntarBricks(sesiones, frenarEnsayo(sesiones, sesiones.map((s) => duranteEntreno(s, deportePrincipal2, ensayo)), deportePrincipal2, hidratoDiaG), deportePrincipal2);
+  function tomaDuranteDia(sesiones, franjas, deportePrincipal2, ensayo, hidratoDiaG, admite) {
+    const pautas = juntarBricks(sesiones, frenarEnsayo(sesiones, sesiones.map((s) => duranteEntreno(s, deportePrincipal2, ensayo, admite)), deportePrincipal2, hidratoDiaG, admite), deportePrincipal2, admite);
     const cuentan = sesiones.map((s, i) => ({ s, p: pautas[i] })).filter(({ p }) => cuentaG(p) > 0);
     const hidratoG = cuentan.reduce((t2, { p }) => t2 + (p.objetivoTotalG ?? 0), 0);
     const toma = { pautas, hidratoG, kcal: 4 * hidratoG };

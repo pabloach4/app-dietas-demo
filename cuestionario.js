@@ -675,7 +675,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (deporteElegido !== 'opositor') return undefined;
     const v = Motor.validarOposicion(leerOposicion());
     if (!v.ok) return undefined;
-    return Motor.planDiaExamen(v.oposicion, calInicio ? Motor.fechaDelDia(calInicio, dia) : fechaProximaDe(dia));
+    return Motor.planDiaExamen(v.oposicion, calInicio ? Motor.fechaDelDia(calInicio, dia) : fechaProximaDe(dia), admiteConsejo);
   }
   /** Los bloques del opositor ese día: el examen (si es el día del examen) o sus bloques de estudio. */
   function bloquesOpoDelDia(dia) {
@@ -963,7 +963,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     ];
     plan.dias.forEach((d) => {
       lineas.push(`- ${d.dia} (${d.tipo}): ${d.kcal} kcal — P ${d.proteinaG} g · G ${d.grasaG} g · H ${d.hidratoG} g`);
-      const reparto = Motor.repartirComidas({
+      const reparto = Motor.repartirComidas({ admite: admiteConsejo, /* #351 1b */
         kcal: d.kcal, proteina: d.proteinaG, grasa: d.grasaG, hidrato: d.hidratoG,
         pesoRef: plan.proteina.pesoReferencia, peso: respuestasActuales.peso, tipoDia: d.tipo,
         sesiones: franjaADia(d.dia, franjasDelDia(d.dia), sesionesConActividad),
@@ -2577,7 +2577,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const v = Motor.validarOposicion(leerOposicion());
     if (!v.ok) return null;
     const fecha = calInicio ? Motor.fechaDelDia(calInicio, dia) : fechaProximaDe(dia);
-    const x = Motor.planDiaFisicas(v.oposicion, fecha, respuestasActuales.peso, { edad: respuestasActuales.edad });
+    const x = Motor.planDiaFisicas(v.oposicion, fecha, respuestasActuales.peso, { edad: respuestasActuales.edad, admite: admiteConsejo });
     return x ? { ...x, fecha, fisicas: true } : null;
   }
   function tomasHabituales() {
@@ -3540,7 +3540,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       ...(Number.isFinite(s.horaInicio) ? { horaInicio: s.horaInicio } : {}),
     }));
     if (!ses.length) return sinQuitadas(dia, reparto);
-    const toma = Motor.tomaDuranteDia(ses, excepcionesHorario.get(dia) ?? franjasActuales ?? [], deporteElegido, ensayoDelDia(dia), reparto.franjas.reduce((t, f) => t + f.hidrato, 0)); // #319 p5: freno con el hidrato del día
+    const toma = Motor.tomaDuranteDia(ses, excepcionesHorario.get(dia) ?? franjasActuales ?? [], deporteElegido, ensayoDelDia(dia), reparto.franjas.reduce((t, f) => t + f.hidrato, 0), admiteConsejo); // #319 p5: freno con el hidrato del día
     return sinQuitadas(dia, { ...reparto, franjas: Motor.repartoConTomaDurante(reparto.franjas, toma), tomaDurante: toma });
   }
   // #319 parte 5: ensayo de carrera en las 6 semanas antes de una prueba de más de 90 min (hace falta la fecha de inicio del plan).
@@ -4542,12 +4542,18 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const apetece = Motor.normalizarApetece(document.getElementById('apetece')?.value); // #332 parte 3: «Más caliente» / «Más frío» mandan sobre el mes
     const temporadaDia = (dia) => { const fecha = calInicio && Motor.esLunes(calInicio) ? Motor.fechaDelDia(calInicio, dia) : hoyTemporada; const t = Motor.preferenciaTemporada(fecha, apetece); const mes = Motor.mesDeFecha(fecha); return { ...(t ? { temporada: t } : {}), ...(mes ? { mesFruta: mes } : {}) /* #332 p2: la fruta de temporada del mes */ }; };
     const filasCSV = []; // issue #31: una fila por día y franja, para el CSV descargable
+    // #351 parte 1b: las restricciones de la persona, antes del reparto, para que sus avisos (desayuno tras nadar, toma rápida) ya las respeten.
+    const quitadosAhora = gruposQuitadosVigentes(); // #323 parte 2b: el catálogo, las sustituciones y el postre tampoco los ofrecen
+    const alergiasPreferencias = { ...Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', ')), ...(quitadosAhora.length ? { gruposQuitados: quitadosAhora } : {}) };
+    restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
+    const admitePostre = (r) => Motor.evaluarCompatibilidad(r, alergiasPreferencias).compatible; // #259.11: el postre de cierre, con las mismas restricciones
+    admiteConsejo = admitePostre;
 
     // Issue #35: primera pasada solo para tener el reparto de kcal/macros de cada día y la semana
     // completa de franjas (slotsSemana); el asignador de recetas necesita la semana entera (para
     // repartir variedad, #23), así que no se puede resolver receta por receta dentro del mismo bucle.
     const repartosPorDia = plan.dias.map((d) => {
-      const repartoBase = Motor.repartirComidas({
+      const repartoBase = Motor.repartirComidas({ admite: admiteConsejo, /* #351 1b */
         kcal: d.kcal - (d.extraAjustes ? d.extraAjustes.kcal : 0), proteina: d.proteinaG - (d.extraAjustes ? d.extraAjustes.proteina : 0), grasa: d.grasaG, hidrato: d.hidratoG - (d.extraAjustes ? d.extraAjustes.hidrato : 0), // #322 p3: lo de más va a su comida
         pesoRef: plan.proteina.pesoReferencia, peso: respuestas.peso, tipoDia: d.tipo,
         sesiones: franjaADia(d.dia, franjasDelDia(d.dia), sesionesConActividad),
@@ -4579,14 +4585,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // de la compra (pintarListaCompra), para que tarjetas y lista concuerden siempre.
     // Issue #39: antes de proponer una receta, se descarta lo incompatible con alergias/preferencias
     // (o lo que no se puede confirmar, como celiaquía sin etiquetas contrastadas en este catálogo).
-    const quitadosAhora = gruposQuitadosVigentes(); // #323 parte 2b: el catálogo, las sustituciones y el postre tampoco los ofrecen
-    const alergiasPreferencias = { ...Motor.alergiasPreferenciasDesdeTexto(respuestas.alergias, [respuestas.preferencias.evitan, ...listaNegra].filter(Boolean).join(', ')), ...(quitadosAhora.length ? { gruposQuitados: quitadosAhora } : {}) };
-    restriccionesActuales = alergiasPreferencias; // issue #74: el catálogo usa las mismas restricciones que el plan
     pintarDesayunoPref(); // #265 E3: la lista de «siempre el mismo», con las restricciones de ahora
     pintarHambreCena(); // #265 F: la pregunta, solo si esta semana algún entreno acaba de noche con la cena después
     if (!Array.isArray(duelosEnCurso)) pintarGustos(); // #261 C: los duelos, con las restricciones de ahora
-    const admitePostre = (r) => Motor.evaluarCompatibilidad(r, alergiasPreferencias).compatible; // #259.11: el postre de cierre, con las mismas restricciones
-    admiteConsejo = admitePostre;
     RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, Boolean(respuestas.alergias && respuestas.alergias.celiaquia)); // #256.26
     // #189: la próxima dieta guardada se vuelve a comprobar con las restricciones de ahora: lo que ya no vale se quita y se dice.
     if (siguiente) {
@@ -4880,7 +4881,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         const hoyOp = Motor.fechaLocalISO(new Date());
         const porIdOp = new Map(RECETAS_EJEMPLO.map((r) => [r.id, r]));
         const comidasOp = asignacionSemana.asignaciones.filter((a) => a.franja === 'comida').map((a) => ({ dia: a.dia, nombre: (Motor.recetaDeId(porIdOp, a.receta) || { nombre: a.receta }).nombre }));
-        const ideas = [Motor.ensayoDiaPruebas(vOp.oposicion, hoyOp), Motor.avisoReconocimiento(vOp.oposicion, hoyOp), ...Motor.ideasCocinaOposicion(vOp.oposicion, comidasOp)].filter(Boolean);
+        const ideas = [Motor.ensayoDiaPruebas(vOp.oposicion, hoyOp, admiteConsejo), Motor.avisoReconocimiento(vOp.oposicion, hoyOp), ...Motor.ideasCocinaOposicion(vOp.oposicion, comidasOp)].filter(Boolean);
         if (ideas.length) caja.innerHTML += `<ul class="resumen-lista op-ideas" style="margin:0.4rem 0">${ideas.map((t) => `<li>${escaparHtml(t)}</li>`).join('')}</ul>`;
       }
     }
@@ -4981,7 +4982,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
             </div>
             <div class="franja-reparto-macros"><span><span class="chip chip-h" aria-hidden="true">H</span>${Math.round(tr.hidrato)} g<span class="sr-solo"> de hidratos</span></span></div>
             <div class="franja-barra" aria-hidden="true"><span style="width:${pct}%"></span></div>
-            <p class="subt">⚡ Nada más acabar, porque la siguiente sesión está cerca: ${escaparHtml(Motor.TOMA_RAPIDA_EJEMPLO)}. Cuenta dentro de las kcal del día: las demás comidas llevan menos hidratos.</p>
+            <p class="subt">⚡ Nada más acabar, porque la siguiente sesión está cerca: ${escaparHtml(Motor.tomaRapidaEjemplo(admiteConsejo))}. Cuenta dentro de las kcal del día: las demás comidas llevan menos hidratos.</p>
           </div>`;
       }).join('');
       const sesionesDelDia = sesiones.map((s, i) => ({ ...s, i })).filter((s) => s.dia === d.dia);
@@ -5005,7 +5006,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
               // #319 parte 5: si es un ensayo, la pauta del reparto del día (con el freno de la mitad del hidrato ya aplicado).
               // #317: bici y carrera seguidas, también la del reparto (la toma va junta y la mayor parte en la bici).
               const pEnsayo = (reparto.tomaDurante?.pautas ?? []).find((pd) => (pd.ensayo || pd.brick) && pd.minutos === s.minutos && pd.deporte === Motor.deporteDeSesion(s.actividad, deporteElegido));
-              const t = pEnsayo ? Motor.textoDuranteEntreno(pEnsayo) : Motor.textoDuranteEntreno(Motor.duranteEntreno({ actividad: s.actividad, minutos: s.minutos, ...(u.dura || s.dura ? { dura: true } : {}), ...(u.tipo || u.nota || u.deporte ? { nombre: u.tipo || u.nota || u.deporte } : {}) }, deporteElegido, ensayoDelDia(d.dia)));
+              const t = pEnsayo ? Motor.textoDuranteEntreno(pEnsayo) : Motor.textoDuranteEntreno(Motor.duranteEntreno({ actividad: s.actividad, minutos: s.minutos, ...(u.dura || s.dura ? { dura: true } : {}), ...(u.tipo || u.nota || u.deporte ? { nombre: u.tipo || u.nota || u.deporte } : {}) }, deporteElegido, ensayoDelDia(d.dia), admiteConsejo));
               return t ? `<p class="subt durante-sesion" data-dia="${d.dia}">🍌 ${escaparHtml(t)}</p>` : '';
             })()}
           `).join('')}
@@ -5180,7 +5181,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     if (calInicio && !Motor.diaDeLaFecha(calInicio, isoHoyReal) && compPorDia.get(diaHoyReal) && compPorDia.get(diaHoyReal).fase) {
       const dB = planBase.dias.find((x) => x.dia === diaHoyReal);
       if (dB) {
-        let repB = Motor.repartirComidas({
+        let repB = Motor.repartirComidas({ admite: admiteConsejo, /* #351 1b */
           kcal: dB.kcal, proteina: dB.proteinaG, grasa: dB.grasaG, hidrato: dB.hidratoG,
           pesoRef: planBase.proteina.pesoReferencia, peso: respuestas.peso, tipoDia: dB.tipo,
           sesiones: franjaADia(dB.dia, franjasDelDia(dB.dia), sesionesConActividad),
