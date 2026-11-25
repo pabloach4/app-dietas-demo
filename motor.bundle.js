@@ -6267,6 +6267,380 @@ R528,crudo,plato_combinado,frio,no
 
   // src/motor/tiempo-taper-datos.ts
   var TIEMPO_TAPER_CSV = `id,tiempo_min,apto_taper,criterio
+R01,15,si,Verduras y montaje del guiso; enfriar pronto y recalentar por completo.
+R02,15,si,Troceado y montaje; cocci\xF3n pasiva aparte; enfriar pronto y recalentar por completo.
+R03,25,si,"Pisto y huevo en el t\xE1per; el pan, aparte. Enfriar pronto y mantener en fr\xEDo."
+R04,20,si,Verdura asada y bacalao bien cocinado; enfriar pronto y recalentar por completo.
+R05,20,si,Remojo y cocci\xF3n pasiva no incluidos; guiso apto tras enfriado r\xE1pido y fr\xEDo continuo.
+R06,20,si,Arroz con pollo ya asado; enfriar r\xE1pidamente y conservar en fr\xEDo hasta recalentar.
+R07,15,si,Montaje con garbanzo y at\xFAn cocidos; el pan ya consta aparte; refrigerar sin demora.
+R08,20,si,Trabajo de sofrito y montaje; cocci\xF3n pasiva aparte; enfriar r\xE1pidamente el arroz.
+R09,5,no,Bol montado con pl\xE1tano cortado y almendra; no se presupone separar ingredientes.
+R10,15,si,"Salm\xF3n completamente cocinado; fr\xEDo continuo y recalentado completo, puede perder jugosidad."
+R11,15,no,Tostada montada para comer reci\xE9n hecha; el pan se reblandece.
+R12,20,si,Arroz y salteado; enfriar r\xE1pidamente y recalentar por completo.
+R13,20,si,Guiso con at\xFAn completamente cocinado; enfriar pronto y mantener fr\xEDo.
+R14,15,si,Se parte de alubia cocida; guiso que admite recalentado completo.
+R15,20,si,Guiso con pollo ya cocinado; enfriado r\xE1pido y recalentado completo.
+R16,20,si,Huevo duro y patata guisada; mantener fr\xEDo y recalentar por completo.
+R17,20,si,Verdura cocida y huevo duro; mantener fr\xEDo hasta comer o recalentar.
+R18,20,si,Verdura horneada y huevo totalmente cuajado; enfriar pronto y recalentar.
+R19,20,si,Pescado completamente cocinado y patata; fr\xEDo continuo y recalentado completo.
+R20,25,si,Huevo totalmente cuajado con verduras; enfriar pronto y recalentar por completo.
+R21,15,si,"Gazpacho en un recipiente cerrado y fr\xEDo; at\xFAn, huevo y pan, aparte."
+R22,25,no,Las migas doradas pierden textura tras un d\xEDa; preparaci\xF3n pensada para reci\xE9n hecha.
+R23,20,si,Guiso con alubia cocida y pavo completamente cocinado; admite recalentado.
+R24,20,si,Guiso con alubia cocida y pavo; enfriar pronto y recalentar por completo.
+R25,10,si,"Gachas con manzana y yogur; recipiente cerrado y fr\xEDo continuo, cambia la textura."
+R26,15,no,Tortitas ya cubiertas de yogur y fresa; no consta guardar cobertura separada.
+R27,10,no,Pan tostado con tomate montado; pierde la textura al conservarlo.
+R28,5,si,Bol fr\xEDo sin tostadas; recipiente cerrado y refrigeraci\xF3n continua.
+R29,15,si,"Bocadillo envuelto, montado en el d\xEDa; el yogur, en su envase; en fr\xEDo si pasan m\xE1s de 2 h."
+R30,5,no,Batido con pl\xE1tano para consumir reci\xE9n triturado; se separa y oxida al guardar.
+R31,15,no,Arroz ya mezclado con pl\xE1tano y miel; no se presupone montar fruta al servir.
+R32,10,no,Tostadas con tomate ya montadas; pierden textura al guardar.
+R33,15,si,Claras completamente cuajadas y arroz; enfriar r\xE1pidamente y recalentar por completo.
+R34,15,si,Pescado completamente cocinado; enfriar pronto y mantener fr\xEDo hasta recalentar.
+R35,15,si,Pasta con pavo cocinado y tomate; admite recalentado con fr\xEDo continuo.
+R36,5,no,Bol montado con pl\xE1tano cortado; no se presupone a\xF1adirlo al servir.
+R37,20,no,La receta incluye pan y tomate servidos con la tortilla; no consta envasado separado.
+R38,15,no,Crema con pollo y pan ya servidos; no consta llevar el pan separado.
+R39,20,si,Pavo completamente cocinado y verduras; enfriar pronto y recalentar por completo.
+R40,15,si,"Lentejas y huevo en el t\xE1per; ali\xF1o y pan, aparte. Mantener en fr\xEDo."
+R41,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R42,10,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R43,15,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R44,10,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R45,10,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R46,10,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R47,15,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R48,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R49,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R50,10,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R51,15,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R52,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R53,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R54,10,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R55,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R56,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R57,15,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R58,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R59,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R60,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R61,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R62,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R63,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R64,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R65,20,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R66,25,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R67,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R68,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R69,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R70,25,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R71,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R72,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R73,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R74,20,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R75,15,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R76,30,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R77,20,no,Estimaci\xF3n activa; no queda expl\xEDcito el cuajado completo del huevo para conservarlo un d\xEDa.
+R78,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R79,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R80,15,no,Estimaci\xF3n activa; no queda expl\xEDcito el cuajado completo del huevo para conservarlo un d\xEDa.
+R81,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R82,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R83,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R84,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R85,15,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R86,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R87,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R88,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R89,10,si,Wrap montado en el d\xEDa; unas gotas de lim\xF3n en el aguacate. En fr\xEDo hasta comer.
+R90,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R91,5,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R92,10,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R93,10,si,Tortilla bien cuajada; el pan y naranja ya se sirven aparte; refrigerar la tortilla.
+R94,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R95,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R96,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R97,1,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R98,5,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R99,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R100,5,no,Estimaci\xF3n activa; batido preparado para servir reci\xE9n triturado; separa fases y cambia textura.
+R102,1,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R103,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R104,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R105,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R106,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R107,5,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R108,10,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R109,3,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R110,10,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R111,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R112,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R113,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R114,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R115,10,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R116,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R117,35,si,"Estimaci\xF3n activa, incluido removido frecuente; enfriar r\xE1pidamente y refrigerar sin demora."
+R118,3,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R119,5,si,Bocadillo de pollo ya asado sin relleno h\xFAmedo; yogur ya aparte; fr\xEDo continuo.
+R120,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R121,10,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R122,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R123,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R124,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R125,15,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R126,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R127,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R128,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R129,15,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R130,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R131,15,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R132,20,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R133,20,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R134,20,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R135,20,si,Tortitas bien cocinadas; enfriar y refrigerar con la fruta lavada; pierden algo de esponjosidad.
+R140,15,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R141,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R142,25,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R143,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R144,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R145,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R146,2,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R147,2,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R148,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R149,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R150,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R151,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R152,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R153,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R154,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R155,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R156,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R157,2,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R158,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R161,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R162,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R163,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R164,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R165,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R166,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R167,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R168,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R169,40,no,Incluye 30-35 min de removido frecuente; pl\xE1tano cortado encima sin montaje diferido expl\xEDcito.
+R170,40,no,Incluye 30-35 min de removido frecuente; pera cortada encima sin montaje diferido expl\xEDcito.
+R171,40,si,Incluye 30-35 min de removido frecuente; pi\xF1a ya aparte; enfriar r\xE1pidamente y refrigerar.
+R172,40,si,Incluye 30-35 min de removido frecuente; mandarina ya aparte; enfriar r\xE1pidamente y refrigerar.
+R173,2,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R174,2,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R175,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R176,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R177,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R178,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R179,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R180,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R181,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R182,3,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R184,1,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R300,10,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R301,10,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R302,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R303,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R304,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R305,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R306,10,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R307,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R308,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R309,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R310,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R311,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R312,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R313,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R314,15,no,La elaboraci\xF3n queda truncada tras sofre\xEDr ajo; no se puede asegurar proceso ni tiempo activo.
+R315,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R316,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R317,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R318,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R319,5,no,Estimaci\xF3n activa; aguacate ya cortado o machacado sin pauta de conservaci\xF3n para un d\xEDa.
+R320,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R321,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R322,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R323,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R324,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R325,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R326,25,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R327,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R328,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R329,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R330,25,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R331,20,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R332,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R333,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R334,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R335,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R336,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R337,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R340,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R341,5,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R342,10,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R343,10,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R344,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R345,5,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R346,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R347,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R348,5,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R349,10,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R350,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R351,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R352,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R353,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R354,5,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R355,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R356,5,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R357,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R358,5,no,Estimaci\xF3n activa; aguacate ya cortado o machacado sin pauta de conservaci\xF3n para un d\xEDa.
+R359,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R380,10,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R381,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R382,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R383,15,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R384,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R385,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R386,10,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R387,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R388,5,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R389,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R390,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R391,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R392,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R393,15,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R394,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R395,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R396,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R397,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R398,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R399,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R400,20,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R401,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R402,10,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R403,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R404,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R405,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R406,15,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R407,10,no,Estimaci\xF3n activa; aguacate ya cortado o machacado sin pauta de conservaci\xF3n para un d\xEDa.
+R408,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R409,20,si,Garbanzos y espinacas cocinados con reques\xF3n; enfriar pronto y mantener fr\xEDo continuo.
+R410,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R411,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R412,15,si,Verduras asadas y cusc\xFAs con yogur; enfriar r\xE1pidamente y mantener fr\xEDo continuo.
+R413,25,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R414,10,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R415,15,si,Crema con reques\xF3n; enfriar r\xE1pidamente y mantener refrigerada.
+R416,10,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R417,10,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R418,15,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R420,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R421,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R422,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R423,10,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R424,10,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R425,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R426,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R427,10,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R428,5,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R429,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R430,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R431,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R432,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R433,5,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R434,5,no,Estimaci\xF3n activa; pan con acompa\xF1amiento h\xFAmedo: no consta envasado que evite reblandecerlo.
+R435,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R436,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R437,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R438,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R439,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R440,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R441,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R442,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R443,20,no,Estimaci\xF3n activa; no queda expl\xEDcito el cuajado completo del huevo para conservarlo un d\xEDa.
+R444,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R445,15,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R446,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R447,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R448,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R449,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R450,20,si,Crema con quinoa y reques\xF3n; enfriar r\xE1pidamente y mantener refrigerada.
+R451,30,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R460,10,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R461,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R462,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R463,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R464,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R465,10,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R466,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R467,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R468,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R469,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R470,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R471,5,no,Estimaci\xF3n activa; batido preparado para servir reci\xE9n triturado; separa fases y cambia textura.
+R472,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R473,2,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R474,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R475,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R476,25,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R477,20,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R478,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R479,35,si,"Estimaci\xF3n activa, incluido removido frecuente; enfriar r\xE1pidamente y refrigerar sin demora."
+R480,35,si,"Estimaci\xF3n activa, incluido removido frecuente; enfriar r\xE1pidamente y refrigerar sin demora."
+R481,10,si,"Estimaci\xF3n activa, incluido removido frecuente; enfriar r\xE1pidamente y refrigerar sin demora."
+R482,10,si,"Estimaci\xF3n activa, incluido removido frecuente; enfriar r\xE1pidamente y refrigerar sin demora."
+R483,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R484,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R485,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R486,10,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R487,20,si,"Wrap montado en el d\xEDa; la r\xFAcula, al final. En fr\xEDo hasta comer."
+R488,25,no,Estimaci\xF3n activa; aguacate ya cortado o machacado sin pauta de conservaci\xF3n para un d\xEDa.
+R489,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R490,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R491,5,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R492,10,si,Huevo cuajado al horno; enfriar y conservar tapado en fr\xEDo; no se certifican los 3-4 d\xEDas del texto.
+R493,30,no,Estimaci\xF3n activa; aguacate ya cortado o machacado sin pauta de conservaci\xF3n para un d\xEDa.
+R494,30,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R495,30,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R496,15,si,Tarta con centro cuajado; enfriar y refrigerar; no se certifican los 3-4 d\xEDas del texto.
+R497,15,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R498,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R499,30,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R500,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R501,10,no,Estimaci\xF3n activa; aguacate ya cortado o machacado sin pauta de conservaci\xF3n para un d\xEDa.
+R502,30,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R503,25,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R504,25,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R505,25,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R506,20,no,"Estimaci\xF3n activa; hoja tierna en el plato montado, sin indicaci\xF3n de mantenerla separada del ali\xF1o o calor."
+R507,35,no,"Remojo y cocci\xF3n pasiva excluidos; incluye sofrito, majado y montaje; pan tostado de acompa\xF1amiento."
+R508,35,si,"Incluye troceado, espumado y vigilancia intermitente; excluye remojo y cocci\xF3n pasiva; enfriar pronto."
+R509,30,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R510,10,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R511,10,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R512,15,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R513,20,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R514,30,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R515,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R516,25,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R517,25,si,Estimaci\xF3n activa; arroz cocido: enfriar r\xE1pidamente y refrigerar sin demora hasta el recalentado completo.
+R518,30,no,Estimaci\xF3n activa; gratinado o dorado para consumir reci\xE9n hecho; se pierde la textura al guardar.
+R519,20,no,No se explicita cuajado completo del huevo; no se modifica el procedimiento para dar el s\xED.
+R520,10,no,Cestita dorada al aire; la base pierde textura con el relleno al conservarse un d\xEDa.
+R521,20,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R522,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R523,3,no,"Estimaci\xF3n activa; pl\xE1tano o fruta cortada susceptible de oxidaci\xF3n, sin indicaci\xF3n de montaje al servir."
+R524,10,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R525,10,no,Estimaci\xF3n activa; tostada o base crujiente pierde textura guardada con la cobertura.
+R526,15,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
+R527,5,si,Estimaci\xF3n activa; plato cocinado que admite fr\xEDo o recalentado completo; enfriar pronto y refrigerar.
+R528,5,si,Estimaci\xF3n activa de montaje; conservar tapado y en fr\xEDo continuo; puede cambiar algo la textura.
 `;
 
   // src/motor/fotos-datos.ts
