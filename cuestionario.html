@@ -326,6 +326,13 @@
   .rec-etiqueta { align-self: flex-start; font-size: 0.75rem; font-weight: 700; background: var(--aviso); border: 1px solid var(--aviso-borde); border-radius: 999px; padding: 0.1rem 0.5rem; }
   .rec-dato { font-size: 0.82rem; color: var(--gris); }
   .etq-tt { display: inline-block; font-size: 0.75rem; font-weight: 600; color: var(--texto); background: var(--verde-suave); border-radius: 999px; padding: 0.05rem 0.45rem; white-space: nowrap; } /* #353 parte 1 */
+  .rec-img.con-foto { padding: 0; overflow: hidden; background: var(--verde-suave); } /* #353 parte 3 */
+  .rec-img.con-foto::before { content: none; }
+  .rec-foto { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .dc-foto { margin: 0 0 0.8rem; }
+  .dc-foto-img { display: block; width: 100%; height: auto; max-height: 240px; object-fit: cover; border-radius: 12px; background: var(--verde-suave); }
+  .dc-foto figcaption { font-size: 0.75rem; color: var(--gris); margin-top: 0.25rem; }
+  .dc-foto figcaption a { color: inherit; }
   .rec-tt { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0; }
   .dc-tt { font-weight: 400; }
   .rec-incompat { font-size: 0.82rem; color: var(--peligro); font-weight: 600; }
@@ -1781,12 +1788,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=f6f63f8"></script>
-<script src="fuentes.js?v=f6f63f8"></script>
-<script src="motor.bundle.js?v=f6f63f8"></script>
-<script src="cuestionario.js?v=f6f63f8"></script>
-<script src="nube.js?v=f6f63f8"></script>
-<script src="pwa.js?v=f6f63f8"></script>
+<script src="novedades.js?v=175ad6b"></script>
+<script src="fuentes.js?v=175ad6b"></script>
+<script src="motor.bundle.js?v=175ad6b"></script>
+<script src="cuestionario.js?v=175ad6b"></script>
+<script src="nube.js?v=175ad6b"></script>
+<script src="pwa.js?v=175ad6b"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

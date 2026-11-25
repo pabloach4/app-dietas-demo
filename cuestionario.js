@@ -2247,6 +2247,22 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // #353 parte 1: minutos de preparación activa y si vale para táper (datos de #355). Sin fila, la receta no enseña etiquetas ni pasa esos
   // filtros. La prueba de navegador inyecta un CSV propio en `__TIEMPO_TAPER_PRUEBA` mientras no estén los datos.
   const TIEMPO_TAPER = Motor.tiempoTaperDesdeCsv(typeof window.__TIEMPO_TAPER_PRUEBA === 'string' && window.__TIEMPO_TAPER_PRUEBA ? window.__TIEMPO_TAPER_PRUEBA : Motor.TIEMPO_TAPER_CSV);
+  // #353 parte 3: la foto de cada receta (propia o con licencia libre, de datos/receta-fotos.csv). Sin fila, sin foto. Carga perezosa y
+  // `alt` con el nombre del plato; si el archivo no carga, se quita y queda el icono. La prueba de navegador inyecta `__FOTOS_PRUEBA`.
+  const FOTOS_RECETAS = Motor.fotosDesdeCsv(typeof window.__FOTOS_PRUEBA === 'string' && window.__FOTOS_PRUEBA ? window.__FOTOS_PRUEBA : Motor.FOTOS_CSV);
+  const fotoRecetaHtml = (r, clase, ancho, alto) => {
+    const ruta = Motor.rutaFoto(r.id, FOTOS_RECETAS);
+    return ruta ? `<img class="${clase}" src="${escaparHtml(ruta)}" alt="${escaparHtml(r.nombre)}" width="${ancho}" height="${alto}" loading="lazy" decoding="async">` : '';
+  };
+  document.addEventListener('error', (ev) => { // una foto que no carga se quita y vuelve el icono
+    const img = ev.target;
+    if (!(img instanceof HTMLImageElement) || !img.matches('.rec-foto, .dc-foto-img')) return;
+    const caja = img.closest('.rec-img');
+    if (caja) { caja.classList.remove('con-foto'); caja.setAttribute('aria-hidden', 'true'); }
+    const fig = img.closest('.dc-foto');
+    img.remove();
+    if (fig) fig.remove();
+  }, true);
   const etiquetasTiempoTaperHtml = (r) => Motor.etiquetasTiempoTaper(Motor.tiempoTaperDe(r, TIEMPO_TAPER)).map((e) => `<span class="etq-tt">${escaparHtml(e)}</span>`).join(' ');
   const ICONO_ESTILO = { arroz_plato: '🍚', batido: '🥤', bocadillo_tostada: '🥪', bol_desayuno: '🥣', cereal_plato: '🌾', crema: '🥣', dulce_cuchara: '🍮', ensalada: '🥗', fruta: '🍎', guiso: '🍲', huevo_plato: '🍳', pasta: '🍝', plato_combinado: '🍽️', snack: '🥨', sopa: '🍜', verduras_plato: '🥦', yogur_fruta: '🍓' };
   let historialGustos = [];
@@ -2465,7 +2481,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       const tt = etiquetasTiempoTaperHtml(r);
       return `
         <li class="rec-card">
-          <div class="rec-img" aria-hidden="true"></div>
+          ${(() => { const foto = fotoRecetaHtml(r, 'rec-foto', 88, 88); return foto ? `<div class="rec-img con-foto">${foto}</div>` : '<div class="rec-img" aria-hidden="true"></div>'; })()}
           <div class="rec-cuerpo">
             <div class="rec-nombre">${escaparHtml(r.nombre)}</div>
             ${tt ? `<div class="rec-tt">${tt}</div>` : ''}
@@ -2489,11 +2505,13 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const NOMBRE = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
     const pasos = Motor.elaboracionEjemplo(r.id, r);
     const tt = Motor.tiempoTaperDe(r, TIEMPO_TAPER);
+    const foto = FOTOS_RECETAS.get(r.id);
     const ings = Motor.ingredientesDeLaRacion(r, 1, Motor.noSeReescala).map((i) => `
       <li class="dc-ing"><span class="dc-ing-nombre" data-ingrediente="${escaparHtml(i.nombre)}">${escaparHtml(Motor.nombreVisible(i.nombre))}</span>
         <span class="dc-ing-dato"><span class="dc-ing-etq">Ración base</span> <strong>${String(i.gramosBase).replace('.', ',')} g</strong></span></li>`).join('');
     document.getElementById('dc-titulo').textContent = r.nombre;
     document.getElementById('dc-cuerpo').innerHTML = `
+      ${foto ? `<figure class="dc-foto">${fotoRecetaHtml(r, 'dc-foto-img', 480, 320)}<figcaption><a href="${escaparHtml(foto.urlOrigen)}" target="_blank" rel="noopener noreferrer">${escaparHtml(Motor.creditoFoto(foto))}</a></figcaption></figure>` : ''}
       <p><span class="rec-etiqueta">EJEMPLO</span> Receta de ejemplo, no de Pablo ni validada para clientes.</p>
       ${c.compatible ? '' : `<p class="error-inline">No encaja con tus restricciones${c.motivo ? `: ${escaparHtml(c.motivo.detalle)}` : ''}. No se propondría en tu plan.</p>`}
       <p class="dc-aviso" style="color:var(--gris)">Esto es solo la ficha. Verla no la añade a tu plan ni a tu compra, ni significa que la hayas tomado. Si es favorita, se prefiere al calcular tu semana cuando encaja igual de bien que otra; para tenerla seguro, «La quiero sí o sí».</p>

@@ -29,10 +29,12 @@ var Motor = (() => {
     AVISO_ETIQUETA_GLUTEN: () => AVISO_ETIQUETA_GLUTEN,
     BLOQUES_PROPUESTOS: () => BLOQUES_PROPUESTOS,
     CABECERA_ATRIBUTOS: () => CABECERA_ATRIBUTOS,
+    CABECERA_FOTOS: () => CABECERA_FOTOS,
     CABECERA_TIEMPO_TAPER: () => CABECERA_TIEMPO_TAPER,
     CAFEINA_MAX_ADULTO_MG: () => CAFEINA_MAX_ADULTO_MG,
     CAFEINA_MG: () => CAFEINA_MG,
     CAFEINA_ULTIMA_ANTES: () => CAFEINA_ULTIMA_ANTES,
+    CARPETA_FOTOS: () => CARPETA_FOTOS,
     CITACION_PROPUESTA: () => CITACION_PROPUESTA,
     CLAVES_NUBE: () => CLAVES_NUBE,
     COMER_FUERA_CSV: () => COMER_FUERA_CSV,
@@ -63,6 +65,7 @@ var Motor = (() => {
     FALTA_MAXIMA_VISPERA: () => FALTA_MAXIMA_VISPERA,
     FIBRA_MAX_TOMA_VISPERA_G: () => FIBRA_MAX_TOMA_VISPERA_G,
     FILTROS_PERSONAS: () => FILTROS_PERSONAS,
+    FOTOS_CSV: () => FOTOS_CSV,
     FRACCION_CENA_LIGERA: () => FRACCION_CENA_LIGERA,
     FRANJAS_CITA: () => FRANJAS_CITA,
     FRANJAS_CON_LIMITE_VARIEDAD: () => FRANJAS_CON_LIMITE_VARIEDAD,
@@ -75,12 +78,14 @@ var Motor = (() => {
     ID_COMPETICION_OPOSICION: () => ID_COMPETICION_OPOSICION,
     ISOTONICA_G_HIDRATO_100ML: () => ISOTONICA_G_HIDRATO_100ML,
     KCAL_DIA_CINCO_COMIDAS: () => KCAL_DIA_CINCO_COMIDAS,
+    LICENCIAS_FOTO: () => LICENCIAS_FOTO,
     LIMITES_INGREDIENTES_CSV: () => LIMITES_INGREDIENTES_CSV,
     LIMITE_AFINIDAD: () => LIMITE_AFINIDAD,
     LIQUIDO_RECUPERACION_L_POR_KG: () => LIQUIDO_RECUPERACION_L_POR_KG,
     MARGEN_KCAL_CAMBIO: () => MARGEN_KCAL_CAMBIO,
     MAX_BAJADA_COMIDA: () => MAX_BAJADA_COMIDA,
     MAX_BLOQUES_ESTUDIO: () => MAX_BLOQUES_ESTUDIO,
+    MAX_BYTES_FOTO: () => MAX_BYTES_FOTO,
     MAX_COMIDAS_FUERA_SEMANA: () => MAX_COMIDAS_FUERA_SEMANA,
     MAX_CUERPO_OTRO: () => MAX_CUERPO_OTRO,
     MAX_DUELOS: () => MAX_DUELOS,
@@ -269,6 +274,7 @@ var Motor = (() => {
     comprobarAtributos: () => comprobarAtributos,
     comprobarComerFueraCsv: () => comprobarComerFueraCsv,
     comprobarConservacionCsv: () => comprobarConservacionCsv,
+    comprobarFotos: () => comprobarFotos,
     comprobarGlutenCsv: () => comprobarGlutenCsv,
     comprobarLimitesIngredientesCsv: () => comprobarLimitesIngredientesCsv,
     comprobarMedidasCsv: () => comprobarMedidasCsv,
@@ -287,6 +293,7 @@ var Motor = (() => {
     correoCita: () => correoCita,
     correoValido: () => correoValido,
     crearSemana: () => crearSemana,
+    creditoFoto: () => creditoFoto,
     csvPersonas: () => csvPersonas,
     cuadrarConComidaFuera: () => cuadrarConComidaFuera,
     cuadrarDias: () => cuadrarDias,
@@ -384,6 +391,7 @@ var Motor = (() => {
     finUltimaPruebaH: () => finUltimaPruebaH,
     firmaPlan: () => firmaPlan,
     formatearListaPendiente: () => formatearListaPendiente,
+    fotosDesdeCsv: () => fotosDesdeCsv,
     fraccionesDesdeCsv: () => fraccionesDesdeCsv,
     franjaComidaLibre: () => franjaComidaLibre,
     franjasConAjustes: () => franjasConAjustes,
@@ -531,6 +539,7 @@ var Motor = (() => {
     revisarSiguienteGuardada: () => revisarSiguienteGuardada,
     ritmoSubida: () => ritmoSubida,
     rolIngrediente: () => rolIngrediente,
+    rutaFoto: () => rutaFoto,
     sacarTomasDeSesiones: () => sacarTomasDeSesiones,
     semanaDeLaDieta: () => semanaDeLaDieta,
     semanasValidas: () => semanasValidas,
@@ -1241,7 +1250,7 @@ var Motor = (() => {
 
   // src/motor/csv-simple.ts
   function filasCsv(texto3) {
-    const filas = [];
+    const filas2 = [];
     let fila = [], celda2 = "", entreComillas = false;
     for (let i = 0; i < texto3.length; i++) {
       const c2 = texto3[i];
@@ -1259,13 +1268,13 @@ var Motor = (() => {
         if (c2 === "\r" && texto3[i + 1] === "\n") i++;
         fila.push(celda2);
         celda2 = "";
-        if (fila.some((x) => x !== "")) filas.push(fila);
+        if (fila.some((x) => x !== "")) filas2.push(fila);
         fila = [];
       } else celda2 += c2;
     }
     fila.push(celda2);
-    if (fila.some((x) => x !== "")) filas.push(fila);
-    return filas;
+    if (fila.some((x) => x !== "")) filas2.push(fila);
+    return filas2;
   }
   function registros(texto3) {
     const [cab = [], ...resto] = filasCsv(texto3);
@@ -4347,10 +4356,10 @@ R348,todo,El mel\xF3n va de acompa\xF1amiento: el bocadillo de pavo vale todo el
   }
   function comprobarTablaTemporada(csv, ids) {
     const errores = [];
-    const [cab, ...filas] = csv.trim().split(/\r?\n/);
+    const [cab, ...filas2] = csv.trim().split(/\r?\n/);
     if (cab !== "receta_id,temporada,motivo") errores.push(`cabecera inesperada: ${cab}`);
     const vistos = /* @__PURE__ */ new Set();
-    filas.forEach((l, i) => {
+    filas2.forEach((l, i) => {
       const [id, t2, ...motivo] = l.split(",");
       if (!ids.has(id)) errores.push(`fila ${i + 2}: la receta ${id} no existe`);
       if (vistos.has(id)) errores.push(`fila ${i + 2}: ${id} repetida`);
@@ -5543,11 +5552,11 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
   }
   function parsearPrecios(csv) {
     const errores = [];
-    const filas = [];
+    const filas2 = [];
     const cabecera = (csv.split(/\r?\n/)[0] ?? "").trim();
     if (cabecera !== COLUMNAS3.join(",")) {
       errores.push({ fila: 1, ingrediente: "(cabecera)", problema: `se esperaba "${COLUMNAS3.join(",")}", se encontr\xF3 "${cabecera}"` });
-      return { filas, errores };
+      return { filas: filas2, errores };
     }
     registros(csv).forEach((r, i) => {
       const numFila = i + 2;
@@ -5561,9 +5570,9 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
         errores.push({ fila: numFila, ingrediente: r.ingrediente, problema: `unidad desconocida: "${r.unidad}" (v\xE1lidas: ${UNIDADES_VALIDAS.join(", ")})` });
         return;
       }
-      filas.push({ ingrediente: r.ingrediente, unidad: r.unidad, precioMedio, nota: r.nota, fuente: r.fuente, fechaConsulta: r.fecha_consulta });
+      filas2.push({ ingrediente: r.ingrediente, unidad: r.unidad, precioMedio, nota: r.nota, fuente: r.fuente, fechaConsulta: r.fecha_consulta });
     });
-    return { filas, errores };
+    return { filas: filas2, errores };
   }
   var BANDA_KG = {
     proteina: [2, 60],
@@ -5578,7 +5587,7 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
   var BANDA_L = [0.5, 15];
   var BANDA_UNIDAD = [0.05, 5];
   function comprobarPrecios(csv, catalogo) {
-    const { filas, errores } = parsearPrecios(csv);
+    const { filas: filas2, errores } = parsearPrecios(csv);
     const fallos = errores.map((e) => `fila ${e.fila} (${e.ingrediente}): ${e.problema}`);
     const rolDe = new Map(catalogo.map((c2) => [normalizar6(c2.ingrediente), c2.rol]));
     const vistos = /* @__PURE__ */ new Set();
@@ -5589,7 +5598,7 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
         vistos.add(clave3);
       }
     }
-    for (const f2 of filas) {
+    for (const f2 of filas2) {
       const clave3 = normalizar6(f2.ingrediente);
       if (!/^https?:\/\//.test(f2.fuente.replace(/^[^:]+:\s*/, ""))) fallos.push(`${f2.ingrediente}: falta la fuente (tienda y enlace a la ficha)`);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(f2.fechaConsulta)) fallos.push(`${f2.ingrediente}: fecha de consulta "${f2.fechaConsulta}" (se espera AAAA-MM-DD)`);
@@ -6260,6 +6269,80 @@ R528,crudo,plato_combinado,frio,no
   var TIEMPO_TAPER_CSV = `id,tiempo_min,apto_taper,criterio
 `;
 
+  // src/motor/fotos-datos.ts
+  var FOTOS_CSV = `id,archivo,autor,licencia,url_origen,fecha
+`;
+
+  // src/motor/fotos-recetas.ts
+  var CABECERA_FOTOS = "id,archivo,autor,licencia,url_origen,fecha";
+  var MAX_BYTES_FOTO = 60 * 1024;
+  var CARPETA_FOTOS = "fotos/";
+  var LICENCIAS_FOTO = ["propia", "CC0", "CC BY 2.0", "CC BY 3.0", "CC BY 4.0", "Unsplash", "Pexels"];
+  var COLUMNAS4 = CABECERA_FOTOS.split(",");
+  var ARCHIVO = /^[a-z0-9][a-z0-9-]*\.webp$/;
+  var FECHA = /^\d{4}-\d{2}-\d{2}$/;
+  function cabeceraOk(csv) {
+    const [cab = []] = filasCsv(csv);
+    return cab.map((x) => x.trim()).join(",") === CABECERA_FOTOS;
+  }
+  function filas(csv) {
+    return filasCsv(csv).slice(1).map((f2) => f2.map((x) => x.trim())).filter((f2) => f2.some(Boolean));
+  }
+  function fechaValida(f2) {
+    if (!FECHA.test(f2)) return false;
+    const d = /* @__PURE__ */ new Date(`${f2}T00:00:00Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === f2;
+  }
+  function fallosFila(f2) {
+    const [id = "", archivo = "", , licencia = "", url = "", fecha = ""] = f2;
+    const fallos = [];
+    COLUMNAS4.forEach((c2, i) => {
+      if (!f2[i]) fallos.push(`${id || "(sin id)"}: falta \xAB${c2}\xBB.`);
+    });
+    if (archivo && !ARCHIVO.test(archivo)) fallos.push(`${id}: archivo \xAB${archivo}\xBB tiene que ser un nombre en min\xFAsculas, sin espacios, acabado en .webp.`);
+    if (licencia && !LICENCIAS_FOTO.includes(licencia)) fallos.push(`${id}: licencia \xAB${licencia}\xBB no est\xE1 en la lista permitida (${LICENCIAS_FOTO.join(", ")}).`);
+    if (url && !/^https:\/\/\S+$/.test(url)) fallos.push(`${id}: url_origen \xAB${url}\xBB tiene que empezar por https://.`);
+    if (url && /dietfarma/i.test(url)) fallos.push(`${id}: las fotos de Dietfarma no se pueden usar.`);
+    if (fecha && !fechaValida(fecha)) fallos.push(`${id}: fecha \xAB${fecha}\xBB tiene que ser AAAA-MM-DD.`);
+    return fallos;
+  }
+  function comprobarFotos(csv, idsReceta, bytesArchivo) {
+    if (!cabeceraOk(csv)) return [`Cabecera distinta de \xAB${CABECERA_FOTOS}\xBB.`];
+    const existen = new Set(idsReceta);
+    const vistos = /* @__PURE__ */ new Set();
+    const fallos = [];
+    for (const f2 of filas(csv)) {
+      const [id = "", archivo = ""] = f2;
+      fallos.push(...fallosFila(f2));
+      if (id && vistos.has(id)) fallos.push(`${id} repetida.`);
+      vistos.add(id);
+      if (id && !existen.has(id)) fallos.push(`${id} no existe en el cat\xE1logo.`);
+      if (archivo && ARCHIVO.test(archivo)) {
+        const b = bytesArchivo(archivo);
+        if (b === void 0) fallos.push(`${id}: no est\xE1 el archivo web/${CARPETA_FOTOS}${archivo}.`);
+        else if (b > MAX_BYTES_FOTO) fallos.push(`${id}: ${archivo} pesa ${Math.ceil(b / 1024)} KB (m\xE1ximo ${MAX_BYTES_FOTO / 1024} KB).`);
+      }
+    }
+    return fallos;
+  }
+  function fotosDesdeCsv(csv) {
+    const m = /* @__PURE__ */ new Map();
+    if (!cabeceraOk(csv)) return m;
+    for (const f2 of filas(csv)) {
+      if (fallosFila(f2).length) continue;
+      const [id, archivo, autor, licencia, urlOrigen, fecha] = f2;
+      if (!m.has(id)) m.set(id, { archivo, autor, licencia, urlOrigen, fecha });
+    }
+    return m;
+  }
+  function rutaFoto(id, fotos) {
+    const f2 = fotos.get(id);
+    return f2 ? `${CARPETA_FOTOS}${f2.archivo}` : void 0;
+  }
+  function creditoFoto(f2) {
+    return f2.licencia === "propia" ? `Foto propia \xB7 ${f2.autor}` : `Foto: ${f2.autor} \xB7 ${f2.licencia}`;
+  }
+
   // src/motor/atributos-recetas.ts
   var CABECERA_ATRIBUTOS = "receta_id,metodo_cocinado,estilo,servicio,picante";
   var VOCABULARIO_ATRIBUTOS = {
@@ -6286,7 +6369,7 @@ R528,crudo,plato_combinado,frio,no
     servicio: ["caliente", "cuchara_caliente", "cuchara_fria", "frio", "templado"],
     picante: ["no", "suave", "picante"]
   };
-  var COLUMNAS4 = ["metodo_cocinado", "estilo", "servicio", "picante"];
+  var COLUMNAS5 = ["metodo_cocinado", "estilo", "servicio", "picante"];
   function filasDatos2(csv) {
     return filasCsv(csv).slice(1).map((f2) => f2.map((x) => x.trim()));
   }
@@ -6301,7 +6384,7 @@ R528,crudo,plato_combinado,frio,no
       if (vistos.has(id)) fallos.push(`${id} repetida.`);
       vistos.add(id);
       if (!existen.has(id)) fallos.push(`${id} no existe en los cat\xE1logos.`);
-      COLUMNAS4.forEach((col, i) => {
+      COLUMNAS5.forEach((col, i) => {
         const valores = (f2[i + 1] ?? "").split(";").map((x) => x.trim()).filter(Boolean);
         if (!valores.length) fallos.push(`${id} sin ${col}.`);
         if (col !== "metodo_cocinado" && valores.length > 1) fallos.push(`${id}: ${col} admite un solo valor.`);
@@ -6750,9 +6833,9 @@ R528,crudo,plato_combinado,frio,no
   }
   function comprobarConservacionCsv(texto3, ingredientesCatalogo) {
     const fallos = [];
-    const filas = registros(texto3);
+    const filas2 = registros(texto3);
     const vistos = /* @__PURE__ */ new Set();
-    for (const r of filas) {
+    for (const r of filas2) {
       const n = r.ingrediente;
       if (!n) {
         fallos.push("fila sin ingrediente");
@@ -7139,11 +7222,11 @@ edamame,75,200,proteina_vegetal,"Grano cocido sin vaina. #347: banda por analog\
   // src/motor/limites-ingredientes.ts
   var FACTOR_LEGUMBRE_COCIDA = 0.4;
   var RE_LEGUMBRE_COCIDA = /\b(garbanzo|lenteja|alubia)s?\b.*\bcocid/i;
-  var COLUMNAS5 = ["ingrediente", "min_g", "max_g", "familia", "fuente_url_o_nota", "estado"];
+  var COLUMNAS6 = ["ingrediente", "min_g", "max_g", "familia", "fuente_url_o_nota", "estado"];
   function comprobarLimitesIngredientesCsv(texto3) {
     const fallos = [];
     const cab = (texto3.split(/\r?\n/)[0] ?? "").split(",").map((x) => x.trim());
-    for (const c2 of COLUMNAS5) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
+    for (const c2 of COLUMNAS6) if (!cab.includes(c2)) fallos.push(`falta la columna \xAB${c2}\xBB`);
     if (fallos.length) return fallos;
     const vistos = /* @__PURE__ */ new Set();
     for (const r of registros(texto3)) {
@@ -11494,7 +11577,7 @@ R528,pepino,80,verdura,168409,peso comestible con piel,`;
     campos.push(actual);
     return campos;
   }
-  var COLUMNAS6 = ["grupo_quitado", "nutriente", "alimento", "cantidad_g", "veces_semana", "motivo", "fuente", "fdc_id", "estado"];
+  var COLUMNAS7 = ["grupo_quitado", "nutriente", "alimento", "cantidad_g", "veces_semana", "motivo", "fuente", "fdc_id", "estado"];
   function motivosFila(f2, ref) {
     const m = [];
     if (!f2.grupo || !f2.nutriente || !f2.alimento) m.push("grupo, nutriente y alimento son obligatorios");
@@ -11518,8 +11601,8 @@ R528,pepino,80,verdura,168409,peso comestible con piel,`;
     const inf = { filas: [], buenas: [], malas: [], errores: [] };
     const lineas = csv.replace(/\r\n/g, "\n").split("\n");
     const cab = parseCsvLine3(lineas[0] ?? "").map((c2) => c2.trim());
-    const idx = Object.fromEntries(COLUMNAS6.map((c2) => [c2, cab.indexOf(c2)]));
-    for (const c2 of COLUMNAS6) if (idx[c2] < 0) inf.errores.push(`falta la columna ${c2}`);
+    const idx = Object.fromEntries(COLUMNAS7.map((c2) => [c2, cab.indexOf(c2)]));
+    for (const c2 of COLUMNAS7) if (idx[c2] < 0) inf.errores.push(`falta la columna ${c2}`);
     if (inf.errores.length) return inf;
     const vistas = /* @__PURE__ */ new Set();
     lineas.forEach((l, i) => {
@@ -11670,7 +11753,7 @@ fruta; verdura,variedad de grupo y suficiencia global,consultar con Pablo,"Cubri
     "verdura": "la verdura"
   };
   var textoGrupo = (g) => ARTICULO[claveGrupo(g) ?? ""] ?? g.toLowerCase();
-  function accionQuitarGrupoValida(d, filas) {
+  function accionQuitarGrupoValida(d, filas2) {
     if (!d || typeof d !== "object") return null;
     const a2 = d;
     const grupo = texto(a2.grupo, 40);
@@ -11683,9 +11766,9 @@ fruta; verdura,variedad de grupo y suficiencia global,consultar con Pablo,"Cubri
       if (!nutriente || !alimento) return null;
       if (!alimentos.some((y) => y.nutriente === nutriente)) alimentos.push({ nutriente, alimento });
     }
-    if (filas) {
-      if (!gruposQuitables(filas).some((g) => claveGrupo(g) === claveGrupo(grupo))) return null;
-      const deFila = (n, al) => filas.some((f2) => claveGrupo(f2.grupo) === claveGrupo(grupo) && f2.nutriente === n && f2.alimento === al);
+    if (filas2) {
+      if (!gruposQuitables(filas2).some((g) => claveGrupo(g) === claveGrupo(grupo))) return null;
+      const deFila = (n, al) => filas2.some((f2) => claveGrupo(f2.grupo) === claveGrupo(grupo) && f2.nutriente === n && f2.alimento === al);
       if (!alimentos.every((x) => deFila(x.nutriente, x.alimento))) return null;
     }
     return { tipo: "quitar_grupo", grupo, alimentos };
@@ -11755,17 +11838,17 @@ fruta; verdura,variedad de grupo y suficiencia global,consultar con Pablo,"Cubri
     const usda = registros(COMPENSACIONES_USDA_CSV);
     return cargarCompensaciones(csv, { catalogo: new Map(usda.map((r) => [r.nombre.trim(), r.fdc_id.trim()])), racion: (a2) => racionRealista(a2) ?? { minG: 0, maxG: Number.POSITIVE_INFINITY } });
   }
-  function opcionesCambioGusto(accion, filas) {
+  function opcionesCambioGusto(accion, filas2) {
     if (!accion) return [];
     return accion.alimentos.map((x) => ({
       nutriente: x.nutriente,
       actual: x.alimento,
-      opciones: [...new Set(filas.filter((f2) => claveGrupo(f2.grupo) === claveGrupo(accion.grupo) && f2.nutriente === x.nutriente).map((f2) => f2.alimento))]
+      opciones: [...new Set(filas2.filter((f2) => claveGrupo(f2.grupo) === claveGrupo(accion.grupo) && f2.nutriente === x.nutriente).map((f2) => f2.alimento))]
     }));
   }
-  function accionGustoCambiada(accion, elegidos, filas) {
+  function accionGustoCambiada(accion, elegidos, filas2) {
     if (!accion) return null;
-    return accionQuitarGrupoValida({ ...accion, alimentos: accion.alimentos.map((x) => ({ nutriente: x.nutriente, alimento: elegidos[x.nutriente] || x.alimento })) }, filas);
+    return accionQuitarGrupoValida({ ...accion, alimentos: accion.alimentos.map((x) => ({ nutriente: x.nutriente, alimento: elegidos[x.nutriente] || x.alimento })) }, filas2);
   }
 
   // src/motor/aplicar-ajustes.ts
@@ -12579,9 +12662,9 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
   function sinTildes4(t2) {
     return String(t2 ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   }
-  function filtrarPersonas(filas, texto3, filtro = "todas") {
+  function filtrarPersonas(filas2, texto3, filtro = "todas") {
     const palabras3 = sinTildes4(texto3).split(/\s+/).filter(Boolean);
-    return filas.filter((f2) => {
+    return filas2.filter((f2) => {
       const donde = sinTildes4(f2.nombre + " " + f2.contacto);
       return palabras3.every((w) => donde.includes(w));
     }).filter((f2) => filtro === "con-alertas" ? f2.alertasSinAtender > 0 : filtro === "sin-plan" ? !f2.tienePlan : filtro === "revisado" ? f2.revisadoPorPablo : true).sort((a2, b) => b.ultimaActividad.localeCompare(a2.ultimaActividad) || a2.nombre.localeCompare(b.nombre, "es"));
@@ -12607,10 +12690,10 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (/^[=+\-@\t\r]/.test(t2)) t2 = "'" + t2;
     return /[;"\n\r]/.test(t2) ? '"' + t2.replace(/"/g, '""') + '"' : t2;
   }
-  function csvPersonas(filas) {
+  function csvPersonas(filas2) {
     const cab = ["nombre", "correo", "ultima_actividad", "alerta_prioritaria", "tiene_plan", "plan_revisado_por_pablo"];
     const si = (b) => b ? "s\xED" : "no";
-    const lineas = filas.map((f2) => [f2.nombre, f2.contacto, f2.ultimaActividad.slice(0, 10), si(f2.prioritariaSinAtender), si(f2.tienePlan), si(f2.revisadoPorPablo)].map(celda).join(";"));
+    const lineas = filas2.map((f2) => [f2.nombre, f2.contacto, f2.ultimaActividad.slice(0, 10), si(f2.prioritariaSinAtender), si(f2.tienePlan), si(f2.revisadoPorPablo)].map(celda).join(";"));
     return "\uFEFF" + [cab.join(";"), ...lineas].join("\r\n") + "\r\n";
   }
 
@@ -13004,7 +13087,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     "www.xunta.gal",
     "www.tramitacastillayleon.jcyl.es"
   ];
-  var COLUMNAS7 = ["cuerpo", "ambito", "prueba", "tipo", "distancia_o_repeticiones", "duracion_aprox_min", "orden", "mismo_dia", "diferencia_por_sexo", "fuente_url", "fecha_convocatoria"];
+  var COLUMNAS8 = ["cuerpo", "ambito", "prueba", "tipo", "distancia_o_repeticiones", "duracion_aprox_min", "orden", "mismo_dia", "diferencia_por_sexo", "fuente_url", "fecha_convocatoria"];
   function sexoDePrueba(nombre) {
     const m = /[(\-–]\s*(hombres|mujeres)\s*\)?\s*$/i.exec(nombre);
     return m ? m[1].toLowerCase() === "hombres" ? "hombre" : "mujer" : void 0;
@@ -13020,12 +13103,12 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
   function comprobarTablaOposiciones(texto3) {
     const errores = [];
     const cab = texto3.split("\n", 1)[0].replace(/\r/g, "").split(",");
-    if (cab.join(",") !== COLUMNAS7.join(",")) return [`Columnas distintas de las esperadas: ${COLUMNAS7.join(",")}`];
-    const filas = registros(texto3);
-    if (!filas.length) return ["La tabla est\xE1 vac\xEDa."];
+    if (cab.join(",") !== COLUMNAS8.join(",")) return [`Columnas distintas de las esperadas: ${COLUMNAS8.join(",")}`];
+    const filas2 = registros(texto3);
+    if (!filas2.length) return ["La tabla est\xE1 vac\xEDa."];
     const vistas = /* @__PURE__ */ new Set();
     const grupos = /* @__PURE__ */ new Map();
-    filas.forEach((r, i) => {
+    filas2.forEach((r, i) => {
       const n = `fila ${i + 2} (${r.cuerpo} \xB7 ${r.prueba})`;
       for (const c2 of ["cuerpo", "ambito", "prueba", "tipo", "fuente_url"]) if (!r[c2]) errores.push(`${n}: falta \xAB${c2}\xBB.`);
       if (r.tipo && !TIPOS_PRUEBA_OPOSICION.includes(r.tipo)) errores.push(`${n}: tipo \xAB${r.tipo}\xBB no est\xE1 en la lista.`);
@@ -13103,9 +13186,9 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     };
     return { min: minutos(), estimada: true };
   }
-  function cuerposDeTabla(filas) {
+  function cuerposDeTabla(filas2) {
     const vistos = /* @__PURE__ */ new Map();
-    for (const f2 of filas) {
+    for (const f2 of filas2) {
       if (vistos.has(clave2(f2))) continue;
       vistos.set(clave2(f2), {
         id: idCuerpoOposicion(f2.cuerpo, f2.ambito),
@@ -13118,8 +13201,8 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     }
     return [...vistos.values()];
   }
-  function pruebasDeCuerpo(filas, idCuerpo, sexo) {
-    const delCuerpo = filas.filter((f2) => idCuerpoOposicion(f2.cuerpo, f2.ambito) === idCuerpo);
+  function pruebasDeCuerpo(filas2, idCuerpo, sexo) {
+    const delCuerpo = filas2.filter((f2) => idCuerpoOposicion(f2.cuerpo, f2.ambito) === idCuerpo);
     const usadas = /* @__PURE__ */ new Set();
     const elegidas = delCuerpo.filter((f2) => {
       const s = sexoDePrueba(f2.prueba);
