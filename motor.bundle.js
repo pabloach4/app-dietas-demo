@@ -81,6 +81,7 @@ var Motor = (() => {
     MAX_BAJADA_COMIDA: () => MAX_BAJADA_COMIDA,
     MAX_BLOQUES_ESTUDIO: () => MAX_BLOQUES_ESTUDIO,
     MAX_COMIDAS_FUERA_SEMANA: () => MAX_COMIDAS_FUERA_SEMANA,
+    MAX_CUERPO_OTRO: () => MAX_CUERPO_OTRO,
     MAX_DUELOS: () => MAX_DUELOS,
     MAX_DURACION_ESCRITO: () => MAX_DURACION_ESCRITO,
     MAX_INSTANTANEA: () => MAX_INSTANTANEA,
@@ -198,6 +199,7 @@ var Motor = (() => {
     alertaGusto: () => alertaGusto,
     alertaHambre: () => alertaHambre,
     alertaNotaGusto: () => alertaNotaGusto,
+    alertaOposicion: () => alertaOposicion,
     alertaParaPablo: () => alertaParaPablo,
     alertaPlanPablo: () => alertaPlanPablo,
     alertaSuelo: () => alertaSuelo,
@@ -12181,7 +12183,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     return `${String(d.getFullYear()).padStart(4, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
   function lineasAlertasPersona(alertas, nubeActiva) {
-    return alertas.filter((a2) => a2.tipo !== "cita" && a2.tipo !== "hambre" && a2.tipo !== "plan_pablo").map((a2) => ({
+    return alertas.filter((a2) => a2.tipo !== "cita" && a2.tipo !== "hambre" && a2.tipo !== "plan_pablo" && a2.tipo !== "oposicion").map((a2) => ({
       fecha: fechaLocal(a2.fecha),
       texto: `${TEXTO_ALERTA_PERSONA} ${textoLlegaAPablo(nubeActiva)}`
     }));
@@ -12350,7 +12352,8 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     cita: "Pide cita",
     hambre: "Hambre repetida",
     gusto: "Cambio de gustos",
-    plan_pablo: "Tu plan, cambiado por la app"
+    plan_pablo: "Tu plan, cambiado por la app",
+    oposicion: "Oposici\xF3n que falta en la lista"
   };
   var datosDe = (a2) => a2.datos && typeof a2.datos === "object" ? a2.datos : {};
   function clasificarAlerta(a2) {
@@ -12359,6 +12362,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     if (a2.tipo === "hambre" || d.hambre === true) return "hambre";
     if (a2.tipo === "gusto" || d.gusto === true) return "gusto";
     if (a2.tipo === "plan_pablo" || d.planPablo === true) return "plan_pablo";
+    if (a2.tipo === "oposicion" || d.oposicion === true) return "oposicion";
     if (d.freno === true) return "freno";
     if (d.suelo === true) return "suelo";
     if (d.celiaquia === true) return "celiaquia";
@@ -13103,6 +13107,10 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     agilidad: "Circuito de agilidad",
     otra: "Otra prueba"
   };
+  function pruebasGenericasOposicion() {
+    const lista6 = [["resistencia", 8], ["velocidad", 2], ["fuerza", 3], ["agilidad", 2]];
+    return lista6.map(([tipo, duracionMin]) => ({ nombre: `${NOMBRE_TIPO[tipo]} (seg\xFAn tu convocatoria)`, tipo, duracionMin, estimada: true }));
+  }
   function pruebasDeGrupo(idGrupo, sexo) {
     const g = GRUPOS2.find((x) => x.id === idGrupo);
     if (!g) return [];
@@ -13154,6 +13162,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     let cuerpo = (d.cuerpo ?? "").trim();
     if (cuerpo in CUERPOS_ANTIGUOS) cuerpo = CUERPOS_ANTIGUOS[cuerpo] ?? "";
     if (cuerpo && !CUERPOS_OPOSICION.some((c2) => c2.id === cuerpo) && !esGrupoOposicion(cuerpo)) return { ok: false, error: "Elige tu cuerpo de la lista (o \xABOtro\xBB)." };
+    const cuerpoOtro = cuerpo === "otro" && typeof d.cuerpoOtro === "string" ? d.cuerpoOtro.replace(/\s+/g, " ").trim().slice(0, MAX_CUERPO_OTRO).trim() : "";
     const jornada = conFisicas ? validarJornada(d) : { ok: true, jornada: {} };
     if (!jornada.ok) return jornada;
     const estudio = conEscrito ? validarEstudio(d.estudio) : { ok: true };
@@ -13170,6 +13179,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
         ...fechaFisicas ? { fechaFisicas } : {},
         ...fechaEscrito ? { fechaEscrito } : {},
         ...cuerpo ? { cuerpo } : {},
+        ...cuerpoOtro ? { cuerpoOtro } : {},
         ...jornada.jornada,
         ...estudio.estudio ? { estudio: estudio.estudio } : {},
         ...examen.examen,
@@ -13177,6 +13187,25 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
         ...d.barato === "si" ? { barato: "si" } : {},
         ...d.taper === "si" ? { taper: "si" } : {}
       }
+    };
+  }
+  var MAX_CUERPO_OTRO = 100;
+  function alertaOposicion(texto3, fechaISO, existentes = []) {
+    const limpio = texto3.replace(/\s+/g, " ").trim().slice(0, MAX_CUERPO_OTRO).trim();
+    const clave3 = normalizarBusqueda2(limpio);
+    if (!clave3) return void 0;
+    const firma = `OP|${clave3}`;
+    if (existentes.some((a2) => a2.firma === firma)) return void 0;
+    const se\u00F1al = `No encontraba su oposici\xF3n en la lista y ha escrito \xAB${limpio}\xBB. Le he puesto pruebas gen\xE9ricas (resistencia, velocidad, fuerza y agilidad, \xABseg\xFAn tu convocatoria\xBB) que puede cambiar. Si quieres que salga en la lista con sus pruebas, a\xF1\xE1dela a la tabla de oposiciones.`;
+    return {
+      fecha: fechaISO,
+      prioritaria: false,
+      tipo: "oposicion",
+      oposicion: true,
+      disparadores: [{ pregunta: 0, etiqueta: "oposicion", se\u00F1al }],
+      contexto: [],
+      sinInterpretar: [],
+      firma
     };
   }
   var MIN_DURACION_ESCRITO = 15;
@@ -13227,6 +13256,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
       fechaFisicas: texto3(x.fechaFisicas),
       fechaEscrito: texto3(x.fechaEscrito),
       cuerpo: texto3(x.cuerpo),
+      cuerpoOtro: texto3(x.cuerpoOtro),
       citacion: texto3(x.citacion),
       finJornada: texto3(x.finJornada),
       cafeina: texto3(x.cafeina),
@@ -13336,7 +13366,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
   var HUECO_MINIMO_MIN = 10;
   function pruebasPropuestas(cuerpo, sexo, citacion = CITACION_PROPUESTA, finJornada) {
     if (!cuerpo) return [];
-    const lista6 = esGrupoOposicion(cuerpo) ? pruebasDeGrupo(cuerpo, sexo) : pruebasDeCuerpo(FILAS_PRUEBAS, cuerpo, sexo);
+    const lista6 = cuerpo === "otro" ? pruebasGenericasOposicion() : esGrupoOposicion(cuerpo) ? pruebasDeGrupo(cuerpo, sexo) : pruebasDeCuerpo(FILAS_PRUEBAS, cuerpo, sexo);
     if (!lista6.length) return [];
     const inicio = aMinutos2(esHoraValida(citacion) ? citacion : CITACION_PROPUESTA) + 30;
     const total = lista6.reduce((s, p) => s + p.duracionMin, 0);

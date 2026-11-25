@@ -1224,6 +1224,12 @@
             <input id="op-cuerpo-buscar" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="op-cuerpo-lista" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="Escribe: guardia civil, policía local Galicia, bombera…">
             <ul id="op-cuerpo-lista" role="listbox" aria-label="Oposiciones" hidden></ul>
             <input id="op-cuerpo" type="hidden">
+            <!-- #352 parte 5: si no está, la escribe; la app le pone pruebas genéricas y avisa a Pablo (no prioritario) para añadirla. -->
+            <div id="campo-op-otro" hidden>
+              <label for="op-cuerpo-otro">¿Cuál es tu oposición?</label>
+              <input id="op-cuerpo-otro" type="text" maxlength="100" autocomplete="off" placeholder="Por ejemplo: Policía Portuaria, Puerto de Vigo">
+              <small class="ayuda">Te ponemos unas pruebas genéricas que puedes cambiar abajo, y avisamos a Pablo para que la añada.</small>
+            </div>
             <small class="ayuda">Las que tienen las mismas pruebas físicas salen juntas. Si escribes tu ciudad o comunidad, sale la tuya con sus distancias.</small>
           </div>
           <!-- #331 parte 6: reconocimiento médico (aviso: nada de dietas de choque), modo barato y táper del domingo. -->
@@ -1766,12 +1772,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=eb30486"></script>
-<script src="fuentes.js?v=eb30486"></script>
-<script src="motor.bundle.js?v=eb30486"></script>
-<script src="cuestionario.js?v=eb30486"></script>
-<script src="nube.js?v=eb30486"></script>
-<script src="pwa.js?v=eb30486"></script>
+<script src="novedades.js?v=0631d4b"></script>
+<script src="fuentes.js?v=0631d4b"></script>
+<script src="motor.bundle.js?v=0631d4b"></script>
+<script src="cuestionario.js?v=0631d4b"></script>
+<script src="nube.js?v=0631d4b"></script>
+<script src="pwa.js?v=0631d4b"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>

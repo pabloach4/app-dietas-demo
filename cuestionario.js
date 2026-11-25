@@ -562,16 +562,23 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     else opBuscar.removeAttribute('aria-activedescendant');
   }
   let opFiltroRapido; // lo que filtra un botón rápido mientras no se escriba otra cosa
+  const opOtro = document.getElementById('op-cuerpo-otro');
+  const verOtroOpo = () => { document.getElementById('campo-op-otro').hidden = opCuerpo.value !== 'otro'; }; // #352 p5
   function elegirOpo(id) {
+    // #352 p5: con «Otro», lo que había buscado pasa al campo de texto libre (antes de que el buscador enseñe «Otro»).
+    const buscado = opBuscar.value.trim();
+    if (id === 'otro' && !opOtro.value.trim() && buscado && buscado !== nombreCuerpo(opCuerpo.value)) opOtro.value = buscado.slice(0, Motor.MAX_CUERPO_OTRO);
     opCuerpo.value = id;
     opBuscar.value = nombreCuerpo(id);
     opFiltroRapido = undefined;
     cerrarListaOpo();
     marcarRapidoOpo();
+    verOtroOpo();
     opCuerpo.dispatchEvent(new Event('change', { bubbles: true }));
+    if (id === 'otro') opOtro.focus();
   }
   opBuscar.addEventListener('input', () => {
-    if (opCuerpo.value && opBuscar.value !== nombreCuerpo(opCuerpo.value)) opCuerpo.value = ''; // se está escribiendo otra
+    if (opCuerpo.value && opBuscar.value !== nombreCuerpo(opCuerpo.value)) { opCuerpo.value = ''; verOtroOpo(); } // se está escribiendo otra
     opFiltroRapido = undefined;
     opActivo = -1;
     marcarRapidoOpo();
@@ -713,7 +720,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   const leerOposicion = () => ({
     tipo: document.getElementById('op-tipo').value, orden: document.getElementById('op-orden').value,
     fechaFisicas: document.getElementById('op-fecha-fisicas').value, fechaEscrito: document.getElementById('op-fecha-escrito').value,
-    cuerpo: document.getElementById('op-cuerpo').value,
+    cuerpo: document.getElementById('op-cuerpo').value, cuerpoOtro: opOtro.value, // #352 p5
     pruebasFisicas: leerPruebasOpo(), citacion: document.getElementById('op-citacion').value, finJornada: document.getElementById('op-fin').value,
     ...(document.getElementById('op-cafeina').checked ? { cafeina: 'si' } : {}),
     estudio: leerEstudioOpo(), // #331 p4
@@ -732,6 +739,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('op-duracion-escrito').value = Number.isInteger(o.duracionEscritoMin) ? String(o.duracionEscritoMin) : '';
     poner('op-cuerpo', o.cuerpo, idsCuerpoValidos());
     opBuscar.value = nombreCuerpo(opCuerpo.value); // #352 p2
+    opOtro.value = opCuerpo.value === 'otro' && typeof o.cuerpoOtro === 'string' ? o.cuerpoOtro : ''; // #352 p5
+    verOtroOpo();
     opFiltroRapido = undefined;
     cerrarListaOpo();
     marcarRapidoOpo();
@@ -5503,6 +5512,9 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
         document.getElementById('op-tipo').focus();
         return;
       }
+      // #352 p5: la oposición que no estaba en la lista: aviso no prioritario para Pablo (una vez por oposición), con la solución puesta.
+      const alertaOpo = v.oposicion.cuerpo === 'otro' && v.oposicion.cuerpoOtro ? Motor.alertaOposicion(v.oposicion.cuerpoOtro, new Date().toISOString(), leerAlertas()) : undefined;
+      if (alertaOpo) { guardarAlertas(Motor.anadirAlerta(leerAlertas(), alertaOpo)); pintarAlertas(); }
     }
     const respuestas = construirRespuestas();
     leerPlanPablo();
