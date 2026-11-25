@@ -2274,8 +2274,8 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
   var ALIMENTOS_CONSEJO = {
     platano: { texto: "un pl\xE1tano", ingredientes: ["pl\xE1tano"] },
     fruta: { texto: "una pieza de fruta", ingredientes: ["manzana"] },
-    frutosSecos: { texto: "un pu\xF1ado de frutos secos", ingredientes: ["nueces"], alergenos: ["frutos de c\xE1scara"] },
-    barrita: { texto: "una barrita de cereales", ingredientes: ["barrita de cereales"], alergenos: ["gluten", "l\xE1cteos"], vegano: "no", sinLactosa: "no", sinGluten: "no" },
+    frutosSecos: { texto: "un pu\xF1ado de frutos secos", ingredientes: ["nueces"], alergenos: ["frutos de c\xE1scara", "cacahuete"] },
+    barrita: { texto: "una barrita de cereales", ingredientes: ["barrita de cereales"], alergenos: ["gluten", "l\xE1cteos", "frutos de c\xE1scara", "soja"], vegano: "no", sinLactosa: "no", sinGluten: "no" },
     datiles: { texto: "d\xE1tiles", ingredientes: ["d\xE1tiles"] },
     bocadillo: { texto: "un bocadillo peque\xF1o", ingredientes: ["pan"], alergenos: ["gluten"], sinGluten: "no" },
     panMembrillo: { texto: "pan con membrillo", ingredientes: ["pan", "dulce de membrillo"], alergenos: ["gluten"], sinGluten: "no" },
@@ -2290,7 +2290,7 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     quesoFresco: { texto: "queso fresco", ingredientes: ["queso fresco"], alergenos: ["l\xE1cteos"], vegano: "no", sinLactosa: "no" },
     tofu: { texto: "tofu", ingredientes: ["tofu firme"], alergenos: ["soja"] },
     pan: { texto: "pan", ingredientes: ["pan"], alergenos: ["gluten"], sinGluten: "no" },
-    panSinGluten: { texto: "pan sin gluten", ingredientes: ["pan sin gluten"] }
+    panSinGluten: { texto: "pan sin gluten", ingredientes: ["pan sin gluten"], alergenos: ["huevo", "l\xE1cteos"] }
   };
   var recetaDe = (clave3) => {
     const a2 = ALIMENTOS_CONSEJO[clave3];
