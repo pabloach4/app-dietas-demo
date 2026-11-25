@@ -68,6 +68,7 @@ var Motor = (() => {
     FRANJAS_EDITABLES: () => FRANJAS_EDITABLES,
     GLUTEN_CSV: () => GLUTEN_CSV,
     GRASA_MAX_TOMA_VISPERA_G: () => GRASA_MAX_TOMA_VISPERA_G,
+    GRUPOS_OPOSICION: () => GRUPOS_OPOSICION,
     GRUPOS_VOLUMEN: () => GRUPOS_VOLUMEN,
     HORA_ENTRENO_NOCHE: () => HORA_ENTRENO_NOCHE,
     ID_COMPETICION_OPOSICION: () => ID_COMPETICION_OPOSICION,
@@ -110,6 +111,7 @@ var Motor = (() => {
     NOTA_PAUTA_ORIENTATIVA: () => NOTA_PAUTA_ORIENTATIVA,
     OPCIONES_APETECE: () => OPCIONES_APETECE,
     OPCIONES_GELES: () => OPCIONES_GELES,
+    OPCIONES_OPOSICION: () => OPCIONES_OPOSICION,
     OPOSICIONES_PRUEBAS_CSV: () => OPOSICIONES_PRUEBAS_CSV,
     ORDEN_FRANJAS: () => ORDEN_FRANJAS,
     PAL_VIDA: () => PAL_VIDA,
@@ -229,6 +231,7 @@ var Motor = (() => {
     bloquesDelDia: () => bloquesDelDia,
     borrarCompeticion: () => borrarCompeticion,
     buscarAlternativas: () => buscarAlternativas,
+    buscarOposicion: () => buscarOposicion,
     buscarRecetas: () => buscarRecetas,
     calcular: () => calcular,
     calcularNiveles: () => calcularNiveles,
@@ -321,6 +324,7 @@ var Motor = (() => {
     esDesayunoDePan: () => esDesayunoDePan,
     esFechaValida: () => esFechaValida,
     esFranjaConLimiteVariedad: () => esFranjaConLimiteVariedad,
+    esGrupoOposicion: () => esGrupoOposicion,
     esIngredienteProtegido: () => esIngredienteProtegido,
     esLunes: () => esLunes,
     esPartido: () => esPartido,
@@ -401,6 +405,7 @@ var Motor = (() => {
     idAlerta: () => idAlerta,
     idCuerpoOposicion: () => idCuerpoOposicion,
     ideasCocinaOposicion: () => ideasCocinaOposicion,
+    idsOpcionOposicion: () => idsOpcionOposicion,
     infoCafeina: () => infoCafeina,
     ingredientesDeLaRacion: () => ingredientesDeLaRacion,
     ingredientesPrincipales: () => ingredientesPrincipales,
@@ -446,6 +451,7 @@ var Motor = (() => {
     nivelesConAjustes: () => nivelesConAjustes,
     noSeReescala: () => noSeReescala,
     noValeDesayunoCarrera: () => noValeDesayunoCarrera,
+    nombreOpcionOposicion: () => nombreOpcionOposicion,
     nombreVisible: () => nombreVisible,
     normalizarAjustesNavidad: () => normalizarAjustesNavidad,
     normalizarApetece: () => normalizarApetece,
@@ -482,6 +488,7 @@ var Motor = (() => {
     preferenciaTemporada: () => preferenciaTemporada,
     proteinaDelDia: () => proteinaDelDia,
     pruebasDeCuerpo: () => pruebasDeCuerpo,
+    pruebasDeGrupo: () => pruebasDeGrupo,
     pruebasPropuestas: () => pruebasPropuestas,
     puntuacionGusto: () => puntuacionGusto,
     quitarComidasFamiliares: () => quitarComidasFamiliares,
@@ -1572,9 +1579,9 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
   function categoriasDeTexto(texto3, esAlergia) {
     const raiz = raizAlimento(texto3);
     if (!raiz) return [];
-    const palabras2 = raiz.split(" ");
-    while (palabras2.length > 1 && ARTICULOS.has(palabras2[0])) palabras2.shift();
-    const exacta = palabras2.join(" ");
+    const palabras3 = raiz.split(" ");
+    while (palabras3.length > 1 && ARTICULOS.has(palabras3[0])) palabras3.shift();
+    const exacta = palabras3.join(" ");
     const listas = categoriasListas();
     const encontradas = /* @__PURE__ */ new Map();
     const anadir = (c2) => {
@@ -1635,10 +1642,10 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     "caballa"
   ];
   var OTROS_NO_VEGANOS = ["huevo", "miel"];
-  function buscarIngrediente(ingredientes, palabras2) {
+  function buscarIngrediente(ingredientes, palabras3) {
     for (const ing of ingredientes) {
       const n = raizAlimento(ing.nombre);
-      const lista6 = esAlternativaVegetal(ing.nombre) ? palabras2.filter((p) => !LACTEOS.includes(p)) : palabras2;
+      const lista6 = esAlternativaVegetal(ing.nombre) ? palabras3.filter((p) => !LACTEOS.includes(p)) : palabras3;
       if (lista6.some((p) => contienePalabras(n, raizAlimento(p)))) return ing.nombre;
     }
     return void 0;
@@ -1762,8 +1769,8 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     const terminos = normalizarBusqueda(consulta);
     if (!terminos.length) return recetas;
     return recetas.filter((r) => {
-      const palabras2 = [r.nombre, ...r.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
-      return terminos.every((t2) => palabras2.some((p) => p.startsWith(t2)));
+      const palabras3 = [r.nombre, ...r.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
+      return terminos.every((t2) => palabras3.some((p) => p.startsWith(t2)));
     });
   }
   var SINONIMOS_BUSQUEDA = {
@@ -1779,8 +1786,8 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     const terminos = normalizarBusqueda(consulta);
     if (!terminos.length) return { lista: alternativas, sinResultados: false };
     const lista6 = alternativas.filter((a2) => {
-      const palabras2 = [a2.receta.nombre, ...a2.receta.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
-      return terminos.every((t2) => palabras2.some((p) => p.startsWith(t2) || t2 in SINONIMOS_BUSQUEDA && p.startsWith(SINONIMOS_BUSQUEDA[t2])));
+      const palabras3 = [a2.receta.nombre, ...a2.receta.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
+      return terminos.every((t2) => palabras3.some((p) => p.startsWith(t2) || t2 in SINONIMOS_BUSQUEDA && p.startsWith(SINONIMOS_BUSQUEDA[t2])));
     });
     return lista6.length ? { lista: lista6, sinResultados: false } : { lista: alternativas, sinResultados: true };
   }
@@ -3240,6 +3247,22 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     const l = buscarLimite(cargarTabla(), nombre);
     return !l || !/^legumbre/.test(normalizar2(l.categoria));
   }
+  function tipoBase(nombre) {
+    if (rolIngrediente(nombre) !== "base") return void 0;
+    const n = normalizar2(nombre);
+    const porNombre2 = [
+      ["arroz", /\barroz/],
+      ["pasta", /pasta|macarr|espagueti|fideo|noqui|tallarin|lasana|canelon|ravioli|tortellini|fusili|penne|tagliatelle|gnocchi/],
+      ["patata", /patata|boniato/],
+      ["cuscus", /cuscus|couscous|bulgur/],
+      ["quinoa", /quinoa/],
+      ["avena", /avena|copos/],
+      ["pan", /\bpan\b|tostada|wrap|tortilla de trigo|picos|biscote|baguette|chapata|bollo|molde/]
+    ];
+    for (const [t2, re] of porNombre2) if (re.test(n)) return t2;
+    const l = buscarLimite(cargarTabla(), nombre);
+    return l ? normalizar2(l.categoria).split(/[ (/]/)[0] : n;
+  }
   function racionCargaMaxima(nombre) {
     const max = racionRealistaMaxima(nombre);
     return max === void 0 ? void 0 : Math.floor(max * 1.5);
@@ -4483,9 +4506,20 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
     const verdura = r.ingredientes.filter((i) => rolIngrediente(i.nombre) === "verdura").reduce((s, i) => s + i.gramos, 0);
     return r.kcal > 0 && verdura / r.kcal * 100 <= MAX_VERDURA_PRIMERO_COMPACTO_100KCAL;
   }
-  function combinanBien(primero, segundo) {
+  var CEREALES = /* @__PURE__ */ new Set(["arroz", "pasta", "cuscus", "quinoa", "avena"]);
+  var familiaBase = (nombre) => {
+    const t2 = tipoBase(nombre);
+    return t2 && CEREALES.has(t2) ? "cereal" : t2;
+  };
+  function combinanBien(primero, segundo, opciones = {}) {
     const nombres = (r, rol) => r.ingredientes.filter((i) => rolIngrediente(i.nombre) === rol).map((i) => i.nombre);
-    if (nombres(primero, "base").length && nombres(segundo, "base").length) return false;
+    const bp = nombres(primero, "base");
+    const bs = nombres(segundo, "base");
+    if (bp.length && bs.length) {
+      if (!opciones.carga || !primeroCompacto(primero) || !bs.every(esBaseCompacta)) return false;
+      const tp = new Set(bp.map(familiaBase));
+      if (bs.some((n) => tp.has(familiaBase(n)))) return false;
+    }
     const pp = nombres(primero, "proteina");
     const ps = nombres(segundo, "proteina");
     return !pp.some((a2) => ps.some((b) => coincideAlimento(a2, b)));
@@ -4857,7 +4891,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
             const primeros = recetas.filter((r) => r.tipoPlato === "primero" && vale(r) && (!limitada || usosDe(r) < maxRep));
             const segundos = recetas.filter((r) => r.tipoPlato === "segundo" && vale(r) && (!limitada || usosDe(r) < maxRep));
             const postres = recetas.filter((r) => r.tipoPlato === "postre" && vale(r));
-            const parejasDe = (ps) => ps.flatMap((p) => segundos.filter((s) => combinanBien(p, s)).map((s) => componer([p, s])));
+            const parejasDe = (ps) => ps.flatMap((p) => segundos.filter((s) => combinanBien(p, s, { carga: !!(slot.cargaAlta || slot.racionesCarga) })).map((s) => componer([p, s])));
             const mejorDe = (a2, b) => b.elegido && (!a2.elegido || clave3(b.elegido.desviacion, b.elegido.dist ?? 0, b.elegido.falta ?? 0) < clave3(a2.elegido.desviacion, a2.elegido.dist ?? 0, a2.elegido.falta ?? 0)) ? b : a2;
             const probarParejas = (parejas) => {
               if (!parejas.length) return;
@@ -5210,8 +5244,8 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
   }
   function clasificar(ingrediente) {
     const n = normalizar5(ingrediente);
-    for (const [seccion, palabras2] of PALABRAS_SECCION) {
-      if (palabras2.some((p) => contienePalabra(n, p))) return seccion;
+    for (const [seccion, palabras3] of PALABRAS_SECCION) {
+      if (palabras3.some((p) => contienePalabra(n, p))) return seccion;
     }
     return "otros";
   }
@@ -5499,12 +5533,12 @@ pechuga de pollo asada,0.72,merma al asar (de peso crudo a cocinado),https://www
     return Math.round(n * 100) / 100;
   }
   function estimarCoste(lista6, precios, fracciones = FRACCIONES2) {
-    const porNombre = new Map(precios.map((p) => [normalizar6(p.ingrediente), p]));
+    const porNombre2 = new Map(precios.map((p) => [normalizar6(p.ingrediente), p]));
     let total = 0;
     const porSeccion = {};
     const sinPrecio = [];
     for (const item of lista6) {
-      const precio = porNombre.get(clavePrecio(item.ingrediente));
+      const precio = porNombre2.get(clavePrecio(item.ingrediente));
       if (!precio) {
         sinPrecio.push(item.ingrediente);
         continue;
@@ -8165,8 +8199,8 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
             const primero = nuevos.find((p) => p.tipoPlato === "primero");
             const segundo = nuevos.find((p) => p.tipoPlato === "segundo");
             const compuesta = componerComida(nuevos);
-            if (primero && segundo && !combinanBien(primero, segundo)) {
-              descartadas.push({ receta: compuesta, motivo: "no combina con el resto de la comida (una sola base de hidrato y prote\xEDnas distintas)" });
+            if (primero && segundo && !combinanBien(primero, segundo, { carga: !!(slot.cargaAlta || slot.racionesCarga) })) {
+              descartadas.push({ receta: compuesta, motivo: slot.cargaAlta || slot.racionesCarga ? "no combina con el resto de la comida (en carga, dos bases distintas como mucho y prote\xEDnas distintas)" : "no combina con el resto de la comida (una sola base de hidrato y prote\xEDnas distintas)" });
               continue;
             }
             const e = evaluar(slot, compuesta, opciones);
@@ -12438,10 +12472,10 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     return String(t2 ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   }
   function filtrarPersonas(filas, texto3, filtro = "todas") {
-    const palabras2 = sinTildes3(texto3).split(/\s+/).filter(Boolean);
+    const palabras3 = sinTildes3(texto3).split(/\s+/).filter(Boolean);
     return filas.filter((f2) => {
       const donde = sinTildes3(f2.nombre + " " + f2.contacto);
-      return palabras2.every((w) => donde.includes(w));
+      return palabras3.every((w) => donde.includes(w));
     }).filter((f2) => filtro === "con-alertas" ? f2.alertasSinAtender > 0 : filtro === "sin-plan" ? !f2.tienePlan : filtro === "revisado" ? f2.revisadoPorPablo : true).sort((a2, b) => b.ultimaActividad.localeCompare(a2.ultimaActividad) || a2.nombre.localeCompare(b.nombre, "es"));
   }
   function historialPlanes(planes, usuario) {
@@ -12996,6 +13030,86 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     });
   }
 
+  // src/motor/buscador-oposicion.ts
+  var FILAS = filasPruebasOposicion(OPOSICIONES_PRUEBAS_CSV);
+  var CUERPOS = cuerposDeTabla(FILAS);
+  var normalizarBusqueda2 = (t2) => t2.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  var tiposDe = (id) => [...new Set(FILAS.filter((f2) => idCuerpoOposicion(f2.cuerpo, f2.ambito) === id).map((f2) => f2.tipo))].sort().join("+");
+  var sitio = (ambito) => ambito.split(" - ")[0].trim();
+  var unirY = (xs) => xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`;
+  function calcularGrupos(cuerpos) {
+    const porClave = /* @__PURE__ */ new Map();
+    for (const c2 of cuerpos) {
+      const k = `${c2.cuerpo}|${tiposDe(c2.id)}`;
+      (porClave.get(k) ?? porClave.set(k, []).get(k)).push(c2);
+    }
+    const grupos = [];
+    const grupoDe = /* @__PURE__ */ new Map();
+    for (const [k, cs] of porClave) {
+      if (cs.length < 2) continue;
+      const id = `grupo_${idCuerpoOposicion(cs[0].cuerpo, k.split("|")[1])}`;
+      grupos.push({ id, nombre: `${cs[0].cuerpo}: ${unirY(cs.map((c2) => sitio(c2.ambito)))}`, cuerpo: cs[0].cuerpo, miembros: cs.map((c2) => c2.id) });
+      for (const c2 of cs) grupoDe.set(c2.id, id);
+    }
+    return { grupos, grupoDe };
+  }
+  var { grupos: GRUPOS2, grupoDe: GRUPO_DE } = calcularGrupos(CUERPOS);
+  var GRUPOS_OPOSICION = GRUPOS2;
+  var porNombre = (a2, b) => a2.nombre.localeCompare(b.nombre, "es");
+  var SITIOS = CUERPOS.map((c2) => ({ id: c2.id, nombre: c2.nombre, cuerpo: c2.cuerpo, miembros: [], ...GRUPO_DE.has(c2.id) ? { grupo: GRUPO_DE.get(c2.id) } : {} }));
+  var OPCIONES_OPOSICION = [...GRUPOS2, ...SITIOS.filter((s) => !s.grupo)].sort(porNombre);
+  var esGrupoOposicion = (id) => !!id && GRUPOS2.some((g) => g.id === id);
+  var idsOpcionOposicion = () => [...SITIOS.map((s) => s.id), ...GRUPOS2.map((g) => g.id)];
+  var nombreOpcionOposicion = (id) => [...GRUPOS2, ...SITIOS].find((o) => o.id === id)?.nombre;
+  var ALIAS = {
+    gc: "guardia civil",
+    pn: "policia nacional",
+    cnp: "policia nacional",
+    poli: "policia",
+    bombera: "bomber",
+    bomberas: "bomber",
+    militar: "fuerzas armadas",
+    militares: "fuerzas armadas",
+    ejercito: "fuerzas armadas",
+    tropa: "fuerzas armadas",
+    ffaa: "fuerzas armadas",
+    mosso: "mossos",
+    ertzaina: "ertzaintza",
+    forestal: "forestales",
+    aduanas: "aduanera",
+    foral: "foral"
+  };
+  var palabras2 = (texto3) => normalizarBusqueda2(texto3).split(" ").filter(Boolean).flatMap((p) => (ALIAS[p] ?? p).split(" "));
+  var textoBusqueda = new Map(CUERPOS.map((c2) => [c2.id, ` ${normalizarBusqueda2(`${c2.cuerpo} ${c2.ambito}`)}`]));
+  var casa = (id, ps) => ps.every((p) => textoBusqueda.get(id).includes(` ${p}`));
+  function buscarOposicion(texto3) {
+    const ps = palabras2(texto3);
+    if (!ps.length) return [...OPCIONES_OPOSICION];
+    const salen = [];
+    for (const g of GRUPOS2) {
+      const dentro = g.miembros.filter((id) => casa(id, ps));
+      if (dentro.length === g.miembros.length) salen.push(g);
+      else salen.push(...SITIOS.filter((s) => dentro.includes(s.id)));
+    }
+    salen.push(...SITIOS.filter((s) => !s.grupo && casa(s.id, ps)));
+    return salen.sort(porNombre);
+  }
+  var NOMBRE_TIPO = {
+    resistencia: "Carrera de resistencia",
+    velocidad: "Carrera de velocidad",
+    fuerza: "Prueba de fuerza",
+    natacion: "Nataci\xF3n",
+    salto: "Salto",
+    agilidad: "Circuito de agilidad",
+    otra: "Otra prueba"
+  };
+  function pruebasDeGrupo(idGrupo, sexo) {
+    const g = GRUPOS2.find((x) => x.id === idGrupo);
+    if (!g) return [];
+    const vistos = /* @__PURE__ */ new Set();
+    return pruebasDeCuerpo(FILAS, g.miembros[0], sexo).filter((p) => !vistos.has(p.tipo) && vistos.add(p.tipo)).map((p) => ({ ...p, nombre: `${NOMBRE_TIPO[p.tipo]} (seg\xFAn tu convocatoria)`, estimada: true }));
+  }
+
   // src/motor/oposicion.ts
   var TIPOS_OPOSICION = ["escrito", "fisicas", "ambas"];
   var NOMBRE_TIPO_OPOSICION = {
@@ -13039,7 +13153,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     }
     let cuerpo = (d.cuerpo ?? "").trim();
     if (cuerpo in CUERPOS_ANTIGUOS) cuerpo = CUERPOS_ANTIGUOS[cuerpo] ?? "";
-    if (cuerpo && !CUERPOS_OPOSICION.some((c2) => c2.id === cuerpo)) return { ok: false, error: "Elige tu cuerpo de la lista (o \xABOtro\xBB)." };
+    if (cuerpo && !CUERPOS_OPOSICION.some((c2) => c2.id === cuerpo) && !esGrupoOposicion(cuerpo)) return { ok: false, error: "Elige tu cuerpo de la lista (o \xABOtro\xBB)." };
     const jornada = conFisicas ? validarJornada(d) : { ok: true, jornada: {} };
     if (!jornada.ok) return jornada;
     const estudio = conEscrito ? validarEstudio(d.estudio) : { ok: true };
@@ -13222,7 +13336,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
   var HUECO_MINIMO_MIN = 10;
   function pruebasPropuestas(cuerpo, sexo, citacion = CITACION_PROPUESTA, finJornada) {
     if (!cuerpo) return [];
-    const lista6 = pruebasDeCuerpo(FILAS_PRUEBAS, cuerpo, sexo);
+    const lista6 = esGrupoOposicion(cuerpo) ? pruebasDeGrupo(cuerpo, sexo) : pruebasDeCuerpo(FILAS_PRUEBAS, cuerpo, sexo);
     if (!lista6.length) return [];
     const inicio = aMinutos2(esHoraValida(citacion) ? citacion : CITACION_PROPUESTA) + 30;
     const total = lista6.reduce((s, p) => s + p.duracionMin, 0);
@@ -14066,7 +14180,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     const md = mdDe(fecha);
     return md !== void 0 && (md >= "12-24" || md >= "01-01" && md <= "01-06");
   }
-  var casa = (fechaPlan, ajuste) => ES_ISO.test(ajuste) ? ajuste === fechaPlan : mdDe(ajuste) === fechaPlan.slice(5);
+  var casa2 = (fechaPlan, ajuste) => ES_ISO.test(ajuste) ? ajuste === fechaPlan : mdDe(ajuste) === fechaPlan.slice(5);
   var lista5 = (x) => Array.isArray(x) ? x.filter((y) => y && typeof y.fecha === "string" && typeof y.franja === "string") : [];
   function comidasFamiliares(fechas, ajustes) {
     if (!Array.isArray(fechas) || ajustes && ajustes.activa === false) return [];
@@ -14076,9 +14190,9 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     for (const fecha of [...new Set(fechas.filter((f2) => typeof f2 === "string" && ES_ISO.test(f2)))]) {
       for (const franja of ["comida", "cena"]) {
         const porDefecto = COMIDAS_FAMILIARES_POR_DEFECTO.some((c2) => c2.md === fecha.slice(5) && c2.franja === franja);
-        const a\u00F1adida = a\u00F1adidas.some((a2) => a2.franja === franja && casa(fecha, a2.fecha));
+        const a\u00F1adida = a\u00F1adidas.some((a2) => a2.franja === franja && casa2(fecha, a2.fecha));
         if (!porDefecto && !a\u00F1adida) continue;
-        if (quitadas.some((q) => q.franja === franja && casa(fecha, q.fecha))) continue;
+        if (quitadas.some((q) => q.franja === franja && casa2(fecha, q.fecha))) continue;
         fuera.push({ fecha, franja });
       }
     }
