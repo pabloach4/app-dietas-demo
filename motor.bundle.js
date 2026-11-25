@@ -3438,6 +3438,49 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     return avisos;
   }
 
+  // src/motor/consejo-alimento.ts
+  var YOGUR = {
+    id: "__consejo_yogur",
+    nombre: "Yogur natural",
+    franjas: ["media_manana", "merienda"],
+    kcal: 77,
+    proteina: 4.3,
+    grasa: 3.8,
+    hidrato: 6.3,
+    notas: "",
+    tipoPlato: "postre",
+    alergenos: ["l\xE1cteos"],
+    aptitudes: { vegetariano: "si", vegano: "no", sinLactosa: "no", sinGluten: "si" },
+    ingredientes: [{ nombre: "yogur natural", gramos: 125 }]
+  };
+  var YOGUR_SOJA = {
+    id: "__consejo_yogur_soja",
+    nombre: "Yogur de soja",
+    franjas: ["media_manana", "merienda"],
+    kcal: 69,
+    proteina: 4.8,
+    grasa: 2.6,
+    hidrato: 6.3,
+    notas: "",
+    tipoPlato: "postre",
+    alergenos: ["soja"],
+    aptitudes: { vegetariano: "si", vegano: "si", sinLactosa: "si", sinGluten: "pendiente_ficha" },
+    ingredientes: [{ nombre: "yogur de soja", gramos: 125 }]
+  };
+  function yogurAconsejable(admite) {
+    if (!admite || admite(YOGUR)) return "yogur";
+    if (admite(YOGUR_SOJA)) return "yogur de soja";
+    return void 0;
+  }
+  function frutaOYogur(admite) {
+    const y = yogurAconsejable(admite);
+    return y ? `una fruta o un ${y}` : "una fruta";
+  }
+  function postreFrutaOYogur(admite) {
+    const y = yogurAconsejable(admite);
+    return y ? `fruta o ${y}` : "fruta";
+  }
+
   // src/motor/medidas-caseras.ts
   var COLUMNAS2 = ["ingrediente", "medida", "gramos", "estado", "fuente_url_o_nota"];
   function comprobarMedidasCsv(texto3) {
@@ -3741,15 +3784,15 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
       }
       if (opciones.admite) cerrarDiaConPostre(dia2, mias, delDia, salida, porId, recetas, { noMover: opciones.noMover, admite: opciones.admite }, objetivo, margen);
       const servido = sumar();
-      const d = estadoDia(dia2, objetivo, antes, servido);
+      const d = estadoDia(dia2, objetivo, antes, servido, opciones.admite);
       if (d.aviso) avisos.push(d.aviso);
       dias.push(d);
     }
     return { asignaciones: salida, dias, avisos };
   }
-  function estadoDia(dia2, objetivo, antes, servido) {
+  function estadoDia(dia2, objetivo, antes, servido, admite) {
     const cuadrado = Math.abs(objetivo - servido) <= TOLERANCIA_DIA * objetivo || objetivo === 0;
-    const aviso = cuadrado ? void 0 : objetivo > servido ? `${dia2}: faltan ${Math.round(objetivo - servido)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.` : `${dia2}: sobran ${Math.round(servido - objetivo)} kcal del d\xEDa con cantidades normales. Si quieres, cambia alg\xFAn plato por otro m\xE1s ligero.`;
+    const aviso = cuadrado ? void 0 : objetivo > servido ? `${dia2}: faltan ${Math.round(objetivo - servido)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir ${frutaOYogur(admite)}, o cambiar alg\xFAn plato.` : `${dia2}: sobran ${Math.round(servido - objetivo)} kcal del d\xEDa con cantidades normales. Si quieres, cambia alg\xFAn plato por otro m\xE1s ligero.`;
     return { dia: dia2, objetivo: Math.round(objetivo), servidoAntes: Math.round(antes), servido: Math.round(servido), cuadrado, ...aviso ? { aviso } : {} };
   }
   function cerrarDiaConPostre(dia2, mias, delDia, salida, porId, recetas, opciones, objetivo, margen) {
@@ -3807,7 +3850,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         if (a2.receta !== antes[i]) nuevas.push(porId.get(a2.receta));
       });
       if (mias.every((a2, i) => a2.receta === antes[i])) return d0;
-      return estadoDia(d0.dia, objetivo, d0.servidoAntes, mias.reduce((s, a2) => s + a2.kcalResultante, 0));
+      return estadoDia(d0.dia, objetivo, d0.servidoAntes, mias.reduce((s, a2) => s + a2.kcalResultante, 0), opciones.admite);
     });
     const tocados = new Set(dias.filter((d, i) => d !== cuad.dias[i]).map((d) => d.dia));
     const avisos = cuad.avisos.filter((x) => ![...tocados].some((d) => x.startsWith(`${d}: faltan `) || x.startsWith(`${d}: sobran `))).concat(dias.filter((d) => tocados.has(d.dia) && d.aviso).map((d) => d.aviso));
@@ -4039,7 +4082,7 @@ lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories
         d.servido = Math.round(objetivo - falta);
         d.cuadrado = Math.abs(falta) <= TOLERANCIA_DIA * objetivo;
         if (d.cuadrado) delete d.aviso;
-        else d.aviso = `${dia2}: faltan ${Math.round(falta)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir una fruta o un yogur, o cambiar alg\xFAn plato.`;
+        else d.aviso = `${dia2}: faltan ${Math.round(falta)} kcal del d\xEDa con cantidades normales. Puedes a\xF1adir ${frutaOYogur(opciones.admite)}, o cambiar alg\xFAn plato.`;
       }
     }
     return { asignaciones: salida, dias: diasSalida, recetas: nuevas, diasCarga, diasMenosGrasa };
@@ -4235,6 +4278,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
   }
 
   // src/motor/asignador-recetas.ts
+  var admiteAp = (ap) => ap ? (r) => evaluarCompatibilidad(r, ap).compatible : void 0;
   var MEDIDAS = medidasDesdeCsv(MEDIDAS_CASERAS_CSV);
   function fibraServidaEstimada(r, slot) {
     if (typeof r.fibraG !== "number" || !(r.kcal > 0)) return void 0;
@@ -4535,7 +4579,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
         ...base,
         ok: true,
         ...sinPostre ? { aviso: `Sin el postre (${sinPostre.nombre}): ese d\xEDa no vale; el resto de la comida se queda.` } : {},
-        ...desviacion > slot.kcalObjetivo * 0.1 ? { causa: `con la raci\xF3n al ${Math.round(factorRedondeado * 100)} % ${falta < 0 ? "faltan" : "sobran"} ${desviacion} kcal del objetivo`, arreglo: falta < 0 ? "A\xF1ade un postre (fruta o yogur) o una guarnici\xF3n para cubrir lo que falta." : "Reduce la raci\xF3n o cambia a una receta m\xE1s ligera." } : {}
+        ...desviacion > slot.kcalObjetivo * 0.1 ? { causa: `con la raci\xF3n al ${Math.round(factorRedondeado * 100)} % ${falta < 0 ? "faltan" : "sobran"} ${desviacion} kcal del objetivo`, arreglo: falta < 0 ? `A\xF1ade un postre (${postreFrutaOYogur(admiteAp(opciones.alergiasPreferencias))}) o una guarnici\xF3n para cubrir lo que falta.` : "Reduce la raci\xF3n o cambia a una receta m\xE1s ligera." } : {}
       });
       for (const id of intento.receta.platos ?? [intento.receta.id]) vecesFijadas.set(id, (vecesFijadas.get(id) ?? 0) + 1);
     }
@@ -4836,7 +4880,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
       if (slot.bandaPeso && (elegido.dist ?? 0) > 0) avisos.push(`${slot.dia} ${slot.franja}: con comida normal no se puede ajustar m\xE1s el volumen (queda a ${elegido.dist} g de la banda de peso servido): si quieres, reparte esta comida en una toma m\xE1s.`);
       if (elegido.desviacion > Math.max(slot.kcalObjetivo * 0.1, excluir === agotadas && agotadas.size ? HOLGURA_VARIEDAD_KCAL : 0)) {
         avisos.push(
-          `${slot.dia} ${slot.franja}: "${elegido.receta.nombre}" se queda a ${elegido.desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun ajustando la raci\xF3n todo lo que permiten los topes del m\xE9todo: no cabe en una raci\xF3n normal y no se infla nada. Reparte lo que falta entre las otras comidas del d\xEDa, cierra con un postre (fruta o yogur) o cambia el plato.`
+          `${slot.dia} ${slot.franja}: "${elegido.receta.nombre}" se queda a ${elegido.desviacion} kcal del objetivo (${slot.kcalObjetivo}) aun ajustando la raci\xF3n todo lo que permiten los topes del m\xE9todo: no cabe en una raci\xF3n normal y no se infla nada. Reparte lo que falta entre las otras comidas del d\xEDa, cierra con un postre (${postreFrutaOYogur(admiteAp(opciones.alergiasPreferencias))}) o cambia el plato.`
         );
       }
     }
@@ -7920,7 +7964,7 @@ Ejemplo acotado de bar,Churros,raci\xF3n 100-150 g (4-6 unidades); kcal/100 g Fa
       resumen: `La raci\xF3n es cu\xE1nto crecen o bajan solo la base (arroz, pasta, patata, pan, legumbre), la prote\xEDna y el aceite de la receta para acercarla a las kcal objetivo de esta comida: no baja de 80 % y ning\xFAn ingrediente pasa de su raci\xF3n normal. Verdura, cebolla, condimentos, fruta y l\xE1cteos se quedan en sus gramos.`,
       detalle: [
         `Objetivo de la comida ${f(datos.kcalObjetivo)} kcal \xF7 kcal de la receta base ${f(datos.kcalReceta)} \u2248 ${f(ideal * 100)} %.`,
-        dentro ? `Est\xE1 dentro de 80-120 %, as\xED que se usa tal cual: ${f(datos.kcalResultante)} kcal.` : ideal > 1.2 ? datos.kcalResultante >= datos.kcalObjetivo * 0.97 ? `Pasa de 120 %, pero el plato sigue dentro de las cantidades normales, as\xED que se sube hasta ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: llega al objetivo.` : `Queda fuera de 80-120 % y no se puede subir m\xE1s: se queda en ${f(datos.racion * 100)} % (pasar de ah\xED har\xEDa que un ingrediente pasara de su raci\xF3n normal) y la receta aporta ${f(datos.kcalResultante)} kcal: por debajo del objetivo (no llega a ${f(datos.kcalObjetivo)}). Faltan ${f(datos.kcalObjetivo - datos.kcalResultante)} kcal. No cabe en una raci\xF3n normal y no se infla nada: puedes repartir lo que falta en otra toma del d\xEDa, a\xF1adir un postre (fruta o yogur) o cambiar el plato.` : `Queda fuera de 80-120 %, as\xED que se limita a ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: por encima del objetivo (supera los ${f(datos.kcalObjetivo)} aunque es la raci\xF3n m\xEDnima).`,
+        dentro ? `Est\xE1 dentro de 80-120 %, as\xED que se usa tal cual: ${f(datos.kcalResultante)} kcal.` : ideal > 1.2 ? datos.kcalResultante >= datos.kcalObjetivo * 0.97 ? `Pasa de 120 %, pero el plato sigue dentro de las cantidades normales, as\xED que se sube hasta ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: llega al objetivo.` : `Queda fuera de 80-120 % y no se puede subir m\xE1s: se queda en ${f(datos.racion * 100)} % (pasar de ah\xED har\xEDa que un ingrediente pasara de su raci\xF3n normal) y la receta aporta ${f(datos.kcalResultante)} kcal: por debajo del objetivo (no llega a ${f(datos.kcalObjetivo)}). Faltan ${f(datos.kcalObjetivo - datos.kcalResultante)} kcal. No cabe en una raci\xF3n normal y no se infla nada: puedes repartir lo que falta en otra toma del d\xEDa, a\xF1adir un postre (${postreFrutaOYogur(datos.admite)}) o cambiar el plato.` : `Queda fuera de 80-120 %, as\xED que se limita a ${f(datos.racion * 100)} % y la receta aporta ${f(datos.kcalResultante)} kcal: por encima del objetivo (supera los ${f(datos.kcalObjetivo)} aunque es la raci\xF3n m\xEDnima).`,
         datos.protegidos && datos.protegidos.length ? `Algunos ingredientes no cambian con la raci\xF3n (como fruta, verdura, l\xE1cteos o condimentos); aqu\xED ${datos.protegidos.join(", ")} mantiene${datos.protegidos.length > 1 ? "n" : ""} sus gramos. Por eso ${f(datos.kcalResultante)} kcal es una cifra aproximada.` : "Al cambiar la raci\xF3n solo crecen la base, la prote\xEDna y el aceite; lo dem\xE1s no cambia. Las kcal son aproximadas.",
         "Es una receta de ejemplo, para orientarte."
       ]

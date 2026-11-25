@@ -100,6 +100,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
   // #256 (puntos 26 y 6): los nombres según el perfil (sin celiaquía, «pan»; con ella, «avena sin gluten»). Mismos ids y cifras.
   const RECETAS_BASE = Motor.parsearRecetas(RECETAS_EJEMPLO_CSV, RECETAS_EJEMPLO_INGREDIENTES_CSV);
   let RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, false);
+  let admiteConsejo; // #351: el filtro de la persona del último plan, para los consejos que nombran un alimento (nunca un yogur a quien no puede)
   /** Catálogo + las comidas compuestas (primero y segundo) que usa un plan, para la compra y el detalle (issue #131). */
   const catalogoPlan = (asignaciones) => RECETAS_EJEMPLO.concat(Motor.recetasCompuestas(asignaciones.map((a) => a.receta), RECETAS_EJEMPLO));
   // #323 parte 2b: lo que la app pone para compensar un grupo quitado (30 g de nueces en la merienda…) también se compra.
@@ -4092,7 +4093,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
       <details class="dc-notas"><summary>¿Por qué estas cifras?</summary>
         <p class="dc-nota" data-tipo="${d.tipo}">${NOMBRE_DIA_LARGO[dia]} (${(() => { const fase = vistaSemana.compPorDia && vistaSemana.compPorDia.get(dia)?.fase; return fase ? Motor.ETIQUETA_FASE[fase].toLowerCase() : nombreTipoDia(d, hayEntrenoEl(d.dia)); })() /* #295: en la semana de una competición, la fase */}) · ${NOMBRE[franja] ?? franja}${hora ? ` a las ${hora}` : ''}.</p>
         ${cuerpoPorque(Motor.explicarComida(f0, { tipoDia: d.tipo, pesoRef: planActual.proteina.pesoReferencia, proteinaDia: d.proteinaG, hidratoDia: d.hidratoG, grasaDia: d.grasaG }))}
-        ${asignada ? cuerpoPorque(Motor.explicarRacion({ kcalReceta: asignada.receta.kcal, kcalObjetivo: f0.kcalAprox, racion: asignada.racionAjustada, kcalResultante: asignada.kcalResultante, protegidos: Motor.ingredientesDeLaRacion(asignada.receta, asignada.racionAjustada, Motor.noSeReescala).filter((i) => i.protegido).map((i) => i.nombre) })) : ''}
+        ${asignada ? cuerpoPorque(Motor.explicarRacion({ kcalReceta: asignada.receta.kcal, kcalObjetivo: f0.kcalAprox, racion: asignada.racionAjustada, kcalResultante: asignada.kcalResultante, protegidos: Motor.ingredientesDeLaRacion(asignada.receta, asignada.racionAjustada, Motor.noSeReescala).filter((i) => i.protegido).map((i) => i.nombre), admite: admiteConsejo })) : ''}
       </details>`;
 
     document.getElementById('dc-cuerpo').innerHTML = receta + contexto
@@ -4585,6 +4586,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     pintarHambreCena(); // #265 F: la pregunta, solo si esta semana algún entreno acaba de noche con la cena después
     if (!Array.isArray(duelosEnCurso)) pintarGustos(); // #261 C: los duelos, con las restricciones de ahora
     const admitePostre = (r) => Motor.evaluarCompatibilidad(r, alergiasPreferencias).compatible; // #259.11: el postre de cierre, con las mismas restricciones
+    admiteConsejo = admitePostre;
     RECETAS_EJEMPLO = Motor.adaptarNombresGluten(RECETAS_BASE, Boolean(respuestas.alergias && respuestas.alergias.celiaquia)); // #256.26
     // #189: la próxima dieta guardada se vuelve a comprobar con las restricciones de ahora: lo que ya no vale se quita y se dice.
     if (siguiente) {
@@ -4731,7 +4733,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     const diasMenosGrasa = new Set(); // #303 (Pablo, 04/11: «C, menos grasa»): los días de carga, menos aceite para que quepan más hidratos
     {
       const grasaObjetivoG = Object.fromEntries(plan.dias.filter((d) => (compPorDia.get(d.dia)?.hidratoMinGKg ?? 0) >= 10 && compPorDia.get(d.dia)?.fase !== 'competicion').map((d) => [d.dia, d.grasaG]));
-      const rc = Motor.aplicarRacionesCarga(cuadrado.asignaciones, slotsSemana, recetasCuadre, cuadrado.dias, { grasaObjetivoG });
+      const rc = Motor.aplicarRacionesCarga(cuadrado.asignaciones, slotsSemana, recetasCuadre, cuadrado.dias, { grasaObjetivoG, admite: admitePostre });
       const tocados = [...new Set([...rc.diasCarga, ...rc.diasMenosGrasa])];
       if (tocados.length) {
         rc.diasCarga.forEach((d) => diasRacionesCarga.add(d));
