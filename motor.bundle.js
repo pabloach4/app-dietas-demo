@@ -5567,7 +5567,7 @@ mostaza,kg,3.222,"Mostaza cl\xE1sica Hacendado; formato comercial 0.388 kg; prec
 ketchup,kg,1.750,"Ketchup Hacendado; formato comercial 0.6 kg; precio de referencia de este producto, no media estadistica; zona comercial de referencia svq1. No sustituye composicion USDA.",Mercadona: https://tienda.mercadona.es/product/23579/ketchup-hacendado-bote,2026-11-18
 vinagre de vino,l,,"sin precio: Solo vinagre de vino blanco, no tinto de la ficha; no equivalencia impuesta.",Mercadona: https://tienda.mercadona.es/,2026-11-18
 vinagre de arroz,l,,sin precio: No encontrado vinagre de arroz en el catalogo consultado.,Mercadona: https://tienda.mercadona.es/,2026-11-18
-edamame,kg,,"sin precio: pendiente de un producto desgranado congelado (#347).",Mercadona: https://tienda.mercadona.es/,2026-11-24
+edamame,kg,6.73,"Edamame desgranado congelado, bolsa de 1 kg aprox. (precio orientativo)",Frutas Eloy: https://tienda.frutaseloy.com/producto/edamame-desgranado-congelado/,2026-11-24
 `;
 
   // src/motor/atributos-datos.ts
