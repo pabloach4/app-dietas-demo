@@ -108,6 +108,7 @@ var Motor = (() => {
     NOMBRE_FRANJA_CENTRO: () => NOMBRE_FRANJA_CENTRO,
     NOMBRE_TIPO_COMPETICION: () => NOMBRE_TIPO_COMPETICION,
     NOMBRE_TIPO_OPOSICION: () => NOMBRE_TIPO_OPOSICION,
+    NOMBRE_TIPO_RECETA: () => NOMBRE_TIPO_RECETA,
     NOTA_PAUTA: () => NOTA_PAUTA,
     NOTA_PAUTA_ORIENTATIVA: () => NOTA_PAUTA_ORIENTATIVA,
     OPCIONES_APETECE: () => OPCIONES_APETECE,
@@ -157,6 +158,7 @@ var Motor = (() => {
     TIPOS_COMPETICION: () => TIPOS_COMPETICION,
     TIPOS_OPOSICION: () => TIPOS_OPOSICION,
     TIPOS_PRUEBA_OPOSICION: () => TIPOS_PRUEBA_OPOSICION,
+    TIPOS_RECETA: () => TIPOS_RECETA,
     TIPOS_SOLUCIONABLES: () => TIPOS_SOLUCIONABLES,
     TOLERANCIA_DIA: () => TOLERANCIA_DIA,
     TOMAS_VISPERA: () => TOMAS_VISPERA,
@@ -506,6 +508,7 @@ var Motor = (() => {
     recetaIsotonica: () => recetaIsotonica,
     recetaSugeridaProteina: () => recetaSugeridaProteina,
     recetasCompuestas: () => recetasCompuestas,
+    recetasDelRecetario: () => recetasDelRecetario,
     recetasParaDerivado: () => recetasParaDerivado,
     reorganizarDia: () => reorganizarDia,
     repartirComidas: () => repartirComidas,
@@ -556,6 +559,7 @@ var Motor = (() => {
     textoProteinaDia: () => textoProteinaDia,
     textosCompensacion: () => textosCompensacion,
     tipoDeSesion: () => tipoDeSesion,
+    tiposDeReceta: () => tiposDeReceta,
     tituloCentro: () => tituloCentro,
     tomaDuranteDia: () => tomaDuranteDia,
     tomaRapidaEjemplo: () => tomaRapidaEjemplo,
@@ -1758,6 +1762,97 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     return `Has indicado ${dicho}: no se han quitado los dem\xE1s moluscos (sepia, calamar, pulpo, mejillones, almejas\u2026). Si tambi\xE9n te sientan mal, m\xE1rcalo en Alergias.`;
   }
 
+  // src/motor/proteina-grupo.ts
+  var GRUPOS = [
+    ["pollo", /\bpollo\b/],
+    ["pavo", /\bpavo\b/],
+    ["ternera", /\b(ternera|vacuno|buey)\b/],
+    ["cerdo", /\b(cerdo|jamon|lomo embuchado)\b/],
+    ["conejo", /\bconejo\b/],
+    ["cordero", /\bcordero\b/],
+    ["bacalao", /\bbacalao\b/],
+    ["merluza", /\b(merluza|pescadilla)\b/],
+    ["atun", /\batun\b/],
+    ["salmon", /\bsalmon\b/],
+    ["sardina", /\bsardinas?\b/],
+    ["caballa", /\bcaballa\b/],
+    ["lubina", /\blubina\b/],
+    ["dorada", /\bdorada\b/],
+    ["marisco", /\b(sepia|calamar(es)?|mejillon(es)?|gambas?|langostinos?|pulpo)\b/],
+    ["huevo", /\b(huevos?|claras?)\b/],
+    ["legumbre", /\b(lentejas?|garbanzos?|alubias?|judias? (blancas?|rojas?|pintas?)|hummus|frijol(es)?)\b/],
+    ["soja", /\b(tofu|tempeh|soja texturizada|edamame)\b/]
+  ];
+  var normal = (t2) => t2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  var cache = /* @__PURE__ */ new WeakMap();
+  function gruposDePlato(p) {
+    let g = cache.get(p);
+    if (!g) {
+      const textos = [p.proteinaPrincipal ?? "", ...p.ingredientes.map((i) => i.nombre)].map(normal);
+      g = new Set(GRUPOS.filter(([, re]) => textos.some((t2) => re.test(t2))).map(([x]) => x));
+      cache.set(p, g);
+    }
+    return g;
+  }
+  function gruposProteina(r, porId) {
+    if (!r.platos || !porId) return gruposDePlato(r);
+    const g = /* @__PURE__ */ new Set();
+    for (const id of r.platos) {
+      const p = porId.get(id);
+      if (p && p.tipoPlato !== "postre") for (const x of gruposDePlato(p)) g.add(x);
+    }
+    return g;
+  }
+  function chocaConElDia(r, otra, porId) {
+    if (!otra) return false;
+    const otrasIds = otra.platos ?? [otra.id];
+    if ((r.platos ?? [r.id]).some((id) => otrasIds.includes(id))) return true;
+    const g = gruposProteina(otra, porId);
+    for (const x of gruposProteina(r, porId)) if (g.has(x)) return true;
+    return false;
+  }
+  var BASES = [["arroz", /\barroz\b/], ["pasta", /\bpasta\b/], ["patata", /\bpatatas?\b/]];
+  var cacheBases = /* @__PURE__ */ new WeakMap();
+  function basesDePlato(p) {
+    let b = cacheBases.get(p);
+    if (!b) {
+      const textos = p.ingredientes.map((i) => normal(i.nombre));
+      b = new Set(BASES.filter(([, re]) => textos.some((t2) => re.test(t2))).map(([x]) => x));
+      if (gruposDePlato(p).has("legumbre")) b.add("legumbre");
+      cacheBases.set(p, b);
+    }
+    return b;
+  }
+  var HIDRATO_FACIL = [/\barroz\b/, /\bpasta\b/, /\bespaguetis?\b/, /\bmacarrones\b/, /\bfideos?\b/, /\bpatatas?\b/, /\bpan\b/];
+  var NO_FACIL = /integral|centeno|espelta|semillas|cereales/;
+  function hidratoFacilDePlato(p) {
+    return p.ingredientes.some((i) => {
+      const t2 = normal(i.nombre);
+      return !NO_FACIL.test(t2) && HIDRATO_FACIL.some((re) => re.test(t2));
+    });
+  }
+  function tieneHidratoFacil(r, porId) {
+    if (!r.platos || !porId) return hidratoFacilDePlato(r);
+    return r.platos.some((id) => {
+      const p = porId.get(id);
+      return !!p && p.tipoPlato !== "postre" && hidratoFacilDePlato(p);
+    });
+  }
+  function basesDe(r, porId) {
+    if (!r.platos || !porId) return basesDePlato(r);
+    const b = /* @__PURE__ */ new Set();
+    for (const id of r.platos) {
+      const p = porId.get(id);
+      if (p && p.tipoPlato !== "postre") for (const x of basesDePlato(p)) b.add(x);
+    }
+    return b;
+  }
+  var BARATAS = /* @__PURE__ */ new Set(["huevo", "legumbre", "atun", "pollo"]);
+  function proteinaBarata(r, porId) {
+    for (const g of gruposProteina(r, porId)) if (!BARATAS.has(g)) return false;
+    return true;
+  }
+
   // src/motor/catalogo-recetas.ts
   function normalizarBusqueda(texto3) {
     return Array.from(texto3.normalize("NFD")).filter((c2) => c2.codePointAt(0) < 768 || c2.codePointAt(0) > 879).join("").toLowerCase().split(/[^a-z0-9ñ]+/).filter(Boolean).map(singular);
@@ -1770,10 +1865,7 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
   function buscarRecetas(recetas, consulta) {
     const terminos = normalizarBusqueda(consulta);
     if (!terminos.length) return recetas;
-    return recetas.filter((r) => {
-      const palabras3 = [r.nombre, ...r.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
-      return terminos.every((t2) => palabras3.some((p) => p.startsWith(t2)));
-    });
+    return recetas.filter((r) => coincide(r, terminos));
   }
   var SINONIMOS_BUSQUEDA = {
     macarron: "pasta",
@@ -1784,18 +1876,52 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     penne: "pasta",
     fusilli: "pasta"
   };
+  function coincide(r, terminos) {
+    const palabras3 = [r.nombre, ...r.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
+    return terminos.every((t2) => palabras3.some((p) => p.startsWith(t2) || t2 in SINONIMOS_BUSQUEDA && p.startsWith(SINONIMOS_BUSQUEDA[t2])));
+  }
   function buscarAlternativas(alternativas, consulta) {
     const terminos = normalizarBusqueda(consulta);
     if (!terminos.length) return { lista: alternativas, sinResultados: false };
-    const lista6 = alternativas.filter((a2) => {
-      const palabras3 = [a2.receta.nombre, ...a2.receta.ingredientes.map((i) => i.nombre)].flatMap((t2) => normalizarBusqueda(t2));
-      return terminos.every((t2) => palabras3.some((p) => p.startsWith(t2) || t2 in SINONIMOS_BUSQUEDA && p.startsWith(SINONIMOS_BUSQUEDA[t2])));
-    });
+    const lista6 = alternativas.filter((a2) => coincide(a2.receta, terminos));
     return lista6.length ? { lista: lista6, sinResultados: false } : { lista: alternativas, sinResultados: true };
+  }
+  var TIPOS_RECETA = ["pasta", "arroz", "patata", "legumbre", "carne", "pescado", "huevos", "verdura"];
+  var NOMBRE_TIPO_RECETA = {
+    pasta: "Pasta",
+    arroz: "Arroz",
+    patata: "Patata",
+    legumbre: "Legumbre",
+    carne: "Carne",
+    pescado: "Pescado y marisco",
+    huevos: "Huevos",
+    verdura: "Verdura"
+  };
+  var CARNES = /* @__PURE__ */ new Set(["pollo", "pavo", "ternera", "cerdo", "conejo", "cordero"]);
+  var PESCADOS = /* @__PURE__ */ new Set(["bacalao", "merluza", "atun", "salmon", "sardina", "caballa", "lubina", "dorada", "marisco"]);
+  var PLATO_VERDURA = /\b(ensaladas?|crema de (?!cacahuete|arroz|almendra|cacao|avellana)|pure de|verduras?|pisto|menestra|salteado de|espinacas|calabacin(es)?|berenjenas?|brocoli|judias verdes|acelgas|alcachofas?|coliflor|gazpacho|salmorejo|parrillada de|pimientos? rellenos?|champinones|setas|esparragos)\b/;
+  var sinTildes2 = (t2) => t2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  function tiposDeReceta(r) {
+    const g = gruposProteina(r);
+    const b = basesDe(r);
+    const t2 = /* @__PURE__ */ new Set();
+    for (const x of ["pasta", "arroz", "patata"]) if (b.has(x)) t2.add(x);
+    if (g.has("legumbre") || g.has("soja")) t2.add("legumbre");
+    if ([...g].some((x) => CARNES.has(x))) t2.add("carne");
+    if ([...g].some((x) => PESCADOS.has(x))) t2.add("pescado");
+    if (g.has("huevo")) t2.add("huevos");
+    const nombre = sinTildes2(r.nombre);
+    const m = PLATO_VERDURA.exec(nombre);
+    if (m && (m.index === 0 || !g.size)) t2.add("verdura");
+    return TIPOS_RECETA.filter((x) => t2.has(x));
+  }
+  function recetasDelRecetario(recetas, admite) {
+    return recetas.filter((r) => r.tipoPlato !== "compuesta" && admite(r));
   }
   function filtrarCatalogo(recetas, f2) {
     let lista6 = buscarRecetas(recetas, f2.consulta ?? "");
     if (f2.franja) lista6 = lista6.filter((r) => r.franjas.includes(f2.franja));
+    if (f2.tipo) lista6 = lista6.filter((r) => tiposDeReceta(r).includes(f2.tipo));
     if (f2.soloFavoritas) {
       const fav = new Set(f2.favoritas ?? []);
       lista6 = lista6.filter((r) => fav.has(r.id));
@@ -2014,7 +2140,7 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
 
   // src/motor/derivacion.ts
   var MENSAJE_DERIVACION_SALUD = "Con lo que nos cuentas de tu salud, tu plan lo prepara Pablo contigo, en persona, para tener en cuenta todo lo tuyo.";
-  var normal = (s) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  var normal2 = (s) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
   var SE\u00D1AL_INTOLERANCIA = /intoleran|alergi|alergic|celiac|sin gluten|sin lactosa/;
   function peculiaridadesRevision(r) {
     const al = r.alergias ?? {};
@@ -2022,9 +2148,9 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     const intolerancias = [];
     if (al.lactosa) intolerancias.push("intolerancia a la lactosa");
     if (al.celiaquia) intolerancias.push("celiaqu\xEDa");
-    if (SE\u00D1AL_INTOLERANCIA.test(normal(evitan))) intolerancias.push("una intolerancia");
+    if (SE\u00D1AL_INTOLERANCIA.test(normal2(evitan))) intolerancias.push("una intolerancia");
     return {
-      diabetes: (r.salud ?? []).some((t2) => /diabet/.test(normal(String(t2)))),
+      diabetes: (r.salud ?? []).some((t2) => /diabet/.test(normal2(String(t2)))),
       alergias: String(al.otros ?? "").split(/[,;]/).map((t2) => t2.trim()).filter(Boolean),
       intolerancias
     };
@@ -2039,10 +2165,10 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     return `Como nos cuentas que tienes ${lo}, necesitamos hacerte un estudio un poco m\xE1s completo que al resto, para asegurarnos de que tu dieta se ajusta a tu situaci\xF3n. Pablo revisar\xE1 tu caso contigo antes de darte el plan: p\xEDdele cita o escr\xEDbele aqu\xED debajo.`;
   }
   function peculiaridadesNuevas(ahora, revisadas) {
-    const ya = new Set(revisadas.alergias.map((a2) => normal(a2).trim()));
+    const ya = new Set(revisadas.alergias.map((a2) => normal2(a2).trim()));
     return {
       diabetes: ahora.diabetes && !revisadas.diabetes,
-      alergias: ahora.alergias.filter((a2) => !ya.has(normal(a2).trim())),
+      alergias: ahora.alergias.filter((a2) => !ya.has(normal2(a2).trim())),
       intolerancias: ahora.intolerancias.filter((i) => !revisadas.intolerancias.includes(i))
     };
   }
@@ -3111,7 +3237,7 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     }
     return tablaInyectada;
   }
-  function coincide(nombreIngrediente, keywords) {
+  function coincide2(nombreIngrediente, keywords) {
     const tokensIngrediente = new Set(tokens(nombreIngrediente));
     return keywords.some((kw) => kw.every((t2) => tokensIngrediente.has(t2)));
   }
@@ -3129,7 +3255,7 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     const m = deTabla(cacheLimite, tabla2);
     let r = m.get(nombre);
     if (r === void 0) {
-      r = tabla2.alimentos.find((a2) => coincide(nombre, a2.keywords)) ?? null;
+      r = tabla2.alimentos.find((a2) => coincide2(nombre, a2.keywords)) ?? null;
       m.set(nombre, r);
     }
     return r ?? void 0;
@@ -3325,7 +3451,7 @@ edamame,sin_gluten_natural,no,"legumbre (grano de soja verde cocido, sin salsa),
     if (ROLES_VALIDOS.includes(rol)) rolesCatalogo.set(normalizar2(nombre), rol);
   }
   function racionEnTabla(tabla2, nombre) {
-    const l = tabla2.alimentos.find((a2) => !a2.categoria.endsWith("(provisional)") && coincide(nombre, a2.keywords));
+    const l = tabla2.alimentos.find((a2) => !a2.categoria.endsWith("(provisional)") && coincide2(nombre, a2.keywords));
     const maxG = l ? l.recomendado ?? l.tope : void 0;
     return l && maxG != null ? { minG: l.minimo ?? 0, maxG } : null;
   }
@@ -3685,97 +3811,6 @@ hummus,cucharada sopera,30,fuente,"https://www.bda.uk.com/static/61ad81e4-ea30-4
 lechuga hoja verde,unidad,150,fuente,"https://www.compraonline.alcampo.es/products/lechuga-hoja-de-roble-roja-1-ud/56653 | Ficha Alcampo: 150 g declarados por unidad (11,27 \u20AC/kg, 1,69 \u20AC la pieza). Mercadona 69114 vende la misma hoja de roble por unidad sin declarar peso; mismo proveedor (Verduras Curro S.L.). La tabla UCM solo da \xABhoja grande = 10 g\xBB."
 lechuga romana,unidad,300,fuente,"https://www.compraonline.alcampo.es/categories/frescos/verduras-y-hortalizas/lechugas-coliflor-y-repollos/lechugas-y-endibias/OC170206 | \xABCoraz\xF3n de lechuga romana 2 uds\xBB con 600 g declarados -> 300 g por coraz\xF3n. Corrobora DIA: calibre 275-600 g por unidad (https://www.dia.es/verduras/lechugas-y-hojas-verdes/p/50077). Mercadona 69122 vende por unidad sin declarar peso."
 `;
-
-  // src/motor/proteina-grupo.ts
-  var GRUPOS = [
-    ["pollo", /\bpollo\b/],
-    ["pavo", /\bpavo\b/],
-    ["ternera", /\b(ternera|vacuno|buey)\b/],
-    ["cerdo", /\b(cerdo|jamon|lomo embuchado)\b/],
-    ["conejo", /\bconejo\b/],
-    ["cordero", /\bcordero\b/],
-    ["bacalao", /\bbacalao\b/],
-    ["merluza", /\b(merluza|pescadilla)\b/],
-    ["atun", /\batun\b/],
-    ["salmon", /\bsalmon\b/],
-    ["sardina", /\bsardinas?\b/],
-    ["caballa", /\bcaballa\b/],
-    ["lubina", /\blubina\b/],
-    ["dorada", /\bdorada\b/],
-    ["marisco", /\b(sepia|calamar(es)?|mejillon(es)?|gambas?|langostinos?|pulpo)\b/],
-    ["huevo", /\b(huevos?|claras?)\b/],
-    ["legumbre", /\b(lentejas?|garbanzos?|alubias?|judias? (blancas?|rojas?|pintas?)|hummus|frijol(es)?)\b/],
-    ["soja", /\b(tofu|tempeh|soja texturizada|edamame)\b/]
-  ];
-  var normal2 = (t2) => t2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  var cache = /* @__PURE__ */ new WeakMap();
-  function gruposDePlato(p) {
-    let g = cache.get(p);
-    if (!g) {
-      const textos = [p.proteinaPrincipal ?? "", ...p.ingredientes.map((i) => i.nombre)].map(normal2);
-      g = new Set(GRUPOS.filter(([, re]) => textos.some((t2) => re.test(t2))).map(([x]) => x));
-      cache.set(p, g);
-    }
-    return g;
-  }
-  function gruposProteina(r, porId) {
-    if (!r.platos || !porId) return gruposDePlato(r);
-    const g = /* @__PURE__ */ new Set();
-    for (const id of r.platos) {
-      const p = porId.get(id);
-      if (p && p.tipoPlato !== "postre") for (const x of gruposDePlato(p)) g.add(x);
-    }
-    return g;
-  }
-  function chocaConElDia(r, otra, porId) {
-    if (!otra) return false;
-    const otrasIds = otra.platos ?? [otra.id];
-    if ((r.platos ?? [r.id]).some((id) => otrasIds.includes(id))) return true;
-    const g = gruposProteina(otra, porId);
-    for (const x of gruposProteina(r, porId)) if (g.has(x)) return true;
-    return false;
-  }
-  var BASES = [["arroz", /\barroz\b/], ["pasta", /\bpasta\b/], ["patata", /\bpatatas?\b/]];
-  var cacheBases = /* @__PURE__ */ new WeakMap();
-  function basesDePlato(p) {
-    let b = cacheBases.get(p);
-    if (!b) {
-      const textos = p.ingredientes.map((i) => normal2(i.nombre));
-      b = new Set(BASES.filter(([, re]) => textos.some((t2) => re.test(t2))).map(([x]) => x));
-      if (gruposDePlato(p).has("legumbre")) b.add("legumbre");
-      cacheBases.set(p, b);
-    }
-    return b;
-  }
-  var HIDRATO_FACIL = [/\barroz\b/, /\bpasta\b/, /\bespaguetis?\b/, /\bmacarrones\b/, /\bfideos?\b/, /\bpatatas?\b/, /\bpan\b/];
-  var NO_FACIL = /integral|centeno|espelta|semillas|cereales/;
-  function hidratoFacilDePlato(p) {
-    return p.ingredientes.some((i) => {
-      const t2 = normal2(i.nombre);
-      return !NO_FACIL.test(t2) && HIDRATO_FACIL.some((re) => re.test(t2));
-    });
-  }
-  function tieneHidratoFacil(r, porId) {
-    if (!r.platos || !porId) return hidratoFacilDePlato(r);
-    return r.platos.some((id) => {
-      const p = porId.get(id);
-      return !!p && p.tipoPlato !== "postre" && hidratoFacilDePlato(p);
-    });
-  }
-  function basesDe(r, porId) {
-    if (!r.platos || !porId) return basesDePlato(r);
-    const b = /* @__PURE__ */ new Set();
-    for (const id of r.platos) {
-      const p = porId.get(id);
-      if (p && p.tipoPlato !== "postre") for (const x of basesDePlato(p)) b.add(x);
-    }
-    return b;
-  }
-  var BARATAS = /* @__PURE__ */ new Set(["huevo", "legumbre", "atun", "pollo"]);
-  function proteinaBarata(r, porId) {
-    for (const g of gruposProteina(r, porId)) if (!BARATAS.has(g)) return false;
-    return true;
-  }
 
   // src/motor/desayuno-preferido.ts
   var ENCIMAS_PAN = [
@@ -4416,6 +4451,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
   var PESO_BARATO = 8;
   var PESO_FRUTA_TEMPORADA = 8;
   var MAX_USOS_PREMIO_FRUTA = 2;
+  var PESO_FAVORITA = 2;
   var esFranjaConLimiteVariedad = (franja) => FRANJAS_CON_LIMITE_VARIEDAD.includes(franja);
   var RACION_MAX_SUBIDA = 2;
   function racionParaObjetivo(receta, kcalObjetivo, franja, opciones = {}) {
@@ -4760,6 +4796,8 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
     const usosFruta = /* @__PURE__ */ new Map();
     const usosFrutaDe = (r) => Math.max(...idsDe(r).map((id) => usosFruta.get(id) ?? 0));
     const gustos = opciones.gustos;
+    const favoritas = new Set(opciones.favoritas ?? []);
+    const esFavorita = (r) => favoritas.size > 0 && idsDe(r).some((id) => favoritas.has(id));
     const gusto = (r) => gustos?.size ? idsDe(r).reduce((s, id) => s + (gustos.get(id) ?? 0), 0) / idsDe(r).length : 0;
     const otraComidaDelDia = (slot) => {
       const otra = slot.franja === "comida" ? "cena" : slot.franja === "cena" ? "comida" : void 0;
@@ -4848,7 +4886,7 @@ zanahoria,2,2,2,2,2,2,2,2,2,2,2,2,https://www.alimentosdespana.es/dam/ade/conten
             continue;
           }
           const dist = slot.bandaPeso ? distanciaABanda(pesoServido(gramosEscalados(r, factorRedondeado2)), slot.bandaPeso) : 0;
-          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && esFranjaConLimiteVariedad(slot.franja) && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) + (slot.barato && esFranjaConLimiteVariedad(slot.franja) && !proteinaBarata(r, catalogoPorId) ? PESO_BARATO : 0) - (slot.mesFruta && slot.franja !== "desayuno" && usosFrutaDe(r) < MAX_USOS_PREMIO_FRUTA && frutaDeTemporada(r, slot.mesFruta, catalogoPorId) ? PESO_FRUTA_TEMPORADA : 0) - PESO_GUSTO / 4 * gusto(r);
+          const falta = faltaProteina(r, factorRedondeado2) + PESO_VIOLACION_E2 * violacionesE2(r) + (slot.hidratoFacil && !tieneHidratoFacil(r, catalogoPorId) ? PESO_HIDRATO_FACIL : 0) + (slot.temporada && esFranjaConLimiteVariedad(slot.franja) && !encajaTemporada(r, slot.temporada, catalogoPorId) ? PESO_TEMPORADA : 0) + (slot.barato && esFranjaConLimiteVariedad(slot.franja) && !proteinaBarata(r, catalogoPorId) ? PESO_BARATO : 0) - (slot.mesFruta && slot.franja !== "desayuno" && usosFrutaDe(r) < MAX_USOS_PREMIO_FRUTA && frutaDeTemporada(r, slot.mesFruta, catalogoPorId) ? PESO_FRUTA_TEMPORADA : 0) - (esFavorita(r) && usosFrutaDe(r) < MAX_USOS_PREMIO_FRUTA ? PESO_FAVORITA : 0) - PESO_GUSTO / 4 * gusto(r);
           if (!mejor || clave3(desviacion, dist, falta) < clave3(mejor.desviacion, mejor.dist ?? 0, mejor.falta ?? 0)) mejor = { receta: r, factor, kcalResultante, desviacion, dist, falta };
         }
         if (!mejor) return { motivo: `con la raci\xF3n escalada al objetivo ninguna receta disponible pasa el validador de platos (${descartadas.join(" | ")})` };
@@ -11368,7 +11406,7 @@ R528,pepino,80,verdura,168409,peso comestible con piel,`;
 
   // src/motor/compensaciones.ts
   var ESTADOS = ["candidato_por_validar", "pendiente_limite_fruta", "validada_pablo", "rechazada"];
-  var sinTildes2 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  var sinTildes3 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   function parseCsvLine3(linea) {
     const campos = [];
     let actual = "";
@@ -11435,7 +11473,7 @@ R528,pepino,80,verdura,168409,peso comestible con piel,`;
         estado: campo("estado")
       };
       const motivos = motivosFila(f2, ref);
-      const clave3 = sinTildes2(`${f2.grupo}|${f2.nutriente}|${f2.alimento}`);
+      const clave3 = sinTildes3(`${f2.grupo}|${f2.nutriente}|${f2.alimento}`);
       if (vistas.has(clave3)) motivos.push("fila repetida");
       vistas.add(clave3);
       inf.filas.push(f2);
@@ -12472,13 +12510,13 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
       };
     });
   }
-  function sinTildes3(t2) {
+  function sinTildes4(t2) {
     return String(t2 ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   }
   function filtrarPersonas(filas, texto3, filtro = "todas") {
-    const palabras3 = sinTildes3(texto3).split(/\s+/).filter(Boolean);
+    const palabras3 = sinTildes4(texto3).split(/\s+/).filter(Boolean);
     return filas.filter((f2) => {
-      const donde = sinTildes3(f2.nombre + " " + f2.contacto);
+      const donde = sinTildes4(f2.nombre + " " + f2.contacto);
       return palabras3.every((w) => donde.includes(w));
     }).filter((f2) => filtro === "con-alertas" ? f2.alertasSinAtender > 0 : filtro === "sin-plan" ? !f2.tienePlan : filtro === "revisado" ? f2.revisadoPorPablo : true).sort((a2, b) => b.ultimaActividad.localeCompare(a2.ultimaActividad) || a2.nombre.localeCompare(b.nombre, "es"));
   }
@@ -12492,7 +12530,7 @@ ${textoCita(p).replace(/^Pide cita/, "Quiero pedir cita")}
     ];
     const vistas = /* @__PURE__ */ new Set();
     return todas.filter((c2) => {
-      const k = [c2.fecha, c2.franja, sinTildes3(c2.texto ?? "")].join("|");
+      const k = [c2.fecha, c2.franja, sinTildes4(c2.texto ?? "")].join("|");
       if (vistas.has(k)) return false;
       vistas.add(k);
       return true;
@@ -13941,9 +13979,9 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     "folato": "el folato",
     "potasio": "el potasio"
   };
-  var sinTildes4 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  var sinTildes5 = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   function textoNutriente(n) {
-    const k = sinTildes4(n);
+    const k = sinTildes5(n);
     if (NUTRIENTE_TEXTO[k]) return NUTRIENTE_TEXTO[k];
     if (k.startsWith("vitamina")) return `la ${n}`;
     return n;
@@ -13981,10 +14019,10 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     })).filter((e) => e.asunto);
   }
   function esExcepcion(ex, grupo, nutriente, ap) {
-    const n = sinTildes4(nutriente);
+    const n = sinTildes5(nutriente);
     return ex.some((e) => {
       if (!e.grupos.some((g) => claveGrupo(g) === claveGrupo(grupo))) return false;
-      const a2 = sinTildes4(e.asunto);
+      const a2 = sinTildes5(e.asunto);
       if (a2 === n) return true;
       return a2.startsWith(`${n} en patron vegano`) && ap.vegano;
     });
@@ -14036,7 +14074,7 @@ Polic\xEDa Local,Castilla y Le\xF3n - proceso unitario MAV/482/2026,Lanzamiento 
     for (const grupo of grupos) {
       if (deshechos.includes(grupo)) continue;
       for (const e of ex) {
-        const delGrupo = e.grupos.some((g) => claveGrupo(g) === claveGrupo(grupo)) || grupos.length > 1 && e.grupos.some((g) => /exclusiones multiples/.test(sinTildes4(g)));
+        const delGrupo = e.grupos.some((g) => claveGrupo(g) === claveGrupo(grupo)) || grupos.length > 1 && e.grupos.some((g) => /exclusiones multiples/.test(sinTildes5(g)));
         if (delGrupo && !paraPablo.some((p) => p.asunto === e.asunto)) paraPablo.push({ grupo, asunto: e.asunto, motivo: e.motivo });
       }
       const pref = Object.entries(datos.preferidos ?? {}).find(([g]) => claveGrupo(g) === claveGrupo(grupo))?.[1] ?? {};

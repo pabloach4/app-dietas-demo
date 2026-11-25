@@ -2428,41 +2428,39 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('rec-restricciones').textContent = textoRestricciones(ap);
     const consulta = document.getElementById('rec-buscar').value;
     const franja = document.getElementById('rec-franja').value;
-    const soloCompat = document.getElementById('rec-compat').checked;
+    const tipo = document.getElementById('rec-tipo').value;
     const soloFav = document.getElementById('rec-favoritas').checked;
     document.getElementById('rec-limpiar').hidden = !consulta;
-    const compat = (r) => (ap ? Motor.evaluarCompatibilidad(r, ap) : { compatible: true });
-    const encontradas = Motor.filtrarCatalogo(RECETAS_EJEMPLO, { consulta, franja: franja || undefined, soloFavoritas: soloFav, favoritas: favoritasRecetas });
-    const visibles = soloCompat ? encontradas.filter((r) => compat(r).compatible) : encontradas;
-    const ocultasPorRestriccion = encontradas.length - visibles.length;
+    // #353 parte 2: solo lo que la persona puede comer, con el mismo filtro que su plan y sin casilla para ver lo demás.
+    const aptas = Motor.recetasDelRecetario(RECETAS_EJEMPLO, (r) => !ap || Motor.evaluarCompatibilidad(r, ap).compatible);
+    const visibles = Motor.filtrarCatalogo(aptas, { consulta, franja: franja || undefined, tipo: tipo || undefined, soloFavoritas: soloFav, favoritas: favoritasRecetas });
     const NOMBRE = { desayuno: 'desayuno', media_manana: 'media mañana', comida: 'comida', merienda: 'merienda', cena: 'cena' };
+    const PAPEL = { primero: 'primer plato', segundo: 'segundo plato', postre: 'postre' };
 
     const estado = document.getElementById('rec-estado');
-    document.getElementById('rec-n-filtros').textContent = [franja, soloCompat, soloFav].filter(Boolean).length; // #208: contador en los filtros
+    document.getElementById('rec-n-filtros').textContent = [franja, tipo, soloFav].filter(Boolean).length; // #208: contador en los filtros
     if (!visibles.length) {
       const partes = [];
       if (consulta.trim()) partes.push(`la búsqueda «${consulta.trim()}»`);
       if (franja) partes.push(`la comida «${NOMBRE[franja]}»`);
+      if (tipo) partes.push(`el tipo «${Motor.NOMBRE_TIPO_RECETA[tipo].toLowerCase()}»`);
       if (soloFav) partes.push('«solo favoritas»');
-      estado.textContent = `Ninguna receta de ejemplo cumple ${partes.length ? partes.join(' + ') : 'los filtros'}${soloCompat ? ' y tus restricciones' : ''}.`
-        + (ocultasPorRestriccion ? ` ${ocultasPorRestriccion === 1 ? 'Hay 1 que coincide pero no encaja' : `Hay ${ocultasPorRestriccion} que coinciden pero no encajan`} con tus restricciones (desmarca el filtro para verla${ocultasPorRestriccion === 1 ? '' : 's'}; siguen sin servir para tu plan).` : '')
-        + ' Tus restricciones no se relajan para encontrar resultados: prueba otra búsqueda o quita filtros de comida o favoritas.';
+      estado.textContent = `Ninguna de tus recetas cumple ${partes.length ? partes.join(' + ') : 'los filtros'}. Tus restricciones no se relajan para encontrar resultados: prueba otra búsqueda o quita algún filtro.`;
     } else {
-      estado.textContent = `${visibles.length} receta${visibles.length === 1 ? '' : 's'} de ejemplo${ocultasPorRestriccion ? ` (${ocultasPorRestriccion} más no encajan con tus restricciones y no se muestran)` : ''}.`;
+      estado.textContent = `${visibles.length} receta${visibles.length === 1 ? '' : 's'} que puedes comer${ap ? ' (ya sin las que no encajan con tus restricciones)' : ''}.`;
     }
 
     document.getElementById('rec-lista').innerHTML = visibles.map((r) => {
-      const c = compat(r);
       const fav = favoritasRecetas.includes(r.id);
+      const tipos = Motor.tiposDeReceta(r).map((t) => Motor.NOMBRE_TIPO_RECETA[t]);
       return `
         <li class="rec-card">
           <div class="rec-img" aria-hidden="true"></div>
           <div class="rec-cuerpo">
             <div class="rec-nombre">${escaparHtml(r.nombre)}</div>
-            <span class="rec-etiqueta">EJEMPLO</span>
-            <div class="rec-dato">Para: ${r.franjas.map((f) => NOMBRE[f] ?? f).join(', ')}</div>
-            <div class="rec-dato">Declarado (ración base, de ejemplo): ${r.kcal} kcal</div>
-            ${c.compatible ? '' : `<div class="rec-incompat">No encaja con tus restricciones${c.motivo ? `: ${escaparHtml(c.motivo.detalle)}` : ''}</div>`}
+            <div class="rec-dato">Para: ${r.franjas.map((f) => NOMBRE[f] ?? f).join(', ')}${PAPEL[r.tipoPlato] ? ` · ${PAPEL[r.tipoPlato]}` : ''}</div>
+            ${tipos.length ? `<div class="rec-dato rec-tipos">${tipos.join(' · ')}</div>` : ''}
+            <div class="rec-dato">Ración base: ${r.kcal} kcal</div>
             <div class="rec-acciones">
               <button type="button" class="rec-fav" data-id="${r.id}" aria-pressed="${fav}" aria-label="${fav ? 'Quitar de favoritas' : 'Marcar como favorita'}: ${escaparHtml(r.nombre)}">${fav ? '♥' : '♡'}</button>
               <button type="button" class="rec-ver" data-id="${r.id}" aria-label="Ver receta: ${escaparHtml(r.nombre)}">Ver receta</button>
@@ -2486,7 +2484,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     document.getElementById('dc-cuerpo').innerHTML = `
       <p><span class="rec-etiqueta">EJEMPLO</span> Receta de ejemplo, no de Pablo ni validada para clientes.</p>
       ${c.compatible ? '' : `<p class="error-inline">No encaja con tus restricciones${c.motivo ? `: ${escaparHtml(c.motivo.detalle)}` : ''}. No se propondría en tu plan.</p>`}
-      <p class="dc-aviso" style="color:var(--gris)">Esto es solo la ficha. Verla o marcarla como favorita no la añade a tu plan ni a tu compra, ni significa que la hayas tomado.</p>
+      <p class="dc-aviso" style="color:var(--gris)">Esto es solo la ficha. Verla no la añade a tu plan ni a tu compra, ni significa que la hayas tomado. Si es favorita, se prefiere al calcular tu semana cuando encaja igual de bien que otra; para tenerla seguro, «La quiero sí o sí».</p>
       ${bloqueSiOSiHtml(r)}
       <h3>Ingredientes (ración base, pesos de ejemplo pendientes de validar)</h3>
       <ul class="dc-ings">${ings}</ul>
@@ -2512,7 +2510,8 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     pintarRecetas();
     document.getElementById('rec-buscar').focus();
   });
-  ['rec-franja', 'rec-compat', 'rec-favoritas'].forEach((id) => document.getElementById(id).addEventListener('change', pintarRecetas));
+  document.getElementById('rec-tipo').insertAdjacentHTML('beforeend', Motor.TIPOS_RECETA.map((t) => `<option value="${t}">${Motor.NOMBRE_TIPO_RECETA[t]}</option>`).join('')); // #353 parte 2
+  ['rec-franja', 'rec-tipo', 'rec-favoritas'].forEach((id) => document.getElementById(id).addEventListener('change', pintarRecetas));
   document.getElementById('rec-lista').addEventListener('click', (ev) => {
     const fav = ev.target.closest('.rec-fav');
     if (fav) {
@@ -4700,7 +4699,7 @@ Protegidos que nunca se reescalan,,,,"Fruta, yogur, café, condimentos y ajo: se
     // #259 (punto 27): al recalcular (por ejemplo, tras cambiar el peso), cada comida conserva su plato si sigue valiendo.
     const previa = (preferirUnaVez ?? asignacionSemanaActual.asignaciones.map(({ dia, franja, receta }) => ({ dia, franja, receta }))).map((p) => ({ ...p, receta: Motor.sinCarga(p.receta) })); /* #301 */ // #261 C: al aplicar o borrar los gustos, no se conservan los platos de ahora
     const gustos = Motor.gustosPorReceta(RECETAS_EJEMPLO, historialGustos, ATRIBUTOS_RECETAS); // #261 C: solo desempata; sin gustos, vacío
-    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias), ...(previa.length ? { preferir: previa } : {}), desayuno: prefDesayuno, ...(gustos.size ? { gustos } : {}) };
+    const opcionesAsignador = { alergiasPreferencias, imprescindibles: partirAlimentos(respuestas.preferencias.gustan), recetasSiOSi, fijadas: fijadasDePablo ?? (estadoSiguiente === 'activa' ? siguiente.recetas : fijasPropias), ...(previa.length ? { preferir: previa } : {}), desayuno: prefDesayuno, ...(gustos.size ? { gustos } : {}), ...(favoritasRecetas.length ? { favoritas: favoritasRecetas } : {}) /* #353 parte 2: solo desempatan */ };
     // #323 parte 2b: con grupos quitados, la semana sale sin ellos y con sus compensaciones en comidas que ya existen. Sus kcal ya se han
     // restado del objetivo de esa comida: se restan también de slotsSemana para que las sustituciones, el cuadre del día y el cierre de
     // proteína trabajen con lo que le queda al plato (el día no sube). La dieta siguiente se hace sin compensar, con las kcal enteras.

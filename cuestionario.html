@@ -1511,8 +1511,8 @@
 
     <section class="panel-app" id="panel-recetas" role="tabpanel" aria-labelledby="tab-recetas" hidden>
       <div class="tarjeta" id="recetas-contenido">
-        <h2>Recetas de ejemplo</h2>
-        <details class="plegable" style="margin-bottom:0.8rem"><summary style="font-size:0.9rem;font-weight:600">Sobre este catálogo</summary><p class="subt">Catálogo de EJEMPLO para explorar, separado de tu plan: buscar, filtrar o marcar favoritas <strong>no cambia tu semana ni tu compra</strong>. No son recetas de Pablo ni están validadas para clientes.</p></details>
+        <h2>Recetas</h2>
+        <details class="plegable" style="margin-bottom:0.8rem"><summary style="font-size:0.9rem;font-weight:600">Sobre este recetario</summary><p class="subt">Aquí salen solo las recetas que puedes comer: las mismas alergias, preferencias y lista negra que tu plan, sin excepciones. Buscar o filtrar <strong>no cambia tu semana ni tu compra</strong>. Tus favoritas se prefieren al calcular tu semana cuando encajan igual de bien que otra, sin cambiar kcal, cantidades ni variedad. Catálogo de ejemplo: no son recetas validadas para clientes.</p></details>
         <p class="rec-restricciones" id="rec-restricciones"></p>
         <div class="campo"><label for="rec-buscar">Buscar por nombre o ingrediente</label>
           <div class="buscador">
@@ -1527,7 +1527,9 @@
             <option value="comida">Comida</option><option value="merienda">Merienda</option><option value="cena">Cena</option>
           </select>
         </div>
-        <label class="check"><input type="checkbox" id="rec-compat" checked> Solo recetas que encajan con mis restricciones</label>
+        <div class="campo"><label for="rec-tipo">Tipo</label>
+          <select id="rec-tipo"><option value="">Todos</option></select>
+        </div>
         <label class="check"><input type="checkbox" id="rec-favoritas"> Solo mis favoritas</label>
         </details>
         <p class="subt" id="rec-estado" role="status" aria-live="polite" style="margin:0.6rem 0"></p>
@@ -1772,12 +1774,12 @@
     <p class="subt" style="margin:0 0 0.6rem">De dónde viene la información nutricional. Que una referencia aparezca aquí <strong>no significa que Pablo haya validado el valor</strong>: las recetas, gramajes y precios de esta demo son de EJEMPLO, y lo marcado como «criterio de Pablo» es una decisión profesional, no un estudio.</p>
     <div id="fuentes-lista"></div>
   </details>
-<script src="novedades.js?v=0631d4b"></script>
-<script src="fuentes.js?v=0631d4b"></script>
-<script src="motor.bundle.js?v=0631d4b"></script>
-<script src="cuestionario.js?v=0631d4b"></script>
-<script src="nube.js?v=0631d4b"></script>
-<script src="pwa.js?v=0631d4b"></script>
+<script src="novedades.js?v=75dbdd1"></script>
+<script src="fuentes.js?v=75dbdd1"></script>
+<script src="motor.bundle.js?v=75dbdd1"></script>
+<script src="cuestionario.js?v=75dbdd1"></script>
+<script src="nube.js?v=75dbdd1"></script>
+<script src="pwa.js?v=75dbdd1"></script>
 <div id="tutorial" hidden></div>
 </body>
 </html>
